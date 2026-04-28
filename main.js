@@ -17,18 +17,28 @@ const listElement = document.getElementById('categories-list');
 
 // Слушаем изменения в базе в реальном времени
 onSnapshot(collection(db, "categories"), (snapshot) => {
-    listElement.innerHTML = ''; // Очищаем список перед обновлением
+    listElement.innerHTML = ''; 
     snapshot.forEach((doc) => {
         const cat = doc.data();
+        // Генерируем случайный мягкий цвет для карточки, если он не задан
+        const colors = ['bg-blue-50', 'bg-purple-50', 'bg-emerald-50', 'bg-orange-50'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
         listElement.innerHTML += `
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex justify-between items-center">
-                <div>
-                    <span class="text-3xl">${cat.icon || '👥'}</span>
-                    <h2 class="text-xl font-bold ml-2 inline">${cat.name}</h2>
+            <div class="${randomColor} p-5 rounded-[2.5rem] mb-4 flex items-center justify-between border border-white shadow-sm active:scale-95 transition-transform cursor-pointer" 
+                 onclick="alert('Входим в ${cat.name || 'лобби'}...')">
+                <div class="flex items-center">
+                    <div class="bg-white w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-inner">
+                        ${cat.icon || '👥'}
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-xl font-extrabold text-gray-800">${cat.name || 'Без названия'}</h2>
+                        <p class="text-xs text-gray-500 font-medium">Нажмите, чтобы присоединиться</p>
+                    </div>
                 </div>
-                <span class="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-sm font-bold">
-                    ${cat.count || 0}
-                </span>
+                <div class="bg-white/60 backdrop-blur-sm px-4 py-2 rounded-2xl">
+                    <span class="text-indigo-600 font-black">${cat.count || 0}</span>
+                </div>
             </div>
         `;
     });
