@@ -21,13 +21,15 @@ if (localStorage.getItem('userName')) {
 }
 
 window.saveName = () => {
-    const name = document.getElementById('user-name-input').value;
-    if (name.trim().length > 1) {
+    const nameInput = document.getElementById('user-name-input');
+    const name = nameInput.value.trim();
+    
+    if (name.length > 1) {
         localStorage.setItem('userName', name);
-        document.getElementById('auth-modal').classList.add('hidden');
-        alert("Привет, " + name + "!");
+        document.getElementById('auth-modal').style.display = 'none';
+        console.log("Добро пожаловать, " + name);
     } else {
-        alert("Имя слишком короткое");
+        alert("Пожалуйста, введи имя длиннее одной буквы");
     }
 };
 
