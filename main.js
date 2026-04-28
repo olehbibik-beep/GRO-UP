@@ -15,6 +15,22 @@ const db = getFirestore(app);
 
 const listElement = document.getElementById('categories-list');
 
+// Проверяем, есть ли имя в памяти телефона
+if (localStorage.getItem('userName')) {
+    document.getElementById('auth-modal').classList.add('hidden');
+}
+
+window.saveName = () => {
+    const name = document.getElementById('user-name-input').value;
+    if (name.trim().length > 1) {
+        localStorage.setItem('userName', name);
+        document.getElementById('auth-modal').classList.add('hidden');
+        alert("Привет, " + name + "!");
+    } else {
+        alert("Имя слишком короткое");
+    }
+};
+
 // Слушаем изменения в базе в реальном времени
 onSnapshot(collection(db, "categories"), (snapshot) => {
     listElement.innerHTML = ''; 
