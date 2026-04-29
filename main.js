@@ -230,7 +230,7 @@ function loadPersonalData() {
         });
     } catch(e) { console.error(e); }
 
-// 5. Календарь (ТЕМНАЯ ТЕМА + ФИЛЬТР ГРУПП)
+// 5. Календарь (ТЕМНАЯ ТЕМА - ВИДЯТ ВСЕ)
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -238,18 +238,15 @@ function loadPersonalData() {
             if (!container) return; 
             let html = '';
             const today = new Date(); today.setHours(0,0,0,0);
-            
-            // Узнаем группу текущего пользователя
-            const myGroup = currentUserData.group || "Без группы";
 
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 const evDate = new Date(ev.date);
-                const evGroup = ev.group || "Все"; // Если группы нет, значит для всех
+                const evGroup = ev.group || "Все";
                 
-                // Показываем событие, если оно в будущем И (для всех ИЛИ для моей группы)
-                if (evDate >= today && (evGroup === "Все" || evGroup == myGroup)) {
-                    // Если событие только для группы, рисуем красивый бейдж
+                // УБРАЛИ ФИЛЬТР ПО ГРУППЕ: Показываем событие всем, если оно в будущем
+                if (evDate >= today) {
+                    // Оставляем только бейджик, чтобы понимать, для кого событие
                     const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-500/30 text-indigo-100 px-2 py-0.5 rounded-md text-[8px] ml-2 border border-indigo-400/30">Гр. ${evGroup}</span>` : '';
                     
                     html += `
