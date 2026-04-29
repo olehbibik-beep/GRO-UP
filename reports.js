@@ -70,18 +70,28 @@ function renderTable(monthFilter) {
     const filteredReports = monthFilter === "all" ? allReports : allReports.filter(r => r.month === monthFilter);
 
     if (filteredReports.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400 font-medium">Отчетов пока нет</td></tr>';
+        // Заменили colspan на 7, так как добавилась колонка
+        tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400 font-medium">Отчетов пока нет</td></tr>';
         document.getElementById('total-hours').innerText = '0';
         return;
     }
 
     filteredReports.forEach(rep => {
-        totalHours += rep.hours;
+        totalHours += (rep.hours || 0);
+        
+        // Рисуем красивую зеленую галочку, если служил
+        const participatedHtml = rep.participated 
+            ? '<span class="text-emerald-500 font-black text-lg">✔ Да</span>' 
+            : '<span class="text-slate-300">-</span>';
+
         tbody.innerHTML += `
             <tr class="hover:bg-slate-50 transition-colors">
                 <td class="p-4 font-bold text-slate-800">${rep.userName}</td>
                 <td class="p-4 text-center text-slate-500 font-bold">${rep.group}</td>
-                <td class="p-4 text-center font-black text-purple-700 text-lg">${rep.hours}</td>
+                
+                <td class="p-4 text-center">${participatedHtml}</td>
+                
+                <td class="p-4 text-center font-black text-purple-700 text-lg">${rep.hours || '-'}</td>
                 <td class="p-4 text-center text-slate-600">${rep.pubs || '-'}</td>
                 <td class="p-4 text-center text-slate-600">${rep.studies || '-'}</td>
                 <td class="p-4 text-right text-xs text-slate-400">${rep.month}</td>
