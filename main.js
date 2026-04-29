@@ -1,7 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { 
     initializeFirestore, persistentLocalCache, collection, onSnapshot, 
-    doc, setDoc, addDoc, deleteDoc 
+    doc, setDoc, addDoc, deleteDoc, 
+    getDocs, query, where // <-- Добавлены новые функции для поиска!
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -60,40 +61,62 @@ if (localStorage.getItem('userName')) {
 // =========================================================
 
 window.saveName = async () => {
-    const nameInput = document.getElementById('user-name-input');
-    const name = nameInput.value.trim();
+    const nameInput = document.getElementById('user-name-input').value.trim();
+    const pinInput = document.getElementById('user-pin-input').value.trim();
     
-    if (name.length > 1) {
-        // Создаем ID
-        let userId = localStorage.getItem('userId');
-        if (!userId) {
+    // Проверяем, чтобы поля не были пустыми
+    if (nameInput.length < 2 || pinInput.length < 1) {
+        alert("Пожалуйста, введите имя и ПИН-код!");
+        return;
+    }
+
+    try {
+        // 1. Ищем пользователя в базе данных по имени
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("name", "==", nameInput));
+        const querySnapshot = await getDocs(q);
+
+        let userId = "";
+
+        if (!querySnapshot.empty) {
+            // АКАУНТ УЖЕ СУЩЕСТВУЕТ -> ПРОВЕРЯЕМ ПИН-КОД
+            const userDoc = querySnapshot.docs[0];
+            const userData = userDoc.data();
+
+            if (userData.pin === pinInput) {
+                // Пин-код верный! Пускаем внутрь
+                userId = userDoc.id;
+            } else {
+                // Пин-код неверный! Выдаем ошибку и останавливаем код
+                alert("Неверный ПИН-код для этого имени!");
+                return; 
+            }
+        } else {
+            // АКАУНТА НЕТ -> РЕГИСТРИРУЕМ НОВОГО ПОЛЬЗОВАТЕЛЯ
             userId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 9);
-            localStorage.setItem('userId', userId);
-        }
-
-        // Сохраняем имя локально
-        localStorage.setItem('userName', name);
-        
-        // Скрываем модалку
-        document.getElementById('auth-modal').style.display = 'none';
-
-        // Отправляем профиль в базу данных (АДМИНКА ЕГО УВИДИТ ЗДЕСЬ)
-        try {
+            
             await setDoc(doc(db, "users", userId), {
-                name: name,
+                name: nameInput,
+                pin: pinInput, // Сохраняем придуманный/выданный ПИН-код
                 createdAt: new Date().toISOString(),
                 status: "online",
-                role: "user",
+                role: "Участник", // <--- ВОТ ТУТ МЫ ПРОПИСЫВАЕМ ЕГО В КАТЕГОРИЮ!
                 isBlocked: false
-            }, { merge: true }); 
-            
-            // Начинаем слушать права
-            listenToUserStatus();
-        } catch (e) {
-            console.error("Офлайн режим (данные отправятся позже):", e);
+            });
+            console.log("Новый пользователь зарегистрирован!");
         }
-    } else {
-        alert("Введи имя, пожалуйста!");
+
+        // Если дошли сюда, значит вход/регистрация успешны
+        localStorage.setItem('userId', userId);
+        localStorage.setItem('userName', nameInput);
+        document.getElementById('auth-modal').style.display = 'none';
+
+        // Запускаем проверку прав
+        listenToUserStatus();
+
+    } catch (e) {
+        console.error("Ошибка при входе:", e);
+        alert("Ошибка сети. Попробуйте позже.");
     }
 };
 
