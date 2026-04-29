@@ -3,74 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GRO-UP Dashboard</title>
+    <title>GRO-UP App</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         ::-webkit-scrollbar { display: none; }
         body { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Анимация переключения вкладок */
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen font-sans text-slate-800">
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800">
 
     <div id="pending-screen" class="fixed inset-0 bg-white z-[100] hidden flex-col items-center justify-center text-center p-6">
         <span class="text-5xl mb-6 animate-pulse">⏳</span>
         <h2 class="text-3xl font-black text-slate-800 mb-2">Заявка на рассмотрении</h2>
-        <p class="text-slate-500 mb-8 max-w-sm">Администратор скоро проверит ваши данные и выдаст доступ к панели управления.</p>
-        <button onclick="logout()" class="text-indigo-500 font-bold hover:underline bg-indigo-50 px-6 py-3 rounded-xl">Выйти из аккаунта</button>
+        <p class="text-slate-500 mb-8 max-w-sm">Ожидайте подтверждения администратора.</p>
+        <button onclick="logout()" class="text-indigo-500 font-bold hover:underline">Выйти</button>
     </div>
 
-    <nav class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 flex flex-row items-center justify-between z-40 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:border-t-0 md:border-r md:py-6 shadow-[0_-5px_20px_rgba(0,0,0,0.03)] md:shadow-none pb-safe">
+    <nav class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 flex flex-row items-center justify-between z-40 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:border-t-0 md:border-r md:py-6 pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.03)] md:shadow-none">
         
-        <a href="#" class="flex flex-col items-center justify-center flex-1 py-3 text-indigo-600 transition-transform active:scale-95 md:flex-none md:w-full md:mb-6 outline-none">
-            <div class="p-2 md:p-3 bg-indigo-600 text-white rounded-[0.8rem] md:rounded-2xl shadow-md">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5 md:w-6 md:h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+        <button onclick="switchTab('home', this)" class="nav-btn text-indigo-600 flex flex-col items-center justify-center flex-1 py-3 transition-transform active:scale-95 md:flex-none md:w-full md:mb-4 outline-none">
+            <div class="p-2 md:p-3 bg-indigo-100 rounded-2xl transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
             </div>
-        </a>
+            <span class="text-[10px] font-bold mt-1 md:hidden">Главная</span>
+        </button>
         
-        <a href="reports.html" class="overseer-controls hidden flex-col items-center justify-center flex-1 py-3 text-slate-400 hover:text-purple-500 transition-colors md:flex-none md:w-full md:mb-2 outline-none">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>
-        </a>
+        <button onclick="switchTab('tasks', this)" class="nav-btn text-slate-400 hover:text-indigo-600 flex flex-col items-center justify-center flex-1 py-3 transition-transform active:scale-95 md:flex-none md:w-full md:mb-4 outline-none">
+            <div class="p-2 md:p-3 rounded-2xl transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
+            </div>
+            <span class="text-[10px] font-bold mt-1 md:hidden">Задания</span>
+        </button>
 
-        <a href="admin.html" class="admin-controls hidden flex-col items-center justify-center flex-1 py-3 text-slate-400 hover:text-orange-500 transition-colors md:flex-none md:w-full md:mb-2 outline-none">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.78.929l-.15.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-        </a>
+        <button onclick="switchTab('territories', this)" class="nav-btn text-slate-400 hover:text-indigo-600 flex flex-col items-center justify-center flex-1 py-3 transition-transform active:scale-95 md:flex-none md:w-full md:mb-4 outline-none">
+            <div class="p-2 md:p-3 rounded-2xl transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" /></svg>
+            </div>
+            <span class="text-[10px] font-bold mt-1 md:hidden">Участки</span>
+        </button>
 
-        <button onclick="openProfileModal()" class="flex flex-col items-center justify-center flex-1 py-3 text-slate-400 hover:text-indigo-600 transition-colors md:flex-none md:w-full outline-none">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+        <button onclick="openProfileModal()" class="flex flex-col items-center justify-center flex-1 py-3 text-slate-400 hover:text-indigo-600 transition-colors md:flex-none md:w-full outline-none mt-auto">
+            <div class="p-2 md:p-3 rounded-2xl transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+            </div>
+            <span class="text-[10px] font-bold mt-1 md:hidden">Профиль</span>
         </button>
     </nav>
 
-    <main class="w-full max-w-6xl mx-auto hidden pt-6 px-4 pb-24 md:pl-28 md:pr-6 md:py-8" id="main-dashboard">
-        <header class="mb-6 md:mb-8">
-            <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Панель управления</h1>
-        </header>
-
-        <div id="upcoming-duty-card" class="hidden mb-6 bg-amber-400 p-5 md:p-6 rounded-3xl shadow-lg shadow-amber-200/50 flex items-center gap-4 border-2 border-white">
-            <div class="w-14 h-14 bg-white/30 rounded-2xl flex items-center justify-center text-3xl">🗓️</div>
-            <div class="flex-grow">
-                <p class="text-[10px] font-black uppercase text-amber-900/60 leading-none mb-1">Предстоящее</p>
-                <h3 id="duty-title" class="text-xl md:text-2xl font-black text-amber-900 leading-tight">Загрузка...</h3>
-                <p id="duty-date" class="text-sm font-bold text-amber-800/80 mt-1">...</p>
-            </div>
-            <button onclick="this.parentElement.remove()" class="text-amber-900/30 hover:text-amber-900 transition-colors">✖</button>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <main class="w-full max-w-4xl mx-auto pt-6 px-4 pb-24 md:pl-28 md:pr-6 md:py-8 hidden" id="main-dashboard">
+        
+        <div id="tab-home" class="tab-content active">
+            <header class="mb-6"><h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Обзор</h1></header>
             
-            <div class="bg-purple-50/80 p-5 md:p-6 rounded-3xl shadow-sm border border-purple-100 flex flex-col h-[380px]">
+            <div class="mb-6 bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-2">
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><span>📅</span> Предстоящие события</h3>
+                </div>
+                <div id="calendar-events" class="space-y-3">
+                    <p class="text-sm text-slate-400 italic">Событий пока нет</p>
+                </div>
+            </div>
+
+            <div class="mb-6 bg-purple-50/80 p-5 md:p-6 rounded-3xl shadow-sm border border-purple-100 flex flex-col">
                 <div class="flex items-center justify-between mb-4 border-b border-purple-100 pb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="text-2xl">📝</span><h3 class="text-lg md:text-xl font-bold text-purple-900">Мой отчет</h3>
-                    </div>
+                    <div class="flex items-center gap-2"><span class="text-2xl">📝</span><h3 class="text-lg md:text-xl font-bold text-purple-900">Мой отчет</h3></div>
                     <span class="text-[10px] font-black text-purple-600 uppercase bg-purple-100 px-2 py-1 rounded-lg" id="current-month-label">Месяц</span>
                 </div>
-                
                 <div class="flex-grow flex flex-col gap-3">
                     <label class="flex items-center gap-3 bg-white p-3 rounded-xl border border-purple-200 cursor-pointer hover:bg-purple-50 transition-colors shadow-sm">
-                        <input type="checkbox" id="rep-participated" class="w-5 h-5 md:w-6 md:h-6 accent-purple-600 rounded cursor-pointer">
+                        <input type="checkbox" id="rep-participated" class="w-5 h-5 accent-purple-600 rounded cursor-pointer">
                         <span class="font-bold text-purple-900 text-sm">Участвовал(а) в служении</span>
                     </label>
-
                     <div class="flex gap-2">
                         <div class="w-full text-center">
                             <label class="text-[10px] uppercase font-bold text-purple-500 block mb-1">Часы</label>
@@ -90,50 +97,66 @@
                 <button onclick="submitReport()" id="submit-report-btn" class="mt-2 w-full bg-purple-200/50 hover:bg-purple-500 text-purple-800 hover:text-white font-bold py-3 rounded-2xl transition-colors border border-purple-300 active:scale-95 text-sm md:text-base">Отправить отчет</button>
             </div>
 
-            <div class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-sky-100 flex flex-col h-[380px]">
-                <div class="flex items-center gap-2 mb-4 border-b border-sky-50 pb-3">
-                    <span class="text-2xl">📚</span><h3 class="text-lg md:text-xl font-bold text-sky-900">Мои задания</h3>
+            <div class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-2">
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><span>📢</span> Доска объявлений</h3>
                 </div>
-                <div id="my-tasks-list" class="space-y-3 overflow-y-auto pr-2 flex-grow text-sm text-slate-600">Загрузка...</div>
-            </div>
-
-            <div class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-emerald-100 flex flex-col h-[380px]">
-                <div class="flex items-center gap-2 mb-4 border-b border-emerald-50 pb-3">
-                    <span class="text-2xl">🗺️</span><h3 class="text-lg md:text-xl font-bold text-emerald-900">Мои участки</h3>
-                </div>
-                <div id="my-territories-list" class="space-y-3 overflow-y-auto pr-2 flex-grow text-sm text-slate-600">Загрузка...</div>
-                <button onclick="requestTerritory()" class="mt-4 w-full bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white font-bold py-3 rounded-2xl transition-colors active:scale-95 border border-emerald-200 text-sm md:text-base">Попросить участок</button>
+                <div id="content-news" class="space-y-3 text-sm text-slate-600">Загрузка...</div>
             </div>
         </div>
 
-        <div class="mt-6 md:mt-8 bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-100">
-            <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-2">
-                <h3 class="text-lg md:text-xl font-bold text-slate-800 flex items-center gap-2"><span>📢</span> Доска объявлений</h3>
-                <button onclick="openAddModal('news')" class="admin-controls hidden px-4 py-1.5 bg-slate-100 hover:bg-indigo-100 text-indigo-600 font-bold rounded-xl text-sm transition-colors">+ Запись</button>
+        <div id="tab-tasks" class="tab-content">
+            <header class="mb-6"><h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Мои задания</h1></header>
+            
+            <div class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-sky-100 min-h-[400px]">
+                <h3 class="font-bold text-slate-500 mb-4 uppercase text-xs tracking-wider">Предстоящие (Активные)</h3>
+                <div id="upcoming-tasks-list" class="space-y-3 mb-8">
+                    <p class="text-slate-400 text-sm italic">Нет активных заданий</p>
+                </div>
+
+                <h3 class="font-bold text-slate-400 mb-4 uppercase text-xs tracking-wider border-t border-slate-100 pt-6">Прошедшие (Архив)</h3>
+                <div id="past-tasks-list" class="space-y-3">
+                    <p class="text-slate-400 text-sm italic">История пуста</p>
+                </div>
             </div>
-            <div id="content-news" class="space-y-3 text-sm text-slate-600">Загрузка...</div>
         </div>
+
+        <div id="tab-territories" class="tab-content">
+            <header class="mb-6 flex justify-between items-end">
+                <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Мои участки</h1>
+                <button onclick="requestTerritory(this)" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-500 hover:text-white font-bold py-2 px-4 rounded-xl transition-colors text-sm">Попросить участок</button>
+            </header>
+            
+            <div id="territories-container" class="grid grid-cols-1 gap-6">
+                <p class="text-slate-400 text-sm italic">У вас пока нет участков</p>
+            </div>
+        </div>
+
     </main>
 
-    <div id="profile-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-6">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl relative">
-            <button onclick="closeModals()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-800 text-xl font-bold">✖</button>
-            <div class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full mx-auto flex items-center justify-center text-3xl mb-4 shadow-inner">👤</div>
+    <div id="profile-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 transition-opacity">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-6 text-center shadow-2xl relative border border-slate-100">
+            <button onclick="closeModals()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-800 text-2xl font-black outline-none transition-colors">✖</button>
+            
+            <div class="w-24 h-24 bg-gradient-to-tr from-indigo-100 to-sky-100 text-indigo-600 rounded-full mx-auto flex items-center justify-center text-4xl mb-4 shadow-inner border-4 border-white">👤</div>
             <h2 id="profile-name" class="text-2xl font-black text-slate-800 mb-1">Имя</h2>
-            <span id="profile-role" class="inline-block px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-xs font-bold uppercase tracking-wider mb-8">Роль</span>
-            <button onclick="logout()" class="w-full bg-red-50 hover:bg-red-500 text-red-600 hover:text-white font-bold p-4 rounded-2xl transition-all border border-red-100 hover:border-red-500 active:scale-95">Выйти из аккаунта</button>
+            <span id="profile-role" class="inline-block px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-xs font-bold uppercase tracking-wider mb-6">Роль</span>
+            
+            <div class="bg-slate-50 rounded-2xl p-4 mb-6 text-left border border-slate-100">
+                <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase">Группа</span>
+                    <span id="profile-group" class="text-sm font-black text-slate-700">№ -</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold text-slate-400 uppercase">Ответственный</span>
+                    <span id="profile-overseer" class="text-sm font-bold text-indigo-600">Загрузка...</span>
+                </div>
+            </div>
+
+            <button onclick="logout()" class="w-full bg-red-50 hover:bg-red-500 text-red-600 hover:text-white font-bold p-4 rounded-2xl transition-all border border-red-100 active:scale-95">Выйти из аккаунта</button>
         </div>
     </div>
 
-    <div id="add-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-6">
-        <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative">
-            <button onclick="closeModals()" class="absolute top-4 right-5 text-slate-400 font-bold">✖</button>
-            <h2 class="text-2xl font-black mb-4">Добавить запись</h2>
-            <textarea id="add-content-text" rows="5" class="w-full p-4 rounded-2xl bg-slate-50 border outline-none mb-4"></textarea>
-            <button onclick="saveNewContent()" class="w-full bg-indigo-600 text-white font-bold p-4 rounded-2xl">Опубликовать</button>
-        </div>
-    </div>
-
-    <script type="module" src="main.js?v=7"></script>
+    <script type="module" src="main.js?v=8"></script>
 </body>
 </html>
