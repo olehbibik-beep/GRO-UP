@@ -230,7 +230,7 @@ function loadPersonalData() {
         });
     } catch(e) { console.error(e); }
 
-// 5. Календарь (ТЕМНАЯ ТЕМА)
+// 5. Календарь (ТЕМНАЯ ТЕМА + ФИЛЬТР ГРУПП)
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -238,17 +238,27 @@ function loadPersonalData() {
             if (!container) return; 
             let html = '';
             const today = new Date(); today.setHours(0,0,0,0);
+            
+            // Узнаем группу текущего пользователя
+            const myGroup = currentUserData.group || "Без группы";
+
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 const evDate = new Date(ev.date);
-                if (evDate >= today) {
+                const evGroup = ev.group || "Все"; // Если группы нет, значит для всех
+                
+                // Показываем событие, если оно в будущем И (для всех ИЛИ для моей группы)
+                if (evDate >= today && (evGroup === "Все" || evGroup == myGroup)) {
+                    // Если событие только для группы, рисуем красивый бейдж
+                    const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-500/30 text-indigo-100 px-2 py-0.5 rounded-md text-[8px] ml-2 border border-indigo-400/30">Гр. ${evGroup}</span>` : '';
+                    
                     html += `
                         <div class="flex items-center gap-3 p-2.5 bg-slate-700/50 rounded-xl mb-2 border border-slate-600/50">
                             <div class="bg-slate-600 text-white font-black p-2 rounded-lg text-center min-w-[45px] shadow-inner">
                                 <span class="block text-lg leading-none">${evDate.getDate()}</span>
                             </div>
                             <div>
-                                <p class="font-bold text-white text-sm leading-tight">${ev.title}</p>
+                                <p class="font-bold text-white text-sm leading-tight flex items-center">${ev.title} ${groupBadge}</p>
                                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">${evDate.toLocaleDateString('ru-RU', { month: 'long' })}</p>
                             </div>
                         </div>
@@ -258,16 +268,6 @@ function loadPersonalData() {
             container.innerHTML = html || '<p class="text-sm text-slate-500 italic">В ближайшее время событий нет.</p>';
         });
     } catch(e) { console.error("Ошибка календаря:", e); }
-}
-
-window.requestTerritory = async (btn) => {
-    btn.innerText = "Отправка..."; btn.disabled = true;
-    try {
-        await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
-        btn.innerText = "Запрос отправлен! ✔️";
-        setTimeout(() => { btn.innerText = "Попросить участок"; btn.disabled = false; }, 3000);
-    } catch (e) { alert("Ошибка!"); btn.innerText = "Попросить участок"; btn.disabled = false; }
-};
 
 window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
 window.closeModals = () => {
