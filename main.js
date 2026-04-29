@@ -20,7 +20,6 @@ const TOP_ROLES = ["Владелец", "Админ"];
 const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
 let currentUserData = null; 
 let hasFullAccess = false;
-let currentSectionForAdd = '';
 
 const d = new Date();
 const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
@@ -43,9 +42,6 @@ window.switchTab = (tabId, btnElement) => {
     }
 };
 
-// =========================================================
-// ГЛАВНЫЙ СЛУШАТЕЛЬ (ОТРИСОВКА КНОПОК В ПРОФИЛЕ)
-// =========================================================
 onSnapshot(doc(db, "users", userId), async (docSnap) => {
     if (!docSnap.exists()) { window.logout(); return; }
     currentUserData = docSnap.data();
@@ -64,32 +60,26 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         
         let userRoles = currentUserData.roles || (currentUserData.role ? [currentUserData.role] : []);
         
-        // Переменные для кнопок в профиле
+        // --- УПРАВЛЕНИЕ КНОПКАМИ В ПРОФИЛЕ ---
         const profileAdminLinks = document.getElementById('profile-admin-links');
         const profileAdminBtn = document.getElementById('profile-admin-btn');
         const profileReportsBtn = document.getElementById('profile-reports-btn');
         let showAdminMenu = false;
 
-        // ПРОВЕРКА РОЛЕЙ ДЛЯ КНОПОК
         if (userRoles.some(r => TOP_ROLES.includes(r))) {
             hasFullAccess = true;
-            document.querySelectorAll('.admin-controls').forEach(el => { el.classList.remove('hidden'); el.classList.add('flex'); });
-            if(profileAdminBtn) { profileAdminBtn.classList.remove('hidden'); profileAdminBtn.classList.add('block'); showAdminMenu = true; }
+            if(profileAdminBtn) { profileAdminBtn.classList.remove('hidden'); profileAdminBtn.classList.add('flex'); showAdminMenu = true; }
         } else {
             hasFullAccess = false;
-            document.querySelectorAll('.admin-controls').forEach(el => { el.classList.add('hidden'); el.classList.remove('flex'); });
-            if(profileAdminBtn) { profileAdminBtn.classList.add('hidden'); profileAdminBtn.classList.remove('block'); }
+            if(profileAdminBtn) { profileAdminBtn.classList.add('hidden'); profileAdminBtn.classList.remove('flex'); }
         }
 
         if (userRoles.some(r => OVERSEER_ROLES.includes(r))) {
-            document.querySelectorAll('.overseer-controls').forEach(el => { el.classList.remove('hidden'); el.classList.add('flex'); });
-            if(profileReportsBtn) { profileReportsBtn.classList.remove('hidden'); profileReportsBtn.classList.add('block'); showAdminMenu = true; }
+            if(profileReportsBtn) { profileReportsBtn.classList.remove('hidden'); profileReportsBtn.classList.add('flex'); showAdminMenu = true; }
         } else {
-            document.querySelectorAll('.overseer-controls').forEach(el => { el.classList.add('hidden'); el.classList.remove('flex'); });
-            if(profileReportsBtn) { profileReportsBtn.classList.add('hidden'); profileReportsBtn.classList.remove('block'); }
+            if(profileReportsBtn) { profileReportsBtn.classList.add('hidden'); profileReportsBtn.classList.remove('flex'); }
         }
 
-        // Показываем контейнер с кнопками в профиле, если есть хотя бы одна кнопка
         if(profileAdminLinks) {
             if(showAdminMenu) { profileAdminLinks.classList.remove('hidden'); profileAdminLinks.classList.add('flex'); } 
             else { profileAdminLinks.classList.add('hidden'); profileAdminLinks.classList.remove('flex'); }
@@ -228,7 +218,6 @@ function loadPersonalData() {
                     newsHTML += `
                     <div class="p-4 bg-slate-50 border rounded-2xl relative group hover:shadow-md transition-shadow">
                         <p class="text-slate-700 whitespace-pre-wrap">${item.text}</p>
-                        ${hasFullAccess ? `<button onclick="deleteContent('${docSnap.id}')" class="absolute top-3 right-3 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity text-xl font-black">✖</button>` : ''}
                     </div>`;
                 }
             });
@@ -274,15 +263,6 @@ window.requestTerritory = async (btn) => {
         setTimeout(() => { btn.innerText = "Попросить участок"; btn.disabled = false; }, 3000);
     } catch (e) { alert("Ошибка!"); btn.innerText = "Попросить участок"; btn.disabled = false; }
 };
-
-window.openAddModal = (section) => { currentSectionForAdd = section; document.getElementById('add-content-text').value = ''; document.getElementById('add-modal').classList.replace('hidden', 'flex'); };
-window.saveNewContent = async () => {
-    const text = document.getElementById('add-content-text').value.trim();
-    if (!text || !hasFullAccess) return;
-    await addDoc(collection(db, "section_content"), { section: currentSectionForAdd, text, createdAt: new Date().toISOString() });
-    window.closeModals(); 
-};
-window.deleteContent = (id) => { if(hasFullAccess && confirm("Удалить?")) deleteDoc(doc(db, "section_content", id)); };
 
 window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
 window.closeModals = () => {
