@@ -17,14 +17,19 @@ const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
 const TOP_ROLES = ["Владелец", "Админ"]; 
+const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
 let currentUserData = null; 
+let hasFullAccess = false;
+let currentSectionForAdd = '';
 
 const d = new Date();
 const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
 const currentMonthStr = d.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
 document.getElementById('current-month-label').innerText = currentMonthStr;
 
-// Логика вкладок
+// =========================================================
+// ЛОГИКА ВКЛАДОК (SPA)
+// =========================================================
 window.switchTab = (tabId, btnElement) => {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tabId}`);
@@ -44,7 +49,7 @@ window.switchTab = (tabId, btnElement) => {
 };
 
 // =========================================================
-// ГЛАВНЫЙ СЛУШАТЕЛЬ С ЗАЩИТОЙ
+// ГЛАВНЫЙ СЛУШАТЕЛЬ С ЗАЩИТОЙ И ПРОВЕРКОЙ РОЛЕЙ
 // =========================================================
 onSnapshot(doc(db, "users", userId), async (docSnap) => {
     if (!docSnap.exists()) { window.logout(); return; }
@@ -60,17 +65,32 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">ДОСТУП ЗАКРЫТ</h1></div>`;
     } else {
         pendingScreen.classList.add('hidden'); pendingScreen.classList.remove('flex');
+        mainDashboard.classList.remove('hidden'); mainDashboard.classList.add('block');
         
-        // Гарантированно открываем дашборд!
-        mainDashboard.classList.remove('hidden'); 
-        mainDashboard.classList.add('block');
+        // --- ВОТ ЭТОТ БЛОК Я СЛУЧАЙНО УДАЛИЛ В ПРОШЛЫЙ РАЗ! ---
+        let userRoles = currentUserData.roles || (currentUserData.role ? [currentUserData.role] : []);
         
-        try { loadPersonalData(); } catch(e) { console.error("Ошибка загрузки данных:", e); }
-        try { loadProfileData(); } catch(e) { console.error("Ошибка загрузки профиля:", e); }
+        if (userRoles.some(r => TOP_ROLES.includes(r))) {
+            hasFullAccess = true;
+            document.querySelectorAll('.admin-controls').forEach(el => { el.classList.remove('hidden'); el.classList.add('flex'); });
+        } else {
+            hasFullAccess = false;
+            document.querySelectorAll('.admin-controls').forEach(el => { el.classList.add('hidden'); el.classList.remove('flex'); });
+        }
+
+        if (userRoles.some(r => OVERSEER_ROLES.includes(r))) {
+            document.querySelectorAll('.overseer-controls').forEach(el => { el.classList.remove('hidden'); el.classList.add('flex'); });
+        } else {
+            document.querySelectorAll('.overseer-controls').forEach(el => { el.classList.add('hidden'); el.classList.remove('flex'); });
+        }
+        // -----------------------------------------------------
+
+        try { loadPersonalData(); } catch(e) { console.error(e); }
+        try { loadProfileData(); } catch(e) { console.error(e); }
     }
 });
 
-// Загрузка профиля (С защитой)
+// Загрузка профиля
 async function loadProfileData() {
     document.getElementById('profile-name').innerText = currentUserData.name || "Имя";
     let roles = currentUserData.roles || (currentUserData.role ? [currentUserData.role] : ["Участник"]);
@@ -88,7 +108,6 @@ async function loadProfileData() {
             document.getElementById('profile-overseer').innerText = "-";
         }
     } catch(e) {
-        console.warn("Ошибка поиска ответственного (возможно нужен индекс в Firebase):", e);
         document.getElementById('profile-overseer').innerText = "Ошибка БД";
     }
 }
@@ -202,15 +221,24 @@ function loadPersonalData() {
     } catch(e) { console.error(e); }
 
     // 4. Новости
-    onSnapshot(collection(db, "section_content"), (snapshot) => {
-        let newsHTML = '';
-        snapshot.forEach(docSnap => {
-            const item = docSnap.data();
-            if(item.section === 'news') newsHTML += `<div class="p-4 bg-slate-50 border rounded-2xl relative"><p class="text-slate-700 whitespace-pre-wrap">${item.text}</p></div>`;
+    try {
+        onSnapshot(collection(db, "section_content"), (snapshot) => {
+            let newsHTML = '';
+            snapshot.forEach(docSnap => {
+                const item = docSnap.data();
+                if(item.section === 'news') {
+                    // Возвращена кнопка удаления новостей!
+                    newsHTML += `
+                    <div class="p-4 bg-slate-50 border rounded-2xl relative group hover:shadow-md transition-shadow">
+                        <p class="text-slate-700 whitespace-pre-wrap">${item.text}</p>
+                        ${hasFullAccess ? `<button onclick="deleteContent('${docSnap.id}')" class="absolute top-3 right-3 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity text-xl font-black">✖</button>` : ''}
+                    </div>`;
+                }
+            });
+            const contentNews = document.getElementById('content-news');
+            if(contentNews) contentNews.innerHTML = newsHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
         });
-        const contentNews = document.getElementById('content-news');
-        if(contentNews) contentNews.innerHTML = newsHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
-    });
+    } catch(e) { console.error(e); }
 
     // 5. Календарь
     try {
@@ -239,9 +267,12 @@ function loadPersonalData() {
             });
             container.innerHTML = html || '<p class="text-sm text-slate-400 italic">В ближайшее время событий нет.</p>';
         });
-    } catch(e) { console.error("Ошибка календаря:", e); }
+    } catch(e) { console.error(e); }
 }
 
+// =========================================================
+// ГЛОБАЛЬНЫЕ ФУНКЦИИ 
+// =========================================================
 window.requestTerritory = async (btn) => {
     btn.innerText = "Отправка..."; btn.disabled = true;
     try {
@@ -251,6 +282,21 @@ window.requestTerritory = async (btn) => {
     } catch (e) { alert("Ошибка!"); btn.innerText = "Попросить участок"; btn.disabled = false; }
 };
 
+window.openAddModal = (section) => { currentSectionForAdd = section; document.getElementById('add-content-text').value = ''; document.getElementById('add-modal').classList.replace('hidden', 'flex'); };
+
+window.saveNewContent = async () => {
+    const text = document.getElementById('add-content-text').value.trim();
+    if (!text || !hasFullAccess) return;
+    await addDoc(collection(db, "section_content"), { section: currentSectionForAdd, text, createdAt: new Date().toISOString() });
+    window.closeModals(); 
+};
+
+window.deleteContent = (id) => { if(hasFullAccess && confirm("Удалить?")) deleteDoc(doc(db, "section_content", id)); };
+
 window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
-window.closeModals = () => document.getElementById('profile-modal').classList.replace('flex', 'hidden');
+window.closeModals = () => {
+    document.getElementById('profile-modal').classList.replace('flex', 'hidden');
+    const addModal = document.getElementById('add-modal');
+    if(addModal) addModal.classList.replace('flex', 'hidden');
+};
 window.logout = () => { localStorage.clear(); window.location.href = 'login.html'; };
