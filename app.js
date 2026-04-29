@@ -20,12 +20,11 @@ const TOP_ROLES = ["Владелец", "Админ"];
 const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
 let currentUserData = null; 
 let hasFullAccess = false;
-let currentSectionForAdd = '';
 
 const d = new Date();
 const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
 const currentMonthStr = d.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
-document.getElementById('current-month-label').innerText = currentMonthStr;
+document.getElementById('current-month-label')?.setAttribute('innerText', currentMonthStr); // Безопасное присвоение
 
 window.switchTab = (tabId, btnElement) => {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -43,9 +42,6 @@ window.switchTab = (tabId, btnElement) => {
     }
 };
 
-// =========================================================
-// ГЛАВНЫЙ СЛУШАТЕЛЬ (ОТРИСОВКА ИНТЕРФЕЙСА)
-// =========================================================
 onSnapshot(doc(db, "users", userId), async (docSnap) => {
     if (!docSnap.exists()) { window.logout(); return; }
     currentUserData = docSnap.data();
@@ -54,24 +50,22 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
     const mainDashboard = document.getElementById('main-dashboard');
 
     if (currentUserData.status === 'pending') {
-        pendingScreen.classList.remove('hidden'); pendingScreen.classList.add('flex');
-        mainDashboard.classList.add('hidden'); mainDashboard.classList.remove('block');
+        if(pendingScreen) { pendingScreen.classList.remove('hidden'); pendingScreen.classList.add('flex'); }
+        if(mainDashboard) { mainDashboard.classList.add('hidden'); mainDashboard.classList.remove('block'); }
     } else if (currentUserData.status === 'blocked') {
         document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">ДОСТУП ЗАКРЫТ</h1></div>`;
     } else {
-        pendingScreen.classList.add('hidden'); pendingScreen.classList.remove('flex');
-        mainDashboard.classList.remove('hidden'); mainDashboard.classList.add('block');
+        if(pendingScreen) { pendingScreen.classList.add('hidden'); pendingScreen.classList.remove('flex'); }
+        if(mainDashboard) { mainDashboard.classList.remove('hidden'); mainDashboard.classList.add('block'); }
         
         let userRoles = currentUserData.roles || (currentUserData.role ? [currentUserData.role] : []);
         
-        // --- УПРАВЛЕНИЕ КНОПКАМИ В ПРОФИЛЕ ---
         const profileAdminLinks = document.getElementById('profile-admin-links');
         const profileAdminBtn = document.getElementById('profile-admin-btn');
         const profileReportsBtn = document.getElementById('profile-reports-btn');
-        const profileCalendarBtn = document.getElementById('profile-calendar-btn'); // Новая кнопка календаря
+        const profileCalendarBtn = document.getElementById('profile-calendar-btn');
         let showAdminMenu = false;
 
-        // Кнопки для Админа/Владельца
         if (userRoles.some(r => TOP_ROLES.includes(r))) {
             hasFullAccess = true;
             if(profileAdminBtn) { profileAdminBtn.classList.remove('hidden'); profileAdminBtn.classList.add('flex'); showAdminMenu = true; }
@@ -80,7 +74,6 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
             if(profileAdminBtn) { profileAdminBtn.classList.add('hidden'); profileAdminBtn.classList.remove('flex'); }
         }
 
-        // Кнопки для Надзирателей (Отчеты и Календарь)
         if (userRoles.some(r => OVERSEER_ROLES.includes(r))) {
             if(profileReportsBtn) { profileReportsBtn.classList.remove('hidden'); profileReportsBtn.classList.add('flex'); showAdminMenu = true; }
             if(profileCalendarBtn) { profileCalendarBtn.classList.remove('hidden'); profileCalendarBtn.classList.add('flex'); }
@@ -89,74 +82,85 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
             if(profileCalendarBtn) { profileCalendarBtn.classList.add('hidden'); profileCalendarBtn.classList.remove('flex'); }
         }
 
-        // Показываем контейнер кнопок, если хоть одна активна
         if(profileAdminLinks) {
             if(showAdminMenu) { profileAdminLinks.classList.remove('hidden'); profileAdminLinks.classList.add('flex'); } 
             else { profileAdminLinks.classList.add('hidden'); profileAdminLinks.classList.remove('flex'); }
         }
 
-        try { loadPersonalData(); } catch(e) { console.error(e); }
-        try { loadProfileData(); } catch(e) { console.error(e); }
+        try { loadPersonalData(); } catch(e) { console.error("loadPersonalData Error:", e); }
+        try { loadProfileData(); } catch(e) { console.error("loadProfileData Error:", e); }
     }
 });
 
 async function loadProfileData() {
-    document.getElementById('profile-name').innerText = currentUserData.name || "Имя";
+    const pName = document.getElementById('profile-name');
+    const pRole = document.getElementById('profile-role');
+    const pGroup = document.getElementById('profile-group');
+    const pOverseer = document.getElementById('profile-overseer');
+
+    if(pName) pName.innerText = currentUserData.name || "Имя";
+    
     let roles = currentUserData.roles || (currentUserData.role ? [currentUserData.role] : ["Участник"]);
-    document.getElementById('profile-role').innerText = roles.join(', ');
+    if(pRole) pRole.innerText = roles.join(', ');
     
     const myGroup = currentUserData.group || "Без группы";
-    document.getElementById('profile-group').innerText = `№ ${myGroup}`;
+    if(pGroup) pGroup.innerText = `№ ${myGroup}`;
 
     try {
-        if (myGroup !== "Без группы") {
+        if (myGroup !== "Без группы" && pOverseer) {
             const q = query(collection(db, "users"), where("group", "==", myGroup), where("roles", "array-contains", "Надзиратель группы"));
             const snap = await getDocs(q);
-            document.getElementById('profile-overseer').innerText = snap.empty ? "Не назначен" : snap.docs[0].data().name;
-        } else { document.getElementById('profile-overseer').innerText = "-"; }
-    } catch(e) { document.getElementById('profile-overseer').innerText = "Ошибка БД"; }
+            pOverseer.innerText = snap.empty ? "Не назначен" : snap.docs[0].data().name;
+        } else if (pOverseer) { 
+            pOverseer.innerText = "-"; 
+        }
+    } catch(e) { 
+        if(pOverseer) pOverseer.innerText = "Ошибка БД"; 
+    }
 }
 
 window.submitReport = async () => {
-    const participated = document.getElementById('rep-participated').checked;
-    const hours = document.getElementById('rep-hours').value;
-    const pubs = document.getElementById('rep-pubs').value;
-    const studies = document.getElementById('rep-studies').value;
+    const participated = document.getElementById('rep-participated')?.checked || false;
+    const hours = document.getElementById('rep-hours')?.value || "";
+    const pubs = document.getElementById('rep-pubs')?.value || "";
+    const studies = document.getElementById('rep-studies')?.value || "";
     const btn = document.getElementById('submit-report-btn');
 
     if (!participated && hours === "") return alert("Отметьте галочку 'Участвовал' или введите часы!");
-    btn.innerText = "Сохранение..."; btn.disabled = true;
+    if(btn) { btn.innerText = "Сохранение..."; btn.disabled = true; }
 
     try {
         await setDoc(doc(db, "reports", `${userId}_${strictMonthId}`), {
             userId, userName: currentUserData.name, group: currentUserData.group || "Без группы", month: currentMonthStr,
             participated, hours: Number(hours), pubs: Number(pubs), studies: Number(studies), submittedAt: new Date().toISOString()
         });
-        document.getElementById('last-report-log').innerText = `Сохранено: ${new Date().toLocaleString('ru-RU')}`;
-        btn.classList.replace('bg-purple-200/50', 'bg-emerald-500'); btn.classList.replace('text-purple-800', 'text-white');
-        btn.innerText = "Перезаписано! ✔️";
-        setTimeout(() => {
-            btn.classList.replace('bg-emerald-500', 'bg-purple-200/50'); btn.classList.replace('text-white', 'text-purple-800');
-            btn.innerText = "Обновить данные"; btn.disabled = false;
-        }, 3000);
-    } catch (e) { alert("Ошибка!"); btn.disabled = false; }
+        const log = document.getElementById('last-report-log');
+        if(log) log.innerText = `Сохранено: ${new Date().toLocaleString('ru-RU')}`;
+        
+        if(btn) {
+            btn.classList.replace('bg-purple-600', 'bg-emerald-500'); btn.classList.replace('hover:bg-purple-700', 'hover:bg-emerald-600');
+            btn.innerText = "Перезаписано! ✔️";
+            setTimeout(() => {
+                btn.classList.replace('bg-emerald-500', 'bg-purple-600'); btn.classList.replace('hover:bg-emerald-600', 'hover:bg-purple-700');
+                btn.innerText = "Отправить"; btn.disabled = false;
+            }, 3000);
+        }
+    } catch (e) { alert("Ошибка!"); if(btn) btn.disabled = false; }
 };
 
 function loadPersonalData() {
-    // 0. Отчет
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
         if (docSnap.exists()) {
             const r = docSnap.data();
-            document.getElementById('rep-participated').checked = r.participated || false;
-            document.getElementById('rep-hours').value = r.hours || '';
-            document.getElementById('rep-pubs').value = r.pubs || '';
-            document.getElementById('rep-studies').value = r.studies || '';
-            document.getElementById('last-report-log').innerText = `Последняя запись: ${new Date(r.submittedAt).toLocaleString('ru-RU')}`;
-            document.getElementById('submit-report-btn').innerText = "Обновить данные";
+            const repP = document.getElementById('rep-participated'); if(repP) repP.checked = r.participated || false;
+            const repH = document.getElementById('rep-hours'); if(repH) repH.value = r.hours || '';
+            const repPub = document.getElementById('rep-pubs'); if(repPub) repPub.value = r.pubs || '';
+            const repS = document.getElementById('rep-studies'); if(repS) repS.value = r.studies || '';
+            const log = document.getElementById('last-report-log'); if(log) log.innerText = `Последняя запись: ${new Date(r.submittedAt).toLocaleString('ru-RU')}`;
+            const btn = document.getElementById('submit-report-btn'); if(btn) btn.innerText = "Обновить";
         }
     });
 
-    // 1. Дежурства
     try {
         const dutiesQuery = query(collection(db, "duties"), where("userId", "==", userId));
         onSnapshot(dutiesQuery, (snapshot) => {
@@ -164,13 +168,12 @@ function loadPersonalData() {
             if (!card) return;
             if (snapshot.empty) { card.classList.add('hidden'); card.classList.remove('flex'); return; }
             const duty = snapshot.docs[0].data();
-            document.getElementById('duty-title').innerText = duty.type;
-            document.getElementById('duty-date').innerText = duty.dateRange;
+            const titleEl = document.getElementById('duty-title'); if(titleEl) titleEl.innerText = duty.type;
+            const dateEl = document.getElementById('duty-date'); if(dateEl) dateEl.innerText = duty.dateRange;
             card.classList.remove('hidden'); card.classList.add('flex');
         });
-    } catch(e) { console.error(e); }
+    } catch(e) {}
 
-    // 2. Задания
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), where("userId", "==", userId));
         onSnapshot(tasksQuery, (snapshot) => {
@@ -194,9 +197,8 @@ function loadPersonalData() {
             if (upCount === 0) upList.innerHTML = '<p class="text-slate-400 text-sm italic">Нет активных заданий</p>';
             if (pastCount === 0) pastList.innerHTML = '<p class="text-slate-400 text-sm italic">История пуста</p>';
         });
-    } catch(e){ console.error(e); }
+    } catch(e){}
 
-    // 3. Участки
     try {
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
         onSnapshot(terrQuery, (snapshot) => {
@@ -221,9 +223,8 @@ function loadPersonalData() {
                 `;
             });
         });
-    } catch(e) { console.error(e); }
+    } catch(e) {}
 
-    // 4. Новости
     try {
         onSnapshot(collection(db, "section_content"), (snapshot) => {
             let newsHTML = '';
@@ -231,7 +232,7 @@ function loadPersonalData() {
                 const item = docSnap.data();
                 if(item.section === 'news') {
                     newsHTML += `
-                    <div class="p-4 bg-slate-50 border rounded-2xl relative group hover:shadow-md transition-shadow">
+                    <div class="p-3 mb-2 bg-slate-50 border rounded-xl relative group hover:shadow-md transition-shadow">
                         <p class="text-slate-700 whitespace-pre-wrap">${item.text}</p>
                     </div>`;
                 }
@@ -239,9 +240,8 @@ function loadPersonalData() {
             const contentNews = document.getElementById('content-news');
             if(contentNews) contentNews.innerHTML = newsHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
         });
-    } catch(e) { console.error(e); }
+    } catch(e) {}
 
-    // 5. Календарь (ТЕМНАЯ ТЕМА - ВИДЯТ ВСЕ)
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -285,19 +285,12 @@ window.requestTerritory = async (btn) => {
     } catch (e) { alert("Ошибка!"); btn.innerText = "Попросить участок"; btn.disabled = false; }
 };
 
-window.openAddModal = (section) => { currentSectionForAdd = section; document.getElementById('add-content-text').value = ''; document.getElementById('add-modal').classList.replace('hidden', 'flex'); };
-window.saveNewContent = async () => {
-    const text = document.getElementById('add-content-text').value.trim();
-    if (!text || !hasFullAccess) return;
-    await addDoc(collection(db, "section_content"), { section: currentSectionForAdd, text, createdAt: new Date().toISOString() });
-    window.closeModals(); 
-};
-window.deleteContent = (id) => { if(hasFullAccess && confirm("Удалить?")) deleteDoc(doc(db, "section_content", id)); };
-
-window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
+window.openProfileModal = () => {
+    const m = document.getElementById('profile-modal');
+    if(m) m.classList.replace('hidden', 'flex');
+}
 window.closeModals = () => {
-    document.getElementById('profile-modal').classList.replace('flex', 'hidden');
-    const addModal = document.getElementById('add-modal');
-    if(addModal) addModal.classList.replace('flex', 'hidden');
+    const m = document.getElementById('profile-modal');
+    if(m) m.classList.replace('flex', 'hidden');
 };
 window.logout = () => { localStorage.clear(); window.location.href = 'login.html'; };
