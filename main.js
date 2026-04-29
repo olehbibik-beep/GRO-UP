@@ -60,23 +60,23 @@ if (localStorage.getItem('userName')) {
 // ВХОД И РЕГИСТРАЦИЯ С ПИН-КОДОМ
 // =========================================================
 window.saveName = async () => {
+    // Надежно получаем значения из нужных полей
     const nameInput = document.getElementById('user-name-input').value.trim();
     const pinInput = document.getElementById('user-pin-input').value.trim();
     
-    // Убрали жесткие лимиты по символам. Просто проверяем, что поля не пустые!
     if (nameInput === "" || pinInput === "") {
-        alert("Пожалуйста, заполните оба поля: Имя и ПИН-код!");
+        // НОВЫЙ ТЕКСТ ОШИБКИ! Если ты увидишь его, значит новый код работает!
+        alert("ОШИБКА: Пожалуйста, заполните оба поля (Имя и ПИН)!");
         return;
     }
 
-    // Меняем кнопку на "Загрузка..." чтобы было понятно, что процесс пошел
-    const btn = document.querySelector('#auth-modal button');
+    // Меняем кнопку на "Загрузка..."
+    const btn = document.getElementById('login-btn');
     const originalBtnText = btn.innerText;
-    btn.innerText = "Загрузка...";
+    btn.innerText = "Подключение...";
     btn.disabled = true;
 
     try {
-        // Ищем пользователя в базе
         const usersRef = collection(db, "users");
         const q = query(usersRef, where("name", "==", nameInput));
         const querySnapshot = await getDocs(q);
@@ -84,7 +84,7 @@ window.saveName = async () => {
         let userId = "";
 
         if (!querySnapshot.empty) {
-            // АКАУНТ СУЩЕСТВУЕТ -> ПРОВЕРЯЕМ ПИН
+            // АКАУНТ СУЩЕСТВУЕТ
             const userDoc = querySnapshot.docs[0];
             const userData = userDoc.data();
 
@@ -102,10 +102,10 @@ window.saveName = async () => {
             
             await setDoc(doc(db, "users", userId), {
                 name: nameInput,
-                pin: pinInput, // Сохраняем придуманный ПИН
+                pin: pinInput, // Сохраняем ПИН
                 createdAt: new Date().toISOString(),
                 status: "online",
-                role: "Участник", // Сразу даем роль для админки
+                role: "Участник", // Сразу даем роль
                 isBlocked: false
             });
             console.log("Новый пользователь зарегистрирован!");
