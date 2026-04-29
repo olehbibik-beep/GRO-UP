@@ -24,7 +24,7 @@ let hasFullAccess = false;
 const d = new Date();
 const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
 const currentMonthStr = d.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
-document.getElementById('current-month-label')?.setAttribute('innerText', currentMonthStr); // Безопасное присвоение
+document.getElementById('current-month-label')?.setAttribute('innerText', currentMonthStr);
 
 window.switchTab = (tabId, btnElement) => {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -126,7 +126,7 @@ window.submitReport = async () => {
     const studies = document.getElementById('rep-studies')?.value || "";
     const btn = document.getElementById('submit-report-btn');
 
-    if (!participated && hours === "") return alert("Отметьте галочку 'Участвовал' или введите часы!");
+    if (!participated && hours === "") return alert("Отметьте галочку 'Служил(а)' или введите часы!");
     if(btn) { btn.innerText = "Сохранение..."; btn.disabled = true; }
 
     try {
@@ -242,6 +242,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
+    // 5. Календарь (С ТЕМНОЙ ТЕМОЙ, ВРЕМЕНЕМ И ВЕДУЩИМ)
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -256,16 +257,19 @@ function loadPersonalData() {
                 const evGroup = ev.group || "Все";
                 
                 if (evDate >= today) {
-                    const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-500/30 text-indigo-100 px-2 py-0.5 rounded-md text-[8px] ml-2 border border-indigo-400/30">Гр. ${evGroup}</span>` : '';
+                    const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-500 text-white px-1.5 py-0.5 rounded text-[9px] ml-2 border border-indigo-400 shadow-sm leading-none">Гр. ${evGroup}</span>` : '';
+                    const timeBadge = ev.time ? `<span class="text-slate-300 text-[10px] font-mono bg-slate-800 px-1.5 py-0.5 rounded leading-none border border-slate-600">${ev.time}</span>` : '';
+                    const leaderText = ev.leader ? `<p class="text-[9px] text-slate-400 font-medium uppercase mt-0.5 leading-none">Вед: <span class="text-rose-400 font-bold">${ev.leader}</span></p>` : '';
                     
                     html += `
-                        <div class="flex items-center gap-3 p-2.5 bg-slate-700/50 rounded-xl mb-2 border border-slate-600/50">
-                            <div class="bg-slate-600 text-white font-black p-2 rounded-lg text-center min-w-[45px] shadow-inner">
-                                <span class="block text-lg leading-none">${evDate.getDate()}</span>
+                        <div class="flex items-start gap-3 p-3 bg-slate-700/50 rounded-xl mb-2 border border-slate-600/50 relative overflow-hidden">
+                            <div class="bg-slate-800 text-slate-100 font-black p-2 rounded-lg text-center min-w-[45px] shadow-inner border border-slate-600 flex flex-col justify-center">
+                                <span class="block text-[10px] uppercase text-rose-400 leading-none mb-1">${evDate.toLocaleDateString('ru-RU', { month: 'short' })}</span>
+                                <span class="block text-xl leading-none">${evDate.getDate()}</span>
                             </div>
-                            <div>
-                                <p class="font-bold text-white text-sm leading-tight flex items-center">${ev.title} ${groupBadge}</p>
-                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">${evDate.toLocaleDateString('ru-RU', { month: 'long' })}</p>
+                            <div class="flex-grow pt-0.5">
+                                <p class="font-bold text-white text-sm leading-tight flex items-center flex-wrap gap-1">${ev.title} ${groupBadge} ${timeBadge}</p>
+                                ${leaderText}
                             </div>
                         </div>
                     `;
