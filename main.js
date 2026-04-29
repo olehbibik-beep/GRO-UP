@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, doc, setDoc, addDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// ... (Твои настройки Firebase остаются теми же) ...
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
     authDomain: "gro-uping.firebaseapp.com",
@@ -18,19 +17,20 @@ const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
 const TOP_ROLES = ["Владелец", "Админ"]; 
-const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"]; // Кому видна кнопка отчетов
+const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"]; 
 
 let hasFullAccess = false; 
 let currentUserData = null; 
 let currentSectionForAdd = ''; 
 
-// Установка текущего месяца в карточке отчета
-const currentMonthStr = new Date().toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+// Надежный ID для отчета (чтобы не было дубликатов)
+const d = new Date();
+const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
+const currentMonthStr = d.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
 document.getElementById('current-month-label').innerText = currentMonthStr;
 
-
 // =========================================================
-// СЛУШАТЕЛЬ СТАТУСА (С поддержкой множественных ролей)
+// СЛУШАТЕЛЬ СТАТУСА (Проверка ролей)
 // =========================================================
 onSnapshot(doc(db, "users", userId), (docSnap) => {
     if (!docSnap.exists()) { window.logout(); return; }
@@ -51,10 +51,8 @@ onSnapshot(doc(db, "users", userId), (docSnap) => {
         
         loadPersonalData();
 
-        // 1. ПРОВЕРКА РОЛЕЙ: Берем массив roles или старое поле role
         let userRoles = currentUserData.roles || (currentUserData.role ? [currentUserData.role] : []);
         
-        // Проверяем, есть ли у пользователя права Админа
         if (userRoles.some(r => TOP_ROLES.includes(r))) {
             hasFullAccess = true;
             document.querySelectorAll('.admin-controls').forEach(el => el.classList.remove('hidden'));
@@ -63,7 +61,6 @@ onSnapshot(doc(db, "users", userId), (docSnap) => {
             document.querySelectorAll('.admin-controls').forEach(el => el.classList.add('hidden'));
         }
 
-        // Проверяем, есть ли у пользователя права Надзирателя
         if (userRoles.some(r => OVERSEER_ROLES.includes(r))) {
             document.querySelectorAll('.overseer-controls').forEach(el => el.classList.remove('hidden'));
         } else {
@@ -73,75 +70,90 @@ onSnapshot(doc(db, "users", userId), (docSnap) => {
 });
 
 // =========================================================
-// ОТПРАВКА ОТЧЕТА (НОВЫЙ КОД)
+// ОТПРАВКА ОТЧЕТА (ПЕРЕЗАПИСЬ И ЛОГИРОВАНИЕ)
 // =========================================================
 window.submitReport = async () => {
+    const participated = document.getElementById('rep-participated').checked;
     const hours = document.getElementById('rep-hours').value;
     const pubs = document.getElementById('rep-pubs').value;
     const studies = document.getElementById('rep-studies').value;
     const btn = document.getElementById('submit-report-btn');
 
-    if (hours === "") return alert("Пожалуйста, введите количество часов!");
+    if (!participated && hours === "") {
+        return alert("Отметьте галочку 'Участвовал' или введите часы!");
+    }
 
-    btn.innerText = "Отправка...";
+    btn.innerText = "Сохранение...";
     btn.disabled = true;
 
-    // Генерируем уникальный ID отчета (пользователь + месяц). 
-    // Если он отправит еще раз, старый отчет просто обновится!
-    const reportId = `${userId}_${currentMonthStr.replace(/\s/g, '')}`;
+    // Гарантируем, что будет только ОДНА запись в месяц
+    const reportId = `${userId}_${strictMonthId}`;
+    const submitTime = new Date().toISOString();
 
     try {
         await setDoc(doc(db, "reports", reportId), {
             userId: userId,
             userName: currentUserData.name,
-            group: currentUserData.group || "Без группы", // Привязываем к группе!
+            group: currentUserData.group || "Без группы",
             month: currentMonthStr,
-            hours: Number(hours),
+            participated: participated, // Птичка "Служил"
+            hours: hours ? Number(hours) : 0,
             pubs: pubs ? Number(pubs) : 0,
             studies: studies ? Number(studies) : 0,
-            submittedAt: new Date().toISOString()
+            submittedAt: submitTime // Время отправки
         });
 
-        btn.classList.replace('bg-purple-200/50', 'bg-purple-500');
+        // Обновляем лог на экране
+        const niceTime = new Date(submitTime).toLocaleString('ru-RU');
+        document.getElementById('last-report-log').innerText = `Сохранено: ${niceTime}`;
+
+        btn.classList.replace('bg-purple-200/50', 'bg-emerald-500');
         btn.classList.replace('text-purple-800', 'text-white');
-        btn.innerText = "Отправлено! ✔️";
+        btn.innerText = "Перезаписано! ✔️";
 
         setTimeout(() => {
-            btn.classList.replace('bg-purple-500', 'bg-purple-200/50');
+            btn.classList.replace('bg-emerald-500', 'bg-purple-200/50');
             btn.classList.replace('text-white', 'text-purple-800');
-            btn.innerText = "Обновить данные"; // Меняем текст, чтобы было понятно, что можно перезаписать
+            btn.innerText = "Обновить данные"; 
             btn.disabled = false;
         }, 3000);
 
     } catch (e) {
-        console.error("Ошибка отправки отчета:", e);
-        alert("Ошибка сети. Попробуйте еще раз.");
-        btn.innerText = "Отправить";
+        console.error(e);
+        alert("Ошибка сети.");
+        btn.innerText = "Отправить отчет";
         btn.disabled = false;
     }
 };
 
-// ... (остальной код загрузки участков, заданий и профиля оставляем без изменений) ...
-
 // =========================================================
-// ЗАГРУЗКА ЛИЧНЫХ ДАННЫХ
+// ЗАГРУЗКА ЛИЧНЫХ ДАННЫХ (Отчет, Задания, Участки)
 // =========================================================
 function loadPersonalData() {
+    // 0. Подгружаем ТЕКУЩИЙ ОТЧЕТ пользователя
+    onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
+        if (docSnap.exists()) {
+            const r = docSnap.data();
+            document.getElementById('rep-participated').checked = r.participated || false;
+            document.getElementById('rep-hours').value = r.hours || '';
+            document.getElementById('rep-pubs').value = r.pubs || '';
+            document.getElementById('rep-studies').value = r.studies || '';
+            
+            const logDate = new Date(r.submittedAt).toLocaleString('ru-RU');
+            document.getElementById('last-report-log').innerText = `Последняя запись: ${logDate}`;
+            document.getElementById('submit-report-btn').innerText = "Обновить данные";
+        }
+    });
+
     // 1. Мои задания
     const tasksQuery = query(collection(db, "personal_tasks"), where("userId", "==", userId));
     onSnapshot(tasksQuery, (snapshot) => {
         const container = document.getElementById('my-tasks-list');
         if (snapshot.empty) return container.innerHTML = '<p class="text-slate-400 italic">Нет активных заданий</p>';
-        
         container.innerHTML = '';
         snapshot.forEach(docSnap => {
             const task = docSnap.data();
-            container.innerHTML += `
-                <div class="p-3 bg-sky-50 rounded-xl border border-sky-100 mb-2">
-                    <p class="font-bold text-sky-900">${task.title}</p>
-                    <p class="text-xs text-sky-700">${task.date || 'Без даты'}</p>
-                </div>
-            `;
+            container.innerHTML += `<div class="p-3 bg-sky-50 rounded-xl border border-sky-100 mb-2"><p class="font-bold text-sky-900">${task.title}</p><p class="text-xs text-sky-700">${task.date || 'Без даты'}</p></div>`;
         });
     });
 
@@ -150,7 +162,6 @@ function loadPersonalData() {
     onSnapshot(terrQuery, (snapshot) => {
         const container = document.getElementById('my-territories-list');
         if (snapshot.empty) return container.innerHTML = '<p class="text-slate-400 italic">У вас пока нет участков</p>';
-        
         container.innerHTML = '';
         snapshot.forEach(docSnap => {
             const terr = docSnap.data();
@@ -185,7 +196,8 @@ window.closeModals = () => {
 
 window.openProfileModal = () => {
     document.getElementById('profile-name').innerText = currentUserData?.name || "Имя";
-    document.getElementById('profile-role').innerText = currentUserData?.role || "Роль";
+    let roles = currentUserData?.roles || (currentUserData?.role ? [currentUserData.role] : ["Участник"]);
+    document.getElementById('profile-role').innerText = roles.join(', ');
     document.getElementById('profile-modal').classList.replace('hidden', 'flex');
 };
 
