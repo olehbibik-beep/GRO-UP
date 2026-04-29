@@ -24,8 +24,8 @@ const db = initializeFirestore(app, { localCache: persistentLocalCache() });
 
 const TOP_ROLES = ["Владелец", "Админ"]; 
 let hasFullAccess = false; 
-let currentUserData = null; // Храним данные текущего юзера для профиля
-let currentSectionForAdd = ''; // Храним секцию, в которую сейчас добавляем контент
+let currentUserData = null; 
+let currentSectionForAdd = ''; 
 
 // --- 1. ПРОВЕРКА ПРАВ И ДАННЫХ ЮЗЕРА ---
 function listenToUserStatus() {
@@ -80,7 +80,7 @@ window.saveName = async () => {
                 status: "online",
                 role: "user",
                 isBlocked: false
-            }, { merge: true }); // merge: true обновляет данные, не затирая старые
+            }, { merge: true }); 
             
             listenToUserStatus();
         } catch (e) {
@@ -92,43 +92,41 @@ window.saveName = async () => {
 };
 
 window.logout = () => {
-    // Очищаем локальное хранилище и перезагружаем страницу
     localStorage.removeItem('userId');
     localStorage.removeItem('userName');
     location.reload(); 
 };
 
-
 // --- 3. УПРАВЛЕНИЕ МОДАЛЬНЫМИ ОКНАМИ ---
 window.closeModals = () => {
-    document.getElementById('profile-modal').style.display = 'none';
-    document.getElementById('add-modal').style.display = 'none';
+    document.getElementById('profile-modal').classList.add('hidden');
+    document.getElementById('profile-modal').classList.remove('flex');
+    
+    document.getElementById('add-modal').classList.add('hidden');
+    document.getElementById('add-modal').classList.remove('flex');
 };
 
+// Исправленная функция: теперь открывается мгновенно!
 window.openProfileModal = () => {
-    if (!currentUserData) {
-        alert("Данные профиля еще загружаются...");
-        return;
-    }
-    // Подставляем данные в окно
-    document.getElementById('profile-name').innerText = currentUserData.name || "Без имени";
-    document.getElementById('profile-role').innerText = currentUserData.role || "Пользователь";
+    const localName = localStorage.getItem('userName') || "Без имени";
     
-    // Показываем модалку (убираем hidden и ставим flex)
+    // Если данные из облака еще не пришли, показываем локальное имя
+    document.getElementById('profile-name').innerText = currentUserData ? currentUserData.name : localName;
+    document.getElementById('profile-role').innerText = currentUserData ? currentUserData.role : "Загрузка...";
+    
     const modal = document.getElementById('profile-modal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 };
 
 window.openAddModal = (sectionName) => {
-    currentSectionForAdd = sectionName; // Запоминаем, куда будем сохранять
-    document.getElementById('add-content-text').value = ''; // Очищаем поле
+    currentSectionForAdd = sectionName; 
+    document.getElementById('add-content-text').value = ''; 
     
     const modal = document.getElementById('add-modal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 };
-
 
 // --- 4. СОХРАНЕНИЕ НОВОГО КОНТЕНТА ---
 window.saveNewContent = async () => {
@@ -146,12 +144,11 @@ window.saveNewContent = async () => {
             text: text,
             createdAt: new Date().toISOString()
         });
-        window.closeModals(); // Закрываем окно после успеха
+        window.closeModals(); 
     } catch(e) {
         console.error("Ошибка сохранения:", e);
     }
 };
-
 
 // --- 5. ЗАГРУЗКА И УДАЛЕНИЕ КОНТЕНТА ---
 onSnapshot(collection(db, "section_content"), (snapshot) => {
