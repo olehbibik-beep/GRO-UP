@@ -14,12 +14,16 @@
                 <h1 class="text-2xl font-black text-indigo-600">Центр Управления</h1>
                 <p class="text-sm text-slate-500">Управление заявками и ролями</p>
             </div>
-            <a href="index.html" class="text-slate-500 hover:text-indigo-600 font-bold bg-slate-50 px-4 py-2 rounded-xl border border-slate-200">На сайт</a>
+            <div class="flex gap-3">
+                <a href="school.html" class="bg-sky-100 text-sky-700 hover:bg-sky-500 hover:text-white font-bold px-4 py-2 rounded-xl transition-colors flex items-center gap-2">
+                    <span>📚</span> Школа
+                </a>
+                <a href="index.html" class="text-slate-500 hover:text-indigo-600 font-bold bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 transition-colors">На сайт</a>
+            </div>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-8">
-        
         <section class="mb-12">
             <h2 class="text-xl font-bold flex items-center gap-2 mb-4">
                 <span class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
@@ -43,8 +47,9 @@
                     <thead>
                         <tr class="bg-slate-50 border-b border-slate-200 text-sm text-slate-500 uppercase">
                             <th class="p-4 font-bold">Имя пользователя</th>
-                            <th class="p-4 font-bold">ПИН-код</th>
+                            <th class="p-4 font-bold">ПИН</th>
                             <th class="p-4 font-bold">Роль</th>
+                            <th class="p-4 font-bold text-center text-sky-600">В Школе?</th>
                             <th class="p-4 font-bold text-right">Действия</th>
                         </tr>
                     </thead>
@@ -53,9 +58,8 @@
                 </table>
             </div>
         </section>
-
     </main>
 
-    <script type="module" src="admin.js?v=2"></script>
+    <script type="module" src="admin.js?v=3"></script>
 </body>
 </html>
