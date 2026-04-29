@@ -18,7 +18,122 @@
                 Войти в GRO-UP
             </button>
         </div>
+    </div><!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>GRO-UP Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white p-10 min-h-screen">
+    <a href="index.html" class="inline-flex items-center gap-2 mb-6 text-slate-400 hover:text-white transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+        Вернуться на главную
+    </a>
+
+    <h1 class="text-3xl font-black mb-8 text-indigo-400">Управление пользователями</h1>
+    
+    <div class="bg-slate-800 rounded-3xl overflow-hidden shadow-2xl border border-slate-700">
+        <div class="grid grid-cols-4 gap-4 p-6 bg-slate-900/50 border-b border-slate-700 text-sm font-bold text-slate-400 uppercase tracking-wider">
+            <div>Пользователь</div>
+            <div>Статус / Комната</div>
+            <div>Категория (Права)</div>
+            <div>Действия</div>
+        </div>
+        
+        <div id="users-list" class="divide-y divide-slate-700/50">
+            <p class="p-6 text-slate-500">Загрузка данных из Firebase...</p>
+        </div>
     </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // ТВОИ НАСТРОЙКИ FIREBASE 
+        const firebaseConfig = {
+            apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
+            authDomain: "gro-uping.firebaseapp.com",
+            projectId: "gro-uping",
+            storageBucket: "gro-uping.firebasestorage.app",
+            messagingSenderId: "819938349545",
+            appId: "1:819938349545:web:a00c3bef66d99f5b6cfb78"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // КАТЕГОРИИ
+        const ROLES = ["Владелец", "Админ", "Модератор", "Участник", "Гость"];
+
+        // ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ
+        onSnapshot(collection(db, "users"), (snapshot) => {
+            const container = document.getElementById('users-list');
+            container.innerHTML = '';
+
+            if (snapshot.empty) {
+                container.innerHTML = '<p class="p-6 text-slate-400 italic">Пока нет ни одного пользователя.</p>';
+                return;
+            }
+
+            snapshot.forEach(uDoc => {
+                const user = uDoc.data();
+                const id = uDoc.id;
+
+                let rolesOptions = ROLES.map(r => 
+                    `<option value="${r}" ${user.role === r ? 'selected' : ''}>${r}</option>`
+                ).join('');
+
+                container.innerHTML += `
+                    <div class="grid grid-cols-4 gap-4 p-6 items-center hover:bg-slate-700/30 transition-colors">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">${user.name || 'Без имени'}</h3>
+                            <p class="text-xs text-slate-500 truncate" title="${id}">${id}</p>
+                        </div>
+
+                        <div>
+                            ${user.isBlocked ? 
+                                '<span class="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-bold">Заблокирован</span>' : 
+                                '<span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs font-bold">Активен</span>'
+                            }
+                        </div>
+
+                        <div>
+                            <select onchange="changeUserRole('${id}', this.value)" 
+                                    class="bg-slate-900 border border-slate-600 text-white text-sm rounded-xl px-3 py-2 outline-none focus:border-indigo-500 w-full cursor-pointer">
+                                ${rolesOptions}
+                            </select>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="toggleBlock('${id}', ${user.isBlocked})" class="bg-slate-700 hover:bg-orange-500 px-4 py-2 rounded-xl text-sm font-bold transition">
+                                ${user.isBlocked ? 'Разбан' : 'Бан'}
+                            </button>
+                            <button onclick="deleteUser('${id}')" class="bg-red-900/50 hover:bg-red-600 text-red-200 hover:text-white px-4 py-2 rounded-xl text-sm font-bold transition">
+                                Удалить
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        });
+
+        // ФУНКЦИИ УПРАВЛЕНИЯ
+        window.changeUserRole = (id, newRole) => {
+            updateDoc(doc(db, "users", id), { role: newRole });
+        };
+
+        window.toggleBlock = (id, currentStatus) => {
+            updateDoc(doc(db, "users", id), { isBlocked: !currentStatus });
+        };
+
+        window.deleteUser = (id) => {
+            if(confirm('Точно удалить пользователя? Это необратимо.')) {
+                deleteDoc(doc(db, "users", id));
+            }
+        };
+    </script>
+</body>
+</html>
 
     <nav class="fixed left-0 top-0 h-screen w-20 bg-white border-r border-slate-200 flex flex-col items-center py-6 z-40">
         <a href="#" class="mb-8 p-3 bg-indigo-600 text-white rounded-2xl shadow-md shadow-indigo-600/20 hover:scale-105 active:scale-95 transition-all" title="Главная">
