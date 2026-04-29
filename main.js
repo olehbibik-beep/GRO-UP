@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebas
 import { 
     initializeFirestore, persistentLocalCache, collection, onSnapshot, 
     doc, setDoc, addDoc, deleteDoc, 
-    getDocs, query, where // <-- Добавлены новые функции для поиска!
+    getDocs, query, where 
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -22,7 +22,9 @@ let hasFullAccess = false;
 let currentUserData = null; 
 let currentSectionForAdd = ''; 
 
-// Проверка прав и блокировки
+// =========================================================
+// ПРОВЕРКА ПРАВ
+// =========================================================
 function listenToUserStatus() {
     const userId = localStorage.getItem('userId');
     if (!userId) return;
@@ -47,31 +49,27 @@ function listenToUserStatus() {
     });
 }
 
-// Запускаем слушатель, если юзер уже логинился ранее
 listenToUserStatus();
 
-// Скрываем окно, если имя уже есть в памяти
 if (localStorage.getItem('userName')) {
     const modal = document.getElementById('auth-modal');
     if(modal) modal.style.display = 'none';
 }
 
 // =========================================================
-// ГЛОБАЛЬНЫЕ ФУНКЦИИ (привязаны к window, чтобы HTML их видел)
+// ВХОД И РЕГИСТРАЦИЯ С ПИН-КОДОМ
 // =========================================================
-
 window.saveName = async () => {
     const nameInput = document.getElementById('user-name-input').value.trim();
     const pinInput = document.getElementById('user-pin-input').value.trim();
     
-    // Проверяем, чтобы поля не были пустыми
     if (nameInput.length < 2 || pinInput.length < 1) {
         alert("Пожалуйста, введите имя и ПИН-код!");
         return;
     }
 
     try {
-        // 1. Ищем пользователя в базе данных по имени
+        // Ищем пользователя в базе
         const usersRef = collection(db, "users");
         const q = query(usersRef, where("name", "==", nameInput));
         const querySnapshot = await getDocs(q);
@@ -79,47 +77,47 @@ window.saveName = async () => {
         let userId = "";
 
         if (!querySnapshot.empty) {
-            // АКАУНТ УЖЕ СУЩЕСТВУЕТ -> ПРОВЕРЯЕМ ПИН-КОД
+            // АКАУНТ СУЩЕСТВУЕТ
             const userDoc = querySnapshot.docs[0];
             const userData = userDoc.data();
 
             if (userData.pin === pinInput) {
-                // Пин-код верный! Пускаем внутрь
-                userId = userDoc.id;
+                userId = userDoc.id; // ПИН верный
             } else {
-                // Пин-код неверный! Выдаем ошибку и останавливаем код
                 alert("Неверный ПИН-код для этого имени!");
                 return; 
             }
         } else {
-            // АКАУНТА НЕТ -> РЕГИСТРИРУЕМ НОВОГО ПОЛЬЗОВАТЕЛЯ
+            // НОВЫЙ АКАУНТ (Регистрация)
             userId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 9);
             
             await setDoc(doc(db, "users", userId), {
                 name: nameInput,
-                pin: pinInput, // Сохраняем придуманный/выданный ПИН-код
+                pin: pinInput, // Сохраняем ПИН
                 createdAt: new Date().toISOString(),
                 status: "online",
-                role: "Участник", // <--- ВОТ ТУТ МЫ ПРОПИСЫВАЕМ ЕГО В КАТЕГОРИЮ!
+                role: "Участник", // Сразу даем роль
                 isBlocked: false
             });
             console.log("Новый пользователь зарегистрирован!");
         }
 
-        // Если дошли сюда, значит вход/регистрация успешны
+        // Сохраняем и пускаем внутрь
         localStorage.setItem('userId', userId);
         localStorage.setItem('userName', nameInput);
         document.getElementById('auth-modal').style.display = 'none';
 
-        // Запускаем проверку прав
         listenToUserStatus();
 
     } catch (e) {
         console.error("Ошибка при входе:", e);
-        alert("Ошибка сети. Попробуйте позже.");
+        alert("Ошибка сети. Проверьте интернет или настройки базы.");
     }
 };
 
+// =========================================================
+// ОСТАЛЬНЫЕ ФУНКЦИИ
+// =========================================================
 window.logout = () => {
     localStorage.removeItem('userId');
     localStorage.removeItem('userName');
@@ -179,9 +177,7 @@ window.deleteContent = (id) => {
     }
 };
 
-// =========================================================
-// ОТРИСОВКА КОНТЕНТА В КОЛОНКАХ
-// =========================================================
+// Отрисовка контента
 onSnapshot(collection(db, "section_content"), (snapshot) => {
     let newsHTML = '', importantHTML = '', tasksHTML = '';
 
