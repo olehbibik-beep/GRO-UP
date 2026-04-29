@@ -2,235 +2,119 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GRO-UP Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GRO-UP App</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Скрываем скроллбары для красоты */
+        ::-webkit-scrollbar { display: none; }
+        body { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen font-sans text-slate-800">
+<body class="bg-gray-50 text-slate-800 pb-20 font-sans">
 
-    <div id="auth-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-6 transition-opacity">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl">
-            <h2 class="text-2xl font-black mb-2 text-slate-800">Как тебя зовут?</h2>
-            <p class="text-slate-500 mb-6">Введи имя для входа в систему</p>
+    <div id="auth-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl">
+            <h2 class="text-2xl font-black mb-2 text-slate-800">Добро пожаловать</h2>
+            <p class="text-slate-500 mb-6 text-sm">Введи имя для входа в систему</p>
             <input id="user-name-input" type="text" placeholder="Твое имя" 
-                   class="w-full p-4 rounded-2xl bg-slate-100 mb-4 outline-none focus:ring-4 ring-indigo-500/20 text-center font-bold text-xl transition-all">
-            <button onclick="saveName()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-2xl shadow-lg shadow-indigo-600/30 active:scale-95 transition-all">
-                Войти в GRO-UP
+                   class="w-full p-4 rounded-xl bg-slate-100 mb-4 outline-none focus:ring-2 ring-sky-500 text-center font-bold text-xl transition-all">
+            <button id="login-btn" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold p-4 rounded-xl shadow-lg shadow-sky-600/30 active:scale-95 transition-all">
+                Войти
             </button>
-        </div>
-    </div><!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>GRO-UP Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-900 text-white p-10 min-h-screen">
-    <a href="index.html" class="inline-flex items-center gap-2 mb-6 text-slate-400 hover:text-white transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-        Вернуться на главную
-    </a>
-
-    <h1 class="text-3xl font-black mb-8 text-indigo-400">Управление пользователями</h1>
-    
-    <div class="bg-slate-800 rounded-3xl overflow-hidden shadow-2xl border border-slate-700">
-        <div class="grid grid-cols-4 gap-4 p-6 bg-slate-900/50 border-b border-slate-700 text-sm font-bold text-slate-400 uppercase tracking-wider">
-            <div>Пользователь</div>
-            <div>Статус / Комната</div>
-            <div>Категория (Права)</div>
-            <div>Действия</div>
-        </div>
-        
-        <div id="users-list" class="divide-y divide-slate-700/50">
-            <p class="p-6 text-slate-500">Загрузка данных из Firebase...</p>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-        // ТВОИ НАСТРОЙКИ FIREBASE 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
-            authDomain: "gro-uping.firebaseapp.com",
-            projectId: "gro-uping",
-            storageBucket: "gro-uping.firebasestorage.app",
-            messagingSenderId: "819938349545",
-            appId: "1:819938349545:web:a00c3bef66d99f5b6cfb78"
-        };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // КАТЕГОРИИ
-        const ROLES = ["Владелец", "Админ", "Модератор", "Участник", "Гость"];
-
-        // ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ
-        onSnapshot(collection(db, "users"), (snapshot) => {
-            const container = document.getElementById('users-list');
-            container.innerHTML = '';
-
-            if (snapshot.empty) {
-                container.innerHTML = '<p class="p-6 text-slate-400 italic">Пока нет ни одного пользователя.</p>';
-                return;
-            }
-
-            snapshot.forEach(uDoc => {
-                const user = uDoc.data();
-                const id = uDoc.id;
-
-                let rolesOptions = ROLES.map(r => 
-                    `<option value="${r}" ${user.role === r ? 'selected' : ''}>${r}</option>`
-                ).join('');
-
-                container.innerHTML += `
-                    <div class="grid grid-cols-4 gap-4 p-6 items-center hover:bg-slate-700/30 transition-colors">
-                        <div>
-                            <h3 class="text-lg font-bold text-white">${user.name || 'Без имени'}</h3>
-                            <p class="text-xs text-slate-500 truncate" title="${id}">${id}</p>
-                        </div>
-
-                        <div>
-                            ${user.isBlocked ? 
-                                '<span class="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-bold">Заблокирован</span>' : 
-                                '<span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs font-bold">Активен</span>'
-                            }
-                        </div>
-
-                        <div>
-                            <select onchange="changeUserRole('${id}', this.value)" 
-                                    class="bg-slate-900 border border-slate-600 text-white text-sm rounded-xl px-3 py-2 outline-none focus:border-indigo-500 w-full cursor-pointer">
-                                ${rolesOptions}
-                            </select>
-                        </div>
-
-                        <div class="flex gap-2">
-                            <button onclick="toggleBlock('${id}', ${user.isBlocked})" class="bg-slate-700 hover:bg-orange-500 px-4 py-2 rounded-xl text-sm font-bold transition">
-                                ${user.isBlocked ? 'Разбан' : 'Бан'}
-                            </button>
-                            <button onclick="deleteUser('${id}')" class="bg-red-900/50 hover:bg-red-600 text-red-200 hover:text-white px-4 py-2 rounded-xl text-sm font-bold transition">
-                                Удалить
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-        });
-
-        // ФУНКЦИИ УПРАВЛЕНИЯ
-        window.changeUserRole = (id, newRole) => {
-            updateDoc(doc(db, "users", id), { role: newRole });
-        };
-
-        window.toggleBlock = (id, currentStatus) => {
-            updateDoc(doc(db, "users", id), { isBlocked: !currentStatus });
-        };
-
-        window.deleteUser = (id) => {
-            if(confirm('Точно удалить пользователя? Это необратимо.')) {
-                deleteDoc(doc(db, "users", id));
-            }
-        };
-    </script>
-</body>
-</html>
-
-    <nav class="fixed left-0 top-0 h-screen w-20 bg-white border-r border-slate-200 flex flex-col items-center py-6 z-40">
-        <a href="#" class="mb-8 p-3 bg-indigo-600 text-white rounded-2xl shadow-md shadow-indigo-600/20 hover:scale-105 active:scale-95 transition-all" title="Главная">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-7 h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
-        </a>
-
-        <div class="flex flex-col gap-4 w-full px-3">
-       <button id="login-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-2xl shadow-lg shadow-indigo-600/30 active:scale-95 transition-all">
-    Войти в GRO-UP
-</button>
-
-            <a href="admin.html" class="admin-controls hidden p-3 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-all flex justify-center" title="Админ-панель">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.78.929l-.15.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            </a>
-        </div>
-    </nav>
-
-    <main class="pl-24 pr-6 py-8 w-full max-w-7xl mx-auto">
-        <header class="mb-10">
-            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Панель управления</h1>
-            <p class="text-slate-500 mt-1">Добро пожаловать в рабочее пространство</p>
-        </header>
-
+    <header class="bg-sky-600 text-white p-4 flex justify-between items-center sticky top-0 z-30 shadow-md">
         <div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="info-sections">
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col h-[400px]">
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-indigo-500"></div>
-                            <h3 class="text-lg font-bold text-slate-800">Новости</h3>
-                        </div>
-                        <button onclick="openAddModal('news')" class="admin-controls hidden w-8 h-8 bg-slate-100 text-slate-600 rounded-full hover:bg-indigo-100 hover:text-indigo-600 transition-colors font-bold flex items-center justify-center">+</button>
-                    </div>
-                    <div id="content-news" class="text-slate-600 text-sm space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-grow">Загрузка...</div>
-                </div>
+            <h1 class="text-xl font-bold">Собрание</h1>
+            <p class="text-xs text-sky-200">GRO-UP Dashboard</p>
+        </div>
+        <a href="admin.html" class="admin-controls hidden p-2 bg-sky-500 rounded-full hover:bg-sky-400 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.78.929l-.15.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+        </a>
+    </header>
 
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col h-[400px]">
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-orange-500"></div>
-                            <h3 class="text-lg font-bold text-slate-800">Важное</h3>
-                        </div>
-                        <button onclick="openAddModal('important')" class="admin-controls hidden w-8 h-8 bg-slate-100 text-slate-600 rounded-full hover:bg-orange-100 hover:text-orange-600 transition-colors font-bold flex items-center justify-center">+</button>
+    <main class="p-4 max-w-md mx-auto space-y-4">
+        
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-purple-50/80 rounded-2xl p-4 border border-purple-100 shadow-sm flex flex-col justify-between">
+                <div>
+                    <h2 class="font-bold text-lg text-purple-900 mb-1">Отчет</h2>
+                    <p class="text-xs text-purple-600 mb-2">Апрель</p>
+                    <div class="flex justify-between items-end mb-4">
+                        <div class="text-center"><div class="text-xs text-purple-500">Часы</div><div class="font-black text-2xl text-purple-800">3</div></div>
+                        <div class="text-center"><div class="text-xs text-purple-500">Кр</div><div class="font-bold text-lg text-purple-800">-</div></div>
+                        <div class="text-center"><div class="text-xs text-purple-500">BS</div><div class="font-bold text-lg text-purple-800">1</div></div>
                     </div>
-                    <div id="content-important" class="text-slate-600 text-sm space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-grow">Загрузка...</div>
                 </div>
+                <button class="w-full bg-purple-200/50 border border-purple-300 text-purple-800 rounded-xl py-2 text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    Отправлено
+                </button>
+            </div>
 
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col h-[400px]">
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
-                            <h3 class="text-lg font-bold text-slate-800">Задания</h3>
-                        </div>
-                        <button onclick="openAddModal('tasks')" class="admin-controls hidden w-8 h-8 bg-slate-100 text-slate-600 rounded-full hover:bg-emerald-100 hover:text-emerald-600 transition-colors font-bold flex items-center justify-center">+</button>
+            <div class="bg-amber-50/80 rounded-2xl p-4 border border-amber-100 shadow-sm relative flex flex-col">
+                <div class="absolute top-4 right-4 bg-yellow-300 text-yellow-900 font-black px-2 py-0.5 rounded-lg text-xs shadow-sm">1</div>
+                <h2 class="font-bold text-lg text-amber-900 mb-4">Предстоящее</h2>
+                <div class="flex items-start gap-2 mt-auto">
+                    <span class="text-emerald-500 text-lg">✨</span>
+                    <div>
+                        <p class="font-bold text-sm text-amber-900 leading-tight">Уборка зала</p>
+                        <p class="text-xs text-amber-700 mt-1">4.-10. мая</p>
                     </div>
-                    <div id="content-tasks" class="text-slate-600 text-sm space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-grow">Загрузка...</div>
                 </div>
             </div>
+        </div>
+
+        <div class="bg-rose-50/80 rounded-2xl p-4 border border-rose-100 shadow-sm">
+            <div class="flex justify-between items-center mb-3 border-b border-rose-200/50 pb-2">
+                <h2 class="font-bold text-lg text-rose-900">Доска объявлений</h2>
+                <button onclick="window.openAddModal('news')" class="admin-controls hidden bg-rose-200 text-rose-800 rounded-full w-8 h-8 font-black flex items-center justify-center active:scale-90">+</button>
+            </div>
+            <div id="content-news" class="space-y-3 text-sm text-rose-800">Загрузка...</div>
+        </div>
+
+        <div class="bg-orange-50/80 rounded-2xl p-4 border border-orange-100 shadow-sm">
+            <div class="flex justify-between items-center mb-3 border-b border-orange-200/50 pb-2">
+                <h2 class="font-bold text-lg text-orange-900">События</h2>
+                <button onclick="window.openAddModal('important')" class="admin-controls hidden bg-orange-200 text-orange-800 rounded-full w-8 h-8 font-black flex items-center justify-center active:scale-90">+</button>
+            </div>
+            <div id="content-important" class="space-y-3 text-sm text-orange-800">Загрузка...</div>
         </div>
     </main>
 
-    <div id="profile-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-6">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl relative">
-            <button onclick="closeModals()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-800 text-xl font-bold">✖</button>
-            
-            <div class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full mx-auto flex items-center justify-center text-3xl mb-4 shadow-inner">👤</div>
+    <nav class="fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-16 z-40 shadow-[0_-5px_15px_rgba(0,0,0,0.03)]">
+        <button class="flex flex-col items-center justify-center w-full h-full text-sky-600">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-6 h-6"><path d="M11.47 3.84a.75.75 0 011.06 0l8.99 8.99a.75.75 0 11-1.06 1.06l-1.46-1.46v7.82a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-3a.75.75 0 00-.75-.75h-2.5a.75.75 0 00-.75.75v3a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-7.82l-1.46 1.46a.75.75 0 11-1.06-1.06l8.99-8.99z" /></svg>
+        </button>
+        <button class="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-sky-600 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+        </button>
+        <button id="profile-btn" class="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-sky-600 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+        </button>
+    </nav>
+
+    <div id="profile-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl relative">
+            <button onclick="window.closeModals()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-800 text-xl font-bold">✖</button>
+            <div class="w-20 h-20 bg-sky-100 text-sky-600 rounded-full mx-auto flex items-center justify-center text-3xl mb-4 shadow-inner">👤</div>
             <h2 id="profile-name" class="text-2xl font-black text-slate-800 mb-1">Имя</h2>
             <span id="profile-role" class="inline-block px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-xs font-bold uppercase tracking-wider mb-8">Роль</span>
-            
-            <button onclick="logout()" class="w-full bg-red-50 hover:bg-red-500 text-red-600 hover:text-white font-bold p-4 rounded-2xl transition-all border border-red-100 hover:border-red-500 active:scale-95">
-                Выйти из аккаунта
-            </button>
+            <button onclick="window.logout()" class="w-full bg-red-50 hover:bg-red-500 text-red-600 hover:text-white font-bold p-4 rounded-xl transition-all border border-red-100 active:scale-95">Выйти из аккаунта</button>
         </div>
     </div>
 
-    <div id="add-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-6">
-        <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative">
-            <button onclick="closeModals()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-800 text-xl font-bold">✖</button>
-            <h2 class="text-2xl font-black text-slate-800 mb-4">Добавить запись</h2>
-            
-            <textarea id="add-content-text" rows="5" placeholder="Введите текст сообщения..." 
-                      class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 ring-indigo-500/20 resize-none mb-4"></textarea>
-            
-            <div class="flex gap-3">
-                <button onclick="saveNewContent()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-2xl shadow-lg shadow-indigo-600/30 active:scale-95 transition-all">
-                    Опубликовать
-                </button>
-            </div>
+    <div id="add-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative">
+            <button onclick="window.closeModals()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-800 text-xl font-bold">✖</button>
+            <h2 class="text-2xl font-black text-slate-800 mb-4">Новая запись</h2>
+            <textarea id="add-content-text" rows="4" placeholder="Введите текст..." class="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 ring-sky-500 resize-none mb-4"></textarea>
+            <button onclick="window.saveNewContent()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold p-4 rounded-xl shadow-lg active:scale-95 transition-all">Опубликовать</button>
         </div>
     </div>
 
     <script type="module" src="main.js"></script>
-    <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    </style>
 </body>
 </html>
