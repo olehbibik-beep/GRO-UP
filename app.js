@@ -242,7 +242,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // 5. Календарь (С ТЕМНОЙ ТЕМОЙ, ВРЕМЕНЕМ И ВЕДУЩИМ)
+ // 5. Календарь (С ТЕМНОЙ ТЕМОЙ, ВРЕМЕНЕМ И ВЕДУЩИМ + ЛИМИТ)
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -250,13 +250,19 @@ function loadPersonalData() {
             if (!container) return; 
             let html = '';
             const today = new Date(); today.setHours(0,0,0,0);
+            
+            let displayedCount = 0; // Счетчик показанных событий
+            const MAX_EVENTS = 3; // Максимальное количество событий на главной
 
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 const evDate = new Date(ev.date);
                 const evGroup = ev.group || "Все";
                 
-                if (evDate >= today) {
+                // Проверяем: если событие в будущем И мы еще не показали 3 штуки
+                if (evDate >= today && displayedCount < MAX_EVENTS) {
+                    displayedCount++; // Увеличиваем счетчик
+                    
                     const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-500 text-white px-1.5 py-0.5 rounded text-[9px] ml-2 border border-indigo-400 shadow-sm leading-none">Гр. ${evGroup}</span>` : '';
                     const timeBadge = ev.time ? `<span class="text-slate-300 text-[10px] font-mono bg-slate-800 px-1.5 py-0.5 rounded leading-none border border-slate-600">${ev.time}</span>` : '';
                     const leaderText = ev.leader ? `<p class="text-[9px] text-slate-400 font-medium uppercase mt-0.5 leading-none">Вед: <span class="text-rose-400 font-bold">${ev.leader}</span></p>` : '';
@@ -275,10 +281,15 @@ function loadPersonalData() {
                     `;
                 }
             });
+            
+            // Если событий больше, чем влезло, можно добавить маленькую приписку снизу
+            if (snapshot.size > MAX_EVENTS && displayedCount === MAX_EVENTS) {
+                html += `<p class="text-center text-[10px] text-slate-500 uppercase tracking-widest mt-3">Показаны ближайшие события</p>`;
+            }
+
             container.innerHTML = html || '<p class="text-sm text-slate-500 italic">В ближайшее время событий нет.</p>';
         });
     } catch(e) { console.error("Ошибка календаря:", e); }
-}
 
 window.requestTerritory = async (btn) => {
     btn.innerText = "Отправка..."; btn.disabled = true;
