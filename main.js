@@ -1,13 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { 
-    initializeFirestore, 
-    persistentLocalCache, 
-    collection, 
-    onSnapshot, 
-    doc, 
-    setDoc,
-    addDoc, 
-    deleteDoc 
+    initializeFirestore, persistentLocalCache, collection, onSnapshot, 
+    doc, setDoc, addDoc, deleteDoc 
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -27,7 +21,7 @@ let hasFullAccess = false;
 let currentUserData = null; 
 let currentSectionForAdd = ''; 
 
-// --- 1. ПРОВЕРКА ПРАВ И ДАННЫХ ЮЗЕРА ---
+// Проверка прав и блокировки
 function listenToUserStatus() {
     const userId = localStorage.getItem('userId');
     if (!userId) return;
@@ -52,27 +46,38 @@ function listenToUserStatus() {
     });
 }
 
+// Запускаем слушатель, если юзер уже логинился ранее
 listenToUserStatus();
 
+// Скрываем окно, если имя уже есть в памяти
 if (localStorage.getItem('userName')) {
-    document.getElementById('auth-modal').style.display = 'none';
+    const modal = document.getElementById('auth-modal');
+    if(modal) modal.style.display = 'none';
 }
 
-// --- 2. ВХОД И ВЫХОД ---
+// =========================================================
+// ГЛОБАЛЬНЫЕ ФУНКЦИИ (привязаны к window, чтобы HTML их видел)
+// =========================================================
+
 window.saveName = async () => {
     const nameInput = document.getElementById('user-name-input');
     const name = nameInput.value.trim();
     
     if (name.length > 1) {
+        // Создаем ID
         let userId = localStorage.getItem('userId');
         if (!userId) {
             userId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 9);
             localStorage.setItem('userId', userId);
         }
 
+        // Сохраняем имя локально
         localStorage.setItem('userName', name);
+        
+        // Скрываем модалку
         document.getElementById('auth-modal').style.display = 'none';
 
+        // Отправляем профиль в базу данных (АДМИНКА ЕГО УВИДИТ ЗДЕСЬ)
         try {
             await setDoc(doc(db, "users", userId), {
                 name: name,
@@ -82,12 +87,13 @@ window.saveName = async () => {
                 isBlocked: false
             }, { merge: true }); 
             
+            // Начинаем слушать права
             listenToUserStatus();
         } catch (e) {
-            console.error("Офлайн режим:", e);
+            console.error("Офлайн режим (данные отправятся позже):", e);
         }
     } else {
-        alert("Введи имя!");
+        alert("Введи имя, пожалуйста!");
     }
 };
 
@@ -97,20 +103,15 @@ window.logout = () => {
     location.reload(); 
 };
 
-// --- 3. УПРАВЛЕНИЕ МОДАЛЬНЫМИ ОКНАМИ ---
 window.closeModals = () => {
     document.getElementById('profile-modal').classList.add('hidden');
     document.getElementById('profile-modal').classList.remove('flex');
-    
     document.getElementById('add-modal').classList.add('hidden');
     document.getElementById('add-modal').classList.remove('flex');
 };
 
-// Исправленная функция: теперь открывается мгновенно!
 window.openProfileModal = () => {
     const localName = localStorage.getItem('userName') || "Без имени";
-    
-    // Если данные из облака еще не пришли, показываем локальное имя
     document.getElementById('profile-name').innerText = currentUserData ? currentUserData.name : localName;
     document.getElementById('profile-role').innerText = currentUserData ? currentUserData.role : "Загрузка...";
     
@@ -128,10 +129,8 @@ window.openAddModal = (sectionName) => {
     modal.classList.add('flex');
 };
 
-// --- 4. СОХРАНЕНИЕ НОВОГО КОНТЕНТА ---
 window.saveNewContent = async () => {
     if (!hasFullAccess) return;
-    
     const text = document.getElementById('add-content-text').value.trim();
     if (text.length === 0) {
         alert("Текст не может быть пустым!");
@@ -150,7 +149,16 @@ window.saveNewContent = async () => {
     }
 };
 
-// --- 5. ЗАГРУЗКА И УДАЛЕНИЕ КОНТЕНТА ---
+window.deleteContent = (id) => {
+    if (!hasFullAccess) return;
+    if (confirm("Точно удалить эту запись?")) {
+        deleteDoc(doc(db, "section_content", id));
+    }
+};
+
+// =========================================================
+// ОТРИСОВКА КОНТЕНТА В КОЛОНКАХ
+// =========================================================
 onSnapshot(collection(db, "section_content"), (snapshot) => {
     let newsHTML = '', importantHTML = '', tasksHTML = '';
 
@@ -178,64 +186,4 @@ onSnapshot(collection(db, "section_content"), (snapshot) => {
     document.getElementById('content-news').innerHTML = newsHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
     document.getElementById('content-important').innerHTML = importantHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
     document.getElementById('content-tasks').innerHTML = tasksHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
-});
-
-window.deleteContent = (id) => {
-    if (!hasFullAccess) return;
-    if (confirm("Точно удалить эту запись?")) {
-        deleteDoc(doc(db, "section_content", id));
-    }
-};
-// --- НАДЕЖНАЯ ПРИВЯЗКА КНОПОК ---
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // 1. Кнопка открытия профиля
-    const profileBtn = document.getElementById('profile-btn');
-    if (profileBtn) {
-        profileBtn.addEventListener('click', () => {
-            const localName = localStorage.getItem('userName') || "Без имени";
-            document.getElementById('profile-name').innerText = currentUserData ? currentUserData.name : localName;
-            document.getElementById('profile-role').innerText = currentUserData ? currentUserData.role : "Загрузка...";
-            
-            const modal = document.getElementById('profile-modal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        });
-    }
-
-    // 2. Кнопка ВХОДА
-    const loginBtn = document.getElementById('login-btn');
-    if (loginBtn) {
-        loginBtn.addEventListener('click', async () => {
-            const nameInput = document.getElementById('user-name-input');
-            const name = nameInput.value.trim();
-            
-            if (name.length > 1) {
-                let userId = localStorage.getItem('userId');
-                if (!userId) {
-                    userId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 9);
-                    localStorage.setItem('userId', userId);
-                }
-
-                localStorage.setItem('userName', name);
-                document.getElementById('auth-modal').style.display = 'none'; // Скрываем окно
-
-                try {
-                    await setDoc(doc(db, "users", userId), {
-                        name: name,
-                        createdAt: new Date().toISOString(),
-                        status: "online",
-                        role: "user",
-                        isBlocked: false
-                    }, { merge: true }); 
-                    
-                    listenToUserStatus();
-                } catch (e) {
-                    console.error("Офлайн режим:", e);
-                }
-            } else {
-                alert("Введи имя!");
-            }
-        });
-    }
 });
