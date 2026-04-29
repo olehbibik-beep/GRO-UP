@@ -1,9 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { 
-    initializeFirestore, persistentLocalCache, collection, onSnapshot, 
-    doc, setDoc, addDoc, deleteDoc, 
-    getDocs, query, where 
-} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, addDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
@@ -15,7 +11,13 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+const db = getFirestore(app);
+
+// Проверка авторизации: если нет ID, выкидываем на страницу входа
+const userId = localStorage.getItem('userId');
+if (!userId) {
+    window.location.href = 'login.html';
+}
 
 const TOP_ROLES = ["Владелец", "Админ"]; 
 let hasFullAccess = false; 
@@ -23,197 +25,125 @@ let currentUserData = null;
 let currentSectionForAdd = ''; 
 
 // =========================================================
-// ПРОВЕРКА ПРАВ
+// ОСНОВНОЙ СЛУШАТЕЛЬ СТАТУСА (Магия реального времени)
 // =========================================================
-function listenToUserStatus() {
-    const userId = localStorage.getItem('userId');
-    if (!userId) return;
+onSnapshot(doc(db, "users", userId), (docSnap) => {
+    if (!docSnap.exists()) { window.logout(); return; }
 
-    onSnapshot(doc(db, "users", userId), (docSnap) => {
-        if (docSnap.exists()) {
-            currentUserData = docSnap.data();
+    currentUserData = docSnap.data();
 
-            if (currentUserData.isBlocked) {
-                document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">ВЫ ЗАБЛОКИРОВАНЫ</h1></div>`;
-                return;
-            }
+    const pendingScreen = document.getElementById('pending-screen');
+    const mainDashboard = document.getElementById('main-dashboard');
 
-            if (TOP_ROLES.includes(currentUserData.role)) {
-                hasFullAccess = true;
-                document.querySelectorAll('.admin-controls').forEach(el => el.classList.remove('hidden'));
-            } else {
-                hasFullAccess = false;
-                document.querySelectorAll('.admin-controls').forEach(el => el.classList.add('hidden'));
-            }
+    if (currentUserData.status === 'pending') {
+        // Показываем экран ожидания
+        pendingScreen.classList.remove('hidden');
+        pendingScreen.classList.add('flex');
+        mainDashboard.classList.add('hidden');
+    } else if (currentUserData.status === 'blocked') {
+        document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">ДОСТУП ЗАКРЫТ</h1></div>`;
+    } else {
+        // ДОСТУП РАЗРЕШЕН! Открываем дашборд.
+        pendingScreen.classList.add('hidden');
+        pendingScreen.classList.remove('flex');
+        mainDashboard.classList.remove('hidden');
+        
+        // Загружаем личные данные
+        loadPersonalData();
+
+        // Проверяем админские права
+        if (TOP_ROLES.includes(currentUserData.role)) {
+            hasFullAccess = true;
+            document.querySelectorAll('.admin-controls').forEach(el => el.classList.remove('hidden'));
+        } else {
+            hasFullAccess = false;
+            document.querySelectorAll('.admin-controls').forEach(el => el.classList.add('hidden'));
         }
+    }
+});
+
+// =========================================================
+// ЗАГРУЗКА ЛИЧНЫХ ДАННЫХ
+// =========================================================
+function loadPersonalData() {
+    // 1. Мои задания
+    const tasksQuery = query(collection(db, "personal_tasks"), where("userId", "==", userId));
+    onSnapshot(tasksQuery, (snapshot) => {
+        const container = document.getElementById('my-tasks-list');
+        if (snapshot.empty) return container.innerHTML = '<p class="text-slate-400 italic">Нет активных заданий</p>';
+        
+        container.innerHTML = '';
+        snapshot.forEach(docSnap => {
+            const task = docSnap.data();
+            container.innerHTML += `
+                <div class="p-3 bg-sky-50 rounded-xl border border-sky-100 mb-2">
+                    <p class="font-bold text-sky-900">${task.title}</p>
+                    <p class="text-xs text-sky-700">${task.date || 'Без даты'}</p>
+                </div>
+            `;
+        });
+    });
+
+    // 2. Мои участки
+    const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
+    onSnapshot(terrQuery, (snapshot) => {
+        const container = document.getElementById('my-territories-list');
+        if (snapshot.empty) return container.innerHTML = '<p class="text-slate-400 italic">У вас пока нет участков</p>';
+        
+        container.innerHTML = '';
+        snapshot.forEach(docSnap => {
+            const terr = docSnap.data();
+            container.innerHTML += `<div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100 mb-2 font-bold text-emerald-900">Участок №${terr.number}</div>`;
+        });
     });
 }
 
-listenToUserStatus();
-
-if (localStorage.getItem('userName')) {
-    const modal = document.getElementById('auth-modal');
-    if(modal) modal.style.display = 'none';
-}
-
-// =========================================================
-// ВХОД И РЕГИСТРАЦИЯ С ПИН-КОДОМ
-// =========================================================
-window.saveName = async () => {
-    // Надежно получаем значения из нужных полей
-    const nameInput = document.getElementById('user-name-input').value.trim();
-    const pinInput = document.getElementById('user-pin-input').value.trim();
-    
-    if (nameInput === "" || pinInput === "") {
-        // НОВЫЙ ТЕКСТ ОШИБКИ! Если ты увидишь его, значит новый код работает!
-        alert("ОШИБКА: Пожалуйста, заполните оба поля (Имя и ПИН)!");
-        return;
-    }
-
-    // Меняем кнопку на "Загрузка..."
-    const btn = document.getElementById('login-btn');
-    const originalBtnText = btn.innerText;
-    btn.innerText = "Подключение...";
+// Запрос участка
+window.requestTerritory = async () => {
+    const btn = event.target;
+    btn.innerText = "Отправка...";
     btn.disabled = true;
-
     try {
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, where("name", "==", nameInput));
-        const querySnapshot = await getDocs(q);
-
-        let userId = "";
-
-        if (!querySnapshot.empty) {
-            // АКАУНТ СУЩЕСТВУЕТ
-            const userDoc = querySnapshot.docs[0];
-            const userData = userDoc.data();
-
-            if (userData.pin === pinInput) {
-                userId = userDoc.id; // ПИН верный
-            } else {
-                alert("Неверный ПИН-код для этого имени!");
-                btn.innerText = originalBtnText;
-                btn.disabled = false;
-                return; 
-            }
-        } else {
-            // НОВЫЙ АКАУНТ (Регистрация)
-            userId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 9);
-            
-            await setDoc(doc(db, "users", userId), {
-                name: nameInput,
-                pin: pinInput, // Сохраняем ПИН
-                createdAt: new Date().toISOString(),
-                status: "online",
-                role: "Участник", // Сразу даем роль
-                isBlocked: false
-            });
-            console.log("Новый пользователь зарегистрирован!");
-        }
-
-        // Сохраняем и пускаем внутрь
-        localStorage.setItem('userId', userId);
-        localStorage.setItem('userName', nameInput);
-        document.getElementById('auth-modal').style.display = 'none';
-
-        listenToUserStatus();
-
-    } catch (e) {
-        console.error("Ошибка при входе:", e);
-        alert("Ошибка сети. Проверьте интернет или настройки базы.");
-        btn.innerText = originalBtnText;
-        btn.disabled = false;
-    }
+        await addDoc(collection(db, "requests"), {
+            type: "territory", userId: userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString()
+        });
+        btn.innerText = "Запрос отправлен! ✔️";
+        setTimeout(() => { btn.innerText = "Попросить участок"; btn.disabled = false; }, 3000);
+    } catch (e) { alert("Ошибка!"); btn.innerText = "Попросить участок"; btn.disabled = false; }
 };
 
 // =========================================================
-// ОСТАЛЬНЫЕ ФУНКЦИИ
+// ГЛОБАЛЬНЫЕ ФУНКЦИИ (Профиль, Выход, Новости)
 // =========================================================
-window.logout = () => {
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userName');
-    location.reload(); 
-};
+window.logout = () => { localStorage.clear(); window.location.href = 'login.html'; };
 
 window.closeModals = () => {
-    document.getElementById('profile-modal').classList.add('hidden');
-    document.getElementById('profile-modal').classList.remove('flex');
-    document.getElementById('add-modal').classList.add('hidden');
-    document.getElementById('add-modal').classList.remove('flex');
+    document.getElementById('profile-modal').classList.replace('flex', 'hidden');
+    document.getElementById('add-modal').classList.replace('flex', 'hidden');
 };
 
 window.openProfileModal = () => {
-    const localName = localStorage.getItem('userName') || "Без имени";
-    document.getElementById('profile-name').innerText = currentUserData ? currentUserData.name : localName;
-    document.getElementById('profile-role').innerText = currentUserData ? currentUserData.role : "Загрузка...";
-    
-    const modal = document.getElementById('profile-modal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    document.getElementById('profile-name').innerText = currentUserData?.name || "Имя";
+    document.getElementById('profile-role').innerText = currentUserData?.role || "Роль";
+    document.getElementById('profile-modal').classList.replace('hidden', 'flex');
 };
 
-window.openAddModal = (sectionName) => {
-    currentSectionForAdd = sectionName; 
-    document.getElementById('add-content-text').value = ''; 
-    
-    const modal = document.getElementById('add-modal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-};
+window.openAddModal = (section) => { currentSectionForAdd = section; document.getElementById('add-content-text').value = ''; document.getElementById('add-modal').classList.replace('hidden', 'flex'); };
 
 window.saveNewContent = async () => {
-    if (!hasFullAccess) return;
     const text = document.getElementById('add-content-text').value.trim();
-    if (text.length === 0) {
-        alert("Текст не может быть пустым!");
-        return;
-    }
-
-    try {
-        await addDoc(collection(db, "section_content"), {
-            section: currentSectionForAdd,
-            text: text,
-            createdAt: new Date().toISOString()
-        });
-        window.closeModals(); 
-    } catch(e) {
-        console.error("Ошибка сохранения:", e);
-    }
+    if (!text || !hasFullAccess) return;
+    await addDoc(collection(db, "section_content"), { section: currentSectionForAdd, text, createdAt: new Date().toISOString() });
+    window.closeModals(); 
 };
 
-window.deleteContent = (id) => {
-    if (!hasFullAccess) return;
-    if (confirm("Точно удалить эту запись?")) {
-        deleteDoc(doc(db, "section_content", id));
-    }
-};
+window.deleteContent = (id) => { if(hasFullAccess && confirm("Удалить?")) deleteDoc(doc(db, "section_content", id)); };
 
-// Отрисовка контента
 onSnapshot(collection(db, "section_content"), (snapshot) => {
-    let newsHTML = '', importantHTML = '', tasksHTML = '';
-
+    let newsHTML = '';
     snapshot.forEach(docSnap => {
         const item = docSnap.data();
-        const id = docSnap.id;
-        
-        const itemUI = `
-            <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl relative group hover:shadow-md transition-all">
-                <p class="text-slate-700 leading-relaxed whitespace-pre-wrap">${item.text}</p>
-                ${hasFullAccess ? `
-                    <button onclick="deleteContent('${id}')" 
-                            class="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-red-100 text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white">
-                        ✖
-                    </button>
-                ` : ''}
-            </div>
-        `;
-
-        if (item.section === 'news') newsHTML += itemUI;
-        if (item.section === 'important') importantHTML += itemUI;
-        if (item.section === 'tasks') tasksHTML += itemUI;
+        if(item.section === 'news') newsHTML += `<div class="p-4 bg-slate-50 border rounded-2xl relative group hover:shadow-md"><p class="text-slate-700 whitespace-pre-wrap">${item.text}</p>${hasFullAccess ? `<button onclick="deleteContent('${docSnap.id}')" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100">✖</button>` : ''}</div>`;
     });
-
     document.getElementById('content-news').innerHTML = newsHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
-    document.getElementById('content-important').innerHTML = importantHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
-    document.getElementById('content-tasks').innerHTML = tasksHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
 });
