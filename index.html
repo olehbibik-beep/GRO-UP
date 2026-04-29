@@ -42,12 +42,20 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            <div class="bg-purple-50/80 p-6 rounded-3xl shadow-sm border border-purple-100 flex flex-col h-[350px]">
-                <div class="flex items-center gap-2 mb-4 border-b border-purple-100 pb-3">
-                    <span class="text-2xl">📝</span><h3 class="text-xl font-bold text-purple-900">Мой отчет</h3>
+            <div class="bg-purple-50/80 p-6 rounded-3xl shadow-sm border border-purple-100 flex flex-col h-[380px]">
+                <div class="flex items-center justify-between mb-4 border-b border-purple-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">📝</span><h3 class="text-xl font-bold text-purple-900">Мой отчет</h3>
+                    </div>
+                    <span class="text-[10px] font-black text-purple-600 uppercase bg-purple-100 px-2 py-1 rounded-lg" id="current-month-label">Месяц</span>
                 </div>
-                <div class="flex-grow flex flex-col justify-center gap-3">
-                    <p class="text-xs text-purple-600 font-bold uppercase text-center mb-2" id="current-month-label">Месяц</p>
+                
+                <div class="flex-grow flex flex-col gap-3">
+                    <label class="flex items-center gap-3 bg-white p-3 rounded-xl border border-purple-200 cursor-pointer hover:bg-purple-50 transition-colors shadow-sm">
+                        <input type="checkbox" id="rep-participated" class="w-6 h-6 accent-purple-600 rounded cursor-pointer">
+                        <span class="font-bold text-purple-900 text-sm">Участвовал в служении (Да)</span>
+                    </label>
+
                     <div class="flex gap-2">
                         <div class="w-full text-center">
                             <label class="text-[10px] uppercase font-bold text-purple-500 block mb-1">Часы</label>
@@ -62,8 +70,10 @@
                             <input type="number" id="rep-studies" class="w-full p-3 rounded-xl text-center font-bold text-lg text-purple-900 outline-none border border-purple-200 focus:border-purple-500 bg-white">
                         </div>
                     </div>
+                    <p id="last-report-log" class="text-[10px] text-purple-500 text-center font-medium h-3"></p>
                 </div>
-                <button onclick="submitReport()" id="submit-report-btn" class="mt-4 w-full bg-purple-200/50 hover:bg-purple-500 text-purple-800 hover:text-white font-bold py-3 rounded-2xl transition-colors border border-purple-300 active:scale-95">Отправить</button>
+                
+                <button onclick="submitReport()" id="submit-report-btn" class="mt-2 w-full bg-purple-200/50 hover:bg-purple-500 text-purple-800 hover:text-white font-bold py-3 rounded-2xl transition-colors border border-purple-300 active:scale-95">Отправить отчет</button>
             </div>
 
             <div class="bg-white p-6 rounded-3xl shadow-sm border border-sky-100 flex flex-col h-[350px]">
