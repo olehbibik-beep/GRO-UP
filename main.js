@@ -1,4 +1,3 @@
-// --- 1. ВСЕ ИМПОРТЫ НАВЕРХУ ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { 
     initializeFirestore, 
@@ -11,7 +10,6 @@ import {
     deleteDoc 
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// --- 2. НАСТРОЙКИ FIREBASE ---
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
     authDomain: "gro-uping.firebaseapp.com",
@@ -22,32 +20,28 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
 
-// Включаем офлайн-режим
-const db = initializeFirestore(app, {
-    localCache: persistentLocalCache()
-});
-
-// --- 3. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
 const TOP_ROLES = ["Владелец", "Админ"]; 
 let hasFullAccess = false; 
+let currentUserData = null; // Храним данные текущего юзера для профиля
+let currentSectionForAdd = ''; // Храним секцию, в которую сейчас добавляем контент
 
-// --- 4. ПРОВЕРКА ПРАВ (СЛУШАТЕЛЬ) ---
+// --- 1. ПРОВЕРКА ПРАВ И ДАННЫХ ЮЗЕРА ---
 function listenToUserStatus() {
     const userId = localStorage.getItem('userId');
     if (!userId) return;
 
     onSnapshot(doc(db, "users", userId), (docSnap) => {
         if (docSnap.exists()) {
-            const userData = docSnap.data();
+            currentUserData = docSnap.data();
 
-            if (userData.isBlocked) {
-                document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">БЛОКИРОВКА</h1></div>`;
+            if (currentUserData.isBlocked) {
+                document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">ВЫ ЗАБЛОКИРОВАНЫ</h1></div>`;
                 return;
             }
 
-            // ПРОВЕРКА НА ТОП-2 КАТЕГОРИИ
-            if (TOP_ROLES.includes(userData.role)) {
+            if (TOP_ROLES.includes(currentUserData.role)) {
                 hasFullAccess = true;
                 document.querySelectorAll('.admin-controls').forEach(el => el.classList.remove('hidden'));
             } else {
@@ -58,15 +52,13 @@ function listenToUserStatus() {
     });
 }
 
-// Запускаем проверку прав при загрузке
 listenToUserStatus();
 
-// Скрываем модалку, если уже входили
 if (localStorage.getItem('userName')) {
     document.getElementById('auth-modal').style.display = 'none';
 }
 
-// --- 5. ФУНКЦИЯ ВХОДА ---
+// --- 2. ВХОД И ВЫХОД ---
 window.saveName = async () => {
     const nameInput = document.getElementById('user-name-input');
     const name = nameInput.value.trim();
@@ -88,18 +80,80 @@ window.saveName = async () => {
                 status: "online",
                 role: "user",
                 isBlocked: false
-            });
-            console.log("Профиль создан в облаке!");
+            }, { merge: true }); // merge: true обновляет данные, не затирая старые
+            
             listenToUserStatus();
         } catch (e) {
-            console.error("Сохранено локально, ждем интернет:", e);
+            console.error("Офлайн режим:", e);
         }
     } else {
         alert("Введи имя!");
     }
 };
 
-// --- 6. ЗАГРУЗКА ИНФОРМАЦИОННЫХ ПАНЕЛЕЙ ---
+window.logout = () => {
+    // Очищаем локальное хранилище и перезагружаем страницу
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userName');
+    location.reload(); 
+};
+
+
+// --- 3. УПРАВЛЕНИЕ МОДАЛЬНЫМИ ОКНАМИ ---
+window.closeModals = () => {
+    document.getElementById('profile-modal').style.display = 'none';
+    document.getElementById('add-modal').style.display = 'none';
+};
+
+window.openProfileModal = () => {
+    if (!currentUserData) {
+        alert("Данные профиля еще загружаются...");
+        return;
+    }
+    // Подставляем данные в окно
+    document.getElementById('profile-name').innerText = currentUserData.name || "Без имени";
+    document.getElementById('profile-role').innerText = currentUserData.role || "Пользователь";
+    
+    // Показываем модалку (убираем hidden и ставим flex)
+    const modal = document.getElementById('profile-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+};
+
+window.openAddModal = (sectionName) => {
+    currentSectionForAdd = sectionName; // Запоминаем, куда будем сохранять
+    document.getElementById('add-content-text').value = ''; // Очищаем поле
+    
+    const modal = document.getElementById('add-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+};
+
+
+// --- 4. СОХРАНЕНИЕ НОВОГО КОНТЕНТА ---
+window.saveNewContent = async () => {
+    if (!hasFullAccess) return;
+    
+    const text = document.getElementById('add-content-text').value.trim();
+    if (text.length === 0) {
+        alert("Текст не может быть пустым!");
+        return;
+    }
+
+    try {
+        await addDoc(collection(db, "section_content"), {
+            section: currentSectionForAdd,
+            text: text,
+            createdAt: new Date().toISOString()
+        });
+        window.closeModals(); // Закрываем окно после успеха
+    } catch(e) {
+        console.error("Ошибка сохранения:", e);
+    }
+};
+
+
+// --- 5. ЗАГРУЗКА И УДАЛЕНИЕ КОНТЕНТА ---
 onSnapshot(collection(db, "section_content"), (snapshot) => {
     let newsHTML = '', importantHTML = '', tasksHTML = '';
 
@@ -109,7 +163,7 @@ onSnapshot(collection(db, "section_content"), (snapshot) => {
         
         const itemUI = `
             <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl relative group hover:shadow-md transition-all">
-                <p class="text-slate-700 leading-relaxed">${item.text}</p>
+                <p class="text-slate-700 leading-relaxed whitespace-pre-wrap">${item.text}</p>
                 ${hasFullAccess ? `
                     <button onclick="deleteContent('${id}')" 
                             class="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-red-100 text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white">
@@ -128,20 +182,6 @@ onSnapshot(collection(db, "section_content"), (snapshot) => {
     document.getElementById('content-important').innerHTML = importantHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
     document.getElementById('content-tasks').innerHTML = tasksHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
 });
-
-// --- 7. ДОБАВЛЕНИЕ И УДАЛЕНИЕ КОНТЕНТА (Только для Админов) ---
-window.addContent = async (sectionName) => {
-    if (!hasFullAccess) return;
-    
-    const text = prompt("Введите текст для этого блока:");
-    if (text && text.trim().length > 0) {
-        await addDoc(collection(db, "section_content"), {
-            section: sectionName,
-            text: text,
-            createdAt: new Date().toISOString() // Чтобы потом можно было сортировать по дате
-        });
-    }
-};
 
 window.deleteContent = (id) => {
     if (!hasFullAccess) return;
