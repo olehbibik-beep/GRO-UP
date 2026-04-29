@@ -242,7 +242,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
- // 5. Календарь (С ТЕМНОЙ ТЕМОЙ, ВРЕМЕНЕМ И ВЕДУЩИМ + ЛИМИТ)
+    // 5. Календарь (С ТЕМНОЙ ТЕМОЙ, ВРЕМЕНЕМ И ВЕДУЩИМ + ЛИМИТ)
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -282,7 +282,7 @@ function loadPersonalData() {
                 }
             });
             
-            // Если событий больше, чем влезло, можно добавить маленькую приписку снизу
+            // Если событий больше, чем влезло, добавляем приписку
             if (snapshot.size > MAX_EVENTS && displayedCount === MAX_EVENTS) {
                 html += `<p class="text-center text-[10px] text-slate-500 uppercase tracking-widest mt-3">Показаны ближайшие события</p>`;
             }
@@ -290,6 +290,7 @@ function loadPersonalData() {
             container.innerHTML = html || '<p class="text-sm text-slate-500 italic">В ближайшее время событий нет.</p>';
         });
     } catch(e) { console.error("Ошибка календаря:", e); }
+} // <-- ВОТ ЭТА СКОБКА ТЕРЯЛАСЬ!
 
 window.requestTerritory = async (btn) => {
     btn.innerText = "Отправка..."; btn.disabled = true;
