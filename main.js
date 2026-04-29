@@ -210,6 +210,39 @@ function loadPersonalData() {
         });
         document.getElementById('content-news').innerHTML = newsHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
     });
+// 4. ГЛОБАЛЬНЫЕ СОБЫТИЯ КАЛЕНДАРЯ
+    const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
+    onSnapshot(eventsQuery, (snapshot) => {
+        const container = document.getElementById('calendar-events');
+        if (!container) return; // Защита от ошибок
+
+        let html = '';
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        snapshot.forEach(docSnap => {
+            const ev = docSnap.data();
+            const evDate = new Date(ev.date);
+            
+            // Показываем ТОЛЬКО будущие события или события, которые происходят сегодня
+            if (evDate >= today) {
+                const niceDate = evDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+                html += `
+                    <div class="flex items-center gap-4 p-3 bg-rose-50 rounded-2xl border border-rose-100 mb-2">
+                        <div class="bg-rose-200 text-rose-700 font-black p-2 rounded-xl text-center min-w-[50px]">
+                            <span class="block text-xl leading-none">${evDate.getDate()}</span>
+                        </div>
+                        <div>
+                            <p class="font-bold text-rose-900">${ev.title}</p>
+                            <p class="text-xs text-rose-600 font-bold">${niceDate}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        container.innerHTML = html || '<p class="text-sm text-slate-400 italic">В ближайшее время событий нет.</p>';
+    });
 }
 
 // =========================================================
