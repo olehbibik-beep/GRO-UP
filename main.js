@@ -74,10 +74,14 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
             if(profileAdminBtn) { profileAdminBtn.classList.add('hidden'); profileAdminBtn.classList.remove('flex'); }
         }
 
+       const profileCalendarBtn = document.getElementById('profile-calendar-btn'); // Добавь эту переменную к остальным
+
         if (userRoles.some(r => OVERSEER_ROLES.includes(r))) {
             if(profileReportsBtn) { profileReportsBtn.classList.remove('hidden'); profileReportsBtn.classList.add('flex'); showAdminMenu = true; }
+            if(profileCalendarBtn) { profileCalendarBtn.classList.remove('hidden'); profileCalendarBtn.classList.add('flex'); } // Показываем Календарь
         } else {
             if(profileReportsBtn) { profileReportsBtn.classList.add('hidden'); profileReportsBtn.classList.remove('flex'); }
+            if(profileCalendarBtn) { profileCalendarBtn.classList.add('hidden'); profileCalendarBtn.classList.remove('flex'); } // Прячем Календарь
         }
 
         if(profileAdminLinks) {
