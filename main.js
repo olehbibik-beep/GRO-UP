@@ -21,58 +21,20 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-
-// 1. Включаем офлайн-режим (данные будут сохраняться в памяти устройства)
+// Включаем офлайн-режим
 const db = initializeFirestore(app, {
     localCache: persistentLocalCache()
 });
 
 const listElement = document.getElementById('categories-list');
+let canUserClick = true; // По умолчанию кликать можно
 
-// 2. Функция входа (сохранение в локальную память и в ОБЛАКО)
-window.saveName = async () => {
-    const nameInput = document.getElementById('user-name-input');
-    const name = nameInput.value.trim();
-    
-    if (name.length > 1) {
-        // Генерируем уникальный ID для пользователя, если его еще нет на этом устройстве
-        let userId = localStorage.getItem('userId');
-        if (!userId) {
-            userId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 9);
-            localStorage.setItem('userId', userId);
-        }
+// --- 1. СИСТЕМА ПРОВЕРКИ ПРАВ ПОЛЬЗОВАТЕЛЯ ---
+// Эта функция висит в фоне и слушает изменения профиля в админке
+function listenToUserStatus() {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return; // Если еще не зарегистрировался, ничего не делаем
 
-        localStorage.setItem('userName', name);
-        document.getElementById('auth-modal').style.display = 'none';
-
-        // Записываем пользователя в коллекцию "users" в Firebase
-        try {
-            await setDoc(doc(db, "users", userId), {
-                name: name,
-                createdAt: new Date().toISOString(),
-                status: "online"
-            });
-            console.log("Профиль создан в облаке!");
-        } catch (e) {
-            // Если интернета нет, Firebase сохранит это локально и отправит, когда сеть появится
-            console.error("Сохранено локально, ждем интернет:", e);
-        }
-    } else {
-        alert("Введи имя!");
-    }
-};
-
-// Проверка имени при загрузке
-if (localStorage.getItem('userName')) {
-    document.getElementById('auth-modal').style.display = 'none';
-}
-
-// 3. Функция присоединения к группе
-window.joinRoom = async (roomId, roomName) => {
-    // Проверка прав пользователя в реальном времени
-const userId = localStorage.getItem('userId');
-
-if (userId) {
     onSnapshot(doc(db, "users", userId), (docSnap) => {
         if (docSnap.exists()) {
             const userData = docSnap.data();
@@ -87,43 +49,89 @@ if (userId) {
                 return;
             }
 
-            // 2. Если админ — можно добавить кнопку входа в админку
+            // 2. Проверка на админа
             if (userData.role === 'admin') {
                 console.log("Добро пожаловать, босс!");
-                // Здесь можно показать кнопку "Перейти в админку"
             }
             
-            // 3. Можно ограничивать клики
-            window.canUserClick = userData.canJoin !== false;
+            // 3. Обновляем разрешение на клики
+            canUserClick = userData.canJoin !== false;
         }
     });
 }
 
-// Изменяем функцию входа в комнату
+// Запускаем проверку прав при загрузке (если юзер уже есть)
+listenToUserStatus();
+
+// Проверка имени при загрузке (скрываем модалку)
+if (localStorage.getItem('userName')) {
+    document.getElementById('auth-modal').style.display = 'none';
+}
+
+
+// --- 2. ФУНКЦИЯ ВХОДА (ПЕРВЫЙ ЗАПУСК) ---
+window.saveName = async () => {
+    const nameInput = document.getElementById('user-name-input');
+    const name = nameInput.value.trim();
+    
+    if (name.length > 1) {
+        let userId = localStorage.getItem('userId');
+        if (!userId) {
+            userId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('userId', userId);
+        }
+
+        localStorage.setItem('userName', name);
+        document.getElementById('auth-modal').style.display = 'none';
+
+        try {
+            await setDoc(doc(db, "users", userId), {
+                name: name,
+                createdAt: new Date().toISOString(),
+                status: "online",
+                role: "user",
+                isBlocked: false,
+                canJoin: true
+            });
+            console.log("Профиль создан в облаке!");
+            
+            // Запускаем слежку за правами сразу после регистрации
+            listenToUserStatus();
+            
+        } catch (e) {
+            console.error("Сохранено локально, ждем интернет:", e);
+        }
+    } else {
+        alert("Введи имя!");
+    }
+};
+
+
+// --- 3. ФУНКЦИЯ ПРИСОЕДИНЕНИЯ К ГРУППЕ ---
 window.joinRoom = async (roomId, roomName) => {
-    if (window.canUserClick === false) {
+    // Проверяем, не запретил ли админ кликать
+    if (!canUserClick) {
         alert("Админ отключил тебе возможность вступать в группы!");
         return;
     }
-    // ... остальной код joinRoom
-}
+
+    const userId = localStorage.getItem('userId');
     const userName = localStorage.getItem('userName');
     
+    // Проверка, не в группе ли уже пользователь
     if (localStorage.getItem('joinedRoom')) {
         alert("Ты уже в группе!");
         return;
     }
 
     const roomRef = doc(db, "categories", roomId);
-    const userRef = doc(db, "users", userId); // Ссылка на профиль пользователя
+    const userRef = doc(db, "users", userId);
 
     try {
-        // Увеличиваем счетчик комнаты
         await updateDoc(roomRef, {
             count: increment(1)
         });
         
-        // Обновляем профиль пользователя, записывая, в какой он комнате
         await updateDoc(userRef, {
             currentRoom: roomId
         });
@@ -135,7 +143,8 @@ window.joinRoom = async (roomId, roomName) => {
     }
 };
 
-// 4. Отрисовка списка (с фиксом прыгающих цветов)
+
+// --- 4. ОТРИСОВКА СПИСКА КОМНАТ ---
 onSnapshot(collection(db, "categories"), (snapshot) => {
     listElement.innerHTML = '';
     const colors = ['bg-blue-50', 'bg-purple-50', 'bg-emerald-50', 'bg-orange-50'];
