@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход - GRO-UP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 flex items-center justify-center h-screen font-sans">
+    
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl">
+        <h1 class="text-3xl font-black text-indigo-600 mb-2">GRO-UP</h1>
+        <p class="text-slate-500 mb-6">Введите имя и ПИН-код</p>
+        
+        <input id="user-name" type="text" placeholder="Имя Фамилия" 
+               class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-3 outline-none focus:ring-2 ring-indigo-500 text-center font-bold text-lg transition-all">
+               
+        <input id="user-pin" type="password" placeholder="ПИН-код" 
+               class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-6 outline-none focus:ring-2 ring-indigo-500 text-center font-bold text-xl tracking-widest transition-all">
+               
+        <button id="login-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-2xl shadow-lg transition-all active:scale-95">
+            Войти в систему
+        </button>
+    </div>
+
+    <script type="module" src="login.js?v=1"></script>
+</body>
+</html>
