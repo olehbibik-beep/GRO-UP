@@ -130,6 +130,30 @@ window.submitReport = async () => {
 // ЗАГРУЗКА ЛИЧНЫХ ДАННЫХ (Отчет, Задания, Участки)
 // =========================================================
 function loadPersonalData() {
+    function loadUpcomingDuties() {
+    const q = query(collection(db, "duties"), where("userId", "==", userId));
+    onSnapshot(q, (snapshot) => {
+        const card = document.getElementById('upcoming-duty-card');
+        const titleEl = document.getElementById('duty-title');
+        const dateEl = document.getElementById('duty-date');
+
+        if (snapshot.empty) {
+            card.classList.add('hidden');
+            return;
+        }
+
+        // Берем самое свежее дежурство
+        const duty = snapshot.docs[0].data();
+        
+        titleEl.innerText = duty.type;
+        dateEl.innerText = duty.dateRange;
+        
+        card.classList.remove('hidden');
+        card.classList.add('flex'); // Показываем карточку
+    });
+}
+
+// ВАЖНО: Добавь вызов loadUpcomingDuties() внутрь функции loadPersonalData()
     // 0. Подгружаем ТЕКУЩИЙ ОТЧЕТ пользователя
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
         if (docSnap.exists()) {
