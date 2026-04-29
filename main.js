@@ -226,6 +226,7 @@ function loadPersonalData() {
         });
     } catch(e) { console.error(e); }
 
+// 5. Календарь (ТЕМНАЯ ТЕМА)
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -238,19 +239,19 @@ function loadPersonalData() {
                 const evDate = new Date(ev.date);
                 if (evDate >= today) {
                     html += `
-                        <div class="flex items-center gap-4 p-3 bg-rose-50 rounded-2xl border border-rose-100 mb-2">
-                            <div class="bg-rose-200 text-rose-700 font-black p-2 rounded-xl text-center min-w-[50px]">
-                                <span class="block text-xl leading-none">${evDate.getDate()}</span>
+                        <div class="flex items-center gap-3 p-2.5 bg-slate-700/50 rounded-xl mb-2 border border-slate-600/50">
+                            <div class="bg-slate-600 text-white font-black p-2 rounded-lg text-center min-w-[45px] shadow-inner">
+                                <span class="block text-lg leading-none">${evDate.getDate()}</span>
                             </div>
                             <div>
-                                <p class="font-bold text-rose-900">${ev.title}</p>
-                                <p class="text-xs text-rose-600 font-bold">${evDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}</p>
+                                <p class="font-bold text-white text-sm leading-tight">${ev.title}</p>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">${evDate.toLocaleDateString('ru-RU', { month: 'long' })}</p>
                             </div>
                         </div>
                     `;
                 }
             });
-            container.innerHTML = html || '<p class="text-sm text-slate-400 italic">В ближайшее время событий нет.</p>';
+            container.innerHTML = html || '<p class="text-sm text-slate-500 italic">В ближайшее время событий нет.</p>';
         });
     } catch(e) { console.error("Ошибка календаря:", e); }
 }
