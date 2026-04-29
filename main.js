@@ -21,6 +21,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
+
 // 1. Включаем офлайн-режим (данные будут сохраняться в памяти устройства)
 const db = initializeFirestore(app, {
     localCache: persistentLocalCache()
@@ -68,7 +69,44 @@ if (localStorage.getItem('userName')) {
 
 // 3. Функция присоединения к группе
 window.joinRoom = async (roomId, roomName) => {
-    const userId = localStorage.getItem('userId');
+    // Проверка прав пользователя в реальном времени
+const userId = localStorage.getItem('userId');
+
+if (userId) {
+    onSnapshot(doc(db, "users", userId), (docSnap) => {
+        if (docSnap.exists()) {
+            const userData = docSnap.data();
+
+            // 1. Проверка на бан
+            if (userData.isBlocked) {
+                document.body.innerHTML = `
+                    <div class="flex items-center justify-center h-screen bg-red-100 p-10 text-center">
+                        <h1 class="text-2xl font-black text-red-600">Твой аккаунт заблокирован админом!</h1>
+                    </div>
+                `;
+                return;
+            }
+
+            // 2. Если админ — можно добавить кнопку входа в админку
+            if (userData.role === 'admin') {
+                console.log("Добро пожаловать, босс!");
+                // Здесь можно показать кнопку "Перейти в админку"
+            }
+            
+            // 3. Можно ограничивать клики
+            window.canUserClick = userData.canJoin !== false;
+        }
+    });
+}
+
+// Изменяем функцию входа в комнату
+window.joinRoom = async (roomId, roomName) => {
+    if (window.canUserClick === false) {
+        alert("Админ отключил тебе возможность вступать в группы!");
+        return;
+    }
+    // ... остальной код joinRoom
+}
     const userName = localStorage.getItem('userName');
     
     if (localStorage.getItem('joinedRoom')) {
