@@ -23,15 +23,11 @@ let hasFullAccess = false;
 let currentUserData = null; 
 let currentSectionForAdd = ''; 
 
-// Надежный ID для отчета (чтобы не было дубликатов)
 const d = new Date();
 const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
 const currentMonthStr = d.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
 document.getElementById('current-month-label').innerText = currentMonthStr;
 
-// =========================================================
-// СЛУШАТЕЛЬ СТАТУСА (Проверка ролей)
-// =========================================================
 onSnapshot(doc(db, "users", userId), (docSnap) => {
     if (!docSnap.exists()) { window.logout(); return; }
 
@@ -69,9 +65,6 @@ onSnapshot(doc(db, "users", userId), (docSnap) => {
     }
 });
 
-// =========================================================
-// ОТПРАВКА ОТЧЕТА (ПЕРЕЗАПИСЬ И ЛОГИРОВАНИЕ)
-// =========================================================
 window.submitReport = async () => {
     const participated = document.getElementById('rep-participated').checked;
     const hours = document.getElementById('rep-hours').value;
@@ -86,7 +79,6 @@ window.submitReport = async () => {
     btn.innerText = "Сохранение...";
     btn.disabled = true;
 
-    // Гарантируем, что будет только ОДНА запись в месяц
     const reportId = `${userId}_${strictMonthId}`;
     const submitTime = new Date().toISOString();
 
@@ -96,14 +88,13 @@ window.submitReport = async () => {
             userName: currentUserData.name,
             group: currentUserData.group || "Без группы",
             month: currentMonthStr,
-            participated: participated, // Птичка "Служил"
+            participated: participated,
             hours: hours ? Number(hours) : 0,
             pubs: pubs ? Number(pubs) : 0,
             studies: studies ? Number(studies) : 0,
-            submittedAt: submitTime // Время отправки
+            submittedAt: submitTime
         });
 
-        // Обновляем лог на экране
         const niceTime = new Date(submitTime).toLocaleString('ru-RU');
         document.getElementById('last-report-log').innerText = `Сохранено: ${niceTime}`;
 
@@ -126,11 +117,8 @@ window.submitReport = async () => {
     }
 };
 
-// =========================================================
-// ЗАГРУЗКА ЛИЧНЫХ ДАННЫХ (Отчет, Дежурства, Задания, Участки)
-// =========================================================
 function loadPersonalData() {
-    // 0. Подгружаем ТЕКУЩИЙ ОТЧЕТ пользователя
+    // 0. Отчет
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
         if (docSnap.exists()) {
             const r = docSnap.data();
@@ -152,7 +140,6 @@ function loadPersonalData() {
         const titleEl = document.getElementById('duty-title');
         const dateEl = document.getElementById('duty-date');
 
-        // Если HTML блока еще нет на странице, прерываем, чтобы не было ошибки
         if (!card) return;
 
         if (snapshot.empty) {
@@ -161,16 +148,15 @@ function loadPersonalData() {
             return;
         }
 
-        // Берем самое свежее дежурство
         const duty = snapshot.docs[0].data();
         titleEl.innerText = duty.type;
         dateEl.innerText = duty.dateRange;
         
         card.classList.remove('hidden');
-        card.classList.add('flex'); // Показываем карточку
+        card.classList.add('flex');
     });
 
-    // 2. Мои задания
+    // 2. Задания
     const tasksQuery = query(collection(db, "personal_tasks"), where("userId", "==", userId));
     onSnapshot(tasksQuery, (snapshot) => {
         const container = document.getElementById('my-tasks-list');
@@ -182,7 +168,7 @@ function loadPersonalData() {
         });
     });
 
-    // 3. Мои участки
+    // 3. Участки
     const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
     onSnapshot(terrQuery, (snapshot) => {
         const container = document.getElementById('my-territories-list');
@@ -195,9 +181,19 @@ function loadPersonalData() {
     });
 }
 
-// =========================================================
-// ГЛОБАЛЬНЫЕ ФУНКЦИИ (Профиль, Выход, Новости)
-// =========================================================
+window.requestTerritory = async () => {
+    const btn = event.target;
+    btn.innerText = "Отправка...";
+    btn.disabled = true;
+    try {
+        await addDoc(collection(db, "requests"), {
+            type: "territory", userId: userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString()
+        });
+        btn.innerText = "Запрос отправлен! ✔️";
+        setTimeout(() => { btn.innerText = "Попросить участок"; btn.disabled = false; }, 3000);
+    } catch (e) { alert("Ошибка!"); btn.innerText = "Попросить участок"; btn.disabled = false; }
+};
+
 window.logout = () => { localStorage.clear(); window.location.href = 'login.html'; };
 
 window.closeModals = () => {
