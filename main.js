@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+// ВАЖНО: Добавлен orderBy для правильной работы календаря!
+import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
@@ -17,6 +18,7 @@ const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
 const TOP_ROLES = ["Владелец", "Админ"]; 
+const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"]; 
 let currentUserData = null; 
 
 const d = new Date();
@@ -28,19 +30,15 @@ document.getElementById('current-month-label').innerText = currentMonthStr;
 // 1. ЛОГИКА ВКЛАДОК (SPA)
 // =========================================================
 window.switchTab = (tabId, btnElement) => {
-    // Скрываем все вкладки
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    // Показываем нужную
     document.getElementById(`tab-${tabId}`).classList.add('active');
 
-    // Меняем цвета кнопок меню
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('text-indigo-600');
         btn.classList.add('text-slate-400');
         btn.firstElementChild.classList.remove('bg-indigo-100');
     });
     
-    // Делаем активную кнопку синей
     if(btnElement) {
         btnElement.classList.remove('text-slate-400');
         btnElement.classList.add('text-indigo-600');
@@ -61,15 +59,45 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
     if (currentUserData.status === 'pending') {
         pendingScreen.classList.remove('hidden'); pendingScreen.classList.add('flex');
         mainDashboard.classList.add('hidden');
+        mainDashboard.classList.remove('block');
     } else if (currentUserData.status === 'blocked') {
         document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">ДОСТУП ЗАКРЫТ</h1></div>`;
     } else {
         pendingScreen.classList.add('hidden'); pendingScreen.classList.remove('flex');
-        mainDashboard.classList.remove('block');
+        
+        // ИСПРАВЛЕНО ЗДЕСЬ: Открываем главный экран!
+        mainDashboard.classList.remove('hidden'); 
         mainDashboard.classList.add('block');
         
         loadPersonalData();
-        loadProfileData(); // Загрузка профиля (вкл. поиск ответственного)
+        loadProfileData(); 
+
+        let userRoles = currentUserData.roles || (currentUserData.role ? [currentUserData.role] : []);
+        
+        // ИСПРАВЛЕНО ЗДЕСЬ: Правильно показываем кнопки Админки
+        if (userRoles.some(r => TOP_ROLES.includes(r))) {
+            document.querySelectorAll('.admin-controls').forEach(el => {
+                el.classList.remove('hidden');
+                el.classList.add('flex'); // Теперь кнопки не будут ломаться!
+            });
+        } else {
+            document.querySelectorAll('.admin-controls').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+            });
+        }
+
+        if (userRoles.some(r => OVERSEER_ROLES.includes(r))) {
+            document.querySelectorAll('.overseer-controls').forEach(el => {
+                el.classList.remove('hidden');
+                el.classList.add('flex');
+            });
+        } else {
+            document.querySelectorAll('.overseer-controls').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+            });
+        }
     }
 });
 
@@ -84,7 +112,6 @@ async function loadProfileData() {
     const myGroup = currentUserData.group || "Без группы";
     document.getElementById('profile-group').innerText = `№ ${myGroup}`;
 
-    // Если группа указана, ищем её надзирателя
     if (myGroup !== "Без группы") {
         const q = query(collection(db, "users"), where("group", "==", myGroup), where("roles", "array-contains", "Надзиратель группы"));
         const snap = await getDocs(q);
@@ -130,7 +157,7 @@ window.submitReport = async () => {
 };
 
 // =========================================================
-// ЗАГРУЗКА ЛИЧНЫХ ДАННЫХ (ЗАДАНИЯ И УЧАСТКИ)
+// ЗАГРУЗКА ЛИЧНЫХ ДАННЫХ (ЗАДАНИЯ, УЧАСТКИ, КАЛЕНДАРЬ)
 // =========================================================
 function loadPersonalData() {
     // 0. Отчет
@@ -146,27 +173,49 @@ function loadPersonalData() {
         }
     });
 
-    // 1. ЗАДАНИЯ (Сортировка: Активные и Прошедшие)
+    // 1. Предстоящие дежурства (Желтый блок)
+    const dutiesQuery = query(collection(db, "duties"), where("userId", "==", userId));
+    onSnapshot(dutiesQuery, (snapshot) => {
+        const card = document.getElementById('upcoming-duty-card');
+        const titleEl = document.getElementById('duty-title');
+        const dateEl = document.getElementById('duty-date');
+
+        if (!card) return;
+
+        if (snapshot.empty) {
+            card.classList.add('hidden');
+            card.classList.remove('flex');
+            return;
+        }
+
+        const duty = snapshot.docs[0].data();
+        titleEl.innerText = duty.type;
+        dateEl.innerText = duty.dateRange;
+        
+        card.classList.remove('hidden');
+        card.classList.add('flex');
+    });
+
+    // 2. ЗАДАНИЯ
     const tasksQuery = query(collection(db, "personal_tasks"), where("userId", "==", userId));
     onSnapshot(tasksQuery, (snapshot) => {
         const upList = document.getElementById('upcoming-tasks-list');
         const pastList = document.getElementById('past-tasks-list');
+        if(!upList || !pastList) return;
         upList.innerHTML = ''; pastList.innerHTML = '';
         let upCount = 0, pastCount = 0;
 
         const today = new Date();
-        today.setHours(0,0,0,0); // Обнуляем время, чтобы сравнивать только даты
+        today.setHours(0,0,0,0);
 
         snapshot.forEach(docSnap => {
             const task = docSnap.data();
             const taskDate = new Date(task.date);
 
             if (taskDate >= today) {
-                // ПРЕДСТОЯЩЕЕ (Яркое)
                 upCount++;
                 upList.innerHTML += `<div class="p-4 bg-sky-50 rounded-2xl border border-sky-200 mb-3 shadow-sm"><p class="font-black text-sky-900 text-lg">${task.title}</p><p class="text-sm font-bold text-sky-600 mt-1">📅 ${taskDate.toLocaleDateString('ru-RU')}</p></div>`;
             } else {
-                // ПРОШЕДШЕЕ (Серое)
                 pastCount++;
                 pastList.innerHTML += `<div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 mb-2 opacity-70 grayscale"><p class="font-bold text-slate-600">${task.title}</p><p class="text-xs text-slate-400 mt-1">Выполнено: ${taskDate.toLocaleDateString('ru-RU')}</p></div>`;
             }
@@ -176,10 +225,11 @@ function loadPersonalData() {
         if (pastCount === 0) pastList.innerHTML = '<p class="text-slate-400 text-sm italic">История пуста</p>';
     });
 
-    // 2. УЧАСТКИ (С картой)
+    // 3. УЧАСТКИ
     const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
     onSnapshot(terrQuery, (snapshot) => {
         const container = document.getElementById('territories-container');
+        if(!container) return;
         if (snapshot.empty) return container.innerHTML = '<p class="text-slate-400 text-sm italic text-center py-10">У вас пока нет активных участков</p>';
         container.innerHTML = '';
         
@@ -201,20 +251,22 @@ function loadPersonalData() {
         });
     });
 
-    // 3. Новости
+    // 4. Новости
     onSnapshot(collection(db, "section_content"), (snapshot) => {
         let newsHTML = '';
         snapshot.forEach(docSnap => {
             const item = docSnap.data();
             if(item.section === 'news') newsHTML += `<div class="p-4 bg-slate-50 border rounded-2xl relative"><p class="text-slate-700 whitespace-pre-wrap">${item.text}</p></div>`;
         });
-        document.getElementById('content-news').innerHTML = newsHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
+        const contentNews = document.getElementById('content-news');
+        if(contentNews) contentNews.innerHTML = newsHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
     });
-// 4. ГЛОБАЛЬНЫЕ СОБЫТИЯ КАЛЕНДАРЯ
+
+    // 5. ГЛОБАЛЬНЫЕ СОБЫТИЯ КАЛЕНДАРЯ
     const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
     onSnapshot(eventsQuery, (snapshot) => {
         const container = document.getElementById('calendar-events');
-        if (!container) return; // Защита от ошибок
+        if (!container) return; 
 
         let html = '';
         const today = new Date();
@@ -224,7 +276,6 @@ function loadPersonalData() {
             const ev = docSnap.data();
             const evDate = new Date(ev.date);
             
-            // Показываем ТОЛЬКО будущие события или события, которые происходят сегодня
             if (evDate >= today) {
                 const niceDate = evDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
                 html += `
@@ -245,9 +296,6 @@ function loadPersonalData() {
     });
 }
 
-// =========================================================
-// ГЛОБАЛЬНЫЕ ФУНКЦИИ (Кнопки)
-// =========================================================
 window.requestTerritory = async (btn) => {
     btn.innerText = "Отправка..."; btn.disabled = true;
     try {
