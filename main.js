@@ -127,33 +127,9 @@ window.submitReport = async () => {
 };
 
 // =========================================================
-// ЗАГРУЗКА ЛИЧНЫХ ДАННЫХ (Отчет, Задания, Участки)
+// ЗАГРУЗКА ЛИЧНЫХ ДАННЫХ (Отчет, Дежурства, Задания, Участки)
 // =========================================================
 function loadPersonalData() {
-    function loadUpcomingDuties() {
-    const q = query(collection(db, "duties"), where("userId", "==", userId));
-    onSnapshot(q, (snapshot) => {
-        const card = document.getElementById('upcoming-duty-card');
-        const titleEl = document.getElementById('duty-title');
-        const dateEl = document.getElementById('duty-date');
-
-        if (snapshot.empty) {
-            card.classList.add('hidden');
-            return;
-        }
-
-        // Берем самое свежее дежурство
-        const duty = snapshot.docs[0].data();
-        
-        titleEl.innerText = duty.type;
-        dateEl.innerText = duty.dateRange;
-        
-        card.classList.remove('hidden');
-        card.classList.add('flex'); // Показываем карточку
-    });
-}
-
-// ВАЖНО: Добавь вызов loadUpcomingDuties() внутрь функции loadPersonalData()
     // 0. Подгружаем ТЕКУЩИЙ ОТЧЕТ пользователя
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
         if (docSnap.exists()) {
@@ -169,7 +145,32 @@ function loadPersonalData() {
         }
     });
 
-    // 1. Мои задания
+    // 1. Предстоящие дежурства (Желтый блок)
+    const dutiesQuery = query(collection(db, "duties"), where("userId", "==", userId));
+    onSnapshot(dutiesQuery, (snapshot) => {
+        const card = document.getElementById('upcoming-duty-card');
+        const titleEl = document.getElementById('duty-title');
+        const dateEl = document.getElementById('duty-date');
+
+        // Если HTML блока еще нет на странице, прерываем, чтобы не было ошибки
+        if (!card) return;
+
+        if (snapshot.empty) {
+            card.classList.add('hidden');
+            card.classList.remove('flex');
+            return;
+        }
+
+        // Берем самое свежее дежурство
+        const duty = snapshot.docs[0].data();
+        titleEl.innerText = duty.type;
+        dateEl.innerText = duty.dateRange;
+        
+        card.classList.remove('hidden');
+        card.classList.add('flex'); // Показываем карточку
+    });
+
+    // 2. Мои задания
     const tasksQuery = query(collection(db, "personal_tasks"), where("userId", "==", userId));
     onSnapshot(tasksQuery, (snapshot) => {
         const container = document.getElementById('my-tasks-list');
@@ -181,7 +182,7 @@ function loadPersonalData() {
         });
     });
 
-    // 2. Мои участки
+    // 3. Мои участки
     const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
     onSnapshot(terrQuery, (snapshot) => {
         const container = document.getElementById('my-territories-list');
@@ -193,20 +194,6 @@ function loadPersonalData() {
         });
     });
 }
-
-// Запрос участка
-window.requestTerritory = async () => {
-    const btn = event.target;
-    btn.innerText = "Отправка...";
-    btn.disabled = true;
-    try {
-        await addDoc(collection(db, "requests"), {
-            type: "territory", userId: userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString()
-        });
-        btn.innerText = "Запрос отправлен! ✔️";
-        setTimeout(() => { btn.innerText = "Попросить участок"; btn.disabled = false; }, 3000);
-    } catch (e) { alert("Ошибка!"); btn.innerText = "Попросить участок"; btn.disabled = false; }
-};
 
 // =========================================================
 // ГЛОБАЛЬНЫЕ ФУНКЦИИ (Профиль, Выход, Новости)
