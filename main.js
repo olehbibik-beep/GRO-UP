@@ -27,29 +27,24 @@ const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`;
 const currentMonthStr = d.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
 document.getElementById('current-month-label').innerText = currentMonthStr;
 
-// =========================================================
-// ЛОГИКА ВКЛАДОК (SPA)
-// =========================================================
 window.switchTab = (tabId, btnElement) => {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tabId}`);
     if(targetTab) targetTab.classList.add('active');
 
     document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('text-indigo-600');
-        btn.classList.add('text-slate-400');
+        btn.classList.remove('text-indigo-600'); btn.classList.add('text-slate-400');
         btn.firstElementChild.classList.remove('bg-indigo-100');
     });
     
     if(btnElement) {
-        btnElement.classList.remove('text-slate-400');
-        btnElement.classList.add('text-indigo-600');
+        btnElement.classList.remove('text-slate-400'); btnElement.classList.add('text-indigo-600');
         btnElement.firstElementChild.classList.add('bg-indigo-100');
     }
 };
 
 // =========================================================
-// ГЛАВНЫЙ СЛУШАТЕЛЬ С ЗАЩИТОЙ И ПРОВЕРКОЙ РОЛЕЙ
+// ГЛАВНЫЙ СЛУШАТЕЛЬ (ОТРИСОВКА КНОПОК В ПРОФИЛЕ)
 // =========================================================
 onSnapshot(doc(db, "users", userId), async (docSnap) => {
     if (!docSnap.exists()) { window.logout(); return; }
@@ -67,30 +62,44 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         pendingScreen.classList.add('hidden'); pendingScreen.classList.remove('flex');
         mainDashboard.classList.remove('hidden'); mainDashboard.classList.add('block');
         
-        // --- ВОТ ЭТОТ БЛОК Я СЛУЧАЙНО УДАЛИЛ В ПРОШЛЫЙ РАЗ! ---
         let userRoles = currentUserData.roles || (currentUserData.role ? [currentUserData.role] : []);
         
+        // Переменные для кнопок в профиле
+        const profileAdminLinks = document.getElementById('profile-admin-links');
+        const profileAdminBtn = document.getElementById('profile-admin-btn');
+        const profileReportsBtn = document.getElementById('profile-reports-btn');
+        let showAdminMenu = false;
+
+        // ПРОВЕРКА РОЛЕЙ ДЛЯ КНОПОК
         if (userRoles.some(r => TOP_ROLES.includes(r))) {
             hasFullAccess = true;
             document.querySelectorAll('.admin-controls').forEach(el => { el.classList.remove('hidden'); el.classList.add('flex'); });
+            if(profileAdminBtn) { profileAdminBtn.classList.remove('hidden'); profileAdminBtn.classList.add('block'); showAdminMenu = true; }
         } else {
             hasFullAccess = false;
             document.querySelectorAll('.admin-controls').forEach(el => { el.classList.add('hidden'); el.classList.remove('flex'); });
+            if(profileAdminBtn) { profileAdminBtn.classList.add('hidden'); profileAdminBtn.classList.remove('block'); }
         }
 
         if (userRoles.some(r => OVERSEER_ROLES.includes(r))) {
             document.querySelectorAll('.overseer-controls').forEach(el => { el.classList.remove('hidden'); el.classList.add('flex'); });
+            if(profileReportsBtn) { profileReportsBtn.classList.remove('hidden'); profileReportsBtn.classList.add('block'); showAdminMenu = true; }
         } else {
             document.querySelectorAll('.overseer-controls').forEach(el => { el.classList.add('hidden'); el.classList.remove('flex'); });
+            if(profileReportsBtn) { profileReportsBtn.classList.add('hidden'); profileReportsBtn.classList.remove('block'); }
         }
-        // -----------------------------------------------------
+
+        // Показываем контейнер с кнопками в профиле, если есть хотя бы одна кнопка
+        if(profileAdminLinks) {
+            if(showAdminMenu) { profileAdminLinks.classList.remove('hidden'); profileAdminLinks.classList.add('flex'); } 
+            else { profileAdminLinks.classList.add('hidden'); profileAdminLinks.classList.remove('flex'); }
+        }
 
         try { loadPersonalData(); } catch(e) { console.error(e); }
         try { loadProfileData(); } catch(e) { console.error(e); }
     }
 });
 
-// Загрузка профиля
 async function loadProfileData() {
     document.getElementById('profile-name').innerText = currentUserData.name || "Имя";
     let roles = currentUserData.roles || (currentUserData.role ? [currentUserData.role] : ["Участник"]);
@@ -104,15 +113,10 @@ async function loadProfileData() {
             const q = query(collection(db, "users"), where("group", "==", myGroup), where("roles", "array-contains", "Надзиратель группы"));
             const snap = await getDocs(q);
             document.getElementById('profile-overseer').innerText = snap.empty ? "Не назначен" : snap.docs[0].data().name;
-        } else {
-            document.getElementById('profile-overseer').innerText = "-";
-        }
-    } catch(e) {
-        document.getElementById('profile-overseer').innerText = "Ошибка БД";
-    }
+        } else { document.getElementById('profile-overseer').innerText = "-"; }
+    } catch(e) { document.getElementById('profile-overseer').innerText = "Ошибка БД"; }
 }
 
-// Отправка отчета
 window.submitReport = async () => {
     const participated = document.getElementById('rep-participated').checked;
     const hours = document.getElementById('rep-hours').value;
@@ -138,9 +142,7 @@ window.submitReport = async () => {
     } catch (e) { alert("Ошибка!"); btn.disabled = false; }
 };
 
-// Загрузка всех данных (БЕЗ ОШИБОК)
 function loadPersonalData() {
-    // 0. Отчет
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
         if (docSnap.exists()) {
             const r = docSnap.data();
@@ -153,7 +155,6 @@ function loadPersonalData() {
         }
     });
 
-    // 1. Предстоящие дежурства
     try {
         const dutiesQuery = query(collection(db, "duties"), where("userId", "==", userId));
         onSnapshot(dutiesQuery, (snapshot) => {
@@ -167,7 +168,6 @@ function loadPersonalData() {
         });
     } catch(e) { console.error(e); }
 
-    // 2. Задания
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), where("userId", "==", userId));
         onSnapshot(tasksQuery, (snapshot) => {
@@ -193,7 +193,6 @@ function loadPersonalData() {
         });
     } catch(e){ console.error(e); }
 
-    // 3. Участки
     try {
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
         onSnapshot(terrQuery, (snapshot) => {
@@ -220,14 +219,12 @@ function loadPersonalData() {
         });
     } catch(e) { console.error(e); }
 
-    // 4. Новости
     try {
         onSnapshot(collection(db, "section_content"), (snapshot) => {
             let newsHTML = '';
             snapshot.forEach(docSnap => {
                 const item = docSnap.data();
                 if(item.section === 'news') {
-                    // Возвращена кнопка удаления новостей!
                     newsHTML += `
                     <div class="p-4 bg-slate-50 border rounded-2xl relative group hover:shadow-md transition-shadow">
                         <p class="text-slate-700 whitespace-pre-wrap">${item.text}</p>
@@ -240,7 +237,6 @@ function loadPersonalData() {
         });
     } catch(e) { console.error(e); }
 
-    // 5. Календарь
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -267,12 +263,9 @@ function loadPersonalData() {
             });
             container.innerHTML = html || '<p class="text-sm text-slate-400 italic">В ближайшее время событий нет.</p>';
         });
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error("Ошибка календаря:", e); }
 }
 
-// =========================================================
-// ГЛОБАЛЬНЫЕ ФУНКЦИИ 
-// =========================================================
 window.requestTerritory = async (btn) => {
     btn.innerText = "Отправка..."; btn.disabled = true;
     try {
@@ -283,14 +276,12 @@ window.requestTerritory = async (btn) => {
 };
 
 window.openAddModal = (section) => { currentSectionForAdd = section; document.getElementById('add-content-text').value = ''; document.getElementById('add-modal').classList.replace('hidden', 'flex'); };
-
 window.saveNewContent = async () => {
     const text = document.getElementById('add-content-text').value.trim();
     if (!text || !hasFullAccess) return;
     await addDoc(collection(db, "section_content"), { section: currentSectionForAdd, text, createdAt: new Date().toISOString() });
     window.closeModals(); 
 };
-
 window.deleteContent = (id) => { if(hasFullAccess && confirm("Удалить?")) deleteDoc(doc(db, "section_content", id)); };
 
 window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
