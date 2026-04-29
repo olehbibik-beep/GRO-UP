@@ -186,3 +186,24 @@ window.deleteContent = (id) => {
         deleteDoc(doc(db, "section_content", id));
     }
 };
+// НАДЕЖНАЯ ПРИВЯЗКА КНОПОК
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // Кнопка открытия профиля
+    const profileBtn = document.getElementById('profile-btn');
+    if (profileBtn) {
+        profileBtn.addEventListener('click', () => {
+            const localName = localStorage.getItem('userName') || "Без имени";
+            
+            // Подставляем данные
+            document.getElementById('profile-name').innerText = currentUserData ? currentUserData.name : localName;
+            document.getElementById('profile-role').innerText = currentUserData ? currentUserData.role : "Загрузка...";
+            
+            // Показываем окно
+            const modal = document.getElementById('profile-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        });
+    }
+
+});
