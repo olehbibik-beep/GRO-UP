@@ -31,30 +31,34 @@ let canUserClick = true; // По умолчанию кликать можно
 
 // --- 1. СИСТЕМА ПРОВЕРКИ ПРАВ ПОЛЬЗОВАТЕЛЯ ---
 // Эта функция висит в фоне и слушает изменения профиля в админке
+// Те же категории, что и в админке! Первые две имеют власть.
+const TOP_ROLES = ["Владелец", "Админ"]; 
+let hasFullAccess = false; // Переменная доступа
+
 function listenToUserStatus() {
     const userId = localStorage.getItem('userId');
-    if (!userId) return; // Если еще не зарегистрировался, ничего не делаем
+    if (!userId) return;
 
     onSnapshot(doc(db, "users", userId), (docSnap) => {
         if (docSnap.exists()) {
             const userData = docSnap.data();
 
-            // 1. Проверка на бан
             if (userData.isBlocked) {
-                document.body.innerHTML = `
-                    <div class="flex items-center justify-center h-screen bg-red-100 p-10 text-center">
-                        <h1 class="text-2xl font-black text-red-600">Твой аккаунт заблокирован админом!</h1>
-                    </div>
-                `;
+                document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">БЛОКИРОВКА</h1></div>`;
                 return;
             }
 
-            // 2. Проверка на админа
-            if (userData.role === 'admin') {
-                console.log("Добро пожаловать, босс!");
+            // ПРОВЕРКА НА ТОП-2 КАТЕГОРИИ
+            if (TOP_ROLES.includes(userData.role)) {
+                hasFullAccess = true;
+                // Показываем все скрытые кнопки админа на странице
+                document.querySelectorAll('.admin-controls').forEach(el => el.classList.remove('hidden'));
+            } else {
+                hasFullAccess = false;
+                // Прячем кнопки, если права забрали
+                document.querySelectorAll('.admin-controls').forEach(el => el.classList.add('hidden'));
             }
             
-            // 3. Обновляем разрешение на клики
             canUserClick = userData.canJoin !== false;
         }
     });
@@ -173,3 +177,57 @@ onSnapshot(collection(db, "categories"), (snapshot) => {
         `;
     });
 });
+import { addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+// 1. Загрузка контента для трех подразделов в реальном времени
+onSnapshot(collection(db, "section_content"), (snapshot) => {
+    let newsHTML = '', importantHTML = '', tasksHTML = '';
+
+    snapshot.forEach(docSnap => {
+        const item = docSnap.data();
+        const id = docSnap.id;
+        
+        // Формируем блок текста + кнопки удаления (если есть права)
+        const itemUI = `
+            <div class="p-3 bg-gray-50 rounded-xl relative group">
+                <p>${item.text}</p>
+                ${hasFullAccess ? `
+                    <button onclick="deleteContent('${id}')" 
+                            class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                        ✖
+                    </button>
+                ` : ''}
+            </div>
+        `;
+
+        if (item.section === 'news') newsHTML += itemUI;
+        if (item.section === 'important') importantHTML += itemUI;
+        if (item.section === 'tasks') tasksHTML += itemUI;
+    });
+
+    document.getElementById('content-news').innerHTML = newsHTML || 'Пока пусто';
+    document.getElementById('content-important').innerHTML = importantHTML || 'Пока пусто';
+    document.getElementById('content-tasks').innerHTML = tasksHTML || 'Пока пусто';
+});
+
+// 2. Функция добавления (доступна только для ТОП ролей, вызывается по кнопке +)
+window.addContent = async (sectionName) => {
+    if (!hasFullAccess) return;
+    
+    const text = prompt("Введите текст для этого блока:");
+    if (text && text.trim().length > 0) {
+        await addDoc(collection(db, "section_content"), {
+            section: sectionName,
+            text: text,
+            createdAt: new Date().toISOString()
+        });
+    }
+};
+
+// 3. Функция удаления контента
+window.deleteContent = (id) => {
+    if (!hasFullAccess) return;
+    if (confirm("Удалить эту запись?")) {
+        deleteDoc(doc(db, "section_content", id));
+    }
+};
