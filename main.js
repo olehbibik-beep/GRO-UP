@@ -63,10 +63,17 @@ window.saveName = async () => {
     const nameInput = document.getElementById('user-name-input').value.trim();
     const pinInput = document.getElementById('user-pin-input').value.trim();
     
-    if (nameInput.length < 2 || pinInput.length < 1) {
-        alert("Пожалуйста, введите имя и ПИН-код!");
+    // Убрали жесткие лимиты по символам. Просто проверяем, что поля не пустые!
+    if (nameInput === "" || pinInput === "") {
+        alert("Пожалуйста, заполните оба поля: Имя и ПИН-код!");
         return;
     }
+
+    // Меняем кнопку на "Загрузка..." чтобы было понятно, что процесс пошел
+    const btn = document.querySelector('#auth-modal button');
+    const originalBtnText = btn.innerText;
+    btn.innerText = "Загрузка...";
+    btn.disabled = true;
 
     try {
         // Ищем пользователя в базе
@@ -77,7 +84,7 @@ window.saveName = async () => {
         let userId = "";
 
         if (!querySnapshot.empty) {
-            // АКАУНТ СУЩЕСТВУЕТ
+            // АКАУНТ СУЩЕСТВУЕТ -> ПРОВЕРЯЕМ ПИН
             const userDoc = querySnapshot.docs[0];
             const userData = userDoc.data();
 
@@ -85,6 +92,8 @@ window.saveName = async () => {
                 userId = userDoc.id; // ПИН верный
             } else {
                 alert("Неверный ПИН-код для этого имени!");
+                btn.innerText = originalBtnText;
+                btn.disabled = false;
                 return; 
             }
         } else {
@@ -93,10 +102,10 @@ window.saveName = async () => {
             
             await setDoc(doc(db, "users", userId), {
                 name: nameInput,
-                pin: pinInput, // Сохраняем ПИН
+                pin: pinInput, // Сохраняем придуманный ПИН
                 createdAt: new Date().toISOString(),
                 status: "online",
-                role: "Участник", // Сразу даем роль
+                role: "Участник", // Сразу даем роль для админки
                 isBlocked: false
             });
             console.log("Новый пользователь зарегистрирован!");
@@ -112,6 +121,8 @@ window.saveName = async () => {
     } catch (e) {
         console.error("Ошибка при входе:", e);
         alert("Ошибка сети. Проверьте интернет или настройки базы.");
+        btn.innerText = originalBtnText;
+        btn.disabled = false;
     }
 };
 
