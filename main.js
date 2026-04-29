@@ -186,24 +186,56 @@ window.deleteContent = (id) => {
         deleteDoc(doc(db, "section_content", id));
     }
 };
-// НАДЕЖНАЯ ПРИВЯЗКА КНОПОК
+// --- НАДЕЖНАЯ ПРИВЯЗКА КНОПОК ---
 document.addEventListener('DOMContentLoaded', () => {
     
-    // Кнопка открытия профиля
+    // 1. Кнопка открытия профиля
     const profileBtn = document.getElementById('profile-btn');
     if (profileBtn) {
         profileBtn.addEventListener('click', () => {
             const localName = localStorage.getItem('userName') || "Без имени";
-            
-            // Подставляем данные
             document.getElementById('profile-name').innerText = currentUserData ? currentUserData.name : localName;
             document.getElementById('profile-role').innerText = currentUserData ? currentUserData.role : "Загрузка...";
             
-            // Показываем окно
             const modal = document.getElementById('profile-modal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         });
     }
 
+    // 2. Кнопка ВХОДА
+    const loginBtn = document.getElementById('login-btn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', async () => {
+            const nameInput = document.getElementById('user-name-input');
+            const name = nameInput.value.trim();
+            
+            if (name.length > 1) {
+                let userId = localStorage.getItem('userId');
+                if (!userId) {
+                    userId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 9);
+                    localStorage.setItem('userId', userId);
+                }
+
+                localStorage.setItem('userName', name);
+                document.getElementById('auth-modal').style.display = 'none'; // Скрываем окно
+
+                try {
+                    await setDoc(doc(db, "users", userId), {
+                        name: name,
+                        createdAt: new Date().toISOString(),
+                        status: "online",
+                        role: "user",
+                        isBlocked: false
+                    }, { merge: true }); 
+                    
+                    listenToUserStatus();
+                } catch (e) {
+                    console.error("Офлайн режим:", e);
+                }
+            } else {
+                alert("Введи имя!");
+            }
+        });
+    }
 });
