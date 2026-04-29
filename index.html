@@ -10,11 +10,15 @@
 
     <div id="auth-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-6 transition-opacity">
         <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl">
-            <h2 class="text-2xl font-black mb-2 text-slate-800">Как тебя зовут?</h2>
-            <p class="text-slate-500 mb-6">Введи имя для входа в систему</p>
+            <h2 class="text-2xl font-black mb-2 text-slate-800">Вход в систему</h2>
+            <p class="text-slate-500 mb-6">Введите имя и ПИН-код</p>
+            
             <input id="user-name-input" type="text" placeholder="Твое имя" 
-                   class="w-full p-4 rounded-2xl bg-slate-100 mb-4 outline-none focus:ring-4 ring-indigo-500/20 text-center font-bold text-xl transition-all">
-            <button onclick="saveName()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-2xl shadow-lg shadow-indigo-600/30 active:scale-95 transition-all">
+                   class="w-full p-4 rounded-2xl bg-slate-100 mb-3 outline-none focus:ring-4 ring-indigo-500/20 text-center font-bold text-xl transition-all">
+            <input id="user-pin-input" type="password" placeholder="ПИН-код" 
+                   class="w-full p-4 rounded-2xl bg-slate-100 mb-6 outline-none focus:ring-4 ring-indigo-500/20 text-center font-bold text-xl transition-all tracking-widest">
+                   
+            <button onclick="saveName()" id="login-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-2xl shadow-lg shadow-indigo-600/30 active:scale-95 transition-all">
                 Войти в GRO-UP
             </button>
         </div>
@@ -92,24 +96,21 @@
         </div>
     </div>
 
-  <div id="auth-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-6 transition-opacity">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl">
-            <h2 class="text-2xl font-black mb-2 text-slate-800">Вход в систему</h2>
-            <p class="text-slate-500 mb-6">Введите имя и ПИН-код от администратора</p>
-            
-            <input id="user-name-input" type="text" placeholder="Твое имя" 
-                   class="w-full p-4 rounded-2xl bg-slate-100 mb-3 outline-none focus:ring-4 ring-indigo-500/20 text-center font-bold text-xl transition-all">
-                   
-            <input id="user-pin-input" type="password" placeholder="ПИН-код" 
-                   class="w-full p-4 rounded-2xl bg-slate-100 mb-6 outline-none focus:ring-4 ring-indigo-500/20 text-center font-bold text-xl transition-all tracking-widest">
-                   
-            <button onclick="saveName()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-2xl shadow-lg shadow-indigo-600/30 active:scale-95 transition-all">
-                Войти в GRO-UP
-            </button>
+    <div id="add-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-6">
+        <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative">
+            <button onclick="closeModals()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-800 text-xl font-bold">✖</button>
+            <h2 class="text-2xl font-black text-slate-800 mb-4">Добавить запись</h2>
+            <textarea id="add-content-text" rows="5" placeholder="Введите текст сообщения..." 
+                      class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 ring-indigo-500/20 resize-none mb-4"></textarea>
+            <div class="flex gap-3">
+                <button onclick="saveNewContent()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-2xl shadow-lg shadow-indigo-600/30 active:scale-95 transition-all">
+                    Опубликовать
+                </button>
+            </div>
         </div>
     </div>
 
-    <script type="module" src="main.js?v=2"></script>
+    <script type="module" src="main.js?v=3"></script>
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
