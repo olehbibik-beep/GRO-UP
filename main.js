@@ -20,6 +20,7 @@ const TOP_ROLES = ["Владелец", "Админ"];
 const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
 let currentUserData = null; 
 let hasFullAccess = false;
+let currentSectionForAdd = '';
 
 const d = new Date();
 const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
@@ -42,6 +43,9 @@ window.switchTab = (tabId, btnElement) => {
     }
 };
 
+// =========================================================
+// ГЛАВНЫЙ СЛУШАТЕЛЬ (ОТРИСОВКА ИНТЕРФЕЙСА)
+// =========================================================
 onSnapshot(doc(db, "users", userId), async (docSnap) => {
     if (!docSnap.exists()) { window.logout(); return; }
     currentUserData = docSnap.data();
@@ -64,8 +68,10 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         const profileAdminLinks = document.getElementById('profile-admin-links');
         const profileAdminBtn = document.getElementById('profile-admin-btn');
         const profileReportsBtn = document.getElementById('profile-reports-btn');
+        const profileCalendarBtn = document.getElementById('profile-calendar-btn'); // Новая кнопка календаря
         let showAdminMenu = false;
 
+        // Кнопки для Админа/Владельца
         if (userRoles.some(r => TOP_ROLES.includes(r))) {
             hasFullAccess = true;
             if(profileAdminBtn) { profileAdminBtn.classList.remove('hidden'); profileAdminBtn.classList.add('flex'); showAdminMenu = true; }
@@ -74,16 +80,16 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
             if(profileAdminBtn) { profileAdminBtn.classList.add('hidden'); profileAdminBtn.classList.remove('flex'); }
         }
 
-       const profileCalendarBtn = document.getElementById('profile-calendar-btn'); // Добавь эту переменную к остальным
-
+        // Кнопки для Надзирателей (Отчеты и Календарь)
         if (userRoles.some(r => OVERSEER_ROLES.includes(r))) {
             if(profileReportsBtn) { profileReportsBtn.classList.remove('hidden'); profileReportsBtn.classList.add('flex'); showAdminMenu = true; }
-            if(profileCalendarBtn) { profileCalendarBtn.classList.remove('hidden'); profileCalendarBtn.classList.add('flex'); } // Показываем Календарь
+            if(profileCalendarBtn) { profileCalendarBtn.classList.remove('hidden'); profileCalendarBtn.classList.add('flex'); }
         } else {
             if(profileReportsBtn) { profileReportsBtn.classList.add('hidden'); profileReportsBtn.classList.remove('flex'); }
-            if(profileCalendarBtn) { profileCalendarBtn.classList.add('hidden'); profileCalendarBtn.classList.remove('flex'); } // Прячем Календарь
+            if(profileCalendarBtn) { profileCalendarBtn.classList.add('hidden'); profileCalendarBtn.classList.remove('flex'); }
         }
 
+        // Показываем контейнер кнопок, если хоть одна активна
         if(profileAdminLinks) {
             if(showAdminMenu) { profileAdminLinks.classList.remove('hidden'); profileAdminLinks.classList.add('flex'); } 
             else { profileAdminLinks.classList.add('hidden'); profileAdminLinks.classList.remove('flex'); }
@@ -137,6 +143,7 @@ window.submitReport = async () => {
 };
 
 function loadPersonalData() {
+    // 0. Отчет
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
         if (docSnap.exists()) {
             const r = docSnap.data();
@@ -149,6 +156,7 @@ function loadPersonalData() {
         }
     });
 
+    // 1. Дежурства
     try {
         const dutiesQuery = query(collection(db, "duties"), where("userId", "==", userId));
         onSnapshot(dutiesQuery, (snapshot) => {
@@ -162,6 +170,7 @@ function loadPersonalData() {
         });
     } catch(e) { console.error(e); }
 
+    // 2. Задания
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), where("userId", "==", userId));
         onSnapshot(tasksQuery, (snapshot) => {
@@ -187,6 +196,7 @@ function loadPersonalData() {
         });
     } catch(e){ console.error(e); }
 
+    // 3. Участки
     try {
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
         onSnapshot(terrQuery, (snapshot) => {
@@ -213,6 +223,7 @@ function loadPersonalData() {
         });
     } catch(e) { console.error(e); }
 
+    // 4. Новости
     try {
         onSnapshot(collection(db, "section_content"), (snapshot) => {
             let newsHTML = '';
@@ -230,7 +241,7 @@ function loadPersonalData() {
         });
     } catch(e) { console.error(e); }
 
-// 5. Календарь (ТЕМНАЯ ТЕМА - ВИДЯТ ВСЕ)
+    // 5. Календарь (ТЕМНАЯ ТЕМА - ВИДЯТ ВСЕ)
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -244,9 +255,7 @@ function loadPersonalData() {
                 const evDate = new Date(ev.date);
                 const evGroup = ev.group || "Все";
                 
-                // УБРАЛИ ФИЛЬТР ПО ГРУППЕ: Показываем событие всем, если оно в будущем
                 if (evDate >= today) {
-                    // Оставляем только бейджик, чтобы понимать, для кого событие
                     const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-500/30 text-indigo-100 px-2 py-0.5 rounded-md text-[8px] ml-2 border border-indigo-400/30">Гр. ${evGroup}</span>` : '';
                     
                     html += `
@@ -265,6 +274,25 @@ function loadPersonalData() {
             container.innerHTML = html || '<p class="text-sm text-slate-500 italic">В ближайшее время событий нет.</p>';
         });
     } catch(e) { console.error("Ошибка календаря:", e); }
+}
+
+window.requestTerritory = async (btn) => {
+    btn.innerText = "Отправка..."; btn.disabled = true;
+    try {
+        await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
+        btn.innerText = "Запрос отправлен! ✔️";
+        setTimeout(() => { btn.innerText = "Попросить участок"; btn.disabled = false; }, 3000);
+    } catch (e) { alert("Ошибка!"); btn.innerText = "Попросить участок"; btn.disabled = false; }
+};
+
+window.openAddModal = (section) => { currentSectionForAdd = section; document.getElementById('add-content-text').value = ''; document.getElementById('add-modal').classList.replace('hidden', 'flex'); };
+window.saveNewContent = async () => {
+    const text = document.getElementById('add-content-text').value.trim();
+    if (!text || !hasFullAccess) return;
+    await addDoc(collection(db, "section_content"), { section: currentSectionForAdd, text, createdAt: new Date().toISOString() });
+    window.closeModals(); 
+};
+window.deleteContent = (id) => { if(hasFullAccess && confirm("Удалить?")) deleteDoc(doc(db, "section_content", id)); };
 
 window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
 window.closeModals = () => {
