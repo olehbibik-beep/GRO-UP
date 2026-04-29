@@ -1,5 +1,14 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { 
+    initializeFirestore, 
+    persistentLocalCache, 
+    collection, 
+    onSnapshot, 
+    doc, 
+    updateDoc, 
+    increment, 
+    setDoc 
+} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
@@ -11,16 +20,42 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+
+// 1. Включаем офлайн-режим (данные будут сохраняться в памяти устройства)
+const db = initializeFirestore(app, {
+    localCache: persistentLocalCache()
+});
+
 const listElement = document.getElementById('categories-list');
 
-// 1. Функция входа (сохранение имени)
-window.saveName = () => {
+// 2. Функция входа (сохранение в локальную память и в ОБЛАКО)
+window.saveName = async () => {
     const nameInput = document.getElementById('user-name-input');
     const name = nameInput.value.trim();
+    
     if (name.length > 1) {
+        // Генерируем уникальный ID для пользователя, если его еще нет на этом устройстве
+        let userId = localStorage.getItem('userId');
+        if (!userId) {
+            userId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('userId', userId);
+        }
+
         localStorage.setItem('userName', name);
         document.getElementById('auth-modal').style.display = 'none';
+
+        // Записываем пользователя в коллекцию "users" в Firebase
+        try {
+            await setDoc(doc(db, "users", userId), {
+                name: name,
+                createdAt: new Date().toISOString(),
+                status: "online"
+            });
+            console.log("Профиль создан в облаке!");
+        } catch (e) {
+            // Если интернета нет, Firebase сохранит это локально и отправит, когда сеть появится
+            console.error("Сохранено локально, ждем интернет:", e);
+        }
     } else {
         alert("Введи имя!");
     }
@@ -31,34 +66,49 @@ if (localStorage.getItem('userName')) {
     document.getElementById('auth-modal').style.display = 'none';
 }
 
-// 2. Функция присоединения к группе (счетчик +1)
+// 3. Функция присоединения к группе
 window.joinRoom = async (roomId, roomName) => {
-    const user = localStorage.getItem('userName');
+    const userId = localStorage.getItem('userId');
+    const userName = localStorage.getItem('userName');
+    
+    if (localStorage.getItem('joinedRoom')) {
+        alert("Ты уже в группе!");
+        return;
+    }
+
     const roomRef = doc(db, "categories", roomId);
+    const userRef = doc(db, "users", userId); // Ссылка на профиль пользователя
 
     try {
-        // Увеличиваем счетчик в базе на 1
+        // Увеличиваем счетчик комнаты
         await updateDoc(roomRef, {
             count: increment(1)
         });
-        alert(`${user}, ты успешно записан в группу "${roomName}"!`);
+        
+        // Обновляем профиль пользователя, записывая, в какой он комнате
+        await updateDoc(userRef, {
+            currentRoom: roomId
+        });
+
+        localStorage.setItem('joinedRoom', roomId);
+        alert(`${userName}, ты успешно записан в группу "${roomName}"!`);
     } catch (e) {
-        console.error("Ошибка при записи:", e);
+        console.error("Ошибка при записи (сохранено локально):", e);
     }
 };
 
-// 3. Отрисовка списка в реальном времени
+// 4. Отрисовка списка (с фиксом прыгающих цветов)
 onSnapshot(collection(db, "categories"), (snapshot) => {
     listElement.innerHTML = '';
-    snapshot.forEach((documentSnapshot) => {
+    const colors = ['bg-blue-50', 'bg-purple-50', 'bg-emerald-50', 'bg-orange-50'];
+    
+    snapshot.forEach((documentSnapshot, index) => {
         const cat = documentSnapshot.data();
         const id = documentSnapshot.id;
-        
-        const colors = ['bg-blue-50', 'bg-purple-50', 'bg-emerald-50', 'bg-orange-50'];
-        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        const color = colors[index % colors.length];
 
         listElement.innerHTML += `
-            <div class="${randomColor} p-5 rounded-[2.5rem] mb-4 flex items-center justify-between border border-white shadow-sm active:scale-95 transition-transform cursor-pointer" 
+            <div class="${color} p-5 rounded-[2.5rem] mb-4 flex items-center justify-between border border-white shadow-sm active:scale-95 transition-transform cursor-pointer" 
                  onclick="joinRoom('${id}', '${cat.name}')">
                 <div class="flex items-center">
                     <div class="bg-white w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-inner">
