@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, query, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
@@ -12,115 +12,112 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const currentUserId = localStorage.getItem('userId');
 
-const userId = localStorage.getItem('userId');
-if (!userId) window.location.href = 'login.html';
+if (!currentUserId) window.location.href = 'login.html';
 
-let currentUser = null;
+let myGroup = "Без группы";
+let hasFullAccess = false;
 let allReports = [];
 
-// 1. Узнаем права зашедшего человека
-async function checkAccess() {
-    const userSnap = await getDoc(doc(db, "users", userId));
-    if (userSnap.exists()) {
-        currentUser = userSnap.data();
-        let userRoles = currentUser.roles || (currentUser.role ? [currentUser.role] : []);
-        
-        // Владелец/Админ видят всё собрание. Надзиратель - только свою группу.
-        if (userRoles.includes("Владелец") || userRoles.includes("Админ")) {
-            document.getElementById('group-title').innerText = "Все группы (Доступ Администратора)";
-            loadReports("all"); 
-        } else if (userRoles.includes("Надзиратель группы")) {
-            const myGroup = currentUser.group || "Без группы";
-            document.getElementById('group-title').innerText = `Доступ: Группа №${myGroup}`;
-            loadReports(myGroup);
+// 1. ПРОВЕРКА ПРАВ И ДОСТУПА
+getDoc(doc(db, "users", currentUserId)).then(docSnap => {
+    if (docSnap.exists()) {
+        const u = docSnap.data();
+        const roles = u.roles || [];
+        myGroup = u.group || "Без группы";
+
+        if (roles.includes("Владелец") || roles.includes("Админ")) {
+            hasFullAccess = true;
+            document.getElementById('group-title').innerText = "Все группы (Полный доступ)";
+        } else if (roles.includes("Надзиратель группы")) {
+            hasFullAccess = false;
+            document.getElementById('group-title').innerText = `Группа № ${myGroup} (Доступ надзирателя)`;
         } else {
-            // Если сюда зашел обычный участник - выкидываем
-            alert("У вас нет доступа к этой странице");
+            // Если обычный участник попытается зайти по ссылке
             window.location.href = 'index.html';
         }
+        
+        loadReports();
     }
-}
+});
 
-// 2. Загружаем отчеты
-function loadReports(allowedGroup) {
+function loadReports() {
+    // Получаем все отчеты (отсортированы по дате сдачи по убыванию)
     const q = query(collection(db, "reports"), orderBy("submittedAt", "desc"));
     
     onSnapshot(q, (snapshot) => {
         allReports = [];
+        const monthsSet = new Set();
+
         snapshot.forEach(docSnap => {
-            const rep = docSnap.data();
-            // Фильтруем: берем все (если Админ) или только свою группу
-            if (allowedGroup === "all" || rep.group == allowedGroup) {
-                allReports.push(rep);
+            const r = docSnap.data();
+            
+            // ФИЛЬТРАЦИЯ ДОСТУПА: Админ видит всех. Надзиратель - только свою группу.
+            if (hasFullAccess || r.group === myGroup) {
+                allReports.push(r);
+                if (r.month) monthsSet.add(r.month);
             }
         });
+
+        // Заполняем фильтр месяцев
+        const monthFilter = document.getElementById('month-filter');
+        const currentSelection = monthFilter.value;
         
-        populateMonthsFilter();
-        renderTable("all"); // Изначально показываем все доступные месяцы
+        let monthHtml = '<option value="all">Все месяцы</option>';
+        Array.from(monthsSet).forEach(m => {
+            monthHtml += `<option value="${m}">${m}</option>`;
+        });
+        monthFilter.innerHTML = monthHtml;
+        monthFilter.value = currentSelection || "all";
+
+        renderTable();
     });
 }
 
-// 3. Отрисовка таблицы
-function renderTable(monthFilter) {
-    const tbody = document.getElementById('reports-list');
+// 2. ОТРИСОВКА ТАБЛИЦЫ И ПОДСЧЕТ ИТОГОВ
+function renderTable() {
+    const list = document.getElementById('reports-list');
+    const selectedMonth = document.getElementById('month-filter').value;
+    
+    let html = '';
     let totalHours = 0;
-    tbody.innerHTML = '';
+    let totalPubs = 0;
 
-    const filteredReports = monthFilter === "all" ? allReports : allReports.filter(r => r.month === monthFilter);
+    const filteredReports = allReports.filter(r => selectedMonth === 'all' || r.month === selectedMonth);
 
-    if (filteredReports.length === 0) {
-        // Заменили colspan на 7, так как добавилась колонка
-        tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400 font-medium">Отчетов пока нет</td></tr>';
-        document.getElementById('total-hours').innerText = '0';
-        return;
-    }
+    filteredReports.forEach(r => {
+        totalPubs++;
+        totalHours += Number(r.hours || 0);
 
-    filteredReports.forEach(rep => {
-        totalHours += (rep.hours || 0);
-        
-        // Рисуем красивую зеленую галочку, если служил
-        const participatedHtml = rep.participated 
-            ? '<span class="text-emerald-500 font-black text-lg">✔ Да</span>' 
-            : '<span class="text-slate-300">-</span>';
+        const checkIcon = r.participated || r.hours > 0 
+            ? `<span class="text-emerald-500 font-bold text-lg">✅</span>` 
+            : `<span class="text-slate-300">-</span>`;
 
-        tbody.innerHTML += `
-            <tr class="hover:bg-slate-50 transition-colors">
-                <td class="p-4 font-bold text-slate-800">${rep.userName}</td>
-                <td class="p-4 text-center text-slate-500 font-bold">${rep.group}</td>
-                
-                <td class="p-4 text-center">${participatedHtml}</td>
-                
-                <td class="p-4 text-center font-black text-purple-700 text-lg">${rep.hours || '-'}</td>
-                <td class="p-4 text-center text-slate-600">${rep.pubs || '-'}</td>
-                <td class="p-4 text-center text-slate-600">${rep.studies || '-'}</td>
-                <td class="p-4 text-right text-xs text-slate-400">${rep.month}</td>
+        html += `
+            <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
+                <td class="py-3 px-4 font-black text-slate-800">${r.userName}</td>
+                <td class="py-3 px-4 text-center">
+                    <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest">${r.group}</span>
+                </td>
+                <td class="py-3 px-4 text-center">${checkIcon}</td>
+                <td class="py-3 px-4 text-center font-black text-purple-600">${r.hours || '-'}</td>
+                <td class="py-3 px-4 text-center text-slate-500 font-bold">${r.pubs || '-'}</td>
+                <td class="py-3 px-4 text-center text-slate-500 font-bold">${r.studies || '-'}</td>
+                <td class="py-3 px-4 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">${r.month}</td>
             </tr>
         `;
     });
 
     document.getElementById('total-hours').innerText = totalHours;
+    document.getElementById('total-pubs').innerText = totalPubs;
+
+    if (filteredReports.length === 0) {
+        list.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400 italic">Отчеты не найдены.</td></tr>';
+    } else {
+        list.innerHTML = html;
+    }
 }
 
-// Заполняем фильтр месяцев без дубликатов
-function populateMonthsFilter() {
-    const select = document.getElementById('month-filter');
-    const uniqueMonths = [...new Set(allReports.map(r => r.month))];
-    
-    // Сохраняем текущий выбор, чтобы он не сбросился
-    const currentVal = select.value; 
-    select.innerHTML = '<option value="all">Все месяцы</option>';
-    
-    uniqueMonths.forEach(m => {
-        select.innerHTML += `<option value="${m}">${m}</option>`;
-    });
-    
-    if(uniqueMonths.includes(currentVal)) select.value = currentVal;
-}
-
-document.getElementById('month-filter').addEventListener('change', (e) => {
-    renderTable(e.target.value);
-});
-
-// Запуск
-checkAccess();
+// Слушаем переключение фильтра месяцев
+document.getElementById('month-filter').addEventListener('change', renderTable);
