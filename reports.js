@@ -20,26 +20,38 @@ let myGroup = "Без группы";
 let hasFullAccess = false;
 let allReports = [];
 
-// 1. ПРОВЕРКА ПРАВ И ДОСТУПА
+// 1. ПРОВЕРКА ПРАВ, ДОСТУПА К ГРУППАМ И УМНОЕ МЕНЮ
 getDoc(doc(db, "users", currentUserId)).then(docSnap => {
-    if (docSnap.exists()) {
-        const u = docSnap.data();
-        const roles = u.roles || [];
-        myGroup = u.group || "Без группы";
+    if (!docSnap.exists()) return window.location.href = 'login.html';
+    
+    const u = docSnap.data();
+    const roles = u.roles || [];
+    myGroup = u.group || "Без группы";
 
-        if (roles.includes("Владелец") || roles.includes("Админ")) {
-            hasFullAccess = true;
-            document.getElementById('group-title').innerText = "Все группы (Полный доступ)";
-        } else if (roles.includes("Надзиратель группы")) {
-            hasFullAccess = false;
-            document.getElementById('group-title').innerText = `Группа № ${myGroup} (Доступ надзирателя)`;
-        } else {
-            // Если обычный участник попытается зайти по ссылке
-            window.location.href = 'index.html';
-        }
-        
-        loadReports();
+    const isFullAdmin = roles.includes("Владелец") || roles.includes("Админ");
+    const isSchool = isFullAdmin || roles.includes("Ответственный за школу");
+    const isTerr = isFullAdmin || roles.includes("Ответственный за участки");
+    const isOverseer = isFullAdmin || roles.includes("Надзиратель группы");
+
+    // Настраиваем доступ к отчетам
+    if (isFullAdmin) {
+        hasFullAccess = true;
+        document.getElementById('group-title').innerText = "Все группы (Полный доступ)";
+    } else if (isOverseer) {
+        hasFullAccess = false;
+        document.getElementById('group-title').innerText = `Группа № ${myGroup} (Доступ надзирателя)`;
+    } else {
+        window.location.href = 'index.html'; // Выкидываем обычных участников
     }
+
+    // Прячем иконки в навигации
+    const navAdmin = document.querySelector('nav a[href="admin.html"]'); if (navAdmin && !isFullAdmin) navAdmin.style.display = 'none';
+    const navSchool = document.querySelector('nav a[href="school.html"]'); if (navSchool && !isSchool) navSchool.style.display = 'none';
+    const navTerr = document.querySelector('nav a[href="territories.html"]'); if (navTerr && !isTerr) navTerr.style.display = 'none';
+    const navCal = document.querySelector('nav a[href="calendar.html"]'); if (navCal && !isOverseer) navCal.style.display = 'none';
+    const navDuties = document.querySelector('nav a[href="duties.html"]'); if (navDuties && !isOverseer) navDuties.style.display = 'none';
+    
+    loadReports();
 });
 
 function loadReports() {
