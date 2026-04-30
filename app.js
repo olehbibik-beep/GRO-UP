@@ -218,7 +218,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-// 2. УМНЫЕ ЗАДАНИЯ (ШКОЛА) - НОВЫЕ КВАДРАТНЫЕ КАРТОЧКИ
+// 2. УМНЫЕ ЗАДАНИЯ (ШКОЛА) - АДАПТИРОВАННЫЕ КАРТОЧКИ
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
         onSnapshot(tasksQuery, (snapshot) => {
@@ -241,31 +241,32 @@ function loadPersonalData() {
                     const opacityClass = isPast ? "opacity-60 grayscale bg-slate-50 border-slate-200" : "bg-white border-slate-200 shadow-sm";
 
                     let roleText = isAssistant 
-                        ? `Помощник у <span class="text-sky-600 ml-1">${task.userName}</span>` 
-                        : `Выступление ${task.assistant ? `<span class="text-slate-500 text-xs block mt-0.5">Помощник: <span class="text-sky-600">${task.assistant}</span></span>` : ''}`;
+                        ? `Помощник у <span class="text-sky-600 ml-1 truncate">${task.userName}</span>` 
+                        : `Выступление ${task.assistant ? `<span class="text-slate-500 text-[10px] md:text-xs block mt-0.5 truncate">Пом: <span class="text-sky-600">${task.assistant}</span></span>` : ''}`;
 
                     const cardHtml = `
-                        <div class="p-5 rounded-3xl border ${opacityClass} mb-4 relative overflow-hidden transition-all">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="flex gap-4 items-center">
-                                    <div class="flex flex-col items-center justify-center w-14 h-14 ${isPast ? 'bg-slate-100' : 'bg-sky-50'} rounded-2xl border ${isPast ? 'border-slate-200' : 'border-sky-100'} shadow-inner shrink-0">
-                                        <span class="text-[9px] uppercase ${isPast ? 'text-slate-400' : 'text-sky-500'} font-bold leading-none mb-1 tracking-widest">${taskDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
-                                        <span class="text-2xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${taskDate.getDate()}</span>
+                        <div class="p-4 md:p-5 rounded-3xl border ${opacityClass} mb-4 relative overflow-hidden transition-all">
+                            <div class="flex items-start mb-4">
+                                <div class="flex gap-3 md:gap-4 items-center min-w-0">
+                                    <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 ${isPast ? 'bg-slate-100' : 'bg-sky-50'} rounded-2xl border ${isPast ? 'border-slate-200' : 'border-sky-100'} shadow-inner shrink-0">
+                                        <span class="text-[8px] md:text-[9px] uppercase ${isPast ? 'text-slate-400' : 'text-sky-500'} font-bold leading-none mb-1 tracking-widest">${taskDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
+                                        <span class="text-xl md:text-2xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${taskDate.getDate()}</span>
                                     </div>
-                                    <div>
-                                        <h3 class="font-black text-slate-800 text-base leading-tight">${roleText}</h3>
+                                    <div class="min-w-0">
+                                        <h3 class="font-black text-slate-800 text-sm md:text-base leading-tight">${roleText}</h3>
                                     </div>
-                                </div>
-                                
-                                <div class="bg-slate-800 text-white px-3 py-1.5 rounded-xl flex items-center justify-center shadow-md shrink-0">
-                                    <span class="text-[10px] uppercase tracking-widest font-bold text-slate-400 mr-1.5">№</span>
-                                    <span class="text-2xl font-black leading-none">${task.taskNumber || '-'}</span>
                                 </div>
                             </div>
                             
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
-                                <span class="font-black ${isPast ? 'text-slate-500' : 'text-sky-700'} text-xs uppercase tracking-widest truncate mr-2">${task.category || task.title}</span>
-                                ${task.lesson ? `<span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-lg shrink-0">Урок ${task.lesson}</span>` : ''}
+                            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-2 flex-grow min-w-0">
+                                    <span class="bg-slate-800 text-white px-2 py-1 rounded-lg shadow-sm flex items-center shrink-0">
+                                        <span class="text-[8px] uppercase tracking-widest font-bold text-slate-400 mr-1">№</span>
+                                        <span class="text-sm font-black leading-none">${task.taskNumber || '-'}</span>
+                                    </span>
+                                    <span class="font-black ${isPast ? 'text-slate-500' : 'text-sky-700'} text-[9px] md:text-[10px] uppercase tracking-wide leading-tight whitespace-normal break-words">${task.category || task.title}</span>
+                                </div>
+                                ${task.lesson ? `<span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-lg shrink-0 whitespace-nowrap">Урок ${task.lesson}</span>` : ''}
                             </div>
                         </div>
                     `;
@@ -280,35 +281,10 @@ function loadPersonalData() {
                 }
             });
             
-            if (upCount === 0) upList.innerHTML = '<p class="text-slate-400 text-sm italic py-2">У тебя пока нет активных заданий</p>';
-            if (pastCount === 0) pastList.innerHTML = '<p class="text-slate-400 text-sm italic py-2">История пуста</p>';
+            if (upCount === 0) upList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 bg-white rounded-xl p-4 border border-slate-200 text-center">У тебя пока нет активных заданий</p>';
+            if (pastCount === 0) pastList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 text-center">История пуста</p>';
         });
     } catch(e){}
-
-    // 3. Участки
-    try {
-        const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
-        onSnapshot(terrQuery, (snapshot) => {
-            const container = document.getElementById('territories-container');
-            if(!container) return;
-            if (snapshot.empty) return container.innerHTML = '<p class="text-slate-400 text-sm italic py-4">У вас пока нет активных участков</p>';
-            container.innerHTML = '';
-            snapshot.forEach(docSnap => {
-                const terr = docSnap.data();
-                container.innerHTML += `
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                        <div class="p-3 border-b border-slate-100 flex justify-between items-center bg-emerald-50/50">
-                            <h3 class="font-black text-slate-800 text-sm">Участок № ${terr.number}</h3>
-                            <span class="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-2 py-1 rounded uppercase">Активен</span>
-                        </div>
-                        <div class="w-full h-32 bg-slate-50 flex items-center justify-center relative">
-                            <span class="text-3xl absolute opacity-10">🗺️</span>
-                        </div>
-                    </div>
-                `;
-            });
-        });
-    } catch(e) {}
 
     // 4. Новости
     try {
