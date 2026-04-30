@@ -26,23 +26,26 @@ window.toggleView = (view) => {
     document.getElementById('register-section').classList.toggle('block', view === 'register');
 };
 
-// ВЫБОР ПОЛА
+// ВЫБОР ПОЛА (ИКОНКИ)
 window.selectGender = (gender) => {
     selectedGender = gender;
     const boyBtn = document.getElementById('gender-boy');
     const girlBtn = document.getElementById('gender-girl');
     
     // Сбрасываем стили
-    boyBtn.classList.add('opacity-50', 'grayscale'); boyBtn.classList.remove('border-indigo-500', 'bg-indigo-50');
-    girlBtn.classList.add('opacity-50', 'grayscale'); girlBtn.classList.remove('border-indigo-500', 'bg-indigo-50');
+    boyBtn.classList.add('opacity-50', 'grayscale', 'border-slate-200'); 
+    boyBtn.classList.remove('border-indigo-500', 'bg-indigo-50', 'shadow-md');
+    
+    girlBtn.classList.add('opacity-50', 'grayscale', 'border-slate-200'); 
+    girlBtn.classList.remove('border-indigo-500', 'bg-indigo-50', 'shadow-md');
     
     // Активируем выбранный
     if (gender === 'boy') {
-        boyBtn.classList.remove('opacity-50', 'grayscale');
-        boyBtn.classList.add('border-indigo-500', 'bg-indigo-50');
+        boyBtn.classList.remove('opacity-50', 'grayscale', 'border-slate-200');
+        boyBtn.classList.add('border-indigo-500', 'bg-indigo-50', 'shadow-md');
     } else {
-        girlBtn.classList.remove('opacity-50', 'grayscale');
-        girlBtn.classList.add('border-indigo-500', 'bg-indigo-50');
+        girlBtn.classList.remove('opacity-50', 'grayscale', 'border-slate-200');
+        girlBtn.classList.add('border-indigo-500', 'bg-indigo-50', 'shadow-md');
     }
 };
 
@@ -52,17 +55,14 @@ const setupPinUI = (inputId, circlesId) => {
     const circles = document.getElementById(circlesId).children;
 
     input.addEventListener('input', (e) => {
-        // Оставляем только цифры
-        input.value = input.value.replace(/\D/g, ''); 
+        input.value = input.value.replace(/\D/g, ''); // Только цифры
         const valLength = input.value.length;
 
         for (let i = 0; i < 6; i++) {
             if (i < valLength) {
-                // Закрашиваем
                 circles[i].classList.add('bg-indigo-600', 'border-indigo-600');
                 circles[i].classList.remove('border-slate-300');
             } else {
-                // Пустой
                 circles[i].classList.remove('bg-indigo-600', 'border-indigo-600');
                 circles[i].classList.add('border-slate-300');
             }
@@ -73,77 +73,94 @@ const setupPinUI = (inputId, circlesId) => {
 setupPinUI('login-pin', 'login-circles');
 setupPinUI('reg-pin', 'reg-circles');
 
+// УМНОЕ ФОРМАТИРОВАНИЕ ИМЕНИ (С большой буквы, остальное с маленькой)
+const formatName = (str) => {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
 // ЛОГИКА АВТОРИЗАЦИИ (ВХОД)
 document.getElementById('login-btn').addEventListener('click', async (e) => {
-    const name = document.getElementById('login-name').value.trim();
+    const fname = document.getElementById('login-fname').value.trim();
+    const lname = document.getElementById('login-lname').value.trim();
     const pin = document.getElementById('login-pin').value;
     const btn = e.target;
 
-    if (!name || pin.length !== 6) return alert("Введите имя и 6 цифр ПИН-кода!");
+    if (!fname || !lname) return alert("Введите Имя и Фамилию!");
+    if (pin.length !== 6) return alert("ПИН-код должен состоять из 6 цифр!");
 
-    btn.innerText = "Проверка..."; btn.disabled = true;
+    // Склеиваем красивое имя
+    const fullName = formatName(fname) + " " + formatName(lname);
+
+    btn.innerText = "ПРОВЕРКА..."; btn.disabled = true;
 
     try {
-        const q = query(collection(db, "users"), where("name", "==", name), where("pin", "==", pin));
+        const q = query(collection(db, "users"), where("name", "==", fullName), where("pin", "==", pin));
         const snapshot = await getDocs(q);
 
         if (!snapshot.empty) {
-            // Нашли пользователя!
             const userDoc = snapshot.docs[0];
             localStorage.setItem('userId', userDoc.id);
             window.location.href = 'index.html';
         } else {
-            alert("Неверное имя или ПИН-код!");
-            btn.innerText = "Войти в систему"; btn.disabled = false;
+            alert("Пользователь не найден или ПИН-код неверен!");
+            btn.innerText = "ВОЙТИ В СИСТЕМУ"; btn.disabled = false;
+            // Очищаем пин
+            document.getElementById('login-pin').value = '';
+            document.getElementById('login-pin').dispatchEvent(new Event('input'));
         }
     } catch (err) {
         console.error(err);
         alert("Ошибка подключения к базе.");
-        btn.innerText = "Войти в систему"; btn.disabled = false;
+        btn.innerText = "ВОЙТИ В СИСТЕМУ"; btn.disabled = false;
     }
 });
 
 // ЛОГИКА РЕГИСТРАЦИИ (СОЗДАТЬ)
 document.getElementById('reg-btn').addEventListener('click', async (e) => {
-    const name = document.getElementById('reg-name').value.trim();
+    const fname = document.getElementById('reg-fname').value.trim();
+    const lname = document.getElementById('reg-lname').value.trim();
     const pin = document.getElementById('reg-pin').value;
     const btn = e.target;
 
-    if (!name || name.split(' ').length < 2) return alert("Пожалуйста, введите Имя и Фамилию!");
-    if (!selectedGender) return alert("Выберите, кто вы: Брат или Сестра!");
+    if (!fname || !lname) return alert("Пожалуйста, заполните Имя и Фамилию!");
+    if (!selectedGender) return alert("Укажите ваш пол (нажмите на иконку)!");
     if (pin.length !== 6) return alert("ПИН-код должен состоять из 6 цифр!");
 
-    btn.innerText = "Отправка..."; btn.disabled = true;
+    // Склеиваем красивое имя
+    const fullName = formatName(fname) + " " + formatName(lname);
+
+    btn.innerText = "ОТПРАВКА..."; btn.disabled = true;
 
     try {
-        // Проверяем, нет ли уже такого имени в базе
-        const q = query(collection(db, "users"), where("name", "==", name));
+        // Проверяем, нет ли уже такого имени
+        const q = query(collection(db, "users"), where("name", "==", fullName));
         const snapshot = await getDocs(q);
 
         if (!snapshot.empty) {
             alert("Пользователь с таким именем уже существует!");
-            btn.innerText = "Отправить заявку"; btn.disabled = false;
+            btn.innerText = "ОТПРАВИТЬ ЗАЯВКУ"; btn.disabled = false;
             return;
         }
 
-        // Создаем профиль. По умолчанию статус "pending" (ожидает админа)
+        // Создаем профиль
         const docRef = await addDoc(collection(db, "users"), {
-            name: name,
+            name: fullName,
             pin: pin,
             gender: selectedGender,
-            status: "pending", // Скрипт в app.js увидит это и покажет экран загрузки
+            status: "pending", 
             roles: ["Участник"],
             group: "Без группы",
             createdAt: new Date().toISOString()
         });
 
-        // Сразу авторизуем его
+        // Сразу авторизуем
         localStorage.setItem('userId', docRef.id);
-        window.location.href = 'index.html'; // Его встретит экран "Заявка на рассмотрении"
+        window.location.href = 'index.html'; 
 
     } catch (err) {
         console.error(err);
         alert("Ошибка при регистрации.");
-        btn.innerText = "Отправить заявку"; btn.disabled = false;
+        btn.innerText = "ОТПРАВИТЬ ЗАЯВКУ"; btn.disabled = false;
     }
 });
