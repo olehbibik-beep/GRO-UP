@@ -44,22 +44,26 @@ window.switchTab = (tabId, btnElement) => {
     }
 };
 
-// НОВАЯ, БРОНЕБОЙНАЯ ФУНКЦИЯ ДЛЯ КНОПКИ ОТЧЕТА
-window.triggerReportAction = async () => {
+// ==========================================
+// МАГИЯ КНОПКИ ОТЧЕТА (Всё в одной кнопке!)
+// ==========================================
+window.submitReport = async () => {
     const fs = document.getElementById('report-fieldset');
-    const btn = document.getElementById('btn-report-action');
+    const btn = document.getElementById('submit-report-btn');
 
     if (!fs || !btn) return;
 
     if (fs.disabled) {
-        // Шаг 1: Разблокируем форму
+        // ШАГ 1: РАЗБЛОКИРУЕМ ФОРМУ
         fs.disabled = false;
         fs.classList.remove('opacity-50', 'grayscale-[50%]');
+        
+        // Кнопка становится фиолетовой
         btn.classList.replace('bg-slate-800', 'bg-ui-report');
         btn.classList.replace('hover:bg-slate-900', 'hover:opacity-90');
         btn.innerText = 'Отправить отчет';
     } else {
-        // Шаг 2: Проверяем и отправляем
+        // ШАГ 2: СОХРАНЯЕМ В БАЗУ
         const participated = document.getElementById('rep-participated')?.checked || false;
         const hours = document.getElementById('rep-hours')?.value || "";
         const pubs = document.getElementById('rep-pubs')?.value || "";
@@ -78,19 +82,25 @@ window.triggerReportAction = async () => {
             const log = document.getElementById('last-report-log');
             if(log) log.innerText = `Сохранено: ${new Date().toLocaleString('ru-RU')}`;
             
+            // Кнопка становится зеленой
             btn.classList.replace('bg-ui-report', 'bg-ui-success');
             btn.innerText = "Успешно ✔️";
             
-            // Шаг 3: Блокируем обратно
+            // ШАГ 3: БЛОКИРУЕМ ОБРАТНО ЧЕРЕЗ 2 СЕКУНДЫ
             setTimeout(() => {
                 fs.disabled = true;
                 fs.classList.add('opacity-50', 'grayscale-[50%]');
+                
                 btn.classList.replace('bg-ui-success', 'bg-slate-800');
                 btn.classList.replace('hover:opacity-90', 'hover:bg-slate-900');
                 btn.innerText = "✏️ Изменить";
                 btn.disabled = false;
             }, 2000);
-        } catch (e) { alert("Ошибка сети!"); btn.disabled = false; btn.innerText = "Отправить отчет"; }
+        } catch (e) { 
+            alert("Ошибка сети!"); 
+            btn.disabled = false; 
+            btn.innerText = "Отправить отчет"; 
+        }
     }
 };
 
@@ -116,6 +126,8 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         const profileAdminBtn = document.getElementById('profile-admin-btn');
         const profileReportsBtn = document.getElementById('profile-reports-btn');
         const profileCalendarBtn = document.getElementById('profile-calendar-btn');
+        const profileTerrBtn = document.getElementById('profile-terr-btn');
+        const profileSchoolBtn = document.getElementById('profile-school-btn');
         let showAdminMenu = false;
 
         if (userRoles.some(r => TOP_ROLES.includes(r))) {
@@ -134,13 +146,25 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
             if(profileCalendarBtn) { profileCalendarBtn.classList.add('hidden'); profileCalendarBtn.classList.remove('flex'); }
         }
 
+        if (userRoles.includes('Ответственный за участки') || hasFullAccess) {
+            if(profileTerrBtn) { profileTerrBtn.classList.remove('hidden'); profileTerrBtn.classList.add('flex'); showAdminMenu = true; }
+        } else {
+            if(profileTerrBtn) { profileTerrBtn.classList.add('hidden'); profileTerrBtn.classList.remove('flex'); }
+        }
+
+        if (userRoles.includes('Ответственный за школу') || hasFullAccess) {
+            if(profileSchoolBtn) { profileSchoolBtn.classList.remove('hidden'); profileSchoolBtn.classList.add('flex'); showAdminMenu = true; }
+        } else {
+            if(profileSchoolBtn) { profileSchoolBtn.classList.add('hidden'); profileSchoolBtn.classList.remove('flex'); }
+        }
+
         if(profileAdminLinks) {
             if(showAdminMenu) { profileAdminLinks.classList.remove('hidden'); profileAdminLinks.classList.add('flex'); } 
             else { profileAdminLinks.classList.add('hidden'); profileAdminLinks.classList.remove('flex'); }
         }
 
-        try { loadPersonalData(); } catch(e) { console.error("loadPersonalData Error:", e); }
-        try { loadProfileData(); } catch(e) { console.error("loadProfileData Error:", e); }
+        try { loadPersonalData(); } catch(e) { console.error("Error:", e); }
+        try { loadProfileData(); } catch(e) { console.error("Error:", e); }
     }
 });
 
@@ -182,8 +206,8 @@ function loadPersonalData() {
             const repS = document.getElementById('rep-studies'); if(repS) repS.value = r.studies || '';
             const log = document.getElementById('last-report-log'); if(log) log.innerText = `Последняя запись: ${new Date(r.submittedAt).toLocaleString('ru-RU')}`;
             
-            // Если отчет уже сдавался - кнопка "Изменить"
-            const btn = document.getElementById('btn-report-action');
+            // Если отчет уже есть, меняем текст заблокированной кнопки
+            const btn = document.getElementById('submit-report-btn');
             if(btn && document.getElementById('report-fieldset')?.disabled) {
                 btn.innerText = "✏️ Изменить";
             }
@@ -273,7 +297,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // 5. МОНОЛИТНЫЙ КАЛЕНДАРЬ
+    // 5. МОНОЛИТНЫЙ КАЛЕНДАРЬ ОТ КРАЯ ДО КРАЯ
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -293,21 +317,24 @@ function loadPersonalData() {
                 if (evDate >= today && displayedCount < MAX_EVENTS) {
                     displayedCount++; 
                     
-                    const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded text-[8px] ml-2 border border-indigo-500/30 uppercase">Гр. ${evGroup}</span>` : '';
-                    const leaderText = ev.leader ? `<span class="text-slate-400 ml-2">ВЕД:</span> <span class="text-rose-400 font-bold ml-1">${ev.leader}</span>` : '';
-                    const timeText = ev.time ? `<div class="text-xs md:text-sm font-black text-slate-300 mr-3 md:mr-6 shrink-0">${ev.time}</div>` : '';
+                    const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-500 text-white px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none">Гр. ${evGroup}</span>` : '';
                     
+                    // Обновленный дизайн события (как просил: читабельно и без рамок)
                     html += `
-                        <div class="flex items-center justify-between px-4 md:px-5 py-3 md:py-4 ${displayedCount > 1 ? 'border-t border-slate-700' : ''} hover:bg-slate-700/50 transition-colors w-full group cursor-default">
-                            <div class="flex items-center w-full">
-                                <div class="flex flex-col items-center justify-center w-12 h-12 bg-ui-calBox rounded-lg shrink-0 border border-slate-700 shadow-sm mr-4">
-                                    <span class="text-[8px] uppercase text-rose-400 font-bold leading-none mb-1 tracking-widest">${evDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
-                                    <span class="text-lg font-black leading-none text-white">${evDate.getDate()}</span>
+                        <div class="flex items-center px-4 md:px-5 py-3 md:py-4 hover:bg-slate-800/50 transition-colors w-full cursor-default ${displayedCount > 1 ? 'border-t border-slate-700/50' : ''}">
+                            <div class="flex items-center gap-4 w-full">
+                                <div class="flex flex-col items-center justify-center w-12 shrink-0">
+                                    <span class="text-[9px] uppercase text-rose-500 font-bold leading-none mb-1 tracking-widest">${evDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
+                                    <span class="text-xl font-black leading-none text-white">${evDate.getDate()}</span>
                                 </div>
-                                ${timeText}
-                                <div class="flex flex-col flex-grow truncate pr-2">
-                                    <span class="font-bold text-sm md:text-base text-white leading-tight flex items-center">${ev.title} ${groupBadge}</span>
-                                    ${leaderText ? `<div class="text-[9px] md:text-[10px] uppercase mt-0.5 tracking-wider truncate">${leaderText}</div>` : ''}
+                                
+                                <div class="flex flex-col flex-grow truncate">
+                                    <div class="flex items-center gap-2 truncate">
+                                        ${ev.time ? `<span class="text-sm font-bold text-slate-300 shrink-0">${ev.time}</span>` : ''}
+                                        <span class="font-bold text-sm md:text-base text-white truncate">${ev.title}</span>
+                                        ${groupBadge}
+                                    </div>
+                                    ${ev.leader ? `<div class="text-[10px] uppercase mt-1 tracking-wider truncate text-slate-400 font-medium">Вед: <span class="text-rose-400 font-bold">${ev.leader}</span></div>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -316,7 +343,7 @@ function loadPersonalData() {
             });
             
             if (snapshot.size > MAX_EVENTS && displayedCount === MAX_EVENTS) {
-                html += `<div class="bg-slate-900/50 py-2 border-t border-slate-700"><p class="text-center text-[9px] text-slate-500 uppercase tracking-widest">Показаны ближайшие события</p></div>`;
+                html += `<div class="bg-slate-900/30 py-2 border-t border-slate-700/50"><p class="text-center text-[9px] text-slate-500 uppercase tracking-widest">Показаны ближайшие события</p></div>`;
             }
 
             container.innerHTML = html || '<p class="p-6 text-sm text-slate-500 italic text-center">Нет предстоящих событий</p>';
