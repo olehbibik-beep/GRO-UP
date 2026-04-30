@@ -28,10 +28,6 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
     }
 });
 
-// Глобальное хранилище данных пользователей для быстрой работы модалки
-let usersDataCache = {};
-let editingUserId = null;
-
 // ПОЛУЧЕНИЕ И ОТРИСОВКА ПОЛЬЗОВАТЕЛЕЙ
 onSnapshot(collection(db, "users"), (snapshot) => {
     const pendingList = document.getElementById('pending-list');
@@ -42,14 +38,9 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     let pendingCount = 0;
     let activeCount = 0;
 
-    usersDataCache = {}; // Очищаем кэш
-
     snapshot.forEach((docSnap) => {
         const u = docSnap.data();
         const id = docSnap.id;
-        usersDataCache[id] = u; // Сохраняем в кэш
-
-        // Определяем иконку пола
         const icon = u.gender === 'girl' ? '👩‍💼' : '👨‍💼';
 
         if (u.status === 'pending') {
@@ -57,7 +48,7 @@ onSnapshot(collection(db, "users"), (snapshot) => {
             pendingHTML += `
                 <div class="flex items-center justify-between p-3 bg-white hover:bg-slate-50 transition-colors">
                     <div class="flex items-center gap-3">
-                        <span class="text-2xl drop-shadow-sm">${icon}</span>
+                        <span class="text-2xl">${icon}</span>
                         <div>
                             <p class="font-black text-slate-800 text-sm">${u.name}</p>
                             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Новая заявка</p>
@@ -71,34 +62,32 @@ onSnapshot(collection(db, "users"), (snapshot) => {
             `;
         } else if (u.status === 'active') {
             activeCount++;
-            
-            // Если в старой базе было "Участник", визуально меняем на "Возвещатель"
-            let rolesDisplay = (u.roles || []).map(r => r === "Участник" ? "Возвещатель" : r);
-            if (rolesDisplay.length === 0) rolesDisplay = ["Возвещатель"];
-
-            // Форматируем роли как красивые бейджики
-            const badgesHTML = rolesDisplay.map(r => {
-                if (r === "Админ" || r === "Владелец") return `<span class="inline-block bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase mr-1 mb-1 border border-rose-200">${r}</span>`;
-                if (r === "Надзиратель группы") return `<span class="inline-block bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase mr-1 mb-1 border border-purple-200">Надзиратель</span>`;
-                if (r === "Ответственный за участки") return `<span class="inline-block bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase mr-1 mb-1 border border-emerald-200">Участки</span>`;
-                if (r === "Ответственный за школу") return `<span class="inline-block bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase mr-1 mb-1 border border-sky-200">Школа</span>`;
-                return `<span class="inline-block bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase mr-1 mb-1 border border-slate-200">${r}</span>`;
-            }).join('');
-
-            const groupDisplay = u.group && u.group !== "Без группы" ? `<span class="font-black text-slate-700">${u.group}</span>` : `<span class="text-slate-300">-</span>`;
+            let r = u.roles || [];
+            if (r.includes("Участник") && !r.includes("Возвещатель")) r.push("Возвещатель");
 
             activeHTML += `
-                <tr class="hover:bg-slate-50/50 transition-colors group user-row" data-name="${u.name.toLowerCase()}">
-                    <td class="py-2 px-4 border-b border-slate-100">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xl drop-shadow-sm">${icon}</span>
-                            <span class="font-bold text-slate-700 whitespace-nowrap">${u.name}</span>
+                <tr class="hover:bg-slate-50 transition-colors group user-row" data-name="${u.name.toLowerCase()}">
+                    <td class="py-3 px-4">
+                        <p class="font-black text-slate-800 text-sm mb-1">${u.name}</p>
+                        <select id="gender-${id}" class="text-[10px] p-1 rounded border border-slate-200 bg-slate-50 outline-none text-slate-600 font-bold">
+                            <option value="boy" ${u.gender === 'boy' ? 'selected' : ''}>👨‍💼 Брат</option>
+                            <option value="girl" ${u.gender === 'girl' ? 'selected' : ''}>👩‍💼 Сестра</option>
+                        </select>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <input type="number" id="group-${id}" value="${u.group && u.group !== 'Без группы' ? u.group : ''}" placeholder="№" class="w-12 p-1.5 text-center border border-slate-200 rounded-md text-xs outline-none bg-slate-50 focus:bg-white focus:border-indigo-500 font-bold">
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="grid grid-cols-3 gap-2 w-full max-w-lg">
+                            <label class="flex items-center gap-1.5 cursor-pointer text-xs text-slate-700 font-bold"><input type="checkbox" id="role-pub-${id}" class="accent-indigo-500 w-3.5 h-3.5" ${r.includes('Возвещатель') ? 'checked' : ''}> Возвещатель</label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-xs text-purple-700 font-bold"><input type="checkbox" id="role-overseer-${id}" class="accent-purple-500 w-3.5 h-3.5" ${r.includes('Надзиратель группы') ? 'checked' : ''}> Надзиратель</label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-xs text-emerald-700 font-bold"><input type="checkbox" id="role-terr-${id}" class="accent-emerald-500 w-3.5 h-3.5" ${r.includes('Ответственный за участки') ? 'checked' : ''}> Участки</label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-xs text-sky-700 font-bold"><input type="checkbox" id="role-school-${id}" class="accent-sky-500 w-3.5 h-3.5" ${r.includes('Ответственный за школу') ? 'checked' : ''}> Школа</label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-xs text-rose-600 font-bold"><input type="checkbox" id="role-admin-${id}" class="accent-rose-500 w-3.5 h-3.5" ${r.includes('Админ') ? 'checked' : ''}> Админ</label>
                         </div>
                     </td>
-                    <td class="py-2 px-4 text-center border-b border-slate-100">${groupDisplay}</td>
-                    <td class="py-2 px-4 border-b border-slate-100 leading-tight">${badgesHTML}</td>
-                    <td class="py-2 px-4 text-right border-b border-slate-100">
-                        <button onclick="openEditModal('${id}')" class="text-xs font-bold text-indigo-500 bg-indigo-50 hover:bg-indigo-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors border border-indigo-100">⚙️ Настроить</button>
+                    <td class="py-3 px-4 text-right">
+                        <button onclick="saveUserRow('${id}')" id="btn-save-${id}" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all shadow-md active:scale-95">Сохранить</button>
                     </td>
                 </tr>
             `;
@@ -108,79 +97,42 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     document.getElementById('pending-count').innerText = pendingCount;
     document.getElementById('active-count').innerText = activeCount;
     pendingList.innerHTML = pendingHTML || '<p class="text-slate-400 text-xs text-center py-4">Нет новых заявок</p>';
-    activeList.innerHTML = activeHTML || '<tr><td colspan="4" class="text-center py-4 text-slate-400 italic text-xs">Нет активных пользователей</td></tr>';
+    activeList.innerHTML = activeHTML || '<tr><td colspan="4" class="text-center py-6 text-slate-400 italic text-sm">Нет активных пользователей</td></tr>';
 });
 
-// МОДАЛЬНОЕ ОКНО: ОТКРЫТЬ
-window.openEditModal = (id) => {
-    editingUserId = id;
-    const u = usersDataCache[id];
-    if(!u) return;
+// СОХРАНИТЬ СТРОКУ ПОЛЬЗОВАТЕЛЯ
+window.saveUserRow = async (id) => {
+    const btn = document.getElementById(`btn-save-${id}`);
+    btn.innerText = "..."; btn.disabled = true;
 
-    // Заполняем шапку
-    document.getElementById('modal-user-name').innerText = u.name;
-    document.getElementById('modal-user-icon').innerText = u.gender === 'girl' ? '👩‍💼' : '👨‍💼';
-    
-    // Заполняем группу
-    document.getElementById('modal-user-group').value = (u.group && u.group !== "Без группы") ? u.group : "";
-
-    // Сбрасываем и заполняем галочки ролей
-    const checkboxes = document.querySelectorAll('.role-cb');
-    checkboxes.forEach(cb => cb.checked = false); // сброс
-
-    let currentRoles = u.roles || [];
-    // Автоматическая конвертация старой роли в новую при открытии модалки
-    if (currentRoles.includes("Участник") && !currentRoles.includes("Возвещатель")) {
-        currentRoles.push("Возвещатель");
-    }
-
-    checkboxes.forEach(cb => {
-        if (currentRoles.includes(cb.value)) {
-            cb.checked = true;
-        }
-    });
-
-    // Показываем окно
-    document.getElementById('edit-user-modal').classList.replace('hidden', 'flex');
-};
-
-// МОДАЛЬНОЕ ОКНО: ЗАКРЫТЬ
-window.closeEditModal = () => {
-    document.getElementById('edit-user-modal').classList.replace('flex', 'hidden');
-    editingUserId = null;
-};
-
-// МОДАЛЬНОЕ ОКНО: СОХРАНИТЬ ДАННЫЕ
-window.saveUserEdit = async () => {
-    if (!editingUserId) return;
-    
-    const btn = document.getElementById('modal-save-btn');
-    btn.innerText = "Загрузка..."; btn.disabled = true;
-
-    // Собираем группу
-    let groupVal = document.getElementById('modal-user-group').value.trim();
+    // Сбор данных из строки
+    const genderVal = document.getElementById(`gender-${id}`).value;
+    let groupVal = document.getElementById(`group-${id}`).value.trim();
     if (!groupVal) groupVal = "Без группы";
 
-    // Собираем галочки
-    const checkboxes = document.querySelectorAll('.role-cb:checked');
-    let newRoles = Array.from(checkboxes).map(cb => cb.value);
-    
-    // Обязательно должна быть хоть одна роль (по умолчанию Возвещатель)
-    if (newRoles.length === 0) newRoles = ["Возвещатель"];
+    const roles = [];
+    if(document.getElementById(`role-pub-${id}`).checked) roles.push("Возвещатель");
+    if(document.getElementById(`role-overseer-${id}`).checked) roles.push("Надзиратель группы");
+    if(document.getElementById(`role-terr-${id}`).checked) roles.push("Ответственный за участки");
+    if(document.getElementById(`role-school-${id}`).checked) roles.push("Ответственный за школу");
+    if(document.getElementById(`role-admin-${id}`).checked) roles.push("Админ");
+
+    if (roles.length === 0) roles.push("Возвещатель");
 
     try {
-        await updateDoc(doc(db, "users", editingUserId), {
+        await updateDoc(doc(db, "users", id), {
+            gender: genderVal,
             group: groupVal,
-            roles: newRoles,
-            // Удаляем старое поле role, если оно было (для чистоты базы)
-            role: null 
+            roles: roles,
+            role: null // удаляем старое поле
         });
         
-        btn.innerText = "Сохранено ✔️";
+        btn.classList.replace('bg-slate-800', 'bg-emerald-500');
+        btn.innerText = "ОК ✔️";
         setTimeout(() => {
+            btn.classList.replace('bg-emerald-500', 'bg-slate-800');
             btn.innerText = "Сохранить"; btn.disabled = false;
-            window.closeEditModal();
-        }, 1000);
+        }, 1500);
     } catch (e) {
         console.error(e);
         alert("Ошибка при сохранении!");
@@ -188,7 +140,6 @@ window.saveUserEdit = async () => {
     }
 };
 
-// ОДОБРИТЬ/ОТКЛОНИТЬ ЗАЯВКИ
 window.approveUser = async (id) => {
     try { await updateDoc(doc(db, "users", id), { status: "active", roles: ["Возвещатель"] }); } 
     catch (e) { alert("Ошибка!"); }
@@ -201,15 +152,11 @@ window.rejectUser = async (id) => {
     }
 };
 
-// ЖИВОЙ ПОИСК В ТАБЛИЦЕ
 document.getElementById('search-user').addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     const rows = document.querySelectorAll('.user-row');
     rows.forEach(row => {
-        if (row.getAttribute('data-name').includes(term)) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
+        if (row.getAttribute('data-name').includes(term)) row.style.display = '';
+        else row.style.display = 'none';
     });
 });
