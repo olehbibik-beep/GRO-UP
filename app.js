@@ -32,13 +32,64 @@ window.switchTab = (tabId, btnElement) => {
     if(targetTab) targetTab.classList.add('active');
 
     document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('text-indigo-600'); btn.classList.add('text-slate-400');
-        btn.firstElementChild.classList.remove('bg-indigo-100');
+        btn.classList.remove('text-white'); btn.classList.add('text-slate-400');
+        btn.querySelector('.icon-wrapper')?.classList.remove('bg-indigo-500', 'text-white', 'shadow-lg', 'shadow-indigo-500/30');
+        btn.querySelector('.icon-wrapper')?.classList.add('bg-transparent');
     });
     
     if(btnElement) {
-        btnElement.classList.remove('text-slate-400'); btnElement.classList.add('text-indigo-600');
-        btnElement.firstElementChild.classList.add('bg-indigo-100');
+        btnElement.classList.remove('text-slate-400'); btnElement.classList.add('text-white');
+        btnElement.querySelector('.icon-wrapper')?.classList.remove('bg-transparent');
+        btnElement.querySelector('.icon-wrapper')?.classList.add('bg-indigo-500', 'text-white', 'shadow-lg', 'shadow-indigo-500/30');
+    }
+};
+
+// УМНАЯ КНОПКА ОТЧЕТА (Заполнить -> Отправить -> Блок)
+window.handleReportAction = async () => {
+    const fs = document.getElementById('report-fieldset');
+    const btn = document.getElementById('action-report-btn');
+
+    if (!fs || !btn) return;
+
+    if (fs.disabled) {
+        // 1. РАЗБЛОКИРОВКА ФОРМЫ
+        fs.disabled = false;
+        fs.classList.remove('opacity-50', 'grayscale-[50%]');
+        btn.classList.replace('bg-slate-800', 'bg-purple-600');
+        btn.classList.replace('hover:bg-slate-900', 'hover:bg-purple-700');
+        btn.innerText = 'Отправить отчет';
+    } else {
+        // 2. ОТПРАВКА ДАННЫХ
+        const participated = document.getElementById('rep-participated')?.checked || false;
+        const hours = document.getElementById('rep-hours')?.value || "";
+        const pubs = document.getElementById('rep-pubs')?.value || "";
+        const studies = document.getElementById('rep-studies')?.value || "";
+
+        if (!participated && hours === "") return alert("Отметьте галочку 'Служил(а)' или введите часы!");
+        btn.innerText = "Сохранение..."; btn.disabled = true;
+
+        try {
+            await setDoc(doc(db, "reports", `${userId}_${strictMonthId}`), {
+                userId, userName: currentUserData.name, group: currentUserData.group || "Без группы", month: currentMonthStr,
+                participated, hours: Number(hours), pubs: Number(pubs), studies: Number(studies), submittedAt: new Date().toISOString()
+            });
+            const log = document.getElementById('last-report-log');
+            if(log) log.innerText = `Сохранено: ${new Date().toLocaleString('ru-RU')}`;
+            
+            btn.classList.replace('bg-purple-600', 'bg-emerald-500');
+            btn.classList.replace('hover:bg-purple-700', 'hover:bg-emerald-600');
+            btn.innerText = "Успешно ✔️";
+            
+            setTimeout(() => {
+                // 3. БЛОКИРУЕМ ОБРАТНО
+                fs.disabled = true;
+                fs.classList.add('opacity-50', 'grayscale-[50%]');
+                btn.classList.replace('bg-emerald-500', 'bg-slate-800');
+                btn.classList.replace('hover:bg-emerald-600', 'hover:bg-slate-900');
+                btn.innerText = "✏️ Изменить";
+                btn.disabled = false;
+            }, 2000);
+        } catch (e) { alert("Ошибка!"); btn.disabled = false; btn.innerText = "Отправить отчет"; }
     }
 };
 
@@ -119,36 +170,8 @@ async function loadProfileData() {
     }
 }
 
-window.submitReport = async () => {
-    const participated = document.getElementById('rep-participated')?.checked || false;
-    const hours = document.getElementById('rep-hours')?.value || "";
-    const pubs = document.getElementById('rep-pubs')?.value || "";
-    const studies = document.getElementById('rep-studies')?.value || "";
-    const btn = document.getElementById('submit-report-btn');
-
-    if (!participated && hours === "") return alert("Отметьте галочку 'Служил(а)' или введите часы!");
-    if(btn) { btn.innerText = "Сохранение..."; btn.disabled = true; }
-
-    try {
-        await setDoc(doc(db, "reports", `${userId}_${strictMonthId}`), {
-            userId, userName: currentUserData.name, group: currentUserData.group || "Без группы", month: currentMonthStr,
-            participated, hours: Number(hours), pubs: Number(pubs), studies: Number(studies), submittedAt: new Date().toISOString()
-        });
-        const log = document.getElementById('last-report-log');
-        if(log) log.innerText = `Сохранено: ${new Date().toLocaleString('ru-RU')}`;
-        
-        if(btn) {
-            btn.classList.replace('bg-purple-600', 'bg-emerald-500'); btn.classList.replace('hover:bg-purple-700', 'hover:bg-emerald-600');
-            btn.innerText = "Перезаписано! ✔️";
-            setTimeout(() => {
-                btn.classList.replace('bg-emerald-500', 'bg-purple-600'); btn.classList.replace('hover:bg-emerald-600', 'hover:bg-purple-700');
-                btn.innerText = "Отправить"; btn.disabled = false;
-            }, 3000);
-        }
-    } catch (e) { alert("Ошибка!"); if(btn) btn.disabled = false; }
-};
-
 function loadPersonalData() {
+    // 0. Отчет
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
         if (docSnap.exists()) {
             const r = docSnap.data();
@@ -157,10 +180,16 @@ function loadPersonalData() {
             const repPub = document.getElementById('rep-pubs'); if(repPub) repPub.value = r.pubs || '';
             const repS = document.getElementById('rep-studies'); if(repS) repS.value = r.studies || '';
             const log = document.getElementById('last-report-log'); if(log) log.innerText = `Последняя запись: ${new Date(r.submittedAt).toLocaleString('ru-RU')}`;
-            const btn = document.getElementById('submit-report-btn'); if(btn) btn.innerText = "Обновить";
+            
+            // Если отчет уже есть, меняем текст кнопки на "Изменить"
+            const btn = document.getElementById('action-report-btn');
+            if(btn && document.getElementById('report-fieldset')?.disabled) {
+                btn.innerText = "✏️ Изменить";
+            }
         }
     });
 
+    // 1. Дежурства (Плавающее уведомление)
     try {
         const dutiesQuery = query(collection(db, "duties"), where("userId", "==", userId));
         onSnapshot(dutiesQuery, (snapshot) => {
@@ -174,6 +203,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
+    // 2. Задания
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), where("userId", "==", userId));
         onSnapshot(tasksQuery, (snapshot) => {
@@ -188,43 +218,43 @@ function loadPersonalData() {
                 const taskDate = new Date(task.date);
                 if (taskDate >= today) {
                     upCount++;
-                    upList.innerHTML += `<div class="p-4 bg-sky-50 rounded-2xl border border-sky-200 mb-3 shadow-sm"><p class="font-black text-sky-900 text-lg">${task.title}</p><p class="text-sm font-bold text-sky-600 mt-1">📅 ${taskDate.toLocaleDateString('ru-RU')}</p></div>`;
+                    upList.innerHTML += `<div class="p-3 bg-sky-50 rounded-xl border border-sky-100 mb-2 flex justify-between items-center"><p class="font-black text-slate-800 text-sm">${task.title}</p><p class="text-[10px] font-bold text-sky-600 bg-sky-100/50 px-2 py-1 rounded">📅 ${taskDate.toLocaleDateString('ru-RU')}</p></div>`;
                 } else {
                     pastCount++;
-                    pastList.innerHTML += `<div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 mb-2 opacity-70 grayscale"><p class="font-bold text-slate-600">${task.title}</p><p class="text-xs text-slate-400 mt-1">Выполнено: ${taskDate.toLocaleDateString('ru-RU')}</p></div>`;
+                    pastList.innerHTML += `<div class="p-3 bg-slate-50 rounded-xl border border-slate-100 mb-2 opacity-60 flex justify-between items-center"><p class="font-bold text-slate-600 text-xs">${task.title}</p><p class="text-[10px] text-slate-400">Выполнено</p></div>`;
                 }
             });
-            if (upCount === 0) upList.innerHTML = '<p class="text-slate-400 text-sm italic">Нет активных заданий</p>';
-            if (pastCount === 0) pastList.innerHTML = '<p class="text-slate-400 text-sm italic">История пуста</p>';
+            if (upCount === 0) upList.innerHTML = '<p class="text-slate-400 text-xs italic">Нет активных заданий</p>';
+            if (pastCount === 0) pastList.innerHTML = '<p class="text-slate-400 text-xs italic">История пуста</p>';
         });
     } catch(e){}
 
+    // 3. Участки
     try {
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
         onSnapshot(terrQuery, (snapshot) => {
             const container = document.getElementById('territories-container');
             if(!container) return;
-            if (snapshot.empty) return container.innerHTML = '<p class="text-slate-400 text-sm italic text-center py-10">У вас пока нет активных участков</p>';
+            if (snapshot.empty) return container.innerHTML = '<p class="text-slate-400 text-sm italic py-4">У вас пока нет активных участков</p>';
             container.innerHTML = '';
             snapshot.forEach(docSnap => {
                 const terr = docSnap.data();
                 container.innerHTML += `
-                    <div class="bg-white rounded-3xl border border-emerald-100 shadow-sm overflow-hidden flex flex-col">
-                        <div class="p-4 border-b border-emerald-50 flex justify-between items-center bg-emerald-50/30">
-                            <h3 class="font-black text-emerald-900 text-xl">Участок № ${terr.number}</h3>
-                            <span class="text-xs font-bold text-emerald-600 bg-emerald-100 px-3 py-1 rounded-lg uppercase">Активен</span>
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                        <div class="p-3 border-b border-slate-100 flex justify-between items-center bg-emerald-50/50">
+                            <h3 class="font-black text-slate-800 text-sm">Участок № ${terr.number}</h3>
+                            <span class="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-2 py-1 rounded uppercase">Активен</span>
                         </div>
-                        <div class="w-full h-48 bg-slate-100 flex items-center justify-center relative">
-                            <span class="text-4xl absolute opacity-20">🗺️</span>
-                            <p class="text-xs text-slate-400 font-bold z-10 uppercase tracking-widest border border-slate-300 px-4 py-2 rounded-lg bg-white/50 backdrop-blur-sm">Место для карты</p>
+                        <div class="w-full h-32 bg-slate-50 flex items-center justify-center relative">
+                            <span class="text-3xl absolute opacity-10">🗺️</span>
                         </div>
-                        <div class="p-4 bg-white text-xs text-slate-400 text-center">Выдан: ${new Date(terr.issuedAt).toLocaleDateString('ru-RU')}</div>
                     </div>
                 `;
             });
         });
     } catch(e) {}
 
+    // 4. Новости
     try {
         onSnapshot(collection(db, "section_content"), (snapshot) => {
             let newsHTML = '';
@@ -232,17 +262,17 @@ function loadPersonalData() {
                 const item = docSnap.data();
                 if(item.section === 'news') {
                     newsHTML += `
-                    <div class="p-3 mb-2 bg-slate-50 border rounded-xl relative group hover:shadow-md transition-shadow">
-                        <p class="text-slate-700 whitespace-pre-wrap">${item.text}</p>
+                    <div class="p-3 mb-2 bg-slate-50 border border-slate-100 rounded-xl hover:bg-slate-100 transition-colors">
+                        <p class="text-slate-700 whitespace-pre-wrap text-xs md:text-sm leading-relaxed">${item.text}</p>
                     </div>`;
                 }
             });
             const contentNews = document.getElementById('content-news');
-            if(contentNews) contentNews.innerHTML = newsHTML || '<p class="text-slate-400 italic">Пока пусто</p>';
+            if(contentNews) contentNews.innerHTML = newsHTML || '<p class="text-slate-400 italic text-xs">Пока пусто</p>';
         });
     } catch(e) {}
 
-    // 5. Календарь (С ТЕМНОЙ ТЕМОЙ, ВРЕМЕНЕМ И ВЕДУЩИМ + ЛИМИТ)
+    // 5. МОНОЛИТНЫЙ КАЛЕНДАРЬ ОТ КРАЯ ДО КРАЯ (Точь-в-точь по макету)
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -251,54 +281,57 @@ function loadPersonalData() {
             let html = '';
             const today = new Date(); today.setHours(0,0,0,0);
             
-            let displayedCount = 0; // Счетчик показанных событий
-            const MAX_EVENTS = 3; // Максимальное количество событий на главной
+            let displayedCount = 0; 
+            const MAX_EVENTS = 3; 
 
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 const evDate = new Date(ev.date);
                 const evGroup = ev.group || "Все";
                 
-                // Проверяем: если событие в будущем И мы еще не показали 3 штуки
                 if (evDate >= today && displayedCount < MAX_EVENTS) {
-                    displayedCount++; // Увеличиваем счетчик
+                    displayedCount++; 
                     
-                    const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-500 text-white px-1.5 py-0.5 rounded text-[9px] ml-2 border border-indigo-400 shadow-sm leading-none">Гр. ${evGroup}</span>` : '';
-                    const timeBadge = ev.time ? `<span class="text-slate-300 text-[10px] font-mono bg-slate-800 px-1.5 py-0.5 rounded leading-none border border-slate-600">${ev.time}</span>` : '';
-                    const leaderText = ev.leader ? `<p class="text-[9px] text-slate-400 font-medium uppercase mt-0.5 leading-none">Вед: <span class="text-rose-400 font-bold">${ev.leader}</span></p>` : '';
+                    const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-500 text-white px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none">Гр. ${evGroup}</span>` : '';
                     
                     html += `
-                        <div class="flex items-start gap-3 p-3 bg-slate-700/50 rounded-xl mb-2 border border-slate-600/50 relative overflow-hidden">
-                            <div class="bg-slate-800 text-slate-100 font-black p-2 rounded-lg text-center min-w-[45px] shadow-inner border border-slate-600 flex flex-col justify-center">
-                                <span class="block text-[10px] uppercase text-rose-400 leading-none mb-1">${evDate.toLocaleDateString('ru-RU', { month: 'short' })}</span>
-                                <span class="block text-xl leading-none">${evDate.getDate()}</span>
-                            </div>
-                            <div class="flex-grow pt-0.5">
-                                <p class="font-bold text-white text-sm leading-tight flex items-center flex-wrap gap-1">${ev.title} ${groupBadge} ${timeBadge}</p>
-                                ${leaderText}
+                        <div class="flex items-center px-4 py-3 hover:bg-slate-700/50 transition-colors w-full group cursor-default ${displayedCount > 1 ? 'border-t border-slate-700/50' : ''}">
+                            <div class="flex items-center gap-4 w-full">
+                                <div class="flex flex-col items-center justify-center w-11 h-11 bg-slate-900 rounded-lg shrink-0 border border-slate-700 shadow-sm">
+                                    <span class="text-[8px] uppercase text-rose-400 font-bold leading-none mb-0.5 tracking-widest">${evDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
+                                    <span class="text-lg font-black leading-none text-white">${evDate.getDate()}</span>
+                                </div>
+                                
+                                <div class="flex flex-col flex-grow truncate">
+                                    <div class="flex items-center gap-2 truncate">
+                                        ${ev.time ? `<span class="text-sm font-medium text-slate-300 shrink-0">${ev.time}</span>` : ''}
+                                        <span class="font-bold text-sm md:text-base text-white truncate">${ev.title}</span>
+                                        ${groupBadge}
+                                    </div>
+                                    ${ev.leader ? `<div class="text-[10px] uppercase mt-1 tracking-wider truncate text-slate-400 font-medium">Вед: <span class="text-rose-400 font-bold">${ev.leader}</span></div>` : ''}
+                                </div>
                             </div>
                         </div>
                     `;
                 }
             });
             
-            // Если событий больше, чем влезло, добавляем приписку
             if (snapshot.size > MAX_EVENTS && displayedCount === MAX_EVENTS) {
-                html += `<p class="text-center text-[10px] text-slate-500 uppercase tracking-widest mt-3">Показаны ближайшие события</p>`;
+                html += `<div class="bg-slate-900/30 py-2 border-t border-slate-700"><p class="text-center text-[9px] text-slate-500 uppercase tracking-widest">Показаны ближайшие события</p></div>`;
             }
 
-            container.innerHTML = html || '<p class="text-sm text-slate-500 italic">В ближайшее время событий нет.</p>';
+            container.innerHTML = html || '<p class="p-6 text-sm text-slate-500 italic text-center">Нет предстоящих событий</p>';
         });
     } catch(e) { console.error("Ошибка календаря:", e); }
-} // <-- ВОТ ЭТА СКОБКА ТЕРЯЛАСЬ!
+}
 
 window.requestTerritory = async (btn) => {
-    btn.innerText = "Отправка..."; btn.disabled = true;
+    btn.innerText = "..."; btn.disabled = true;
     try {
         await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
-        btn.innerText = "Запрос отправлен! ✔️";
-        setTimeout(() => { btn.innerText = "Попросить участок"; btn.disabled = false; }, 3000);
-    } catch (e) { alert("Ошибка!"); btn.innerText = "Попросить участок"; btn.disabled = false; }
+        btn.innerText = "Успешно ✔️";
+        setTimeout(() => { btn.innerText = "Попросить"; btn.disabled = false; }, 3000);
+    } catch (e) { alert("Ошибка!"); btn.innerText = "Попросить"; btn.disabled = false; }
 };
 
 window.openProfileModal = () => {
