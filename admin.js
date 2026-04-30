@@ -16,16 +16,30 @@ const db = getFirestore(app);
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
-// Проверка прав Администратора
-getDoc(doc(db, "users", userId)).then(docSnap => {
-    if (docSnap.exists()) {
-        const roles = docSnap.data().roles || [];
-        if (!roles.includes("Владелец") && !roles.includes("Админ")) {
-            document.body.innerHTML = `<div class="flex items-center justify-center h-screen bg-red-50"><h1 class="text-3xl font-black text-red-600">ДОСТУП ЗАПРЕЩЕН</h1></div>`;
-        }
-    } else {
-        window.location.href = 'login.html';
-    }
+// 1. ПРОВЕРКА ПРАВ И УМНОЕ МЕНЮ
+const uid = typeof currentUserId !== 'undefined' ? currentUserId : userId;
+getDoc(doc(db, "users", uid)).then(docSnap => {
+    if (!docSnap.exists()) return window.location.href = 'login.html';
+    
+    const roles = docSnap.data().roles || [];
+    const isFullAdmin = roles.includes("Владелец") || roles.includes("Админ");
+    const isSchool = isFullAdmin || roles.includes("Ответственный за школу");
+    const isTerr = isFullAdmin || roles.includes("Ответственный за участки");
+    const isOverseer = isFullAdmin || roles.includes("Надзиратель группы");
+
+    // Прячем иконки в боковой/нижней навигации, если нет прав
+    const navAdmin = document.querySelector('nav a[href="admin.html"]'); if (navAdmin && !isFullAdmin) navAdmin.style.display = 'none';
+    const navSchool = document.querySelector('nav a[href="school.html"]'); if (navSchool && !isSchool) navSchool.style.display = 'none';
+    const navTerr = document.querySelector('nav a[href="territories.html"]'); if (navTerr && !isTerr) navTerr.style.display = 'none';
+    const navCal = document.querySelector('nav a[href="calendar.html"]'); if (navCal && !isOverseer) navCal.style.display = 'none';
+    const navDuties = document.querySelector('nav a[href="duties.html"]'); if (navDuties && !isOverseer) navDuties.style.display = 'none';
+
+    // Жесткая защита: выкидываем на главную, если зашли по прямой ссылке без прав
+    const path = window.location.pathname;
+    if (path.includes('admin.html') && !isFullAdmin) window.location.href = 'index.html';
+    if (path.includes('school.html') && !isSchool) window.location.href = 'index.html';
+    if (path.includes('territories.html') && !isTerr) window.location.href = 'index.html';
+    if ((path.includes('calendar.html') || path.includes('duties.html')) && !isOverseer) window.location.href = 'index.html';
 });
 
 // ГЛОБАЛЬНАЯ НАСТРОЙКА: СОБРАНИЕ
