@@ -6,7 +6,6 @@
     <title>Вход - GRO-UP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Скрываем стрелочки у полей с цифрами */
         input[type="number"]::-webkit-inner-spin-button, 
         input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
@@ -15,77 +14,91 @@
 </head>
 <body class="bg-slate-100 flex items-center justify-center min-h-screen font-sans p-4">
     
-    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl relative overflow-hidden">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-6 md:p-8 text-center shadow-2xl relative overflow-hidden border border-slate-100">
         
         <div id="login-section" class="fade-in block">
-            <h1 class="text-3xl font-black text-indigo-600 mb-2 tracking-tight">GRO-UP</h1>
-            <p class="text-slate-400 text-sm mb-6 font-medium">Введите имя и ПИН-код</p>
+            <h1 class="text-3xl font-black text-indigo-600 mb-1 tracking-tight">GRO-UP</h1>
+            <p class="text-slate-400 text-xs mb-6 font-medium">Система управления собранием</p>
             
-            <input id="login-name" type="text" placeholder="Имя Фамилия" 
-                   class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-5 outline-none focus:border-indigo-500 focus:bg-white text-center font-bold text-lg transition-all shadow-inner">
+            <div class="flex gap-3 mb-5">
+                <input id="login-fname" type="text" placeholder="Имя" 
+                       class="w-1/2 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:border-indigo-500 focus:bg-white text-center font-bold text-sm md:text-base transition-all shadow-inner">
+                <input id="login-lname" type="text" placeholder="Фамилия" 
+                       class="w-1/2 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:border-indigo-500 focus:bg-white text-center font-bold text-sm md:text-base transition-all shadow-inner">
+            </div>
             
-            <div class="relative w-full mb-8 h-12 flex justify-center items-center">
-                <input id="login-pin" type="tel" inputmode="numeric" maxlength="6"
-                       class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 text-transparent bg-transparent">
-                <div class="flex gap-3 z-0" id="login-circles">
-                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
-                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
-                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
-                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
-                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
-                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+            <div class="mb-8">
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-3">Введите ПИН-код (6 цифр)</p>
+                <div class="relative w-full h-12 flex justify-center items-center">
+                    <input id="login-pin" type="tel" inputmode="numeric" maxlength="6"
+                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 text-transparent bg-transparent">
+                    <div class="flex gap-3 z-0" id="login-circles">
+                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                    </div>
                 </div>
             </div>
             
-            <button id="login-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-2xl shadow-lg transition-all active:scale-95 mb-4">
+            <button id="login-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-2xl shadow-lg shadow-indigo-600/30 transition-all active:scale-95 mb-5 text-sm md:text-base uppercase tracking-widest">
                 Войти в систему
             </button>
 
-            <button onclick="toggleView('register')" class="text-slate-400 text-sm font-bold hover:text-indigo-500 transition-colors outline-none">
+            <button onclick="toggleView('register')" class="text-slate-400 text-xs md:text-sm font-bold hover:text-indigo-500 transition-colors outline-none pb-2">
                 Создать пользователя
             </button>
         </div>
 
         <div id="register-section" class="fade-in hidden">
             <h1 class="text-2xl font-black text-slate-800 mb-1 tracking-tight">Регистрация</h1>
-            <p class="text-slate-400 text-xs mb-5 font-medium">Создайте профиль и дождитесь одобрения</p>
+            <p class="text-slate-400 text-[10px] uppercase tracking-widest mb-5 font-bold">Создайте профиль</p>
             
-            <input id="reg-name" type="text" placeholder="Имя Фамилия" 
-                   class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-3 outline-none focus:border-indigo-500 focus:bg-white text-center font-bold text-lg transition-all shadow-inner">
+            <div class="flex gap-3 mb-4">
+                <input id="reg-fname" type="text" placeholder="Имя" 
+                       class="w-1/2 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:border-indigo-500 focus:bg-white text-center font-bold text-sm md:text-base transition-all shadow-inner">
+                <input id="reg-lname" type="text" placeholder="Фамилия" 
+                       class="w-1/2 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:border-indigo-500 focus:bg-white text-center font-bold text-sm md:text-base transition-all shadow-inner">
+            </div>
             
-            <div class="flex gap-3 mb-5">
-                <button type="button" onclick="selectGender('boy')" id="gender-boy" class="flex-1 p-3 rounded-2xl border-2 border-slate-100 bg-slate-50 flex items-center justify-center gap-2 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all outline-none">
-                    <span class="text-2xl">👨</span> <span class="font-bold text-sm text-slate-700">Брат</span>
+            <div class="flex gap-3 mb-6">
+                <button type="button" onclick="selectGender('boy')" id="gender-boy" class="flex-1 p-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all outline-none shadow-sm">
+                    <span class="text-4xl leading-none">👨‍💼</span>
                 </button>
-                <button type="button" onclick="selectGender('girl')" id="gender-girl" class="flex-1 p-3 rounded-2xl border-2 border-slate-100 bg-slate-50 flex items-center justify-center gap-2 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all outline-none">
-                    <span class="text-2xl">👩</span> <span class="font-bold text-sm text-slate-700">Сестра</span>
+                <button type="button" onclick="selectGender('girl')" id="gender-girl" class="flex-1 p-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all outline-none shadow-sm">
+                    <span class="text-4xl leading-none">👩‍💼</span>
                 </button>
             </div>
 
-            <div class="relative w-full mb-6 h-12 flex justify-center items-center">
-                <input id="reg-pin" type="tel" inputmode="numeric" maxlength="6"
-                       class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 text-transparent bg-transparent">
-                <div class="flex gap-3 z-0" id="reg-circles">
-                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
-                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
-                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
-                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
-                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
-                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+            <div class="mb-6">
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-3">Придумайте ПИН-код (6 цифр)</p>
+                <div class="relative w-full h-12 flex justify-center items-center">
+                    <input id="reg-pin" type="tel" inputmode="numeric" maxlength="6"
+                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 text-transparent bg-transparent">
+                    <div class="flex gap-3 z-0" id="reg-circles">
+                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                    </div>
                 </div>
             </div>
             
-            <button id="reg-btn" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold p-4 rounded-2xl shadow-lg transition-all active:scale-95 mb-4">
+            <button id="reg-btn" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold p-4 rounded-2xl shadow-lg shadow-slate-800/30 transition-all active:scale-95 mb-5 text-sm md:text-base uppercase tracking-widest">
                 Отправить заявку
             </button>
 
-            <button onclick="toggleView('login')" class="text-slate-400 text-sm font-bold hover:text-indigo-500 transition-colors outline-none">
+            <button onclick="toggleView('login')" class="text-slate-400 text-xs md:text-sm font-bold hover:text-indigo-500 transition-colors outline-none pb-2">
                 Уже есть профиль? Войти
             </button>
         </div>
 
     </div>
 
-    <script type="module" src="login.js?v=2"></script>
+    <script type="module" src="login.js?v=3"></script>
 </body>
 </html>
