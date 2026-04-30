@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, query, where, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
@@ -12,100 +12,129 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const currentUserId = localStorage.getItem('userId');
 
-let allStudents = [];
+if (!currentUserId) window.location.href = 'login.html';
 
-// 1. ЗАГРУЖАЕМ ТОЛЬКО УЧЕНИКОВ (У кого isSchool == true)
-const q = query(collection(db, "users"), where("isSchool", "==", true));
-onSnapshot(q, (snapshot) => {
-    const select = document.getElementById('student-select');
-    select.innerHTML = '<option value="">-- Выберите ученика --</option>';
-    
-    if(snapshot.empty) {
-        select.innerHTML = '<option value="">Нет участников школы (поставьте галочки в админке)</option>';
-        return;
+// 1. ПРОВЕРКА ПРАВ (Пускаем только Админов, Владельцев и Ответственных за школу)
+getDoc(doc(db, "users", currentUserId)).then(docSnap => {
+    if (docSnap.exists()) {
+        const userRoles = docSnap.data().roles || [];
+        if (!userRoles.some(r => ["Владелец", "Админ", "Ответственный за школу"].includes(r))) {
+            window.location.href = 'index.html';
+        }
     }
-
-    allStudents = [];
-    snapshot.forEach(docSnap => {
-        const student = { id: docSnap.id, name: docSnap.data().name };
-        allStudents.push(student);
-        select.innerHTML += `<option value="${student.id}">${student.name}</option>`;
-    });
 });
 
-// 2. ОТПРАВКА ЗАДАНИЯ
-document.getElementById('assign-btn').addEventListener('click', async (e) => {
-    const studentId = document.getElementById('student-select').value;
-    const title = document.getElementById('task-title').value.trim();
-    const date = document.getElementById('task-date').value;
+// 2. ЗАГРУЗКА ТОЛЬКО "УЧАСТНИКОВ ШКОЛЫ"
+onSnapshot(collection(db, "users"), (snapshot) => {
+    const select = document.getElementById('student-select');
+    if (!select) return;
+    
+    let students = [];
+    
+    snapshot.forEach(d => {
+        const u = d.data();
+        // ФИЛЬТР: Берем только активных и только тех, у кого есть роль "Участник школы"
+        if (u.status === 'active' && u.roles && u.roles.includes('Участник школы')) {
+            students.push({ id: d.id, name: u.name });
+        }
+    });
 
-    if (!studentId || !title || !date) {
-        return alert("Пожалуйста, заполните все поля!");
+    // Сортируем по алфавиту
+    students.sort((a, b) => a.name.localeCompare(b.name));
+
+    let html = '<option value="" disabled selected>Выберите ученика...</option>';
+    students.forEach(s => {
+        // Мы сохраняем в value сразу и ID, и ИМЯ через разделитель |
+        html += `<option value="${s.id}|${s.name}">${s.name}</option>`;
+    });
+
+    select.innerHTML = html || '<option value="" disabled>Нет участников школы (добавьте их в Админке)</option>';
+});
+
+// 3. НАЗНАЧИТЬ ЗАДАНИЕ (Сохранение в базу)
+document.getElementById('assign-btn').addEventListener('click', async (e) => {
+    const studentData = document.getElementById('student-select').value;
+    const taskTitle = document.getElementById('task-title').value.trim();
+    const taskDate = document.getElementById('task-date').value;
+
+    if (!studentData || !taskTitle || !taskDate) {
+        return alert("Заполните все поля (Ученик, Задание, Дата)!");
     }
 
     const btn = e.target;
-    btn.innerText = "Отправка...";
-    btn.disabled = true;
+    btn.innerText = "Сохранение..."; btn.disabled = true;
+
+    // Разбиваем value обратно на ID и Имя
+    const [userId, userName] = studentData.split('|');
 
     try {
-        // Ищем имя выбранного ученика (для красивого отображения в списке)
-        const studentName = allStudents.find(s => s.id === studentId).name;
-
-        // Отправляем в коллекцию personal_tasks
         await addDoc(collection(db, "personal_tasks"), {
-            userId: studentId,
-            studentName: studentName,
-            title: title,
-            date: date,
+            userId: userId,
+            userName: userName,
+            title: taskTitle,
+            date: taskDate,
             createdAt: new Date().toISOString()
         });
 
-        // Очищаем форму
         document.getElementById('task-title').value = '';
-        btn.innerText = "Успешно назначено! ✔️";
-        setTimeout(() => { btn.innerText = "Назначить"; btn.disabled = false; }, 2000);
-
-    } catch (error) {
-        console.error(error);
-        alert("Ошибка при назначении задания.");
-        btn.innerText = "Назначить";
-        btn.disabled = false;
+        document.getElementById('student-select').value = '';
+        
+        btn.classList.replace('bg-slate-800', 'bg-emerald-500');
+        btn.innerText = "Назначено! ✔️";
+        setTimeout(() => { 
+            btn.classList.replace('bg-emerald-500', 'bg-slate-800');
+            btn.innerText = "Назначить"; 
+            btn.disabled = false; 
+        }, 2000);
+    } catch (error) { 
+        alert("Ошибка сети."); 
+        btn.disabled = false; 
+        btn.innerText = "Назначить"; 
     }
 });
 
-// 3. СПИСОК ВСЕХ НАЗНАЧЕННЫХ ЗАДАНИЙ (Для мониторинга)
-onSnapshot(collection(db, "personal_tasks"), (snapshot) => {
-    const container = document.getElementById('tasks-list');
-    if (snapshot.empty) {
-        container.innerHTML = '<p class="text-slate-500 italic">Пока нет выданных заданий.</p>';
-        return;
-    }
+// 4. ОТРИСОВКА ВЫДАННЫХ ЗАДАНИЙ (Монолитный список)
+const q = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
+onSnapshot(q, (snapshot) => {
+    const list = document.getElementById('tasks-list');
+    if (snapshot.empty) return list.innerHTML = '<p class="text-slate-400 italic p-6 text-center text-sm">Нет назначенных заданий.</p>';
 
-    container.innerHTML = '';
+    let html = '';
+    const today = new Date(); today.setHours(0,0,0,0);
+
     snapshot.forEach(docSnap => {
-        const task = docSnap.data();
-        // Форматируем дату для красоты
-        const dateObj = new Date(task.date);
-        const niceDate = dateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+        const t = docSnap.data();
+        const tDate = new Date(t.date);
+        
+        const isPast = tDate < today;
+        const opacityClass = isPast ? "opacity-50 grayscale hover:opacity-100 hover:grayscale-0 bg-slate-50" : "bg-white hover:bg-slate-50";
 
-        container.innerHTML += `
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center group">
-                <div>
-                    <p class="font-bold text-sky-900 text-lg">${task.studentName}</p>
-                    <p class="text-slate-600 font-medium">${task.title}</p>
-                    <p class="text-xs text-slate-400 mt-1">📅 ${niceDate}</p>
+        html += `
+            <div class="flex items-center justify-between p-4 border-b border-slate-100 transition-all ${opacityClass}">
+                <div class="flex items-center w-full min-w-0 pr-4 gap-4">
+                    <div class="flex flex-col items-center justify-center w-11 h-11 bg-sky-50 rounded-lg shrink-0 border border-sky-100">
+                        <span class="text-[8px] uppercase text-sky-500 font-bold leading-none mb-0.5 tracking-widest">${tDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
+                        <span class="text-lg font-black leading-none text-sky-700">${tDate.getDate()}</span>
+                    </div>
+                    
+                    <div class="flex flex-col min-w-0 truncate">
+                        <h3 class="font-black text-slate-800 text-sm truncate">${t.userName}</h3>
+                        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5 truncate">${t.title}</div>
+                    </div>
                 </div>
-                <button onclick="deleteTask('${docSnap.id}')" class="text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-red-50 rounded-lg font-bold">
-                    Отменить
-                </button>
+                <button onclick="deleteTask('${docSnap.id}')" class="text-slate-300 hover:text-red-500 transition-colors p-2 text-lg outline-none shrink-0" title="Удалить">🗑️</button>
             </div>
         `;
     });
+
+    list.innerHTML = html;
 });
 
+// 5. УДАЛЕНИЕ ЗАДАНИЯ
 window.deleteTask = (id) => {
-    if(confirm("Удалить (отменить) это задание?")) {
+    if (confirm("Точно удалить это задание?")) {
         deleteDoc(doc(db, "personal_tasks", id));
     }
 };
