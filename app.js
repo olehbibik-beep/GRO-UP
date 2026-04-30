@@ -33,40 +33,42 @@ window.switchTab = (tabId, btnElement) => {
 
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('text-white'); btn.classList.add('text-slate-400');
-        btn.querySelector('.icon-wrapper')?.classList.remove('bg-indigo-500', 'text-white', 'shadow-lg', 'shadow-indigo-500/30');
+        btn.querySelector('.icon-wrapper')?.classList.remove('bg-ui-active', 'text-white', 'shadow-lg', 'shadow-ui-active/30');
         btn.querySelector('.icon-wrapper')?.classList.add('bg-transparent');
     });
     
     if(btnElement) {
         btnElement.classList.remove('text-slate-400'); btnElement.classList.add('text-white');
         btnElement.querySelector('.icon-wrapper')?.classList.remove('bg-transparent');
-        btnElement.querySelector('.icon-wrapper')?.classList.add('bg-indigo-500', 'text-white', 'shadow-lg', 'shadow-indigo-500/30');
+        btnElement.querySelector('.icon-wrapper')?.classList.add('bg-ui-active', 'text-white', 'shadow-lg', 'shadow-ui-active/30');
     }
 };
 
-// УМНАЯ КНОПКА ОТЧЕТА (Заполнить -> Отправить -> Блок)
-window.handleReportAction = async () => {
+// НОВАЯ, БРОНЕБОЙНАЯ ФУНКЦИЯ ДЛЯ КНОПКИ ОТЧЕТА
+window.triggerReportAction = async () => {
     const fs = document.getElementById('report-fieldset');
-    const btn = document.getElementById('action-report-btn');
+    const btn = document.getElementById('btn-report-action');
 
     if (!fs || !btn) return;
 
     if (fs.disabled) {
-        // 1. РАЗБЛОКИРОВКА ФОРМЫ
+        // Шаг 1: Разблокируем форму
         fs.disabled = false;
         fs.classList.remove('opacity-50', 'grayscale-[50%]');
-        btn.classList.replace('bg-slate-800', 'bg-purple-600');
-        btn.classList.replace('hover:bg-slate-900', 'hover:bg-purple-700');
+        btn.classList.replace('bg-slate-800', 'bg-ui-report');
+        btn.classList.replace('hover:bg-slate-900', 'hover:opacity-90');
         btn.innerText = 'Отправить отчет';
     } else {
-        // 2. ОТПРАВКА ДАННЫХ
+        // Шаг 2: Проверяем и отправляем
         const participated = document.getElementById('rep-participated')?.checked || false;
         const hours = document.getElementById('rep-hours')?.value || "";
         const pubs = document.getElementById('rep-pubs')?.value || "";
         const studies = document.getElementById('rep-studies')?.value || "";
 
         if (!participated && hours === "") return alert("Отметьте галочку 'Служил(а)' или введите часы!");
-        btn.innerText = "Сохранение..."; btn.disabled = true;
+        
+        btn.innerText = "Сохранение..."; 
+        btn.disabled = true;
 
         try {
             await setDoc(doc(db, "reports", `${userId}_${strictMonthId}`), {
@@ -76,20 +78,19 @@ window.handleReportAction = async () => {
             const log = document.getElementById('last-report-log');
             if(log) log.innerText = `Сохранено: ${new Date().toLocaleString('ru-RU')}`;
             
-            btn.classList.replace('bg-purple-600', 'bg-emerald-500');
-            btn.classList.replace('hover:bg-purple-700', 'hover:bg-emerald-600');
+            btn.classList.replace('bg-ui-report', 'bg-ui-success');
             btn.innerText = "Успешно ✔️";
             
+            // Шаг 3: Блокируем обратно
             setTimeout(() => {
-                // 3. БЛОКИРУЕМ ОБРАТНО
                 fs.disabled = true;
                 fs.classList.add('opacity-50', 'grayscale-[50%]');
-                btn.classList.replace('bg-emerald-500', 'bg-slate-800');
-                btn.classList.replace('hover:bg-emerald-600', 'hover:bg-slate-900');
+                btn.classList.replace('bg-ui-success', 'bg-slate-800');
+                btn.classList.replace('hover:opacity-90', 'hover:bg-slate-900');
                 btn.innerText = "✏️ Изменить";
                 btn.disabled = false;
             }, 2000);
-        } catch (e) { alert("Ошибка!"); btn.disabled = false; btn.innerText = "Отправить отчет"; }
+        } catch (e) { alert("Ошибка сети!"); btn.disabled = false; btn.innerText = "Отправить отчет"; }
     }
 };
 
@@ -181,15 +182,15 @@ function loadPersonalData() {
             const repS = document.getElementById('rep-studies'); if(repS) repS.value = r.studies || '';
             const log = document.getElementById('last-report-log'); if(log) log.innerText = `Последняя запись: ${new Date(r.submittedAt).toLocaleString('ru-RU')}`;
             
-            // Если отчет уже есть, меняем текст кнопки на "Изменить"
-            const btn = document.getElementById('action-report-btn');
+            // Если отчет уже сдавался - кнопка "Изменить"
+            const btn = document.getElementById('btn-report-action');
             if(btn && document.getElementById('report-fieldset')?.disabled) {
                 btn.innerText = "✏️ Изменить";
             }
         }
     });
 
-    // 1. Дежурства (Плавающее уведомление)
+    // 1. Дежурства (Плавающее)
     try {
         const dutiesQuery = query(collection(db, "duties"), where("userId", "==", userId));
         onSnapshot(dutiesQuery, (snapshot) => {
@@ -218,10 +219,10 @@ function loadPersonalData() {
                 const taskDate = new Date(task.date);
                 if (taskDate >= today) {
                     upCount++;
-                    upList.innerHTML += `<div class="p-3 bg-sky-50 rounded-xl border border-sky-100 mb-2 flex justify-between items-center"><p class="font-black text-slate-800 text-sm">${task.title}</p><p class="text-[10px] font-bold text-sky-600 bg-sky-100/50 px-2 py-1 rounded">📅 ${taskDate.toLocaleDateString('ru-RU')}</p></div>`;
+                    upList.innerHTML += `<div class="p-3 bg-sky-50 rounded-xl border border-sky-100 mb-2 flex justify-between items-center"><p class="font-black text-slate-800 text-sm md:text-base">${task.title}</p><p class="text-[10px] md:text-xs font-bold text-sky-600 bg-sky-100/50 px-2 py-1 rounded">📅 ${taskDate.toLocaleDateString('ru-RU')}</p></div>`;
                 } else {
                     pastCount++;
-                    pastList.innerHTML += `<div class="p-3 bg-slate-50 rounded-xl border border-slate-100 mb-2 opacity-60 flex justify-between items-center"><p class="font-bold text-slate-600 text-xs">${task.title}</p><p class="text-[10px] text-slate-400">Выполнено</p></div>`;
+                    pastList.innerHTML += `<div class="p-3 bg-slate-50 rounded-xl border border-slate-100 mb-2 opacity-60 flex justify-between items-center"><p class="font-bold text-slate-600 text-xs md:text-sm">${task.title}</p><p class="text-[10px] text-slate-400">Выполнено</p></div>`;
                 }
             });
             if (upCount === 0) upList.innerHTML = '<p class="text-slate-400 text-xs italic">Нет активных заданий</p>';
@@ -263,7 +264,7 @@ function loadPersonalData() {
                 if(item.section === 'news') {
                     newsHTML += `
                     <div class="p-3 mb-2 bg-slate-50 border border-slate-100 rounded-xl hover:bg-slate-100 transition-colors">
-                        <p class="text-slate-700 whitespace-pre-wrap text-xs md:text-sm leading-relaxed">${item.text}</p>
+                        <p class="text-slate-700 whitespace-pre-wrap text-[11px] md:text-xs leading-relaxed">${item.text}</p>
                     </div>`;
                 }
             });
@@ -272,7 +273,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // 5. МОНОЛИТНЫЙ КАЛЕНДАРЬ ОТ КРАЯ ДО КРАЯ (Точь-в-точь по макету)
+    // 5. МОНОЛИТНЫЙ КАЛЕНДАРЬ
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -292,23 +293,21 @@ function loadPersonalData() {
                 if (evDate >= today && displayedCount < MAX_EVENTS) {
                     displayedCount++; 
                     
-                    const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-500 text-white px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none">Гр. ${evGroup}</span>` : '';
+                    const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded text-[8px] ml-2 border border-indigo-500/30 uppercase">Гр. ${evGroup}</span>` : '';
+                    const leaderText = ev.leader ? `<span class="text-slate-400 ml-2">ВЕД:</span> <span class="text-rose-400 font-bold ml-1">${ev.leader}</span>` : '';
+                    const timeText = ev.time ? `<div class="text-xs md:text-sm font-black text-slate-300 mr-3 md:mr-6 shrink-0">${ev.time}</div>` : '';
                     
                     html += `
-                        <div class="flex items-center px-4 py-3 hover:bg-slate-700/50 transition-colors w-full group cursor-default ${displayedCount > 1 ? 'border-t border-slate-700/50' : ''}">
-                            <div class="flex items-center gap-4 w-full">
-                                <div class="flex flex-col items-center justify-center w-11 h-11 bg-slate-900 rounded-lg shrink-0 border border-slate-700 shadow-sm">
-                                    <span class="text-[8px] uppercase text-rose-400 font-bold leading-none mb-0.5 tracking-widest">${evDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
+                        <div class="flex items-center justify-between px-4 md:px-5 py-3 md:py-4 ${displayedCount > 1 ? 'border-t border-slate-700' : ''} hover:bg-slate-700/50 transition-colors w-full group cursor-default">
+                            <div class="flex items-center w-full">
+                                <div class="flex flex-col items-center justify-center w-12 h-12 bg-ui-calBox rounded-lg shrink-0 border border-slate-700 shadow-sm mr-4">
+                                    <span class="text-[8px] uppercase text-rose-400 font-bold leading-none mb-1 tracking-widest">${evDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
                                     <span class="text-lg font-black leading-none text-white">${evDate.getDate()}</span>
                                 </div>
-                                
-                                <div class="flex flex-col flex-grow truncate">
-                                    <div class="flex items-center gap-2 truncate">
-                                        ${ev.time ? `<span class="text-sm font-medium text-slate-300 shrink-0">${ev.time}</span>` : ''}
-                                        <span class="font-bold text-sm md:text-base text-white truncate">${ev.title}</span>
-                                        ${groupBadge}
-                                    </div>
-                                    ${ev.leader ? `<div class="text-[10px] uppercase mt-1 tracking-wider truncate text-slate-400 font-medium">Вед: <span class="text-rose-400 font-bold">${ev.leader}</span></div>` : ''}
+                                ${timeText}
+                                <div class="flex flex-col flex-grow truncate pr-2">
+                                    <span class="font-bold text-sm md:text-base text-white leading-tight flex items-center">${ev.title} ${groupBadge}</span>
+                                    ${leaderText ? `<div class="text-[9px] md:text-[10px] uppercase mt-0.5 tracking-wider truncate">${leaderText}</div>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -317,7 +316,7 @@ function loadPersonalData() {
             });
             
             if (snapshot.size > MAX_EVENTS && displayedCount === MAX_EVENTS) {
-                html += `<div class="bg-slate-900/30 py-2 border-t border-slate-700"><p class="text-center text-[9px] text-slate-500 uppercase tracking-widest">Показаны ближайшие события</p></div>`;
+                html += `<div class="bg-slate-900/50 py-2 border-t border-slate-700"><p class="text-center text-[9px] text-slate-500 uppercase tracking-widest">Показаны ближайшие события</p></div>`;
             }
 
             container.innerHTML = html || '<p class="p-6 text-sm text-slate-500 italic text-center">Нет предстоящих событий</p>';
