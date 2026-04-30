@@ -49,21 +49,21 @@
         <button onclick="this.parentElement.style.display='none'" class="text-amber-900/40 hover:text-amber-900 transition-colors text-lg font-black px-1 outline-none">✖</button>
     </div>
 
-    <nav class="fixed bottom-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-between z-40 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe">
+    <nav class="fixed bottom-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-between z-40 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-slate-800 md:border-t-0">
         
-        <button onclick="switchTab('home', this)" class="nav-btn text-white flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full md:mb-4 outline-none">
+        <button onclick="switchTab('home', this)" class="nav-btn text-white flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full md:mb-4 outline-none transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
         </button>
         
-        <button onclick="switchTab('tasks', this)" class="nav-btn text-slate-500 hover:text-slate-300 flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full md:mb-4 outline-none">
+        <button onclick="switchTab('tasks', this)" class="nav-btn text-slate-500 hover:text-slate-300 flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full md:mb-4 outline-none transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
         </button>
         
-        <button onclick="switchTab('territories', this)" class="nav-btn text-slate-500 hover:text-slate-300 flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full md:mb-4 outline-none">
+        <button onclick="switchTab('territories', this)" class="nav-btn text-slate-500 hover:text-slate-300 flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full md:mb-4 outline-none transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" /></svg>
         </button>
         
-        <button onclick="openProfileModal()" class="nav-btn text-slate-500 hover:text-slate-300 flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full outline-none mt-auto">
+        <button onclick="openProfileModal()" class="nav-btn text-slate-500 hover:text-slate-300 flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full outline-none mt-auto transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
         </button>
     </nav>
@@ -76,7 +76,7 @@
                 <p class="p-6 text-sm text-slate-400 italic text-center">Загрузка календаря...</p>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 md:gap-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-base md:text-xl font-black text-slate-800 flex items-center gap-2">
@@ -151,19 +151,12 @@
             <button onclick="closeModals()" class="absolute top-4 right-5 text-slate-300 hover:text-slate-600 text-2xl font-black outline-none">✖</button>
             <div class="w-20 h-20 bg-slate-100 text-slate-400 rounded-full mx-auto flex items-center justify-center text-3xl mb-4 border-4 border-white shadow-inner">👤</div>
             
-            <!-- СОБРАНИЕ И ИМЯ -->
-            <p id="profile-congregation" class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Собрание: Марианские Лазне</p>
+            <p id="profile-congregation" class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Загрузка...</p>
             <h2 id="profile-name" class="text-2xl font-black text-slate-800 mb-2">Имя</h2>
             
-            <!-- КРАСИВЫЕ БЕЙДЖИ РОЛЕЙ -->
             <div id="profile-roles-container" class="flex flex-wrap justify-center gap-1.5 mb-6">
                 <span class="inline-block px-2 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-bold uppercase tracking-widest">Загрузка...</span>
             </div>
-            
-            <div class="bg-slate-50 rounded-xl p-4 mb-6 text-left border border-slate-100 text-sm">
-            <div class="w-20 h-20 bg-slate-100 text-slate-400 rounded-full mx-auto flex items-center justify-center text-3xl mb-4 border-4 border-white shadow-inner">👤</div>
-            <h2 id="profile-name" class="text-2xl font-black text-slate-800 mb-1">Имя</h2>
-            <span id="profile-role" class="inline-block px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-widest mb-6">Роль</span>
             
             <div class="bg-slate-50 rounded-xl p-4 mb-6 text-left border border-slate-100 text-sm">
                 <div class="flex justify-between border-b border-slate-200 pb-2 mb-2">
@@ -177,18 +170,18 @@
             </div>
 
             <div id="profile-admin-links" class="hidden flex-col gap-2 mb-4">
-                <a href="admin.html" id="profile-admin-btn" class="hidden items-center justify-center w-full bg-slate-800 text-white font-bold p-3 rounded-xl text-sm">⚙️ Админ-панель</a>
-                <a href="calendar.html" id="profile-calendar-btn" class="hidden items-center justify-center w-full bg-rose-50 border border-rose-100 text-rose-700 font-bold p-3 rounded-xl text-sm">📅 Календарь</a>
-                <a href="duties.html" id="profile-duties-btn" class="hidden items-center justify-center w-full bg-amber-50 border border-amber-100 text-amber-700 font-bold p-3 rounded-xl text-sm">🗓️ График дежурств</a>
-                <a href="reports.html" id="profile-reports-btn" class="hidden items-center justify-center w-full bg-purple-50 border border-purple-100 text-purple-700 font-bold p-3 rounded-xl text-sm">📊 Отчеты группы</a>
-                <a href="territories.html" id="profile-terr-btn" class="hidden items-center justify-center w-full bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold p-3 rounded-xl text-sm">🗺️ Управление участками</a>
-                <a href="school.html" id="profile-school-btn" class="hidden items-center justify-center w-full bg-sky-50 border border-sky-100 text-sky-700 font-bold p-3 rounded-xl text-sm">📚 Управление школой</a>
+                <a href="admin.html" id="profile-admin-btn" class="hidden items-center justify-center w-full bg-slate-800 text-white font-bold p-3 rounded-xl text-sm transition-colors">⚙️ Админ-панель</a>
+                <a href="calendar.html" id="profile-calendar-btn" class="hidden items-center justify-center w-full bg-rose-50 border border-rose-100 text-rose-700 font-bold p-3 rounded-xl text-sm transition-colors">📅 Календарь</a>
+                <a href="duties.html" id="profile-duties-btn" class="hidden items-center justify-center w-full bg-amber-50 border border-amber-100 text-amber-700 font-bold p-3 rounded-xl text-sm transition-colors">🗓️ График дежурств</a>
+                <a href="reports.html" id="profile-reports-btn" class="hidden items-center justify-center w-full bg-purple-50 border border-purple-100 text-purple-700 font-bold p-3 rounded-xl text-sm transition-colors">📊 Отчеты группы</a>
+                <a href="territories.html" id="profile-terr-btn" class="hidden items-center justify-center w-full bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold p-3 rounded-xl text-sm transition-colors">🗺️ Управление участками</a>
+                <a href="school.html" id="profile-school-btn" class="hidden items-center justify-center w-full bg-sky-50 border border-sky-100 text-sky-700 font-bold p-3 rounded-xl text-sm transition-colors">📚 Управление школой</a>
             </div>
 
-            <button onclick="logout()" class="w-full bg-red-50 text-red-500 font-bold p-4 rounded-xl text-sm border border-red-100 outline-none">Выйти из аккаунта</button>
+            <button onclick="logout()" class="w-full bg-red-50 text-red-500 font-bold p-4 rounded-xl text-sm border border-red-100 outline-none hover:bg-red-100 transition-colors">Выйти из аккаунта</button>
         </div>
     </div>
 
-    <script type="module" src="app.js?v=95"></script>
+    <script type="module" src="app.js?v=98"></script>
 </body>
 </html>
