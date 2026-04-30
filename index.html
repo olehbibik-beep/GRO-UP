@@ -177,7 +177,15 @@
             <button onclick="logout()" class="w-full bg-red-50 text-red-500 font-bold p-4 rounded-xl text-sm border border-red-100 outline-none hover:bg-red-100 transition-colors">Выйти из аккаунта</button>
         </div>
     </div>
-
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('Service Worker зарегистрирован!', reg))
+        .catch(err => console.log('Ошибка SW:', err));
+    });
+  }
+</script>
     <script type="module" src="app.js?v=100"></script>
 </body>
 </html>
