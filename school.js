@@ -33,7 +33,7 @@ const taskLessonSelect = document.getElementById('task-lesson');
 for (let i = 1; i <= 12; i++) taskLessonSelect.innerHTML += `<option value="${i}">${i}</option>`;
 
 let allSchoolStudents = [];
-let allTasksCache = []; // Кэш для поиска истории
+let allTasksCache = []; 
 
 // 2. ЗАГРУЗКА БАЗЫ "УЧАСТНИКОВ ШКОЛЫ"
 onSnapshot(collection(db, "users"), (snapshot) => {
@@ -67,7 +67,6 @@ document.getElementById('student-select').addEventListener('change', (e) => {
     const talkOption = document.getElementById('cat-talk'); 
     const readOption = document.getElementById('cat-reading'); 
 
-    // --- ФИЛЬТР ПОМОЩНИКОВ ---
     assistantSelect.disabled = false;
     let astHtml = '<option value="Без помощника">Без помощника</option>';
     allSchoolStudents.forEach(s => {
@@ -77,7 +76,6 @@ document.getElementById('student-select').addEventListener('change', (e) => {
     });
     assistantSelect.innerHTML = astHtml;
 
-    // --- БЛОКИРОВКА РЕЧИ И ЧТЕНИЯ ДЛЯ СЕСТЕР ---
     if (selectedGender === 'girl') {
         talkOption.disabled = true; talkOption.innerText = "❌ Речь (Только братья)";
         readOption.disabled = true; readOption.innerText = "❌ Чтение Библии (Братья)";
@@ -87,17 +85,14 @@ document.getElementById('student-select').addEventListener('change', (e) => {
         readOption.disabled = false; readOption.innerText = "📖 Чтение Библии";
     }
 
-    // --- ПОИСК ИСТОРИИ ВЫСТУПЛЕНИЙ ---
     const hintBox = document.getElementById('student-history-hint');
     hintBox.classList.remove('hidden');
     
-    // Ищем все задачи этого пользователя
     const userTasks = allTasksCache.filter(t => t.userId === selectedId);
     
     if (userTasks.length === 0) {
         hintBox.innerHTML = `⚠️ <span class="text-rose-500">Еще не выступал(а)</span>`;
     } else {
-        // Сортируем по дате (самая свежая первая)
         userTasks.sort((a, b) => new Date(b.date) - new Date(a.date));
         const lastTask = userTasks[0];
         const lastDate = new Date(lastTask.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
@@ -135,7 +130,6 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
             createdAt: new Date().toISOString()
         });
 
-        // Сброс
         document.getElementById('student-select').value = '';
         document.getElementById('assistant-select').innerHTML = '<option value="" selected>Сначала выберите ученика</option>';
         document.getElementById('assistant-select').disabled = true;
@@ -159,11 +153,11 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
     }
 });
 
-// 5. ОТРИСОВКА ВЫДАННЫХ ЗАДАНИЙ (НОВЫЙ КВАДРАТНЫЙ ДИЗАЙН)
+// 5. ОТРИСОВКА ВЫДАННЫХ ЗАДАНИЙ (АДАПТИРОВАННАЯ КАРТОЧКА + ВИДИМАЯ КНОПКА УДАЛЕНИЯ)
 const q = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
 onSnapshot(q, (snapshot) => {
     const list = document.getElementById('tasks-list');
-    allTasksCache = []; // Обновляем кэш для истории
+    allTasksCache = []; 
     
     if (snapshot.empty) return list.innerHTML = '<p class="text-slate-400 italic p-6 text-center text-sm bg-white rounded-2xl border border-slate-200">Нет назначенных заданий.</p>';
 
@@ -172,41 +166,41 @@ onSnapshot(q, (snapshot) => {
 
     snapshot.forEach(docSnap => {
         const t = docSnap.data();
-        allTasksCache.push(t); // Пишем в кэш
+        allTasksCache.push(t); 
         
         const tDate = new Date(t.date);
         const isPast = tDate < today;
-        const opacityClass = isPast ? "opacity-60 grayscale bg-slate-50 hover:opacity-100 hover:grayscale-0" : "bg-white";
+        const opacityClass = isPast ? "opacity-60 grayscale bg-slate-50 border-slate-200" : "bg-white border-slate-200 shadow-sm";
 
-        const astHtml = t.assistant ? `<span class="text-xs text-slate-500 font-bold block mt-1">Помощник: <span class="text-sky-600">${t.assistant}</span></span>` : '';
+        const astHtml = t.assistant ? `<span class="text-[11px] md:text-xs text-slate-500 font-bold block mt-0.5">Пом: <span class="text-sky-600">${t.assistant}</span></span>` : '';
 
-        // НОВЫЙ ДИЗАЙН: Квадратная карточка, номер огромный справа
         html += `
-            <div class="p-5 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden transition-all ${opacityClass}">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="flex gap-4 items-center">
-                        <div class="flex flex-col items-center justify-center w-14 h-14 bg-sky-50 rounded-2xl border border-sky-100 shadow-inner shrink-0">
-                            <span class="text-[9px] uppercase text-sky-500 font-bold leading-none mb-1 tracking-widest">${tDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
-                            <span class="text-2xl font-black leading-none text-sky-700">${tDate.getDate()}</span>
+            <div class="p-4 md:p-5 rounded-3xl border relative overflow-hidden transition-all ${opacityClass}">
+                <button onclick="deleteTask('${docSnap.id}')" class="absolute top-3 right-3 p-2 text-slate-300 hover:text-red-500 bg-white border border-slate-100 shadow-sm rounded-full transition-colors z-10 outline-none" title="Удалить">🗑️</button>
+                
+                <div class="flex items-start mb-4 pr-10">
+                    <div class="flex gap-3 md:gap-4 items-center">
+                        <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 ${isPast ? 'bg-slate-100' : 'bg-sky-50'} rounded-2xl border ${isPast ? 'border-slate-200' : 'border-sky-100'} shadow-inner shrink-0">
+                            <span class="text-[8px] md:text-[9px] uppercase ${isPast ? 'text-slate-400' : 'text-sky-500'} font-bold leading-none mb-1 tracking-widest">${tDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
+                            <span class="text-xl md:text-2xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${tDate.getDate()}</span>
                         </div>
-                        <div>
-                            <h3 class="font-black text-slate-800 text-lg leading-tight">${t.userName}</h3>
+                        <div class="min-w-0">
+                            <h3 class="font-black text-slate-800 text-sm md:text-base leading-tight truncate">${t.userName}</h3>
                             ${astHtml}
                         </div>
                     </div>
-                    
-                    <div class="bg-slate-800 text-white px-3 py-1.5 rounded-xl flex items-center justify-center shadow-md shrink-0">
-                        <span class="text-[10px] uppercase tracking-widest font-bold text-slate-400 mr-1.5">№</span>
-                        <span class="text-2xl font-black leading-none">${t.taskNumber}</span>
+                </div>
+                
+                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 flex-grow min-w-0">
+                        <span class="bg-slate-800 text-white px-2 py-1 rounded-lg shadow-sm flex items-center shrink-0">
+                            <span class="text-[8px] uppercase tracking-widest font-bold text-slate-400 mr-1">№</span>
+                            <span class="text-sm font-black leading-none">${t.taskNumber}</span>
+                        </span>
+                        <span class="font-black text-sky-700 text-[9px] md:text-[10px] uppercase tracking-wide leading-tight whitespace-normal break-words">${t.category}</span>
                     </div>
+                    <span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-lg shrink-0 whitespace-nowrap">Урок ${t.lesson}</span>
                 </div>
-                
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
-                    <span class="font-black text-sky-700 text-xs uppercase tracking-widest truncate mr-2">${t.category}</span>
-                    <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-lg shrink-0">Урок ${t.lesson}</span>
-                </div>
-                
-                <button onclick="deleteTask('${docSnap.id}')" class="absolute top-2 left-1/2 -translate-x-1/2 opacity-0 hover:opacity-100 transition-opacity p-2 text-lg text-red-500 hover:scale-110" title="Удалить">🗑️</button>
             </div>
         `;
     });
