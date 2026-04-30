@@ -218,7 +218,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // 2. УМНЫЕ ЗАДАНИЯ (ШКОЛА) - Видят и Ученик, и Помощник!
+// 2. УМНЫЕ ЗАДАНИЯ (ШКОЛА) - НОВЫЕ КВАДРАТНЫЕ КАРТОЧКИ
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
         onSnapshot(tasksQuery, (snapshot) => {
@@ -233,43 +233,39 @@ function loadPersonalData() {
             snapshot.forEach(docSnap => {
                 const task = docSnap.data();
                 
-                // Фильтр: показываем только если я ученик ИЛИ я помощник
                 if (task.userId === userId || task.assistant === currentUserData.name) {
                     const taskDate = new Date(task.date);
                     const isPast = taskDate < today;
-                    
                     const isAssistant = task.assistant === currentUserData.name;
                     
-                    // Формируем текст роли
-                    let roleText = "";
-                    if (isAssistant) {
-                        roleText = `Помощник у <span class="text-sky-600 font-bold ml-1">${task.userName}</span>`;
-                    } else {
-                        roleText = `Выступление ${task.assistant ? `<span class="text-slate-500 font-medium text-[10px] uppercase ml-1 block md:inline">(Напарник: ${task.assistant})</span>` : ''}`;
-                    }
+                    const opacityClass = isPast ? "opacity-60 grayscale bg-slate-50 border-slate-200" : "bg-white border-slate-200 shadow-sm";
 
-                    // Данные задания
-                    const cat = task.category || task.title; // поддержка старых записей
-                    const num = task.taskNumber ? `<span class="text-[9px] font-bold text-white bg-slate-800 px-2 py-0.5 rounded leading-none shrink-0">№ ${task.taskNumber}</span>` : '';
-                    const les = task.lesson ? `<span class="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded leading-none shrink-0">Урок ${task.lesson}</span>` : '';
+                    let roleText = isAssistant 
+                        ? `Помощник у <span class="text-sky-600 ml-1">${task.userName}</span>` 
+                        : `Выступление ${task.assistant ? `<span class="text-slate-500 text-xs block mt-0.5">Помощник: <span class="text-sky-600">${task.assistant}</span></span>` : ''}`;
 
                     const cardHtml = `
-                        <div class="p-4 bg-white rounded-2xl border ${isPast ? 'border-slate-100 opacity-60 grayscale' : 'border-sky-100 shadow-sm'} mb-3 flex items-center justify-between transition-all">
-                            <div class="flex items-center gap-4 min-w-0 w-full">
-                                <div class="flex flex-col items-center justify-center w-12 h-12 ${isPast ? 'bg-slate-50' : 'bg-sky-50'} rounded-xl shrink-0 border ${isPast ? 'border-slate-200' : 'border-sky-100'}">
-                                    <span class="text-[8px] uppercase ${isPast ? 'text-slate-400' : 'text-sky-500'} font-bold leading-none mb-0.5 tracking-widest">${taskDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
-                                    <span class="text-xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${taskDate.getDate()}</span>
-                                </div>
-                                <div class="flex flex-col min-w-0 truncate pr-2">
-                                    <div class="flex items-center gap-2 truncate mb-1.5">
-                                        ${num}
-                                        <span class="text-[10px] font-bold ${isPast ? 'text-slate-500' : 'text-sky-700'} uppercase tracking-widest truncate">${cat}</span>
-                                        ${les}
+                        <div class="p-5 rounded-3xl border ${opacityClass} mb-4 relative overflow-hidden transition-all">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex gap-4 items-center">
+                                    <div class="flex flex-col items-center justify-center w-14 h-14 ${isPast ? 'bg-slate-100' : 'bg-sky-50'} rounded-2xl border ${isPast ? 'border-slate-200' : 'border-sky-100'} shadow-inner shrink-0">
+                                        <span class="text-[9px] uppercase ${isPast ? 'text-slate-400' : 'text-sky-500'} font-bold leading-none mb-1 tracking-widest">${taskDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
+                                        <span class="text-2xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${taskDate.getDate()}</span>
                                     </div>
-                                    <div class="font-black text-slate-800 text-sm truncate flex flex-wrap items-center">
-                                        ${roleText}
+                                    <div>
+                                        <h3 class="font-black text-slate-800 text-base leading-tight">${roleText}</h3>
                                     </div>
                                 </div>
+                                
+                                <div class="bg-slate-800 text-white px-3 py-1.5 rounded-xl flex items-center justify-center shadow-md shrink-0">
+                                    <span class="text-[10px] uppercase tracking-widest font-bold text-slate-400 mr-1.5">№</span>
+                                    <span class="text-2xl font-black leading-none">${task.taskNumber || '-'}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
+                                <span class="font-black ${isPast ? 'text-slate-500' : 'text-sky-700'} text-xs uppercase tracking-widest truncate mr-2">${task.category || task.title}</span>
+                                ${task.lesson ? `<span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-lg shrink-0">Урок ${task.lesson}</span>` : ''}
                             </div>
                         </div>
                     `;
