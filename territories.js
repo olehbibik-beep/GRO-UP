@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, query, where, addDoc, deleteDoc, doc, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
@@ -12,135 +12,151 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const currentUserId = localStorage.getItem('userId');
 
-let allActiveUsers = [];
+if (!currentUserId) window.location.href = 'login.html';
 
-// 1. ЗАГРУЖАЕМ СПИСОК АКТИВНЫХ ПОЛЬЗОВАТЕЛЕЙ (Для выпадающего списка)
+// 1. ПРОВЕРКА ПРАВ
+getDoc(doc(db, "users", currentUserId)).then(docSnap => {
+    if (docSnap.exists()) {
+        const userRoles = docSnap.data().roles || [];
+        if (!userRoles.some(r => ["Владелец", "Админ", "Ответственный за участки"].includes(r))) {
+            window.location.href = 'index.html';
+        }
+    }
+});
+
+// 2. ЗАГРУЗКА СПИСКА ПОЛЬЗОВАТЕЛЕЙ ДЛЯ СЕЛЕКТА
 onSnapshot(collection(db, "users"), (snapshot) => {
     const select = document.getElementById('user-select');
-    select.innerHTML = '<option value="">-- Выберите возвещателя --</option>';
-    allActiveUsers = [];
+    if (!select) return;
     
-    snapshot.forEach(docSnap => {
-        const user = docSnap.data();
-        if(user.status === 'active') {
-            allActiveUsers.push({ id: docSnap.id, name: user.name });
-            select.innerHTML += `<option value="${docSnap.id}">${user.name}</option>`;
-        }
+    let users = [];
+    snapshot.forEach(d => {
+        if(d.data().status === 'active') users.push({ id: d.id, name: d.data().name });
     });
+    users.sort((a, b) => a.name.localeCompare(b.name));
+
+    let html = '<option value="" disabled selected>Выберите возвещателя...</option>';
+    users.forEach(u => { html += `<option value="${u.id}|${u.name}">${u.name}</option>`; });
+    select.innerHTML = html;
 });
 
-// 2. СЛУШАЕМ ВХОДЯЩИЕ ЗАПРОСЫ
-const reqQuery = query(collection(db, "requests"), where("type", "==", "territory"));
-onSnapshot(reqQuery, (snapshot) => {
-    const container = document.getElementById('requests-list');
-    document.getElementById('requests-count').innerText = snapshot.size;
+// 3. ОТРИСОВКА ЗАПРОСОВ (Компактный список)
+onSnapshot(query(collection(db, "requests"), orderBy("createdAt", "desc")), (snapshot) => {
+    const list = document.getElementById('requests-list');
+    let html = '';
+    let count = 0;
 
-    if (snapshot.empty) {
-        container.innerHTML = '<p class="text-slate-400 italic text-sm">Нет новых запросов.</p>';
-        return;
-    }
-
-    container.innerHTML = '';
     snapshot.forEach(docSnap => {
         const req = docSnap.data();
-        const date = new Date(req.createdAt).toLocaleDateString();
-        
-        container.innerHTML += `
-            <div class="bg-amber-50 p-3 rounded-xl border border-amber-200">
-                <p class="font-bold text-amber-900 text-sm">${req.userName}</p>
-                <p class="text-xs text-amber-700 mt-1">Просит участок (${date})</p>
-                <div class="mt-2 flex gap-2">
-                    <button onclick="prepareAssign('${req.userId}', '${docSnap.id}')" class="bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-emerald-600 transition">Выдать</button>
-                    <button onclick="deleteRequest('${docSnap.id}')" class="text-red-500 bg-white border border-red-200 text-xs px-3 py-1.5 rounded-lg hover:bg-red-50 font-bold transition">Удалить</button>
+        if (req.status === 'new') {
+            count++;
+            const date = new Date(req.createdAt).toLocaleDateString('ru-RU', {day: 'numeric', month: 'short'});
+            
+            html += `
+                <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-xl hover:border-emerald-200 transition-colors">
+                    <div>
+                        <p class="text-xs font-bold text-slate-800">${req.userName}</p>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">📅 ${date}</p>
+                    </div>
+                    <div class="flex gap-1.5">
+                        <button onclick="prepareIssue('${req.userId}', '${req.userName}', '${docSnap.id}')" title="Выдать участок" class="w-7 h-7 flex items-center justify-center bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors shadow-sm outline-none text-xs">➕</button>
+                        <button onclick="deleteRequest('${docSnap.id}')" title="Удалить" class="w-7 h-7 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shadow-sm outline-none text-xs">✖</button>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
     });
+
+    document.getElementById('requests-count').innerText = count;
+    list.innerHTML = html || '<p class="text-slate-400 italic text-xs text-center py-4 bg-slate-50 rounded-xl">Нет новых запросов</p>';
 });
 
-// Функция, которая подставляет имя из запроса в форму
-let currentRequestId = null; // Запоминаем ID запроса, чтобы удалить его после выдачи
-window.prepareAssign = (userId, reqId) => {
-    document.getElementById('user-select').value = userId;
+// Помощник: Подставляет пользователя в форму и закрывает запрос
+window.prepareIssue = async (userId, userName, reqId) => {
+    const select = document.getElementById('user-select');
+    select.value = `${userId}|${userName}`;
     document.getElementById('territory-number').focus();
-    currentRequestId = reqId; 
+    // Удаляем запрос, так как мы взяли его в работу
+    await deleteDoc(doc(db, "requests", reqId));
 };
 
-window.deleteRequest = (reqId) => { deleteDoc(doc(db, "requests", reqId)); };
+window.deleteRequest = async (id) => {
+    if (confirm("Удалить этот запрос?")) await deleteDoc(doc(db, "requests", id));
+};
 
-// 3. ВЫДАЧА УЧАСТКА
+// 4. ВЫДАЧА УЧАСТКА (Сохранение)
 document.getElementById('assign-btn').addEventListener('click', async (e) => {
-    const userId = document.getElementById('user-select').value;
-    const number = document.getElementById('territory-number').value.trim();
+    const userData = document.getElementById('user-select').value;
+    const terrNum = document.getElementById('territory-number').value.trim();
 
-    if (!userId || !number) return alert("Выберите кому и введите номер!");
+    if (!userData || !terrNum) return alert("Выберите пользователя и введите номер!");
 
     const btn = e.target;
-    btn.innerText = "Оформляем...";
-    btn.disabled = true;
+    btn.innerText = "Сохранение..."; btn.disabled = true;
+
+    const [userId, userName] = userData.split('|');
 
     try {
-        const userName = allActiveUsers.find(u => u.id === userId).name;
-
-        // Добавляем участок в базу
         await addDoc(collection(db, "territories"), {
+            number: Number(terrNum),
             userId: userId,
             userName: userName,
-            number: number,
             issuedAt: new Date().toISOString()
         });
 
-        // Если мы выдавали по запросу, удаляем этот запрос
-        if (currentRequestId) {
-            await deleteDoc(doc(db, "requests", currentRequestId));
-            currentRequestId = null;
-        }
-
-        document.getElementById('territory-number').value = '';
         document.getElementById('user-select').value = '';
-        btn.innerText = "Выдано! ✔️";
-        setTimeout(() => { btn.innerText = "Назначить"; btn.disabled = false; }, 2000);
-
-    } catch (error) {
-        console.error(error);
-        alert("Ошибка!");
-        btn.innerText = "Назначить";
-        btn.disabled = false;
-    }
+        document.getElementById('territory-number').value = '';
+        
+        btn.classList.replace('bg-slate-800', 'bg-emerald-500');
+        btn.innerText = "Успешно! ✔️";
+        setTimeout(() => { 
+            btn.classList.replace('bg-emerald-500', 'bg-slate-800');
+            btn.innerText = "Назначить"; btn.disabled = false; 
+        }, 2000);
+    } catch (err) { alert("Ошибка!"); btn.disabled = false; btn.innerText = "Назначить"; }
 });
 
-// 4. СПИСОК ВЫДАННЫХ УЧАСТКОВ
-onSnapshot(collection(db, "territories"), (snapshot) => {
-    const container = document.getElementById('territories-list');
-    
-    if (snapshot.empty) {
-        container.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400 italic">Нет выданных участков</td></tr>';
-        return;
-    }
+// 5. ТАБЛИЦА ВЫДАННЫХ УЧАСТКОВ
+onSnapshot(query(collection(db, "territories"), orderBy("issuedAt", "desc")), (snapshot) => {
+    const list = document.getElementById('territories-list');
+    let html = '';
 
-    container.innerHTML = '';
     snapshot.forEach(docSnap => {
         const terr = docSnap.data();
-        const niceDate = new Date(terr.issuedAt).toLocaleDateString('ru-RU');
-
-        container.innerHTML += `
-            <tr class="hover:bg-slate-50 transition-colors">
-                <td class="p-4 text-center font-black text-emerald-600 text-xl">${terr.number}</td>
-                <td class="p-4 font-bold text-slate-800">${terr.userName}</td>
-                <td class="p-4 text-slate-500 text-sm">${niceDate}</td>
-                <td class="p-4 text-right">
-                    <button onclick="revokeTerritory('${docSnap.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-red-500 hover:bg-red-100 hover:text-red-600 transition-all">
-                        Забрать
-                    </button>
+        const date = new Date(terr.issuedAt).toLocaleDateString('ru-RU', {day: 'numeric', month: 'short', year: 'numeric'});
+        
+        html += `
+            <tr class="hover:bg-slate-50 transition-colors user-row" data-search="${terr.number} ${terr.userName.toLowerCase()}">
+                <td class="py-3 px-4 text-center">
+                    <span class="bg-emerald-50 text-emerald-700 font-mono font-black border border-emerald-200 px-3 py-1.5 rounded-lg text-sm shadow-sm">${terr.number}</span>
+                </td>
+                <td class="py-3 px-4 font-bold text-slate-800 text-sm truncate">${terr.userName}</td>
+                <td class="py-3 px-4 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">${date}</td>
+                <td class="py-3 px-4 text-right">
+                    <button onclick="returnTerritory('${docSnap.id}')" class="bg-slate-50 border border-slate-200 text-slate-500 hover:text-red-500 hover:bg-red-50 hover:border-red-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors shadow-sm outline-none">Сдан ✖</button>
                 </td>
             </tr>
         `;
     });
+
+    list.innerHTML = html || '<tr><td colspan="4" class="text-slate-400 italic text-sm text-center py-8">Все участки свободны.</td></tr>';
 });
 
-window.revokeTerritory = (id) => {
-    if(confirm("Участок сдан? (Запись будет удалена)")) {
-        deleteDoc(doc(db, "territories", id));
+// СДАЧА УЧАСТКА (Удаление)
+window.returnTerritory = async (id) => {
+    if (confirm("Отметить участок как сданный?")) {
+        await deleteDoc(doc(db, "territories", id));
     }
 };
+
+// ПОИСК ПО ТАБЛИЦЕ
+document.getElementById('search-terr').addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('.user-row');
+    rows.forEach(row => {
+        if (row.getAttribute('data-search').includes(term)) row.style.display = '';
+        else row.style.display = 'none';
+    });
+});
