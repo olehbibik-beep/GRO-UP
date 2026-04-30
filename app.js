@@ -12,6 +12,16 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+import { enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+// Включаем хранение данных в памяти телефона
+enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code == 'failed-precondition') {
+        console.warn("Много вкладок открыто, оффлайн режим только в одной.");
+    } else if (err.code == 'unimplemented') {
+        console.warn("Браузер не поддерживает оффлайн.");
+    }
+});
 
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
