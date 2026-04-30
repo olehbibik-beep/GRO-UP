@@ -9,9 +9,9 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "index.html",
-  "background_color": "#f1f5f9",
+  "start_url": "/GRO-UP/index.html",
   "display": "standalone",
-  "scope": "./",
-  "theme_color": "#0f172a"
+  "background_color": "#f1f5f9",
+  "theme_color": "#0f172a",
+  "scope": "/GRO-UP/"
 }
