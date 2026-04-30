@@ -44,12 +44,12 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
         window.location.href = 'index.html'; // Выкидываем обычных участников
     }
 
-    // Прячем иконки в навигации
-    const navAdmin = document.querySelector('nav a[href="admin.html"]'); if (navAdmin && !isFullAdmin) navAdmin.style.display = 'none';
-    const navSchool = document.querySelector('nav a[href="school.html"]'); if (navSchool && !isSchool) navSchool.style.display = 'none';
-    const navTerr = document.querySelector('nav a[href="territories.html"]'); if (navTerr && !isTerr) navTerr.style.display = 'none';
-    const navCal = document.querySelector('nav a[href="calendar.html"]'); if (navCal && !isOverseer) navCal.style.display = 'none';
-    const navDuties = document.querySelector('nav a[href="duties.html"]'); if (navDuties && !isOverseer) navDuties.style.display = 'none';
+    // Включаем иконки в навигации, если ЕСТЬ права
+    const navAdmin = document.querySelector('nav a[href="admin.html"]'); if (navAdmin && isFullAdmin) navAdmin.style.display = 'flex';
+    const navSchool = document.querySelector('nav a[href="school.html"]'); if (navSchool && isSchool) navSchool.style.display = 'flex';
+    const navTerr = document.querySelector('nav a[href="territories.html"]'); if (navTerr && isTerr) navTerr.style.display = 'flex';
+    const navCal = document.querySelector('nav a[href="calendar.html"]'); if (navCal && isOverseer) navCal.style.display = 'flex';
+    const navDuties = document.querySelector('nav a[href="duties.html"]'); if (navDuties && isOverseer) navDuties.style.display = 'flex';
     
     loadReports();
 });
