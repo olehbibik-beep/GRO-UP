@@ -208,15 +208,41 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
 
 async function loadProfileData() {
     const pName = document.getElementById('profile-name');
-    const pRole = document.getElementById('profile-role');
     const pGroup = document.getElementById('profile-group');
     const pOverseer = document.getElementById('profile-overseer');
 
     if(pName) pName.innerText = currentUserData.name || "Имя";
     
-    let roles = currentUserData.roles || ["Участник"];
-    if(pRole) pRole.innerText = roles.join(', ');
+    // КРАСИВЫЕ БЕЙДЖИ РОЛЕЙ
+    let roles = currentUserData.roles || ["Возвещатель"];
+    const rolesContainer = document.getElementById('profile-roles-container');
+    if (rolesContainer) {
+        rolesContainer.innerHTML = roles.map(r => {
+            let colorClass = "bg-slate-100 text-slate-500 border border-slate-200"; // Возвещатель и т.д.
+            if(r === "Старейшина") colorClass = "bg-amber-100 text-amber-700 border border-amber-200";
+            else if(r === "Помощник собрания") colorClass = "bg-sky-100 text-sky-700 border border-sky-200";
+            else if(r === "Пионер") colorClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
+            else if(r === "Админ" || r === "Владелец") colorClass = "bg-rose-100 text-rose-700 border border-rose-200";
+            
+            // Скрываем служебные роли для админов, чтобы не засорять профиль
+            if(["Ответственный за участки", "Ответственный за школу", "Участник школы", "Надзиратель группы"].includes(r)) return '';
+            
+            return `<span class="inline-block px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest ${colorClass}">${r}</span>`;
+        }).join('');
+    }
     
+    // ПОДГРУЗКА НАЗВАНИЯ СОБРАНИЯ ИЗ БАЗЫ
+    onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
+        const congEl = document.getElementById('profile-congregation');
+        if (congEl) {
+            if(docSnap.exists() && docSnap.data().name) {
+                congEl.innerText = `Собрание: ${docSnap.data().name}`;
+            } else {
+                congEl.innerText = `Собрание: МАРИАНСКИЕ ЛАЗНЕ`;
+            }
+        }
+    });
+
     const myGroup = currentUserData.group || "Без группы";
     if(pGroup) pGroup.innerText = `№ ${myGroup}`;
 
