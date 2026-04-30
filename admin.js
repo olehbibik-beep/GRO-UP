@@ -37,6 +37,29 @@ window.updateField = async (id, field, value) => {
     } catch (e) { alert("Ошибка при сохранении!"); }
 };
 
+// АВТОСОХРАНЕНИЕ: ПИН-КОД (С проверкой на 6 цифр и зеленой подсветкой)
+window.updatePin = async (id, val, inputEl) => {
+    const cleanVal = val.replace(/\D/g, ''); // Оставляем только цифры
+    if (cleanVal.length !== 6) {
+        alert("ПИН-код должен состоять ровно из 6 цифр!");
+        // Если ошибка - возвращаем старый ПИН из базы
+        const docSnap = await getDoc(doc(db, "users", id));
+        inputEl.value = docSnap.data().pin || '';
+        return;
+    }
+    
+    try {
+        await updateDoc(doc(db, "users", id), { pin: cleanVal });
+        inputEl.value = cleanVal;
+        
+        // Красивая зеленая вспышка при успешном сохранении
+        inputEl.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+        setTimeout(() => {
+            inputEl.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+        }, 1500);
+    } catch (e) { alert("Ошибка при сохранении ПИН-кода!"); }
+};
+
 // АВТОСОХРАНЕНИЕ: Роли (Галочки)
 window.toggleRole = async (id, roleName, isChecked) => {
     try {
@@ -50,14 +73,13 @@ window.toggleRole = async (id, roleName, isChecked) => {
             currentRoles = currentRoles.filter(r => r !== roleName);
         }
         
-        // Обязательная защита: чтобы не удалить последнюю роль у активного юзера
         if (currentRoles.length === 0) currentRoles = ["Возвещатель"];
         
         await updateDoc(userRef, { roles: currentRoles });
     } catch (e) { alert("Ошибка при обновлении роли!"); }
 };
 
-// УПРАВЛЕНИЕ: БАН И УДАЛЕНИЕ (С ИКОНКАМИ)
+// УПРАВЛЕНИЕ: БАН И УДАЛЕНИЕ
 window.blockUser = async (id) => {
     if(confirm("Заблокировать пользователя? Он не сможет войти на сайт.")) {
         await updateDoc(doc(db, "users", id), { status: 'blocked' });
@@ -97,7 +119,7 @@ onSnapshot(collection(db, "users"), (snapshot) => {
                         <span class="text-3xl">${icon}</span>
                         <div>
                             <p class="font-black text-slate-800">${u.name}</p>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Новая заявка</p>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">ПИН: <span class="text-slate-700">${u.pin || 'НЕТ'}</span></p>
                         </div>
                     </div>
                     <div class="flex gap-2">
@@ -114,7 +136,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
             const rowClass = isBlocked ? 'bg-red-50/50 opacity-60 grayscale' : 'hover:bg-slate-50';
             const nameColor = isBlocked ? 'text-red-700' : 'text-slate-800';
 
-            // КОМПАКТНЫЕ КНОПКИ УПРАВЛЕНИЯ (ИКОНКИ)
             const lockBtn = isBlocked 
                 ? `<button onclick="unblockUser('${id}')" title="Разблокировать" class="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors text-base shadow-sm border border-emerald-100">🔓</button>`
                 : `<button onclick="blockUser('${id}')" title="Заблокировать" class="p-2 bg-slate-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors text-base shadow-sm border border-slate-200 hover:border-amber-300">🔒</button>`;
@@ -126,10 +147,14 @@ onSnapshot(collection(db, "users"), (snapshot) => {
                     
                     <td class="py-2 px-4">
                         <p class="font-black ${nameColor} text-sm mb-1 truncate">${u.name}</p>
-                        <select onchange="updateField('${id}', 'gender', this.value)" class="text-[10px] uppercase font-bold p-1 rounded border border-slate-200 bg-white outline-none focus:border-indigo-500 text-slate-600 shadow-sm" ${isBlocked ? 'disabled' : ''}>
+                        <select onchange="updateField('${id}', 'gender', this.value)" class="text-[10px] uppercase font-bold p-1 rounded border border-slate-200 bg-white outline-none focus:border-indigo-500 text-slate-600 shadow-sm cursor-pointer" ${isBlocked ? 'disabled' : ''}>
                             <option value="boy" ${u.gender === 'boy' ? 'selected' : ''}>👨‍💼 Брат</option>
                             <option value="girl" ${u.gender === 'girl' ? 'selected' : ''}>👩‍💼 Сестра</option>
                         </select>
+                    </td>
+
+                    <td class="py-2 px-2 text-center">
+                        <input type="text" maxlength="6" onchange="updatePin('${id}', this.value, this)" value="${u.pin || ''}" placeholder="000000" class="w-[70px] p-1.5 text-center border border-slate-200 rounded-lg text-xs outline-none bg-white focus:border-indigo-500 font-mono font-black tracking-widest shadow-sm mx-auto transition-all duration-300" ${isBlocked ? 'disabled' : ''}>
                     </td>
                     
                     <td class="py-2 px-2 text-center">
@@ -171,7 +196,7 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     document.getElementById('pending-count').innerText = pendingCount;
     document.getElementById('active-count').innerText = activeCount;
     pendingList.innerHTML = pendingHTML || '<p class="text-slate-400 text-xs text-center py-4">Нет новых заявок</p>';
-    activeList.innerHTML = activeHTML || '<tr><td colspan="6" class="text-center py-8 text-slate-400 italic text-sm">Нет активных пользователей</td></tr>';
+    activeList.innerHTML = activeHTML || '<tr><td colspan="7" class="text-center py-8 text-slate-400 italic text-sm">Нет активных пользователей</td></tr>';
 });
 
 // ПЕРВИЧНОЕ ОДОБРЕНИЕ/ОТКЛОНЕНИЕ
