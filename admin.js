@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
@@ -28,6 +28,23 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
     }
 });
 
+// ГЛОБАЛЬНАЯ НАСТРОЙКА: СОБРАНИЕ
+onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
+    const el = document.getElementById('congregation-name');
+    if(docSnap.exists() && el) {
+        el.value = docSnap.data().name || "МАРИАНСКИЕ ЛАЗНЕ";
+    }
+});
+
+window.updateCongregation = async (val) => {
+    const el = document.getElementById('congregation-name');
+    try {
+        await setDoc(doc(db, "settings", "congregation"), { name: val.trim() || "МАРИАНСКИЕ ЛАЗНЕ" }, { merge: true });
+        el.classList.add('bg-emerald-50', 'border-emerald-400', 'text-emerald-700');
+        setTimeout(() => el.classList.remove('bg-emerald-50', 'border-emerald-400', 'text-emerald-700'), 1500);
+    } catch(e) { alert("Ошибка сохранения!"); }
+};
+
 // АВТОСОХРАНЕНИЕ: Пол и Группа
 window.updateField = async (id, field, value) => {
     try {
@@ -37,26 +54,20 @@ window.updateField = async (id, field, value) => {
     } catch (e) { alert("Ошибка при сохранении!"); }
 };
 
-// АВТОСОХРАНЕНИЕ: ПИН-КОД (С проверкой на 6 цифр и зеленой подсветкой)
+// АВТОСОХРАНЕНИЕ: ПИН-КОД
 window.updatePin = async (id, val, inputEl) => {
-    const cleanVal = val.replace(/\D/g, ''); // Оставляем только цифры
+    const cleanVal = val.replace(/\D/g, ''); 
     if (cleanVal.length !== 6) {
         alert("ПИН-код должен состоять ровно из 6 цифр!");
-        // Если ошибка - возвращаем старый ПИН из базы
         const docSnap = await getDoc(doc(db, "users", id));
         inputEl.value = docSnap.data().pin || '';
         return;
     }
-    
     try {
         await updateDoc(doc(db, "users", id), { pin: cleanVal });
         inputEl.value = cleanVal;
-        
-        // Красивая зеленая вспышка при успешном сохранении
         inputEl.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
-        setTimeout(() => {
-            inputEl.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
-        }, 1500);
+        setTimeout(() => inputEl.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700'), 1500);
     } catch (e) { alert("Ошибка при сохранении ПИН-кода!"); }
 };
 
@@ -74,26 +85,19 @@ window.toggleRole = async (id, roleName, isChecked) => {
         }
         
         if (currentRoles.length === 0) currentRoles = ["Возвещатель"];
-        
         await updateDoc(userRef, { roles: currentRoles });
     } catch (e) { alert("Ошибка при обновлении роли!"); }
 };
 
 // УПРАВЛЕНИЕ: БАН И УДАЛЕНИЕ
 window.blockUser = async (id) => {
-    if(confirm("Заблокировать пользователя? Он не сможет войти на сайт.")) {
-        await updateDoc(doc(db, "users", id), { status: 'blocked' });
-    }
+    if(confirm("Заблокировать пользователя?")) await updateDoc(doc(db, "users", id), { status: 'blocked' });
 };
-
 window.unblockUser = async (id) => {
     await updateDoc(doc(db, "users", id), { status: 'active' });
 };
-
 window.deleteUser = async (id) => {
-    if(confirm("ВНИМАНИЕ! Вы безвозвратно удаляете профиль. Продолжить?")) {
-        await deleteDoc(doc(db, "users", id));
-    }
+    if(confirm("ВНИМАНИЕ! Удалить профиль?")) await deleteDoc(doc(db, "users", id));
 };
 
 // ПОЛУЧЕНИЕ И ОТРИСОВКА ПОЛЬЗОВАТЕЛЕЙ
@@ -139,7 +143,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
             const lockBtn = isBlocked 
                 ? `<button onclick="unblockUser('${id}')" title="Разблокировать" class="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors text-base shadow-sm border border-emerald-100">🔓</button>`
                 : `<button onclick="blockUser('${id}')" title="Заблокировать" class="p-2 bg-slate-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors text-base shadow-sm border border-slate-200 hover:border-amber-300">🔒</button>`;
-
             const deleteBtn = `<button onclick="deleteUser('${id}')" title="Удалить" class="p-2 bg-slate-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-base shadow-sm border border-slate-200 hover:border-red-300">🗑️</button>`;
 
             activeHTML += `
@@ -154,7 +157,7 @@ onSnapshot(collection(db, "users"), (snapshot) => {
                     </td>
 
                     <td class="py-2 px-2 text-center">
-                        <input type="text" maxlength="6" onchange="updatePin('${id}', this.value, this)" value="${u.pin || ''}" placeholder="000000" class="w-[70px] p-1.5 text-center border border-slate-200 rounded-lg text-xs outline-none bg-white focus:border-indigo-500 font-mono font-black tracking-widest shadow-sm mx-auto transition-all duration-300" ${isBlocked ? 'disabled' : ''}>
+                        <input type="text" maxlength="6" onchange="updatePin('${id}', this.value, this)" value="${u.pin || ''}" placeholder="000000" class="w-[60px] p-1.5 text-center border border-slate-200 rounded-lg text-xs outline-none bg-white focus:border-indigo-500 font-mono font-black tracking-widest shadow-sm mx-auto transition-all" ${isBlocked ? 'disabled' : ''}>
                     </td>
                     
                     <td class="py-2 px-2 text-center">
@@ -168,17 +171,20 @@ onSnapshot(collection(db, "users"), (snapshot) => {
                     </td>
                     
                     <td class="py-2 px-4">
-                        <div class="flex flex-wrap gap-1.5">
-                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-slate-600 font-bold uppercase tracking-wider hover:bg-indigo-50 p-1 border border-transparent hover:border-indigo-100 rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Возвещатель', this.checked)" class="accent-indigo-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Возвещатель') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Возвещатель</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-rose-600 font-bold uppercase tracking-wider hover:bg-rose-50 p-1 border border-transparent hover:border-rose-100 rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Админ', this.checked)" class="accent-rose-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Админ') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Администратор</label>
+                        <div class="flex flex-wrap gap-1.5 w-64">
+                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-slate-600 font-bold uppercase hover:bg-slate-100 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Возвещатель', this.checked)" class="accent-slate-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Возвещатель') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Возвещатель</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-emerald-600 font-bold uppercase hover:bg-emerald-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Пионер', this.checked)" class="accent-emerald-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Пионер') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Пионер</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-sky-600 font-bold uppercase hover:bg-sky-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Помощник собрания', this.checked)" class="accent-sky-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Помощник собрания') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Помощник собр.</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-amber-600 font-bold uppercase hover:bg-amber-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Старейшина', this.checked)" class="accent-amber-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Старейшина') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Старейшина</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-rose-600 font-bold uppercase hover:bg-rose-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Админ', this.checked)" class="accent-rose-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Админ') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Админ</label>
                         </div>
                     </td>
                     
                     <td class="py-2 px-4">
-                        <div class="flex flex-wrap gap-1.5">
-                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-purple-700 font-bold uppercase tracking-wider hover:bg-purple-50 p-1 border border-transparent hover:border-purple-100 rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Надзиратель группы', this.checked)" class="accent-purple-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Надзиратель группы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Группа</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-emerald-700 font-bold uppercase tracking-wider hover:bg-emerald-50 p-1 border border-transparent hover:border-emerald-100 rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за участки', this.checked)" class="accent-emerald-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Ответственный за участки') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Участки</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-sky-700 font-bold uppercase tracking-wider hover:bg-sky-50 p-1 border border-transparent hover:border-sky-100 rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за школу', this.checked)" class="accent-sky-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Ответственный за школу') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Школа</label>
+                        <div class="flex flex-wrap gap-1.5 w-48">
+                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-purple-700 font-bold uppercase hover:bg-purple-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Надзиратель группы', this.checked)" class="accent-purple-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Надзиратель группы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Группа</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-teal-700 font-bold uppercase hover:bg-teal-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за участки', this.checked)" class="accent-teal-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Ответственный за участки') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Участки</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-indigo-700 font-bold uppercase hover:bg-indigo-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за школу', this.checked)" class="accent-indigo-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Ответственный за школу') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Школа</label>
                         </div>
                     </td>
                     
@@ -199,20 +205,16 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     activeList.innerHTML = activeHTML || '<tr><td colspan="7" class="text-center py-8 text-slate-400 italic text-sm">Нет активных пользователей</td></tr>';
 });
 
-// ПЕРВИЧНОЕ ОДОБРЕНИЕ/ОТКЛОНЕНИЕ
 window.approveUser = async (id) => {
     try { await updateDoc(doc(db, "users", id), { status: "active", roles: ["Возвещатель"] }); } 
     catch (e) { alert("Ошибка!"); }
 };
-
 window.rejectUser = async (id) => {
     if (confirm("Точно отклонить заявку и удалить данные?")) {
-        try { await deleteDoc(doc(db, "users", id)); } 
-        catch (e) { alert("Ошибка удаления"); }
+        try { await deleteDoc(doc(db, "users", id)); } catch (e) { alert("Ошибка удаления"); }
     }
 };
 
-// ПОИСК (Работает мгновенно)
 document.getElementById('search-user').addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     const rows = document.querySelectorAll('.user-row');
