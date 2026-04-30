@@ -1,25 +1,13 @@
-const CACHE_NAME = 'gro-up-v1';
-// Список файлов для скачивания в память телефона
+const CACHE_NAME = 'gro-up-v3';
 const urlsToCache = [
-  'index.html',
-  'login.html',
-  'admin.html',
-  'school.html',
-  'territories.html',
-  'calendar.html',
-  'duties.html',
-  'reports.html',
-  'app.js',
-  'login.js',
-  'admin.js',
-  'school.js',
-  'territories.js',
-  'calendar.js',
-  'duties.js',
-  'reports.js'
+  '/GRO-UP/',
+  '/GRO-UP/index.html',
+  '/GRO-UP/login.html',
+  '/GRO-UP/app.js',
+  '/GRO-UP/login.js',
+  '/GRO-UP/manifest.json'
 ];
 
-// Установка: скачиваем файлы
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -28,11 +16,25 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Работа с запросами: сначала берем из кэша, потом из сети
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
+    })
+  );
+});
+
+// Чистим старый кэш при обновлении версии
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
     })
   );
 });
