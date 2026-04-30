@@ -16,49 +16,75 @@ const userId = localStorage.getItem('userId');
 
 if (!userId) window.location.href = 'login.html';
 
-// Проверка прав доступа
+let myGroup = "Все"; // По умолчанию
+let allEventsData = []; // Кэш событий для быстрой фильтрации
+
+// 1. ПРОВЕРКА ПРАВ И ПОЛУЧЕНИЕ ГРУППЫ ТЕКУЩЕГО АДМИНА
 getDoc(doc(db, "users", userId)).then(docSnap => {
     if (docSnap.exists()) {
-        const userRoles = docSnap.data().roles || [];
+        const userData = docSnap.data();
+        const userRoles = userData.roles || [];
         if (!userRoles.some(r => ["Владелец", "Админ", "Надзиратель группы"].includes(r))) {
             window.location.href = 'index.html';
         }
+        myGroup = userData.group || "Все";
     }
 });
 
+// 2. ЗАГРУЗКА БРАТЬЕВ ДЛЯ ВЫБОРА ВЕДУЩИХ
+onSnapshot(collection(db, "users"), (snapshot) => {
+    const checklist = document.getElementById('users-checklist');
+    if (!checklist) return;
+    let html = '';
+    
+    // Сортируем пользователей по алфавиту для удобства
+    let usersArr = [];
+    snapshot.forEach(d => { if(d.data().status === 'active') usersArr.push(d.data().name); });
+    usersArr.sort();
+
+    usersArr.forEach(name => {
+        html += `
+            <label class="flex items-center gap-3 p-2 hover:bg-white rounded-lg cursor-pointer transition-colors border border-transparent hover:border-slate-200">
+                <input type="checkbox" value="${name}" class="leader-cb w-4 h-4 accent-rose-500 rounded shrink-0">
+                <span class="text-xs font-bold text-slate-700">${name}</span>
+            </label>
+        `;
+    });
+    checklist.innerHTML = html || '<p class="text-xs text-slate-400 italic">Нет активных пользователей</p>';
+});
+
+// 3. СОХРАНЕНИЕ СОБЫТИЙ (Умный генератор)
 document.getElementById('save-event-btn').addEventListener('click', async (e) => {
     const title = document.getElementById('event-title').value.trim();
     const dateStr = document.getElementById('event-date').value;
     const timeStr = document.getElementById('event-time').value || "";
     const groupVal = document.getElementById('event-group').value.trim();
-    const leadersStr = document.getElementById('event-leaders').value.trim();
     
     const isRecurring = document.getElementById('event-recurring').checked;
     const weeksCount = isRecurring ? parseInt(document.getElementById('event-weeks').value) : 1;
+
+    // Собираем отмеченных ведущих из базы
+    const selectedCBs = document.querySelectorAll('.leader-cb:checked');
+    const leaders = Array.from(selectedCBs).map(cb => cb.value);
 
     if (!title || !dateStr) return alert("Заполните название и дату!");
 
     const btn = e.target;
     btn.innerText = "Генерация..."; btn.disabled = true;
 
-    // Разбиваем строку ведущих на массив: "Иванов, Петров" -> ["Иванов", "Петров"]
-    const leaders = leadersStr ? leadersStr.split(',').map(s => s.trim()).filter(s => s) : [];
-
     try {
         const baseDate = new Date(dateStr);
 
-        // Цикл генерации событий
         for (let i = 0; i < weeksCount; i++) {
             const evDate = new Date(baseDate);
-            evDate.setDate(evDate.getDate() + (i * 7)); // Прибавляем по 7 дней
+            evDate.setDate(evDate.getDate() + (i * 7)); 
             
-            // Форматируем дату обратно в YYYY-MM-DD для сортировки БД
             const yyyy = evDate.getFullYear();
             const mm = String(evDate.getMonth() + 1).padStart(2, '0');
             const dd = String(evDate.getDate()).padStart(2, '0');
             const newDateStr = `${yyyy}-${mm}-${dd}`;
 
-            // Очередность: берем остаток от деления, чтобы циклично ходить по массиву
+            // Очередность ведущих
             let assignedLeader = "";
             if (leaders.length > 0) {
                 assignedLeader = leaders[i % leaders.length];
@@ -75,49 +101,102 @@ document.getElementById('save-event-btn').addEventListener('click', async (e) =>
         }
 
         document.getElementById('event-title').value = '';
-        document.getElementById('event-leaders').value = '';
-        btn.innerText = "Готово! ✔️";
-        setTimeout(() => { btn.innerText = "Опубликовать"; btn.disabled = false; }, 2000);
+        // Снимаем все галочки после успеха
+        document.querySelectorAll('.leader-cb').forEach(cb => cb.checked = false);
+        
+        btn.classList.replace('bg-slate-800', 'bg-emerald-500');
+        btn.innerText = "Успешно! ✔️";
+        setTimeout(() => { 
+            btn.classList.replace('bg-emerald-500', 'bg-slate-800');
+            btn.innerText = "Опубликовать"; 
+            btn.disabled = false; 
+        }, 2000);
     } catch (error) { alert("Ошибка сети."); btn.disabled = false; }
 });
 
-const q = query(collection(db, "events"), orderBy("date", "asc"));
-onSnapshot(q, (snapshot) => {
+// 4. ОТРИСОВКА КАЛЕНДАРЯ (С фильтром и монолитным списком)
+const renderEvents = () => {
     const list = document.getElementById('events-list');
-    if (snapshot.empty) return list.innerHTML = '<p class="text-slate-400 italic">Событий пока нет.</p>';
+    const showAll = document.getElementById('show-all-events-cb').checked;
+    
+    if (allEventsData.length === 0) {
+        list.innerHTML = '<p class="text-slate-400 italic p-6 text-center text-sm">Событий пока нет.</p>';
+        return;
+    }
 
-    list.innerHTML = '';
+    let html = '';
     const today = new Date(); today.setHours(0,0,0,0);
+    let eventCount = 0;
 
-    snapshot.forEach(docSnap => {
+    allEventsData.forEach(docSnap => {
         const ev = docSnap.data();
         const evDate = new Date(ev.date);
-        const niceDate = evDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-        
-        const isPast = evDate < today;
-        const colorClass = isPast ? "bg-slate-50 opacity-50 border-slate-200" : "bg-white border-slate-200 shadow-sm";
-        const titleColor = isPast ? "text-slate-500" : "text-slate-900";
-        
-        const groupBadge = ev.group !== "Все" ? `<span class="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded ml-2 font-bold">Гр. ${ev.group}</span>` : ``;
-        const timeHtml = ev.time ? `<span class="text-xs bg-slate-100 px-2 py-0.5 rounded font-bold text-slate-600">⌚ ${ev.time}</span>` : '';
-        const leaderHtml = ev.leader ? `<p class="text-[10px] uppercase font-bold text-slate-400 mt-1">Ведущий: <span class="text-rose-600">${ev.leader}</span></p>` : '';
+        const evGroup = ev.group || "Все";
 
-        list.innerHTML += `
-            <div class="p-4 rounded-xl border flex justify-between items-center group transition-all ${colorClass}">
-                <div>
-                    <h3 class="font-black ${titleColor} text-lg flex items-center">${ev.title} ${groupBadge}</h3>
-                    <div class="flex items-center gap-2 mt-1">
-                        <p class="text-sm font-bold ${isPast ? 'text-slate-400' : 'text-slate-700'}">📅 ${niceDate}</p>
+        // ЛОГИКА ФИЛЬТРА:
+        // Если событие общее или моей группы -> показываем всегда
+        // Если событие чужой группы -> показываем ТОЛЬКО если стоит галочка showAll
+        const isMyGroupOrAll = (evGroup === "Все" || evGroup == myGroup);
+        
+        if (isMyGroupOrAll || showAll) {
+            eventCount++;
+            
+            const isPast = evDate < today;
+            // Если событие чужое, делаем его блеклым. Если прошедшее - тоже.
+            const isOtherGroup = !isMyGroupOrAll;
+            const opacityClass = (isPast || isOtherGroup) ? "opacity-50 grayscale hover:opacity-100 hover:grayscale-0" : "";
+            const bgClass = isOtherGroup ? "bg-slate-50" : "bg-white hover:bg-slate-50";
+
+            const niceDate = evDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+            
+            const groupBadge = evGroup !== "Все" 
+                ? `<span class="bg-indigo-100 text-indigo-700 text-[9px] px-2 py-0.5 rounded font-black uppercase shrink-0">Гр. ${evGroup}</span>` 
+                : `<span class="bg-slate-100 text-slate-500 text-[9px] px-2 py-0.5 rounded font-black uppercase shrink-0">Общее</span>`;
+            
+            const timeHtml = ev.time ? `<span class="text-xs font-mono font-black text-slate-400 mr-3 shrink-0">${ev.time}</span>` : '';
+            const leaderHtml = ev.leader ? `<div class="text-[9px] uppercase font-bold text-slate-400 mt-1 truncate">Ведущий: <span class="text-rose-500 font-black">${ev.leader}</span></div>` : '';
+
+            // Кнопка удаления (Маленькая корзина вместо громоздкого текста)
+            // Чужие события удалять нельзя!
+            const deleteBtn = isMyGroupOrAll 
+                ? `<button onclick="deleteEvent('${docSnap.id}')" class="text-slate-300 hover:text-red-500 transition-colors p-2 text-lg outline-none">🗑️</button>` 
+                : `<span class="text-[10px] text-slate-400 font-bold uppercase p-2">Чужое</span>`;
+
+            html += `
+                <div class="flex items-center justify-between p-4 border-b border-slate-100 transition-all ${bgClass} ${opacityClass}">
+                    <div class="flex items-center w-full min-w-0 pr-4">
                         ${timeHtml}
+                        <div class="flex flex-col min-w-0">
+                            <div class="flex items-center gap-2 truncate">
+                                <h3 class="font-black text-slate-800 text-sm truncate">${ev.title}</h3>
+                                ${groupBadge}
+                            </div>
+                            <div class="flex items-center gap-2 mt-0.5 truncate">
+                                <p class="text-[10px] font-bold uppercase tracking-widest ${isPast ? 'text-slate-400' : 'text-slate-500'}">📅 ${niceDate}</p>
+                            </div>
+                            ${leaderHtml}
+                        </div>
                     </div>
-                    ${leaderHtml}
+                    ${deleteBtn}
                 </div>
-                <button onclick="deleteEvent('${docSnap.id}')" class="text-red-300 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-2 font-bold bg-red-50 rounded-lg shrink-0">Удалить</button>
-            </div>
-        `;
+            `;
+        }
     });
+
+    list.innerHTML = html || '<p class="text-slate-400 italic p-6 text-center text-sm">Событий для вашей группы не найдено.</p>';
+};
+
+// Слушаем базу и перерисовываем
+const q = query(collection(db, "events"), orderBy("date", "asc"));
+onSnapshot(q, (snapshot) => {
+    allEventsData = snapshot.docs;
+    renderEvents();
 });
 
+// Слушаем клик по галочке "Показать другие группы"
+document.getElementById('show-all-events-cb').addEventListener('change', renderEvents);
+
+// 5. УДАЛЕНИЕ СОБЫТИЯ
 window.deleteEvent = (id) => {
-    if (confirm("Удалить это событие?")) deleteDoc(doc(db, "events", id));
+    if (confirm("Удалить встречу из календаря?")) deleteDoc(doc(db, "events", id));
 };
