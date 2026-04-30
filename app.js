@@ -26,20 +26,17 @@ const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`;
 const currentMonthStr = d.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
 document.getElementById('current-month-label')?.setAttribute('innerText', currentMonthStr);
 
-// ЧИСТАЯ, БЫСТРАЯ НАВИГАЦИЯ БЕЗ ЛИШНИХ КЛАССОВ
 window.switchTab = (tabId, btnElement) => {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tabId}`);
     if(targetTab) targetTab.classList.add('active');
 
     document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('text-white'); 
-        btn.classList.add('text-slate-500');
+        btn.classList.remove('text-white'); btn.classList.add('text-slate-500');
     });
     
     if(btnElement) {
-        btnElement.classList.remove('text-slate-500'); 
-        btnElement.classList.add('text-white');
+        btnElement.classList.remove('text-slate-500'); btnElement.classList.add('text-white');
     }
 };
 
@@ -83,62 +80,7 @@ window.submitReport = async () => {
                 btn.innerText = "✏️ Изменить";
                 btn.disabled = false;
             }, 2000);
-        } catch (e) { 
-            alert("Ошибка сети!"); 
-            btn.disabled = false; 
-            btn.innerText = "Отправить отчет"; 
-        }
-    }
-};
-
-// МАГИЯ КНОПКИ ОТЧЕТА
-window.submitReport = async () => {
-    const fs = document.getElementById('report-fieldset');
-    const btn = document.getElementById('submit-report-btn');
-
-    if (!fs || !btn) return;
-
-    if (fs.disabled) {
-        fs.disabled = false;
-        fs.classList.remove('opacity-50', 'grayscale-[50%]');
-        btn.classList.replace('bg-slate-800', 'bg-ui-report');
-        btn.classList.replace('hover:bg-slate-900', 'hover:opacity-90');
-        btn.innerText = 'Отправить отчет';
-    } else {
-        const participated = document.getElementById('rep-participated')?.checked || false;
-        const hours = document.getElementById('rep-hours')?.value || "";
-        const pubs = document.getElementById('rep-pubs')?.value || "";
-        const studies = document.getElementById('rep-studies')?.value || "";
-
-        if (!participated && hours === "") return alert("Отметьте галочку 'Служил(а)' или введите часы!");
-        
-        btn.innerText = "Сохранение..."; 
-        btn.disabled = true;
-
-        try {
-            await setDoc(doc(db, "reports", `${userId}_${strictMonthId}`), {
-                userId, userName: currentUserData.name, group: currentUserData.group || "Без группы", month: currentMonthStr,
-                participated, hours: Number(hours), pubs: Number(pubs), studies: Number(studies), submittedAt: new Date().toISOString()
-            });
-            const log = document.getElementById('last-report-log');
-            if(log) log.innerText = `Сохранено: ${new Date().toLocaleString('ru-RU')}`;
-            
-            btn.classList.replace('bg-ui-report', 'bg-ui-success');
-            btn.innerText = "Успешно ✔️";
-            
-            setTimeout(() => {
-                fs.disabled = true;
-                fs.classList.add('opacity-50', 'grayscale-[50%]');
-                btn.classList.replace('bg-ui-success', 'bg-slate-800');
-                btn.classList.replace('hover:opacity-90', 'hover:bg-slate-900');
-                btn.innerText = "✏️ Изменить";
-                btn.disabled = false;
-            }, 2000);
-        } catch (e) { 
-            alert("Ошибка сети!"); 
-            btn.disabled = false; 
-            btn.innerText = "Отправить отчет"; 
-        }
+        } catch (e) { alert("Ошибка сети!"); btn.disabled = false; btn.innerText = "Отправить отчет"; }
     }
 };
 
@@ -160,12 +102,15 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         
         let userRoles = currentUserData.roles || [];
         
+        // КНОПКИ АДМИНА В ПРОФИЛЕ (Абсолютно защищены от мигания)
         const profileAdminLinks = document.getElementById('profile-admin-links');
         const profileAdminBtn = document.getElementById('profile-admin-btn');
         const profileReportsBtn = document.getElementById('profile-reports-btn');
         const profileCalendarBtn = document.getElementById('profile-calendar-btn');
+        const profileDutiesBtn = document.getElementById('profile-duties-btn');
         const profileTerrBtn = document.getElementById('profile-terr-btn');
         const profileSchoolBtn = document.getElementById('profile-school-btn');
+        
         let showAdminMenu = false;
 
         if (userRoles.some(r => TOP_ROLES.includes(r))) {
@@ -179,9 +124,11 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         if (userRoles.some(r => OVERSEER_ROLES.includes(r))) {
             if(profileReportsBtn) { profileReportsBtn.classList.remove('hidden'); profileReportsBtn.classList.add('flex'); showAdminMenu = true; }
             if(profileCalendarBtn) { profileCalendarBtn.classList.remove('hidden'); profileCalendarBtn.classList.add('flex'); }
+            if(profileDutiesBtn) { profileDutiesBtn.classList.remove('hidden'); profileDutiesBtn.classList.add('flex'); }
         } else {
             if(profileReportsBtn) { profileReportsBtn.classList.add('hidden'); profileReportsBtn.classList.remove('flex'); }
             if(profileCalendarBtn) { profileCalendarBtn.classList.add('hidden'); profileCalendarBtn.classList.remove('flex'); }
+            if(profileDutiesBtn) { profileDutiesBtn.classList.add('hidden'); profileDutiesBtn.classList.remove('flex'); }
         }
 
         if (userRoles.includes('Ответственный за участки') || hasFullAccess) {
@@ -213,33 +160,27 @@ async function loadProfileData() {
 
     if(pName) pName.innerText = currentUserData.name || "Имя";
     
-    // КРАСИВЫЕ БЕЙДЖИ РОЛЕЙ
     let roles = currentUserData.roles || ["Возвещатель"];
     const rolesContainer = document.getElementById('profile-roles-container');
     if (rolesContainer) {
         rolesContainer.innerHTML = roles.map(r => {
-            let colorClass = "bg-slate-100 text-slate-500 border border-slate-200"; // Возвещатель и т.д.
+            let colorClass = "bg-slate-100 text-slate-500 border border-slate-200"; 
             if(r === "Старейшина") colorClass = "bg-amber-100 text-amber-700 border border-amber-200";
             else if(r === "Помощник собрания") colorClass = "bg-sky-100 text-sky-700 border border-sky-200";
             else if(r === "Пионер") colorClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
             else if(r === "Админ" || r === "Владелец") colorClass = "bg-rose-100 text-rose-700 border border-rose-200";
             
-            // Скрываем служебные роли для админов, чтобы не засорять профиль
             if(["Ответственный за участки", "Ответственный за школу", "Участник школы", "Надзиратель группы"].includes(r)) return '';
             
             return `<span class="inline-block px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest ${colorClass}">${r}</span>`;
         }).join('');
     }
     
-    // ПОДГРУЗКА НАЗВАНИЯ СОБРАНИЯ ИЗ БАЗЫ
     onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
         const congEl = document.getElementById('profile-congregation');
         if (congEl) {
-            if(docSnap.exists() && docSnap.data().name) {
-                congEl.innerText = `Собрание: ${docSnap.data().name}`;
-            } else {
-                congEl.innerText = `Собрание: МАРИАНСКИЕ ЛАЗНЕ`;
-            }
+            if(docSnap.exists() && docSnap.data().name) congEl.innerText = `Собрание: ${docSnap.data().name}`;
+            else congEl.innerText = `Собрание: МАРИАНСКИЕ ЛАЗНЕ`;
         }
     });
 
@@ -254,9 +195,7 @@ async function loadProfileData() {
         } else if (pOverseer) { 
             pOverseer.innerText = "-"; 
         }
-    } catch(e) { 
-        if(pOverseer) pOverseer.innerText = "Ошибка БД"; 
-    }
+    } catch(e) { if(pOverseer) pOverseer.innerText = "Ошибка БД"; }
 }
 
 function loadPersonalData() {
@@ -271,13 +210,11 @@ function loadPersonalData() {
             const log = document.getElementById('last-report-log'); if(log) log.innerText = `Последняя запись: ${new Date(r.submittedAt).toLocaleString('ru-RU')}`;
             
             const btn = document.getElementById('submit-report-btn');
-            if(btn && document.getElementById('report-fieldset')?.disabled) {
-                btn.innerText = "✏️ Изменить";
-            }
+            if(btn && document.getElementById('report-fieldset')?.disabled) btn.innerText = "✏️ Изменить";
         }
     });
 
-// 1. Дежурства (Плавающее) - УМНЫЙ ФИЛЬТР ПО ГРУППЕ
+    // 1. Дежурства
     try {
         const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
         onSnapshot(dutiesQuery, (snapshot) => {
@@ -287,19 +224,13 @@ function loadPersonalData() {
             let foundDuty = null;
             const today = new Date(); today.setHours(0,0,0,0);
 
-            // Ищем ближайшее актуальное дежурство ДЛЯ НАШЕЙ ГРУППЫ
             snapshot.forEach(docSnap => {
                 const duty = docSnap.data();
                 const dDate = new Date(duty.rawDate);
-                // Проверяем: Дежурство еще актуально? (Не старше 7 дней)
                 const isPast = (today.getTime() - dDate.getTime()) > (7 * 24 * 60 * 60 * 1000); 
-                
-                // Проверяем: Это дежурство для моей группы или для всех?
                 const isMyGroup = duty.group === "Все" || duty.group === currentUserData.group;
 
-                if (!isPast && isMyGroup && !foundDuty) {
-                    foundDuty = duty;
-                }
+                if (!isPast && isMyGroup && !foundDuty) foundDuty = duty;
             });
 
             if (!foundDuty) { 
@@ -312,7 +243,32 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-// 2. УМНЫЕ ЗАДАНИЯ (ШКОЛА) - АДАПТИРОВАННЫЕ КАРТОЧКИ
+    // 2. Участки
+    try {
+        const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
+        onSnapshot(terrQuery, (snapshot) => {
+            const container = document.getElementById('territories-container');
+            if(!container) return;
+            if (snapshot.empty) return container.innerHTML = '<p class="text-slate-400 text-sm italic py-4">У вас пока нет активных участков</p>';
+            container.innerHTML = '';
+            snapshot.forEach(docSnap => {
+                const terr = docSnap.data();
+                container.innerHTML += `
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                        <div class="p-3 border-b border-slate-100 flex justify-between items-center bg-emerald-50/50">
+                            <h3 class="font-black text-slate-800 text-sm">Участок № ${terr.number}</h3>
+                            <span class="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-2 py-1 rounded uppercase">Активен</span>
+                        </div>
+                        <div class="w-full h-32 bg-slate-50 flex items-center justify-center relative">
+                            <span class="text-3xl absolute opacity-10">🗺️</span>
+                        </div>
+                    </div>
+                `;
+            });
+        });
+    } catch(e) {}
+
+    // 3. Задания (Школа)
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
         onSnapshot(tasksQuery, (snapshot) => {
@@ -326,7 +282,6 @@ function loadPersonalData() {
             
             snapshot.forEach(docSnap => {
                 const task = docSnap.data();
-                
                 if (task.userId === userId || task.assistant === currentUserData.name) {
                     const taskDate = new Date(task.date);
                     const isPast = taskDate < today;
@@ -351,7 +306,6 @@ function loadPersonalData() {
                                     </div>
                                 </div>
                             </div>
-                            
                             <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between gap-2">
                                 <div class="flex items-center gap-2 flex-grow min-w-0">
                                     <span class="bg-slate-800 text-white px-2 py-1 rounded-lg shadow-sm flex items-center shrink-0">
@@ -364,14 +318,8 @@ function loadPersonalData() {
                             </div>
                         </div>
                     `;
-
-                    if (!isPast) {
-                        upCount++;
-                        upList.innerHTML += cardHtml;
-                    } else {
-                        pastCount++;
-                        pastList.innerHTML += cardHtml;
-                    }
+                    if (!isPast) { upCount++; upList.innerHTML += cardHtml; } 
+                    else { pastCount++; pastList.innerHTML += cardHtml; }
                 }
             });
             
@@ -398,52 +346,56 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // 5. МОНОЛИТНЫЙ КАЛЕНДАРЬ
+    // 5. КАЛЕНДАРЬ ТОЛЬКО НА СЕГОДНЯ (СВЕТЛЫЙ ДИЗАЙН)
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
             const container = document.getElementById('calendar-events');
             if (!container) return; 
             let html = '';
-            const today = new Date(); today.setHours(0,0,0,0);
-            let displayedCount = 0; 
-            const MAX_EVENTS = 3; 
+            
+            const today = new Date();
+            const todayYear = today.getFullYear();
+            const todayMonth = today.getMonth();
+            const todayDate = today.getDate();
+            
+            let count = 0; 
 
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 const evDate = new Date(ev.date);
                 const evGroup = ev.group || "Все";
                 
-                if (evDate >= today && displayedCount < MAX_EVENTS) {
-                    displayedCount++; 
-                    const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-500 text-white px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none">Гр. ${evGroup}</span>` : '';
+                // Строгая проверка: событие должно быть именно СЕГОДНЯ
+                if (evDate.getFullYear() === todayYear && 
+                    evDate.getMonth() === todayMonth && 
+                    evDate.getDate() === todayDate) {
+                    
+                    count++; 
+                    const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-100 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none">Гр. ${evGroup}</span>` : '';
                     
                     html += `
-                        <div class="flex items-center px-4 md:px-5 py-3 md:py-4 hover:bg-slate-800/50 transition-colors w-full cursor-default ${displayedCount > 1 ? 'border-t border-slate-700/50' : ''}">
+                        <div class="flex items-center px-4 md:px-5 py-3 md:py-4 hover:bg-slate-50 transition-colors w-full cursor-default ${count > 1 ? 'border-t border-slate-100' : ''}">
                             <div class="flex items-center gap-4 w-full">
                                 <div class="flex flex-col items-center justify-center w-12 shrink-0">
-                                    <span class="text-[9px] uppercase text-rose-500 font-bold leading-none mb-1 tracking-widest">${evDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
-                                    <span class="text-xl font-black leading-none text-white">${evDate.getDate()}</span>
+                                    <span class="text-[9px] uppercase text-rose-500 font-bold leading-none mb-1 tracking-widest">СЕГОДНЯ</span>
+                                    <span class="text-xl font-black leading-none text-slate-800">${evDate.getDate()}</span>
                                 </div>
                                 <div class="flex flex-col flex-grow truncate">
                                     <div class="flex items-center gap-2 truncate">
-                                        ${ev.time ? `<span class="text-sm font-bold text-slate-300 shrink-0">${ev.time}</span>` : ''}
-                                        <span class="font-bold text-sm md:text-base text-white truncate">${ev.title}</span>
+                                        ${ev.time ? `<span class="text-sm font-bold text-slate-500 shrink-0">${ev.time}</span>` : ''}
+                                        <span class="font-bold text-sm md:text-base text-slate-800 truncate">${ev.title}</span>
                                         ${groupBadge}
                                     </div>
-                                    ${ev.leader ? `<div class="text-[10px] uppercase mt-1 tracking-wider truncate text-slate-400 font-medium">Вед: <span class="text-rose-400 font-bold">${ev.leader}</span></div>` : ''}
+                                    ${ev.leader ? `<div class="text-[10px] uppercase mt-1 tracking-wider truncate text-slate-400 font-medium">Вед: <span class="text-rose-600 font-bold">${ev.leader}</span></div>` : ''}
                                 </div>
                             </div>
                         </div>
                     `;
                 }
             });
-            
-            if (snapshot.size > MAX_EVENTS && displayedCount === MAX_EVENTS) {
-                html += `<div class="bg-slate-900/30 py-2 border-t border-slate-700/50"><p class="text-center text-[9px] text-slate-500 uppercase tracking-widest">Показаны ближайшие события</p></div>`;
-            }
 
-            container.innerHTML = html || '<p class="p-6 text-sm text-slate-500 italic text-center">Нет предстоящих событий</p>';
+            container.innerHTML = html || '<p class="p-6 text-sm text-slate-400 italic text-center">На сегодня встреч нет</p>';
         });
     } catch(e) { console.error("Ошибка календаря:", e); }
 }
