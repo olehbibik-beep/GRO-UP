@@ -27,21 +27,27 @@ getDoc(doc(db, "users", uid)).then(docSnap => {
     const isTerr = isFullAdmin || roles.includes("Ответственный за участки");
     const isOverseer = isFullAdmin || roles.includes("Надзиратель группы");
 
-    // ЖЕСТКОЕ ПЕРЕКЛЮЧЕНИЕ МЕНЮ (Прячет лишнее, показывает нужное)
-    const navAdmin = document.querySelector('nav a[href="admin.html"]'); if (navAdmin) navAdmin.style.display = isFullAdmin ? 'flex' : 'none';
-    const navSchool = document.querySelector('nav a[href="school.html"]'); if (navSchool) navSchool.style.display = isSchool ? 'flex' : 'none';
-    const navTerr = document.querySelector('nav a[href="territories.html"]'); if (navTerr) navTerr.style.display = isTerr ? 'flex' : 'none';
-    const navCal = document.querySelector('nav a[href="calendar.html"]'); if (navCal) navCal.style.display = isOverseer ? 'flex' : 'none';
-    const navDuties = document.querySelector('nav a[href="duties.html"]'); if (navDuties) navDuties.style.display = isOverseer ? 'flex' : 'none';
-    
-    // Жесткая защита: выкидываем на главную, если зашли по прямой ссылке без прав
+    // Жесткая защита страниц от прямого входа
     const path = window.location.pathname;
     if (path.includes('admin.html') && !isFullAdmin) window.location.href = 'index.html';
     if (path.includes('school.html') && !isSchool) window.location.href = 'index.html';
     if (path.includes('territories.html') && !isTerr) window.location.href = 'index.html';
     if ((path.includes('calendar.html') || path.includes('duties.html')) && !isOverseer) window.location.href = 'index.html';
-});
 
+    // УПРАВЛЕНИЕ МЕНЮ (Через классы Tailwind - сверхнадежно)
+    const toggleNav = (selector, hasAccess) => {
+        const el = document.querySelector(selector);
+        if (el) {
+            if (hasAccess) { el.classList.remove('hidden'); el.classList.add('flex'); }
+            else { el.classList.add('hidden'); el.classList.remove('flex'); }
+        }
+    };
+
+    toggleNav('nav a[href="admin.html"]', isFullAdmin);
+    toggleNav('nav a[href="school.html"]', isSchool);
+    toggleNav('nav a[href="territories.html"]', isTerr);
+    toggleNav('nav a[href="calendar.html"]', isOverseer);
+});
 // 2. ЗАГРУЗКА СПИСКА ПОЛЬЗОВАТЕЛЕЙ ДЛЯ СЕЛЕКТА
 onSnapshot(collection(db, "users"), (snapshot) => {
     const select = document.getElementById('user-select');
