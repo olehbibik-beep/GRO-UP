@@ -26,21 +26,68 @@ const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`;
 const currentMonthStr = d.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
 document.getElementById('current-month-label')?.setAttribute('innerText', currentMonthStr);
 
+// ЧИСТАЯ, БЫСТРАЯ НАВИГАЦИЯ БЕЗ ЛИШНИХ КЛАССОВ
 window.switchTab = (tabId, btnElement) => {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tabId}`);
     if(targetTab) targetTab.classList.add('active');
 
     document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('text-white'); btn.classList.add('text-slate-400');
-        btn.querySelector('.icon-wrapper')?.classList.remove('bg-ui-active', 'text-white', 'shadow-lg', 'shadow-ui-active/30');
-        btn.querySelector('.icon-wrapper')?.classList.add('bg-transparent');
+        btn.classList.remove('text-white'); 
+        btn.classList.add('text-slate-500');
     });
     
     if(btnElement) {
-        btnElement.classList.remove('text-slate-400'); btnElement.classList.add('text-white');
-        btnElement.querySelector('.icon-wrapper')?.classList.remove('bg-transparent');
-        btnElement.querySelector('.icon-wrapper')?.classList.add('bg-ui-active', 'text-white', 'shadow-lg', 'shadow-ui-active/30');
+        btnElement.classList.remove('text-slate-500'); 
+        btnElement.classList.add('text-white');
+    }
+};
+
+window.submitReport = async () => {
+    const fs = document.getElementById('report-fieldset');
+    const btn = document.getElementById('submit-report-btn');
+
+    if (!fs || !btn) return;
+
+    if (fs.disabled) {
+        fs.disabled = false;
+        fs.classList.remove('opacity-50', 'grayscale-[50%]');
+        btn.classList.replace('bg-slate-800', 'bg-ui-report');
+        btn.innerText = 'Отправить отчет';
+    } else {
+        const participated = document.getElementById('rep-participated')?.checked || false;
+        const hours = document.getElementById('rep-hours')?.value || "";
+        const pubs = document.getElementById('rep-pubs')?.value || "";
+        const studies = document.getElementById('rep-studies')?.value || "";
+
+        if (!participated && hours === "") return alert("Отметьте галочку 'Служил(а)' или введите часы!");
+        
+        btn.innerText = "Сохранение..."; 
+        btn.disabled = true;
+
+        try {
+            await setDoc(doc(db, "reports", `${userId}_${strictMonthId}`), {
+                userId, userName: currentUserData.name, group: currentUserData.group || "Без группы", month: currentMonthStr,
+                participated, hours: Number(hours), pubs: Number(pubs), studies: Number(studies), submittedAt: new Date().toISOString()
+            });
+            const log = document.getElementById('last-report-log');
+            if(log) log.innerText = `Сохранено: ${new Date().toLocaleString('ru-RU')}`;
+            
+            btn.classList.replace('bg-ui-report', 'bg-ui-success');
+            btn.innerText = "Успешно ✔️";
+            
+            setTimeout(() => {
+                fs.disabled = true;
+                fs.classList.add('opacity-50', 'grayscale-[50%]');
+                btn.classList.replace('bg-ui-success', 'bg-slate-800');
+                btn.innerText = "✏️ Изменить";
+                btn.disabled = false;
+            }, 2000);
+        } catch (e) { 
+            alert("Ошибка сети!"); 
+            btn.disabled = false; 
+            btn.innerText = "Отправить отчет"; 
+        }
     }
 };
 
