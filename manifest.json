@@ -1,0 +1,17 @@
+{
+  "short_name": "GRO-UP",
+  "name": "Система Собрания GRO-UP",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2641/2641409.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/index.html",
+  "background_color": "#f1f5f9",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#0f172a"
+}
