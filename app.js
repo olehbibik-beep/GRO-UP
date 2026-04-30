@@ -251,17 +251,38 @@ function loadPersonalData() {
         }
     });
 
-    // 1. Дежурства
+// 1. Дежурства (Плавающее) - УМНЫЙ ФИЛЬТР ПО ГРУППЕ
     try {
-        const dutiesQuery = query(collection(db, "duties"), where("userId", "==", userId));
+        const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
         onSnapshot(dutiesQuery, (snapshot) => {
             const card = document.getElementById('upcoming-duty-card');
             if (!card) return;
-            if (snapshot.empty) { card.classList.add('hidden'); card.classList.remove('flex'); return; }
-            const duty = snapshot.docs[0].data();
-            const titleEl = document.getElementById('duty-title'); if(titleEl) titleEl.innerText = duty.type;
-            const dateEl = document.getElementById('duty-date'); if(dateEl) dateEl.innerText = duty.dateRange;
-            card.classList.remove('hidden'); card.classList.add('flex');
+            
+            let foundDuty = null;
+            const today = new Date(); today.setHours(0,0,0,0);
+
+            // Ищем ближайшее актуальное дежурство ДЛЯ НАШЕЙ ГРУППЫ
+            snapshot.forEach(docSnap => {
+                const duty = docSnap.data();
+                const dDate = new Date(duty.rawDate);
+                // Проверяем: Дежурство еще актуально? (Не старше 7 дней)
+                const isPast = (today.getTime() - dDate.getTime()) > (7 * 24 * 60 * 60 * 1000); 
+                
+                // Проверяем: Это дежурство для моей группы или для всех?
+                const isMyGroup = duty.group === "Все" || duty.group === currentUserData.group;
+
+                if (!isPast && isMyGroup && !foundDuty) {
+                    foundDuty = duty;
+                }
+            });
+
+            if (!foundDuty) { 
+                card.classList.add('hidden'); card.classList.remove('flex'); 
+            } else {
+                const titleEl = document.getElementById('duty-title'); if(titleEl) titleEl.innerText = foundDuty.type;
+                const dateEl = document.getElementById('duty-date'); if(dateEl) dateEl.innerText = foundDuty.dateRange;
+                card.classList.remove('hidden'); card.classList.add('flex');
+            }
         });
     } catch(e) {}
 
