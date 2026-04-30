@@ -2,11 +2,23 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управление Школой</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Управление Школой - GRO-UP</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script>
-        tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f8fafc' } } } } }
+        tailwind.config = { 
+            theme: { 
+                extend: { 
+                    colors: { 
+                        ui: { 
+                            bg: '#f8fafc', 
+                            adminNav: '#1e1b4b' // Глубокий Индиго (Специально для Админ-зоны)
+                        } 
+                    } 
+                } 
+            } 
+        }
     </script>
     <style>
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -16,92 +28,118 @@
 </head>
 <body class="bg-ui-bg text-slate-800 min-h-screen font-sans">
 
-    <header class="bg-slate-900 text-white shadow-xl sticky top-0 z-50 border-b border-slate-800">
-        <div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <span class="text-sky-500 text-2xl">📚</span>
-                <h1 class="text-lg font-black uppercase tracking-wider">Школа</h1>
-            </div>
-            <a href="admin.html" class="text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl transition-colors border border-slate-700">Настройки админа</a>
-        </div>
-    </header>
-
-    <main class="max-w-5xl mx-auto px-4 py-6 md:py-8 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+    <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-between z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0">
         
-        <div class="md:col-span-1">
-            <div class="bg-white p-5 md:p-6 rounded-2xl shadow-md border border-slate-200 sticky top-24">
-                <h2 class="text-lg font-black text-slate-800 mb-5 flex items-center gap-2">
-                    <span class="text-sky-500">➕</span> Назначить задание
-                </h2>
-                
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Ученик</label>
-                        <select id="student-select" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition-all font-bold text-slate-700 cursor-pointer">
-                            <option value="" disabled selected>Загрузка учеников...</option>
-                        </select>
-                        <div id="student-history-hint" class="mt-2 text-[10px] font-bold px-2 hidden"></div>
-                    </div>
+        <a href="index.html" title="На сайт" class="text-indigo-300 hover:text-white flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full md:mb-4 outline-none transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
+        </a>
+        
+        <a href="admin.html" title="Пользователи" class="text-indigo-300 hover:text-white flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full md:mb-4 outline-none transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M10.341 3.897a.75.75 0 011.318 0l.977 1.977a.75.75 0 00.91.405l2.12-.572a.75.75 0 01.895.895l-.572 2.12a.75.75 0 00.405.91l1.977.977a.75.75 0 010 1.318l-1.977.977a.75.75 0 00-.405.91l.572 2.12a.75.75 0 01-.895.895l-2.12-.572a.75.75 0 00-.91.405l-.977 1.977a.75.75 0 01-1.318 0l-.977-1.977a.75.75 0 00-.91-.405l-2.12.572a.75.75 0 01-.895-.895l.572-2.12a.75.75 0 00-.405-.91l-1.977-.977a.75.75 0 010-1.318l1.977-.977a.75.75 0 00.405-.91l-.572-2.12a.75.75 0 01.895-.895l2.12.572a.75.75 0 00.91-.405l.977-1.977zM12 15a3 3 0 100-6 3 3 0 000 6z" /></svg>
+        </a>
+        
+        <a href="school.html" title="Школа" class="text-white flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full md:mb-4 outline-none">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
+        </a>
+        
+        <a href="territories.html" title="Участки" class="text-indigo-300 hover:text-white flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full md:mb-4 outline-none transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" /></svg>
+        </a>
 
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Помощник (Напарник)</label>
-                        <select id="assistant-select" disabled class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition-all font-bold text-slate-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                            <option value="" selected>Сначала выберите ученика</option>
-                        </select>
-                    </div>
-                    
-                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
-                        <div class="flex gap-3">
-                            <div class="w-1/3">
-                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">№ Зад.</label>
-                                <select id="task-number" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:border-sky-400 font-bold text-slate-700 cursor-pointer">
-                                    <option value="" disabled selected>-</option>
-                                </select>
-                            </div>
-                            <div class="w-2/3">
-                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Тип задания</label>
-                                <select id="task-category" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-sky-400 font-bold text-slate-700 cursor-pointer">
-                                    <option value="" disabled selected>Выберите...</option>
-                                    <option value="ЧТЕНИЕ БИБЛИИ" id="cat-reading">📖 Чтение Библии</option>
-                                    <option value="НАЧИНАЙТЕ РАЗГОВОР">🗣️ Начинайте разговор</option>
-                                    <option value="РАЗВИВАЙТЕ ИНТЕРЕС">🌱 Развивайте интерес</option>
-                                    <option value="ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ">👥 Подготавливайте учеников</option>
-                                    <option value="ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ">💡 Объясняйте взгляды</option>
-                                    <option value="РЕЧЬ" id="cat-talk">🎙️ Речь</option>
-                                </select>
-                            </div>
-                        </div>
+        <a href="calendar.html" title="Календарь" class="text-indigo-300 hover:text-white flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full outline-none mt-auto transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+        </a>
+    </nav>
 
-                        <div class="flex gap-3">
-                            <div class="w-1/3">
-                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Урок</label>
-                                <select id="task-lesson" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:border-sky-400 font-bold text-slate-700 cursor-pointer">
-                                    <option value="" disabled selected>-</option>
-                                </select>
-                            </div>
-                            <div class="w-2/3">
-                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Дата</label>
-                                <input type="date" id="task-date" class="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-sky-400 font-bold text-slate-700 cursor-pointer">
-                            </div>
-                        </div>
-                    </div>
-
-                    <button id="assign-btn" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl shadow-md transition-all active:scale-95 mt-4 text-sm uppercase tracking-widest">
-                        Назначить
-                    </button>
+    <main class="w-full max-w-5xl mx-auto pt-4 md:pt-6 px-4 pb-24 md:pl-28 md:pr-6">
+        
+        <div class="mb-6 flex justify-between items-center bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex items-center gap-3">
+                <span class="text-sky-500 text-3xl drop-shadow-sm">📚</span>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-black text-sky-600">Школа</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Управление заданиями</p>
                 </div>
             </div>
         </div>
 
-        <div class="md:col-span-2">
-            <h2 class="text-xl font-black text-slate-800 mb-4">График выступлений</h2>
-            <div id="tasks-list" class="space-y-4">
-                <p class="text-slate-500 italic p-6 text-center text-sm bg-white rounded-2xl border border-slate-200">Загрузка...</p>
-            </div>
-        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            
+            <div class="md:col-span-1">
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 sticky top-6">
+                    <h2 class="text-lg font-black text-slate-800 mb-5 flex items-center gap-2">
+                        <span class="text-sky-500">➕</span> Назначить
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Ученик</label>
+                            <select id="student-select" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition-all font-bold text-slate-700 cursor-pointer">
+                                <option value="" disabled selected>Загрузка учеников...</option>
+                            </select>
+                            <div id="student-history-hint" class="mt-2 text-[10px] font-bold px-2 hidden"></div>
+                        </div>
 
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Помощник (Напарник)</label>
+                            <select id="assistant-select" disabled class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition-all font-bold text-slate-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                <option value="" selected>Сначала выберите ученика</option>
+                            </select>
+                        </div>
+                        
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
+                            <div class="flex gap-3">
+                                <div class="w-1/3">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">№ Зад.</label>
+                                    <select id="task-number" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:border-sky-400 font-bold text-slate-700 cursor-pointer">
+                                        <option value="" disabled selected>-</option>
+                                    </select>
+                                </div>
+                                <div class="w-2/3">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Тип</label>
+                                    <select id="task-category" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-sky-400 font-bold text-slate-700 cursor-pointer">
+                                        <option value="" disabled selected>Выберите...</option>
+                                        <option value="ЧТЕНИЕ БИБЛИИ" id="cat-reading">📖 Чтение Библии</option>
+                                        <option value="НАЧИНАЙТЕ РАЗГОВОР">🗣️ Разговор</option>
+                                        <option value="РАЗВИВАЙТЕ ИНТЕРЕС">🌱 Интерес</option>
+                                        <option value="ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ">👥 Подготавливайте</option>
+                                        <option value="ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ">💡 Взгляды</option>
+                                        <option value="РЕЧЬ" id="cat-talk">🎙️ Речь</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-3">
+                                <div class="w-1/3">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Урок</label>
+                                    <select id="task-lesson" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:border-sky-400 font-bold text-slate-700 cursor-pointer">
+                                        <option value="" disabled selected>-</option>
+                                    </select>
+                                </div>
+                                <div class="w-2/3">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Дата</label>
+                                    <input type="date" id="task-date" class="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-sky-400 font-bold text-slate-700 cursor-pointer">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="assign-btn" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl shadow-md transition-all active:scale-95 mt-4 text-sm uppercase tracking-widest outline-none">
+                            Назначить
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md:col-span-2">
+                <h2 class="text-xl font-black text-slate-800 mb-4">График выступлений</h2>
+                <div id="tasks-list" class="space-y-4">
+                    <p class="text-slate-500 italic p-6 text-center text-sm bg-white rounded-2xl border border-slate-200">Загрузка...</p>
+                </div>
+            </div>
+
+        </div>
     </main>
 
-    <script type="module" src="school.js?v=80"></script>
+    <script type="module" src="school.js?v=82"></script>
 </body>
 </html>
