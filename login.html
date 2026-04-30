@@ -2,27 +2,90 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Вход - GRO-UP</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Скрываем стрелочки у полей с цифрами */
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
 </head>
-<body class="bg-slate-100 flex items-center justify-center h-screen font-sans">
+<body class="bg-slate-100 flex items-center justify-center min-h-screen font-sans p-4">
     
-    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl">
-        <h1 class="text-3xl font-black text-indigo-600 mb-2">GRO-UP</h1>
-        <p class="text-slate-500 mb-6">Введите имя и ПИН-код</p>
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl relative overflow-hidden">
         
-        <input id="user-name" type="text" placeholder="Имя Фамилия" 
-               class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-3 outline-none focus:ring-2 ring-indigo-500 text-center font-bold text-lg transition-all">
-               
-        <input id="user-pin" type="password" placeholder="ПИН-код" 
-               class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-6 outline-none focus:ring-2 ring-indigo-500 text-center font-bold text-xl tracking-widest transition-all">
-               
-        <button id="login-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-2xl shadow-lg transition-all active:scale-95">
-            Войти в систему
-        </button>
+        <div id="login-section" class="fade-in block">
+            <h1 class="text-3xl font-black text-indigo-600 mb-2 tracking-tight">GRO-UP</h1>
+            <p class="text-slate-400 text-sm mb-6 font-medium">Введите имя и ПИН-код</p>
+            
+            <input id="login-name" type="text" placeholder="Имя Фамилия" 
+                   class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-5 outline-none focus:border-indigo-500 focus:bg-white text-center font-bold text-lg transition-all shadow-inner">
+            
+            <div class="relative w-full mb-8 h-12 flex justify-center items-center">
+                <input id="login-pin" type="tel" inputmode="numeric" maxlength="6"
+                       class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 text-transparent bg-transparent">
+                <div class="flex gap-3 z-0" id="login-circles">
+                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                </div>
+            </div>
+            
+            <button id="login-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-2xl shadow-lg transition-all active:scale-95 mb-4">
+                Войти в систему
+            </button>
+
+            <button onclick="toggleView('register')" class="text-slate-400 text-sm font-bold hover:text-indigo-500 transition-colors outline-none">
+                Создать пользователя
+            </button>
+        </div>
+
+        <div id="register-section" class="fade-in hidden">
+            <h1 class="text-2xl font-black text-slate-800 mb-1 tracking-tight">Регистрация</h1>
+            <p class="text-slate-400 text-xs mb-5 font-medium">Создайте профиль и дождитесь одобрения</p>
+            
+            <input id="reg-name" type="text" placeholder="Имя Фамилия" 
+                   class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-3 outline-none focus:border-indigo-500 focus:bg-white text-center font-bold text-lg transition-all shadow-inner">
+            
+            <div class="flex gap-3 mb-5">
+                <button type="button" onclick="selectGender('boy')" id="gender-boy" class="flex-1 p-3 rounded-2xl border-2 border-slate-100 bg-slate-50 flex items-center justify-center gap-2 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all outline-none">
+                    <span class="text-2xl">👨</span> <span class="font-bold text-sm text-slate-700">Брат</span>
+                </button>
+                <button type="button" onclick="selectGender('girl')" id="gender-girl" class="flex-1 p-3 rounded-2xl border-2 border-slate-100 bg-slate-50 flex items-center justify-center gap-2 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all outline-none">
+                    <span class="text-2xl">👩</span> <span class="font-bold text-sm text-slate-700">Сестра</span>
+                </button>
+            </div>
+
+            <div class="relative w-full mb-6 h-12 flex justify-center items-center">
+                <input id="reg-pin" type="tel" inputmode="numeric" maxlength="6"
+                       class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 text-transparent bg-transparent">
+                <div class="flex gap-3 z-0" id="reg-circles">
+                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                    <div class="w-4 h-4 rounded-full border-2 border-slate-300 transition-all duration-200"></div>
+                </div>
+            </div>
+            
+            <button id="reg-btn" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold p-4 rounded-2xl shadow-lg transition-all active:scale-95 mb-4">
+                Отправить заявку
+            </button>
+
+            <button onclick="toggleView('login')" class="text-slate-400 text-sm font-bold hover:text-indigo-500 transition-colors outline-none">
+                Уже есть профиль? Войти
+            </button>
+        </div>
+
     </div>
 
-    <script type="module" src="login.js?v=1"></script>
+    <script type="module" src="login.js?v=2"></script>
 </body>
 </html>
