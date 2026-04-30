@@ -57,9 +57,9 @@ window.toggleRole = async (id, roleName, isChecked) => {
     } catch (e) { alert("Ошибка при обновлении роли!"); }
 };
 
-// УПРАВЛЕНИЕ: БАН И УДАЛЕНИЕ
+// УПРАВЛЕНИЕ: БАН И УДАЛЕНИЕ (С ИКОНКАМИ)
 window.blockUser = async (id) => {
-    if(confirm("Забанить пользователя? Он потеряет доступ к сайту.")) {
+    if(confirm("Заблокировать пользователя? Он не сможет войти на сайт.")) {
         await updateDoc(doc(db, "users", id), { status: 'blocked' });
     }
 };
@@ -69,7 +69,7 @@ window.unblockUser = async (id) => {
 };
 
 window.deleteUser = async (id) => {
-    if(confirm("ВНИМАНИЕ! Полностью удалить профиль и всю его историю?")) {
+    if(confirm("ВНИМАНИЕ! Вы безвозвратно удаляете профиль. Продолжить?")) {
         await deleteDoc(doc(db, "users", id));
     }
 };
@@ -114,50 +114,53 @@ onSnapshot(collection(db, "users"), (snapshot) => {
             const rowClass = isBlocked ? 'bg-red-50/50 opacity-60 grayscale' : 'hover:bg-slate-50';
             const nameColor = isBlocked ? 'text-red-700' : 'text-slate-800';
 
-            const actionBtn = isBlocked 
-                ? `<button onclick="unblockUser('${id}')" class="w-full bg-emerald-100 text-emerald-700 hover:bg-emerald-500 hover:text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors mb-1 shadow-sm">🟢 Разбанить</button>`
-                : `<button onclick="blockUser('${id}')" class="w-full bg-amber-100 text-amber-700 hover:bg-amber-500 hover:text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors mb-1 shadow-sm">🛑 Забанить</button>`;
+            // КОМПАКТНЫЕ КНОПКИ УПРАВЛЕНИЯ (ИКОНКИ)
+            const lockBtn = isBlocked 
+                ? `<button onclick="unblockUser('${id}')" title="Разблокировать" class="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors text-base shadow-sm border border-emerald-100">🔓</button>`
+                : `<button onclick="blockUser('${id}')" title="Заблокировать" class="p-2 bg-slate-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors text-base shadow-sm border border-slate-200 hover:border-amber-300">🔒</button>`;
+
+            const deleteBtn = `<button onclick="deleteUser('${id}')" title="Удалить" class="p-2 bg-slate-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-base shadow-sm border border-slate-200 hover:border-red-300">🗑️</button>`;
 
             activeHTML += `
                 <tr class="transition-colors border-b border-slate-100 group user-row ${rowClass}" data-name="${u.name.toLowerCase()}">
                     
-                    <td class="py-3 px-4">
-                        <p class="font-black ${nameColor} text-sm mb-1.5 truncate">${u.name}</p>
+                    <td class="py-2 px-4">
+                        <p class="font-black ${nameColor} text-sm mb-1 truncate">${u.name}</p>
                         <select onchange="updateField('${id}', 'gender', this.value)" class="text-[10px] uppercase font-bold p-1 rounded border border-slate-200 bg-white outline-none focus:border-indigo-500 text-slate-600 shadow-sm" ${isBlocked ? 'disabled' : ''}>
                             <option value="boy" ${u.gender === 'boy' ? 'selected' : ''}>👨‍💼 Брат</option>
                             <option value="girl" ${u.gender === 'girl' ? 'selected' : ''}>👩‍💼 Сестра</option>
                         </select>
                     </td>
                     
-                    <td class="py-3 px-2 text-center">
-                        <input type="number" onchange="updateField('${id}', 'group', this.value)" value="${u.group && u.group !== 'Без группы' ? u.group : ''}" placeholder="№" class="w-14 p-2 text-center border border-slate-200 rounded-lg text-sm outline-none bg-white focus:border-indigo-500 font-black shadow-sm" ${isBlocked ? 'disabled' : ''}>
+                    <td class="py-2 px-2 text-center">
+                        <input type="number" onchange="updateField('${id}', 'group', this.value)" value="${u.group && u.group !== 'Без группы' ? u.group : ''}" placeholder="№" class="w-12 p-1.5 text-center border border-slate-200 rounded-lg text-sm outline-none bg-white focus:border-indigo-500 font-black shadow-sm mx-auto" ${isBlocked ? 'disabled' : ''}>
                     </td>
                     
-                    <td class="py-3 px-2 text-center">
-                        <label class="inline-flex items-center cursor-pointer p-2 rounded hover:bg-sky-50 transition-colors">
-                            <input type="checkbox" onchange="toggleRole('${id}', 'Участник школы', this.checked)" class="w-5 h-5 accent-sky-500 shadow-sm" ${r.includes('Участник школы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}>
+                    <td class="py-2 px-2 text-center">
+                        <label class="inline-flex items-center cursor-pointer p-1.5 rounded hover:bg-sky-50 transition-colors">
+                            <input type="checkbox" onchange="toggleRole('${id}', 'Участник школы', this.checked)" class="w-4 h-4 accent-sky-500 shadow-sm cursor-pointer" ${r.includes('Участник школы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}>
                         </label>
                     </td>
                     
-                    <td class="py-3 px-4">
-                        <div class="flex flex-col gap-2">
-                            <label class="flex items-center gap-2 cursor-pointer text-[10px] text-slate-700 font-bold uppercase tracking-wider hover:bg-indigo-50 p-1 -ml-1 rounded transition-colors w-max"><input type="checkbox" onchange="toggleRole('${id}', 'Возвещатель', this.checked)" class="accent-indigo-500 w-4 h-4 shadow-sm" ${r.includes('Возвещатель') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Возвещатель</label>
-                            <label class="flex items-center gap-2 cursor-pointer text-[10px] text-rose-600 font-bold uppercase tracking-wider hover:bg-rose-50 p-1 -ml-1 rounded transition-colors w-max"><input type="checkbox" onchange="toggleRole('${id}', 'Админ', this.checked)" class="accent-rose-500 w-4 h-4 shadow-sm" ${r.includes('Админ') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Администратор</label>
+                    <td class="py-2 px-4">
+                        <div class="flex flex-wrap gap-1.5">
+                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-slate-600 font-bold uppercase tracking-wider hover:bg-indigo-50 p-1 border border-transparent hover:border-indigo-100 rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Возвещатель', this.checked)" class="accent-indigo-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Возвещатель') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Возвещатель</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-rose-600 font-bold uppercase tracking-wider hover:bg-rose-50 p-1 border border-transparent hover:border-rose-100 rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Админ', this.checked)" class="accent-rose-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Админ') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Администратор</label>
                         </div>
                     </td>
                     
-                    <td class="py-3 px-4">
-                        <div class="flex flex-col gap-2">
-                            <label class="flex items-center gap-2 cursor-pointer text-[10px] text-purple-700 font-bold uppercase tracking-wider hover:bg-purple-50 p-1 -ml-1 rounded transition-colors w-max"><input type="checkbox" onchange="toggleRole('${id}', 'Надзиратель группы', this.checked)" class="accent-purple-500 w-4 h-4 shadow-sm" ${r.includes('Надзиратель группы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Группа</label>
-                            <label class="flex items-center gap-2 cursor-pointer text-[10px] text-emerald-700 font-bold uppercase tracking-wider hover:bg-emerald-50 p-1 -ml-1 rounded transition-colors w-max"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за участки', this.checked)" class="accent-emerald-500 w-4 h-4 shadow-sm" ${r.includes('Ответственный за участки') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Участки</label>
-                            <label class="flex items-center gap-2 cursor-pointer text-[10px] text-sky-700 font-bold uppercase tracking-wider hover:bg-sky-50 p-1 -ml-1 rounded transition-colors w-max"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за школу', this.checked)" class="accent-sky-500 w-4 h-4 shadow-sm" ${r.includes('Ответственный за школу') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Школа</label>
+                    <td class="py-2 px-4">
+                        <div class="flex flex-wrap gap-1.5">
+                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-purple-700 font-bold uppercase tracking-wider hover:bg-purple-50 p-1 border border-transparent hover:border-purple-100 rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Надзиратель группы', this.checked)" class="accent-purple-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Надзиратель группы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Группа</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-emerald-700 font-bold uppercase tracking-wider hover:bg-emerald-50 p-1 border border-transparent hover:border-emerald-100 rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за участки', this.checked)" class="accent-emerald-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Ответственный за участки') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Участки</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-sky-700 font-bold uppercase tracking-wider hover:bg-sky-50 p-1 border border-transparent hover:border-sky-100 rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за школу', this.checked)" class="accent-sky-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Ответственный за школу') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Школа</label>
                         </div>
                     </td>
                     
-                    <td class="py-3 px-4 align-top pt-4">
-                        <div class="flex flex-col items-end w-full">
-                            ${actionBtn}
-                            <button onclick="deleteUser('${id}')" class="w-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors shadow-sm">🗑️ Удалить</button>
+                    <td class="py-2 px-4 align-middle">
+                        <div class="flex justify-end gap-2">
+                            ${lockBtn}
+                            ${deleteBtn}
                         </div>
                     </td>
                 </tr>
