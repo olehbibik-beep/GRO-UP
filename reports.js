@@ -20,7 +20,7 @@ let myGroup = "Без группы";
 let hasFullAccess = false;
 let allReports = [];
 
-// 1. ПРОВЕРКА ПРАВ, ДОСТУПА К ГРУППАМ И УМНОЕ МЕНЮ
+// 1. ПРОВЕРКА ПРАВ, ДОСТУПА И УМНОЕ МЕНЮ
 getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     
@@ -33,7 +33,6 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     const isTerr = isFullAdmin || roles.includes("Ответственный за участки");
     const isOverseer = isFullAdmin || roles.includes("Надзиратель группы");
 
-    // Настраиваем доступ к отчетам
     if (isFullAdmin) {
         hasFullAccess = true;
         document.getElementById('group-title').innerText = "Все группы (Полный доступ)";
@@ -41,16 +40,22 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
         hasFullAccess = false;
         document.getElementById('group-title').innerText = `Группа № ${myGroup} (Доступ надзирателя)`;
     } else {
-        window.location.href = 'index.html'; // Выкидываем обычных участников
+        window.location.href = 'index.html'; 
     }
 
-    // Включаем иконки в навигации, если ЕСТЬ права
-    const navAdmin = document.querySelector('nav a[href="admin.html"]'); if (navAdmin && isFullAdmin) navAdmin.style.display = 'flex';
-    const navSchool = document.querySelector('nav a[href="school.html"]'); if (navSchool && isSchool) navSchool.style.display = 'flex';
-    const navTerr = document.querySelector('nav a[href="territories.html"]'); if (navTerr && isTerr) navTerr.style.display = 'flex';
-    const navCal = document.querySelector('nav a[href="calendar.html"]'); if (navCal && isOverseer) navCal.style.display = 'flex';
-    const navDuties = document.querySelector('nav a[href="duties.html"]'); if (navDuties && isOverseer) navDuties.style.display = 'flex';
-    
+    const toggleNav = (selector, hasAccess) => {
+        const el = document.querySelector(selector);
+        if (el) {
+            if (hasAccess) { el.classList.remove('hidden'); el.classList.add('flex'); }
+            else { el.classList.add('hidden'); el.classList.remove('flex'); }
+        }
+    };
+
+    toggleNav('nav a[href="admin.html"]', isFullAdmin);
+    toggleNav('nav a[href="school.html"]', isSchool);
+    toggleNav('nav a[href="territories.html"]', isTerr);
+    toggleNav('nav a[href="calendar.html"]', isOverseer);
+
     loadReports();
 });
 
