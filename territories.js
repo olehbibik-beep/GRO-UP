@@ -27,12 +27,12 @@ getDoc(doc(db, "users", uid)).then(docSnap => {
     const isTerr = isFullAdmin || roles.includes("Ответственный за участки");
     const isOverseer = isFullAdmin || roles.includes("Надзиратель группы");
 
-    // Включаем иконки в навигации, если ЕСТЬ права
-    const navAdmin = document.querySelector('nav a[href="admin.html"]'); if (navAdmin && isFullAdmin) navAdmin.style.display = 'flex';
-    const navSchool = document.querySelector('nav a[href="school.html"]'); if (navSchool && isSchool) navSchool.style.display = 'flex';
-    const navTerr = document.querySelector('nav a[href="territories.html"]'); if (navTerr && isTerr) navTerr.style.display = 'flex';
-    const navCal = document.querySelector('nav a[href="calendar.html"]'); if (navCal && isOverseer) navCal.style.display = 'flex';
-    const navDuties = document.querySelector('nav a[href="duties.html"]'); if (navDuties && isOverseer) navDuties.style.display = 'flex';
+    // ЖЕСТКОЕ ПЕРЕКЛЮЧЕНИЕ МЕНЮ (Прячет лишнее, показывает нужное)
+    const navAdmin = document.querySelector('nav a[href="admin.html"]'); if (navAdmin) navAdmin.style.display = isFullAdmin ? 'flex' : 'none';
+    const navSchool = document.querySelector('nav a[href="school.html"]'); if (navSchool) navSchool.style.display = isSchool ? 'flex' : 'none';
+    const navTerr = document.querySelector('nav a[href="territories.html"]'); if (navTerr) navTerr.style.display = isTerr ? 'flex' : 'none';
+    const navCal = document.querySelector('nav a[href="calendar.html"]'); if (navCal) navCal.style.display = isOverseer ? 'flex' : 'none';
+    const navDuties = document.querySelector('nav a[href="duties.html"]'); if (navDuties) navDuties.style.display = isOverseer ? 'flex' : 'none';
     
     // Жесткая защита: выкидываем на главную, если зашли по прямой ссылке без прав
     const path = window.location.pathname;
