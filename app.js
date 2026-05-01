@@ -179,15 +179,17 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         if(mainDashboard) { mainDashboard.classList.remove('hidden'); mainDashboard.classList.add('block'); }
         
         let userRoles = currentUserData.roles || [];
- // ==========================================
+        
+// ==========================================
         // УПРАВЛЕНИЕ ВИДИМОСТЬЮ КНОПКИ УВЕДОМЛЕНИЙ
         // ==========================================
         const pushBtn = document.getElementById('push-btn');
         if (pushBtn) {
-            if (!('Notification' in window) || Notification.permission === 'granted' || Notification.permission === 'denied') {
-                pushBtn.style.display = 'none'; // Прячем
+            // Прячем ТОЛЬКО если уведомления уже разрешены
+            if ('Notification' in window && Notification.permission === 'granted') {
+                pushBtn.style.display = 'none';
             } else {
-                pushBtn.style.display = 'block'; // Показываем
+                pushBtn.style.display = ''; // Показываем, чтобы пользователь мог нажать и узнать причину
             }
         }
 
