@@ -16,9 +16,10 @@ const currentUserId = localStorage.getItem('userId');
 
 if (!currentUserId) window.location.href = 'login.html';
 
-// 1. ПРОВЕРКА ПРАВ И УМНОЕ МЕНЮ
-const uid = typeof currentUserId !== 'undefined' ? currentUserId : userId;
-getDoc(doc(db, "users", uid)).then(docSnap => {
+// ==========================================
+// 1. ПРОВЕРКА ПРАВ И ЗАЩИТА СТРАНИЦЫ
+// ==========================================
+getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     
     const roles = docSnap.data().roles || [];
@@ -33,22 +34,11 @@ getDoc(doc(db, "users", uid)).then(docSnap => {
     if (path.includes('school.html') && !isSchool) window.location.href = 'index.html';
     if (path.includes('territories.html') && !isTerr) window.location.href = 'index.html';
     if ((path.includes('calendar.html') || path.includes('duties.html')) && !isOverseer) window.location.href = 'index.html';
-
-    // УПРАВЛЕНИЕ МЕНЮ (Через классы Tailwind - сверхнадежно)
-    const toggleNav = (selector, hasAccess) => {
-        const el = document.querySelector(selector);
-        if (el) {
-            if (hasAccess) { el.classList.remove('hidden'); el.classList.add('flex'); }
-            else { el.classList.add('hidden'); el.classList.remove('flex'); }
-        }
-    };
-
-    toggleNav('nav a[href="admin.html"]', isFullAdmin);
-    toggleNav('nav a[href="school.html"]', isSchool);
-    toggleNav('nav a[href="territories.html"]', isTerr);
-    toggleNav('nav a[href="calendar.html"]', isOverseer);
 });
+
+// ==========================================
 // 2. ЗАГРУЗКА СПИСКА ПОЛЬЗОВАТЕЛЕЙ ДЛЯ СЕЛЕКТА
+// ==========================================
 onSnapshot(collection(db, "users"), (snapshot) => {
     const select = document.getElementById('user-select');
     if (!select) return;
@@ -64,7 +54,9 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     select.innerHTML = html;
 });
 
+// ==========================================
 // 3. ОТРИСОВКА ЗАПРОСОВ (Компактный список)
+// ==========================================
 onSnapshot(query(collection(db, "requests"), orderBy("createdAt", "desc")), (snapshot) => {
     const list = document.getElementById('requests-list');
     let html = '';
@@ -108,7 +100,9 @@ window.deleteRequest = async (id) => {
     if (confirm("Удалить этот запрос?")) await deleteDoc(doc(db, "requests", id));
 };
 
+// ==========================================
 // 4. ВЫДАЧА УЧАСТКА (Сохранение)
+// ==========================================
 document.getElementById('assign-btn').addEventListener('click', async (e) => {
     const userData = document.getElementById('user-select').value;
     const terrNum = document.getElementById('territory-number').value.trim();
@@ -140,7 +134,9 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
     } catch (err) { alert("Ошибка!"); btn.disabled = false; btn.innerText = "Назначить"; }
 });
 
+// ==========================================
 // 5. ТАБЛИЦА ВЫДАННЫХ УЧАСТКОВ
+// ==========================================
 onSnapshot(query(collection(db, "territories"), orderBy("issuedAt", "desc")), (snapshot) => {
     const list = document.getElementById('territories-list');
     let html = '';
