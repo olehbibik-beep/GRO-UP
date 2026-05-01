@@ -53,3 +53,25 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getMessaging, onBackgroundMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging/sw.js";
+
+const firebaseConfig = {
+    // Твой конфиг Firebase (скопируй из app.js)
+};
+
+const app = initializeApp(firebaseConfig);
+const messaging = getMessaging(app);
+
+// Слушаем фоновые сообщения
+onBackgroundMessage(messaging, (payload) => {
+  console.log('Получено фоновое сообщение:', payload);
+
+  const notificationTitle = payload.notification.title;
+  const notificationOptions = {
+    body: payload.notification.body,
+    icon: '/GRO-UP/icon-192x192.png' // Путь к иконке
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
