@@ -30,45 +30,32 @@ enableIndexedDbPersistence(db).catch((err) => {
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
-// Делаем функцию доступной для кнопки
+// Тихая настройка пушей (Без раздражающих окон)
 window.setupNotifications = async () => {
     try {
-        alert("1. Запрашиваем разрешение...");
         const permission = await Notification.requestPermission();
         
         if (permission === 'granted') {
-            alert("2. Разрешение есть! Ждем наш Service Worker...");
-            
-            // МАГИЯ ЗДЕСЬ: Берем наш уже работающий sw.js
             const registration = await navigator.serviceWorker.ready;
-            
-            alert("3. SW готов! Генерируем токен (пару секунд)...");
             
             const token = await getToken(messaging, { 
                 vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk',
-                serviceWorkerRegistration: registration // ТЫКАЕМ FIREBASE НОСОМ В НАШ ФАЙЛ
+                serviceWorkerRegistration: registration 
             });
 
             if (token) {
-                alert("4. Токен получен! Пишем в базу...");
+                // Тихо сохраняем в базу
                 await updateDoc(doc(db, "users", userId), {
                     pushToken: token
                 });
-                alert("✅ УРА! Токен сохранен.");
                 
-                // ПРЯЧЕМ КНОПКУ ПОСЛЕ УСПЕШНОЙ АКТИВАЦИИ
+                // Прячем колокольчик
                 const pushBtn = document.getElementById('push-btn');
                 if (pushBtn) pushBtn.style.display = 'none';
-
-            } else {
-                alert("❌ Токен пустой.");
             }
-        } else {
-            alert("❌ Разрешение отклонено: " + permission);
         }
     } catch (error) {
-        alert("❌ ОШИБКА: " + error.message);
-        console.error('Ошибка при настройке уведомлений:', error);
+        console.error('Ошибка при тихой настройке уведомлений:', error);
     }
 };
 
