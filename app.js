@@ -31,19 +31,17 @@ window.showToast = (message, type = 'info') => {
 
     const toast = document.createElement('div');
     const bgColor = type === 'warning' ? 'bg-amber-500' : 'bg-indigo-600';
-    toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg text-xs font-bold text-center transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
+    toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg text-xs font-bold text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
     toast.innerText = message;
 
     container.appendChild(toast);
 
-    // Плавное появление
     requestAnimationFrame(() => {
-        toast.classList.remove('translate-y-10', 'opacity-0');
+        toast.classList.remove('-translate-y-10', 'opacity-0');
     });
 
-    // Исчезновение ровно через 5 секунд
     setTimeout(() => {
-        toast.classList.add('translate-y-10', 'opacity-0');
+        toast.classList.add('-translate-y-10', 'opacity-0');
         setTimeout(() => toast.remove(), 300);
     }, 5000);
 };
@@ -54,7 +52,7 @@ window.showToast = (message, type = 'info') => {
 window.setupNotifications = async () => {
     try {
         if (!('Notification' in window)) {
-            alert("❌ Уведомления не поддерживаются на этом устройстве.\n\nЕсли это iPhone или iPad: нажмите кнопку «Поделиться» и выберите «На экран Домой».");
+            alert("❌ Уведомления не поддерживаются на этом устройстве.");
             return;
         }
         if (Notification.permission === 'denied') {
@@ -84,7 +82,9 @@ onMessage(messaging, (payload) => {
     console.log('Пришло уведомление:', payload.data);
 });
 
-
+// ==========================================
+// ОСНОВНАЯ ЛОГИКА ПРИЛОЖЕНИЯ
+// ==========================================
 const TOP_ROLES = ["Владелец", "Админ"]; 
 const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
 let currentUserData = null; 
@@ -169,14 +169,12 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         
         let userRoles = currentUserData.roles || [];
         
-        // Управление Колокольчиком
         const pushBtn = document.getElementById('push-btn');
         if (pushBtn) {
             if (!currentUserData.pushToken) pushBtn.style.display = 'flex';
             else pushBtn.style.display = 'none';
         }
 
-        // Управление меню профиля
         const profileAdminLinks = document.getElementById('profile-admin-links');
         const profileAdminBtn = document.getElementById('profile-admin-btn');
         const profileReportsBtn = document.getElementById('profile-reports-btn');
@@ -222,7 +220,6 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
             else { profileAdminLinks.classList.add('hidden'); profileAdminLinks.classList.remove('flex'); }
         }
 
-        // БОНУС: Показываем форму добавления новостей на главной, если есть права
         const addNewsBox = document.getElementById('add-news-box');
         if (addNewsBox) {
             if (userRoles.includes('Админ') || userRoles.includes('Владелец') || userRoles.includes('Старейшина')) {
@@ -295,46 +292,84 @@ function loadPersonalData() {
         }
     });
 
-    // 1. Дежурства (Выводим на главной)
+    // 1. Дежурства (Выводим на главной - КАРУСЕЛЬ С ТОЧКАМИ)
     try {
+        window.dutySliderData = [];
+        window.currentDutySlide = 0;
+
+        window.renderDutySlide = (index) => {
+            const container = document.getElementById('dashboard-duties');
+            if (!container || window.dutySliderData.length === 0) return;
+
+            window.currentDutySlide = index;
+            const d = window.dutySliderData[index];
+            
+            const myGroup = currentUserData ? currentUserData.group : "Без группы";
+            const isMyGroup = d.group === myGroup;
+            
+            const badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
+            const bgClass = isMyGroup ? 'bg-amber-50/50' : 'bg-white';
+
+            let dotsHtml = '';
+            if (window.dutySliderData.length > 1) {
+                dotsHtml = '<div class="flex justify-center gap-2.5 p-3 bg-slate-50 border-t border-slate-100">';
+                for (let i = 0; i < window.dutySliderData.length; i++) {
+                    const activeClass = i === index ? 'bg-amber-400 scale-125' : 'bg-slate-300 hover:bg-slate-400 cursor-pointer';
+                    dotsHtml += `<div onclick="renderDutySlide(${i})" class="w-2.5 h-2.5 rounded-full transition-all ${activeClass}"></div>`;
+                }
+                dotsHtml += '</div>';
+            }
+
+            container.innerHTML = `
+                <div class="flex flex-col p-4 ${bgClass} transition-colors min-h-[76px] justify-center">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-sm font-black text-slate-800 truncate pr-2">${d.type}</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${badgeClass} shrink-0">Гр. ${d.group}</span>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${d.dateRange}</span>
+                </div>
+                ${dotsHtml}
+            `;
+        };
+
         const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
         onSnapshot(dutiesQuery, (snapshot) => {
             const container = document.getElementById('dashboard-duties');
             if (!container) return;
             
-            let html = '';
+            window.dutySliderData = [];
             const today = new Date();
             today.setHours(0,0,0,0);
             let myDutyFound = false;
 
             snapshot.forEach(docSnap => {
                 const d = docSnap.data();
-                const dDate = new Date(d.rawDate);
                 
-                // Проверяем, относится ли дежурство к текущей неделе (+- 6 дней от сегодня)
-                const diffDays = Math.ceil((dDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                const dutyStart = new Date(d.rawDate);
+                dutyStart.setHours(0,0,0,0);
                 
-                if (diffDays >= -6 && diffDays <= 6) {
-                    const isMyGroup = d.group === currentUserData.group;
-                    if (isMyGroup) myDutyFound = true;
-
-                    const badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
-                    const bgClass = isMyGroup ? 'bg-amber-50/50' : 'bg-white';
-
-                    html += `
-                        <div class="flex items-center justify-between p-3 border-b border-slate-50 ${bgClass}">
-                            <span class="text-sm font-bold text-slate-700">${d.type}</span>
-                            <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${badgeClass}">Гр. ${d.group}</span>
-                        </div>
-                    `;
+                const dutyEnd = new Date(dutyStart);
+                dutyEnd.setDate(dutyStart.getDate() + 6);
+                dutyEnd.setHours(23,59,59,999);
+                
+                if (dutyEnd.getTime() >= today.getTime()) {
+                    window.dutySliderData.push(d);
+                    
+                    if (today.getTime() >= dutyStart.getTime()) {
+                        const myGroup = currentUserData ? currentUserData.group : "Без группы";
+                        if (d.group === myGroup) myDutyFound = true;
+                    }
                 }
             });
 
-            container.innerHTML = html || '<p class="text-xs text-slate-400 italic p-4 text-center">На этой неделе дежурств нет</p>';
+            if (window.dutySliderData.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 italic p-4 text-center">Предстоящих дежурств нет</p>';
+            } else {
+                window.renderDutySlide(0); 
+            }
 
-            // Всплывашка: Если моя группа дежурит, и мы её еще не показывали
             if (myDutyFound && !sessionStorage.getItem('duty_toast_shown')) {
-                showToast('🧹 Напоминание: Ваша группа дежурит на этой неделе!', 'warning');
+                showToast('🧹 Ваша группа дежурит на этой неделе!', 'warning');
                 sessionStorage.setItem('duty_toast_shown', 'true');
             }
         });
@@ -425,105 +460,40 @@ function loadPersonalData() {
         });
     } catch(e){}
 
-// 1. Дежурства (Выводим на главной - КАРУСЕЛЬ С ТОЧКАМИ)
+    // 4. Новости (Автоматическое удаление через 7 дней + Toasts)
     try {
-        // Глобальные переменные для работы карусели
-        window.dutySliderData = [];
-        window.currentDutySlide = 0;
+        const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
+        onSnapshot(newsQuery, (snapshot) => {
+            let newsHTML = '';
+            const now = new Date().getTime();
+            const oneWeek = 7 * 24 * 60 * 60 * 1000;
+            const oneDay = 24 * 60 * 60 * 1000;
 
-        // Функция отрисовки одного слайда
-        window.renderDutySlide = (index) => {
-            const container = document.getElementById('dashboard-duties');
-            if (!container || window.dutySliderData.length === 0) return;
-
-            window.currentDutySlide = index;
-            const d = window.dutySliderData[index];
-            
-            // Защита, если профиль еще грузится
-            const myGroup = currentUserData ? currentUserData.group : "Без группы";
-            const isMyGroup = d.group === myGroup;
-            
-            const badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
-            const bgClass = isMyGroup ? 'bg-amber-50/50' : 'bg-white';
-
-            // Генерируем точечки, если дежурств больше одного
-            let dotsHtml = '';
-            if (window.dutySliderData.length > 1) {
-                dotsHtml = '<div class="flex justify-center gap-2.5 p-3 bg-slate-50 border-t border-slate-100">';
-                for (let i = 0; i < window.dutySliderData.length; i++) {
-                    const activeClass = i === index ? 'bg-amber-400 scale-125' : 'bg-slate-300 hover:bg-slate-400 cursor-pointer';
-                    dotsHtml += `<div onclick="renderDutySlide(${i})" class="w-2.5 h-2.5 rounded-full transition-all ${activeClass}"></div>`;
-                }
-                dotsHtml += '</div>';
-            }
-
-            container.innerHTML = `
-                <div class="flex flex-col p-4 ${bgClass} transition-colors min-h-[76px] justify-center">
-                    <div class="flex items-center justify-between mb-1.5">
-                        <span class="text-sm font-black text-slate-800 truncate pr-2">${d.type}</span>
-                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${badgeClass} shrink-0">Гр. ${d.group}</span>
-                    </div>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${d.dateRange}</span>
-                </div>
-                ${dotsHtml}
-            `;
-        };
-
-        // Запрос к базе
-        const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
-        onSnapshot(dutiesQuery, (snapshot) => {
-            const container = document.getElementById('dashboard-duties');
-            if (!container) return;
-            
-            window.dutySliderData = [];
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            let myDutyFound = false;
+            const isNewsAdmin = currentUserData.roles && (currentUserData.roles.includes('Админ') || currentUserData.roles.includes('Владелец') || currentUserData.roles.includes('Старейшина'));
 
             snapshot.forEach(docSnap => {
-                const d = docSnap.data();
-                
-                const dutyStart = new Date(d.rawDate);
-                dutyStart.setHours(0,0,0,0);
-                
-                const dutyEnd = new Date(dutyStart);
-                dutyEnd.setDate(dutyStart.getDate() + 6);
-                dutyEnd.setHours(23,59,59,999);
-                
-                // Берем текущие и БУДУЩИЕ дежурства
-                if (dutyEnd.getTime() >= today.getTime()) {
-                    window.dutySliderData.push(d);
-                    
-                    // Шторку-уведомление показываем ТОЛЬКО если дежурство идет ПРЯМО СЕЙЧАС (на этой неделе)
-                    if (today.getTime() >= dutyStart.getTime()) {
-                        const myGroup = currentUserData ? currentUserData.group : "Без группы";
-                        if (d.group === myGroup) myDutyFound = true;
+                const item = docSnap.data();
+                if(item.section === 'news') {
+                    const itemTime = new Date(item.createdAt).getTime();
+
+                    if (now - itemTime < oneWeek) {
+                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[10px] text-red-400 hover:text-red-600 mt-2 font-bold uppercase tracking-widest">Удалить</button>` : '';
+
+                        newsHTML += `
+                        <div class="p-3 mb-2 bg-slate-50 border border-slate-100 rounded-xl hover:bg-slate-100 transition-colors">
+                            <p class="text-slate-700 whitespace-pre-wrap text-[11px] md:text-xs leading-relaxed">${item.text}</p>
+                            ${deleteBtn}
+                        </div>`;
+
+                        if (now - itemTime < oneDay && !sessionStorage.getItem('news_toast_' + docSnap.id)) {
+                            showToast('📢 Новое объявление в ленте!', 'info');
+                            sessionStorage.setItem('news_toast_' + docSnap.id, 'true');
+                        }
                     }
                 }
             });
-
-            // Отрисовка
-            if (window.dutySliderData.length === 0) {
-                container.innerHTML = '<p class="text-xs text-slate-400 italic p-4 text-center">Предстоящих дежурств нет</p>';
-            } else {
-                window.renderDutySlide(0); // Показываем самое ближайшее дежурство
-            }
-
-            // Всплывашка-напоминание (Только 1 раз за сессию)
-            if (myDutyFound && !sessionStorage.getItem('duty_toast_shown')) {
-                showToast('🧹 Ваша группа дежурит на этой неделе!', 'warning');
-                sessionStorage.setItem('duty_toast_shown', 'true');
-            }
-        });
-    } catch(e) {}
-
-            container.innerHTML = html || '<p class="text-xs text-slate-400 italic p-4 text-center">На этой неделе дежурств нет</p>';
-
-            // Всплывашка: Если моя группа дежурит
-            if (myDutyFound && !sessionStorage.getItem('duty_toast_shown')) {
-                showToast('🧹 Ваша группа дежурит на этой неделе!', 'warning');
-                sessionStorage.setItem('duty_toast_shown', 'true');
-            }
+            const contentNews = document.getElementById('content-news');
+            if(contentNews) contentNews.innerHTML = newsHTML || '<p class="text-slate-400 italic text-xs text-center p-2">Актуальных объявлений нет</p>';
         });
     } catch(e) {}
 
