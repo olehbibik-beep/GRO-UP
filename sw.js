@@ -29,19 +29,19 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close(); // Смахиваем пуш
 
-  // Ссылка на главную страницу
-  const urlToOpen = new URL('/GRO-UP/index.html', self.location.origin).href;
+  // УМНАЯ ССЫЛКА: сама определяет, где лежит твой index.html
+  const urlToOpen = new URL('./index.html', self.location.href).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Если приложение уже открыто где-то в фоне - разворачиваем
+      // 1. Ищем, есть ли уже открытое окно с нашим сайтом
       for (let i = 0; i < windowClients.length; i++) {
         const client = windowClients[i];
-        if (client.url === urlToOpen && 'focus' in client) {
-          return client.focus();
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus(); // Разворачиваем свернутое
         }
       }
-      // Если закрыто - открываем заново
+      // 2. Если приложение полностью закрыто - открываем новое
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
