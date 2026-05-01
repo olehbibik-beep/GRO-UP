@@ -1,8 +1,6 @@
-// 1. ИМПОРТЫ FIREBASE
 importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js');
 
-// 2. КОНФИГ
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
     authDomain: "gro-uping.firebaseapp.com",
@@ -15,33 +13,22 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// ==========================================
-// ЛОГИКА ПУШ-УВЕДОМЛЕНИЙ
-// ==========================================
-
-// Принимаем фоновые сообщения (FIREBASE САМ НАРИСУЕТ ПУШ, МЫ НИЧЕГО НЕ ДЕЛАЕМ!)
-messaging.onBackgroundMessage((payload) => {
-  console.log('Фоновое сообщение получено:', payload);
-  // Мы удалили ручной код отрисовки, поэтому двойного пуша больше не будет
-});
-
-// МАГИЯ КЛИКА: Открываем приложение при нажатии на пуш
+// Firebase сам нарисует уведомление. Мы ловим ТОЛЬКО клик!
 self.addEventListener('notificationclick', (event) => {
-  event.notification.close(); // Смахиваем пуш
+  event.notification.close();
 
-  // УМНАЯ ССЫЛКА: сама определяет, где лежит твой index.html
-  const urlToOpen = new URL('./index.html', self.location.href).href;
+  const urlToOpen = self.location.origin + '/';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // 1. Ищем, есть ли уже открытое окно с нашим сайтом
-      for (let i = 0; i < windowClients.length; i++) {
-        const client = windowClients[i];
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          return client.focus(); // Разворачиваем свернутое
+      // Ищем открытое приложение
+      if (windowClients.length > 0) {
+        let client = windowClients[0];
+        if ('focus' in client) {
+          return client.focus();
         }
       }
-      // 2. Если приложение полностью закрыто - открываем новое
+      // Если закрыто - открываем
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
@@ -50,24 +37,22 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ==========================================
-// ЛОГИКА КЭШИРОВАНИЯ (ОФФЛАЙН РЕЖИМ)
+// ЛОГИКА КЭШИРОВАНИЯ
 // ==========================================
-const CACHE_NAME = 'gro-up-v30'; // ⚠️ ОБЯЗАТЕЛЬНО НОВАЯ ВЕРСИЯ
+const CACHE_NAME = 'gro-up-v40'; // Прыгнули сразу на 40 версию
 
 const INITIAL_CACHED_RESOURCES = [
-  '/GRO-UP/',
-  '/GRO-UP/index.html',
-  '/GRO-UP/manifest.json',
-  '/GRO-UP/app.js'
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/app.js'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(INITIAL_CACHED_RESOURCES);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(INITIAL_CACHED_RESOURCES))
   );
-  self.skipWaiting(); 
+  self.skipWaiting(); // Заставляем новый кэш примениться немедленно!
 });
 
 self.addEventListener('activate', (event) => {
@@ -78,26 +63,16 @@ self.addEventListener('activate', (event) => {
       }));
     })
   );
+  self.clients.claim();
 });
 
-// МАГИЯ КЛИКА: Бронебойный вариант
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close(); // Смахиваем пуш
-
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // 1. Если приложение хоть где-то висит в памяти (даже свернутое) - разворачиваем его!
-      if (windowClients.length > 0) {
-        let client = windowClients[0]; // Берем первое попавшееся окно нашего приложения
-        if ('focus' in client) {
-          return client.focus();
-        }
-      }
-      // 2. Если приложение было полностью закрыто свайпом вверх - запускаем его с нуля
-      if (clients.openWindow) {
-        return clients.openWindow('/'); // '/' означает главную страницу
-      }
-    })
+self.addEventListener('fetch', (event) => {
+  if (!event.request.url.startsWith(self.location.origin)) return;
+  event.respondWith(
+    fetch(event.request).then((response) => {
+      const resClone = response.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
+      return response;
+    }).catch(() => caches.match(event.request))
   );
 });
-
