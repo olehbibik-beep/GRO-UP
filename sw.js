@@ -1,8 +1,8 @@
-// 1. ИМПОРТЫ FIREBASE (Для Service Worker используем importScripts)
+// 1. ИМПОРТЫ FIREBASE
 importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js');
 
-// 2. КОНФИГ И ИНИЦИАЛИЗАЦИЯ
+// 2. КОНФИГ
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
     authDomain: "gro-uping.firebaseapp.com",
@@ -12,21 +12,47 @@ const firebaseConfig = {
     appId: "1:819938349545:web:a00c3bef66d99f5b6cfb78"
 };
 
-// Инициализируем Firebase в фоновом режиме
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// 3. ЛОГИКА ФОНОВЫХ ПУШ-УВЕДОМЛЕНИЙ
+// ==========================================
+// ЛОГИКА ПУШ-УВЕДОМЛЕНИЙ
+// ==========================================
+
+// Принимаем фоновые сообщения (FIREBASE САМ НАРИСУЕТ ПУШ, МЫ НИЧЕГО НЕ ДЕЛАЕМ!)
 messaging.onBackgroundMessage((payload) => {
-  console.log('Получено фоновое сообщение:', payload);
-  // ВНИМАНИЕ: Мы удалили ручной вызов showNotification, 
-  // потому что Firebase теперь сам рисует пуши автоматически!
+  console.log('Фоновое сообщение получено:', payload);
+  // Мы удалили ручной код отрисовки, поэтому двойного пуша больше не будет
+});
+
+// МАГИЯ КЛИКА: Открываем приложение при нажатии на пуш
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close(); // Смахиваем пуш
+
+  // Ссылка на главную страницу
+  const urlToOpen = new URL('/GRO-UP/index.html', self.location.origin).href;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // Если приложение уже открыто где-то в фоне - разворачиваем
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Если закрыто - открываем заново
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
 });
 
 // ==========================================
-// 4. ЛОГИКА КЭШИРОВАНИЯ (ТВОЙ ОФФЛАЙН РЕЖИМ)
+// ЛОГИКА КЭШИРОВАНИЯ (ОФФЛАЙН РЕЖИМ)
 // ==========================================
-const CACHE_NAME = 'gro-up-v13';
+const CACHE_NAME = 'gro-up-v15'; // ⚠️ ОБЯЗАТЕЛЬНО НОВАЯ ВЕРСИЯ
 
 const INITIAL_CACHED_RESOURCES = [
   '/GRO-UP/',
@@ -41,7 +67,7 @@ self.addEventListener('install', (event) => {
       return cache.addAll(INITIAL_CACHED_RESOURCES);
     })
   );
-  self.skipWaiting(); // Заставляет SW обновиться сразу
+  self.skipWaiting(); 
 });
 
 self.addEventListener('activate', (event) => {
@@ -55,7 +81,6 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Игнорируем запросы к другим сайтам и API Firebase (чтобы пуши работали)
   if (!event.request.url.startsWith(self.location.origin)) return;
 
   event.respondWith(
@@ -70,7 +95,6 @@ self.addEventListener('fetch', (event) => {
       .catch(() => {
         return caches.match(event.request).then((cachedResponse) => {
           if (cachedResponse) return cachedResponse;
-          
           if (event.request.mode === 'navigate') {
             return caches.match('/GRO-UP/index.html');
           }
