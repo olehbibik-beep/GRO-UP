@@ -19,14 +19,8 @@ const messaging = firebase.messaging();
 // 3. ЛОГИКА ФОНОВЫХ ПУШ-УВЕДОМЛЕНИЙ
 messaging.onBackgroundMessage((payload) => {
   console.log('Получено фоновое сообщение:', payload);
-
-  const notificationTitle = payload.notification.title;
-  const notificationOptions = {
-    body: payload.notification.body,
-    icon: '/GRO-UP/icon-192x192.png' // ⚠️ Убедись, что такая картинка есть у тебя в репозитории
-  };
-
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  // ВНИМАНИЕ: Мы удалили ручной вызов showNotification, 
+  // потому что Firebase теперь сам рисует пуши автоматически!
 });
 
 // ==========================================
