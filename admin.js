@@ -1,6 +1,8 @@
+// 1. ВСЕ ИМПОРТЫ СТРОГО НАВЕРХУ
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+// 2. КОНФИГ И ИНИЦИАЛИЗАЦИЯ
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
     authDomain: "gro-uping.firebaseapp.com",
@@ -13,10 +15,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// Проверка авторизации
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
-// 1. ПРОВЕРКА ПРАВ И УМНОЕ МЕНЮ
+// ==========================================
+// 3. ПРОВЕРКА ПРАВ И ЗАЩИТА СТРАНИЦ
+// ==========================================
 const uid = typeof currentUserId !== 'undefined' ? currentUserId : userId;
 getDoc(doc(db, "users", uid)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
@@ -27,29 +32,17 @@ getDoc(doc(db, "users", uid)).then(docSnap => {
     const isTerr = isFullAdmin || roles.includes("Ответственный за участки");
     const isOverseer = isFullAdmin || roles.includes("Надзиратель группы");
 
-    // Жесткая защита страниц от прямого входа
+    // Жесткая защита страниц от прямого входа по ссылке
     const path = window.location.pathname;
     if (path.includes('admin.html') && !isFullAdmin) window.location.href = 'index.html';
     if (path.includes('school.html') && !isSchool) window.location.href = 'index.html';
     if (path.includes('territories.html') && !isTerr) window.location.href = 'index.html';
     if ((path.includes('calendar.html') || path.includes('duties.html')) && !isOverseer) window.location.href = 'index.html';
-
-    // УПРАВЛЕНИЕ МЕНЮ (Через классы Tailwind - сверхнадежно)
-    const toggleNav = (selector, hasAccess) => {
-        const el = document.querySelector(selector);
-        if (el) {
-            if (hasAccess) { el.classList.remove('hidden'); el.classList.add('flex'); }
-            else { el.classList.add('hidden'); el.classList.remove('flex'); }
-        }
-    };
-
-    toggleNav('nav a[href="admin.html"]', isFullAdmin);
-    toggleNav('nav a[href="school.html"]', isSchool);
-    toggleNav('nav a[href="territories.html"]', isTerr);
-    toggleNav('nav a[href="calendar.html"]', isOverseer);
 });
 
-// ГЛОБАЛЬНАЯ НАСТРОЙКА: СОБРАНИЕ
+// ==========================================
+// 4. ГЛОБАЛЬНАЯ НАСТРОЙКА: СОБРАНИЕ
+// ==========================================
 onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
     const el = document.getElementById('congregation-name');
     if(docSnap.exists() && el) {
@@ -66,7 +59,11 @@ window.updateCongregation = async (val) => {
     } catch(e) { alert("Ошибка сохранения!"); }
 };
 
-// АВТОСОХРАНЕНИЕ: Пол и Группа
+// ==========================================
+// 5. АВТОСОХРАНЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ
+// ==========================================
+
+// Пол и Группа
 window.updateField = async (id, field, value) => {
     try {
         let valToSave = value.trim();
@@ -75,7 +72,7 @@ window.updateField = async (id, field, value) => {
     } catch (e) { alert("Ошибка при сохранении!"); }
 };
 
-// АВТОСОХРАНЕНИЕ: ПИН-КОД
+// ПИН-КОД
 window.updatePin = async (id, val, inputEl) => {
     const cleanVal = val.replace(/\D/g, ''); 
     if (cleanVal.length !== 6) {
@@ -92,7 +89,7 @@ window.updatePin = async (id, val, inputEl) => {
     } catch (e) { alert("Ошибка при сохранении ПИН-кода!"); }
 };
 
-// АВТОСОХРАНЕНИЕ: Роли (Галочки)
+// Роли (Галочки)
 window.toggleRole = async (id, roleName, isChecked) => {
     try {
         const userRef = doc(db, "users", id);
@@ -110,7 +107,9 @@ window.toggleRole = async (id, roleName, isChecked) => {
     } catch (e) { alert("Ошибка при обновлении роли!"); }
 };
 
-// УПРАВЛЕНИЕ: БАН И УДАЛЕНИЕ
+// ==========================================
+// 6. УПРАВЛЕНИЕ: БАН И УДАЛЕНИЕ
+// ==========================================
 window.blockUser = async (id) => {
     if(confirm("Заблокировать пользователя?")) await updateDoc(doc(db, "users", id), { status: 'blocked' });
 };
@@ -121,7 +120,19 @@ window.deleteUser = async (id) => {
     if(confirm("ВНИМАНИЕ! Удалить профиль?")) await deleteDoc(doc(db, "users", id));
 };
 
-// ПОЛУЧЕНИЕ И ОТРИСОВКА ПОЛЬЗОВАТЕЛЕЙ
+window.approveUser = async (id) => {
+    try { await updateDoc(doc(db, "users", id), { status: "active", roles: ["Возвещатель"] }); } 
+    catch (e) { alert("Ошибка!"); }
+};
+window.rejectUser = async (id) => {
+    if (confirm("Точно отклонить заявку и удалить данные?")) {
+        try { await deleteDoc(doc(db, "users", id)); } catch (e) { alert("Ошибка удаления"); }
+    }
+};
+
+// ==========================================
+// 7. ПОЛУЧЕНИЕ И ОТРИСОВКА СПИСКА
+// ==========================================
 onSnapshot(collection(db, "users"), (snapshot) => {
     const pendingList = document.getElementById('pending-list');
     const activeList = document.getElementById('active-list');
@@ -226,16 +237,9 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     activeList.innerHTML = activeHTML || '<tr><td colspan="7" class="text-center py-8 text-slate-400 italic text-sm">Нет активных пользователей</td></tr>';
 });
 
-window.approveUser = async (id) => {
-    try { await updateDoc(doc(db, "users", id), { status: "active", roles: ["Возвещатель"] }); } 
-    catch (e) { alert("Ошибка!"); }
-};
-window.rejectUser = async (id) => {
-    if (confirm("Точно отклонить заявку и удалить данные?")) {
-        try { await deleteDoc(doc(db, "users", id)); } catch (e) { alert("Ошибка удаления"); }
-    }
-};
-
+// ==========================================
+// 8. ЖИВОЙ ПОИСК ПО ИМЕНИ
+// ==========================================
 document.getElementById('search-user').addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     const rows = document.querySelectorAll('.user-row');
