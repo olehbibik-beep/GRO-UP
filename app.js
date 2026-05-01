@@ -425,14 +425,57 @@ function loadPersonalData() {
         });
     } catch(e){}
 
-   // 1. Дежурства (Выводим на главной)
+// 1. Дежурства (Выводим на главной - КАРУСЕЛЬ С ТОЧКАМИ)
     try {
+        // Глобальные переменные для работы карусели
+        window.dutySliderData = [];
+        window.currentDutySlide = 0;
+
+        // Функция отрисовки одного слайда
+        window.renderDutySlide = (index) => {
+            const container = document.getElementById('dashboard-duties');
+            if (!container || window.dutySliderData.length === 0) return;
+
+            window.currentDutySlide = index;
+            const d = window.dutySliderData[index];
+            
+            // Защита, если профиль еще грузится
+            const myGroup = currentUserData ? currentUserData.group : "Без группы";
+            const isMyGroup = d.group === myGroup;
+            
+            const badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
+            const bgClass = isMyGroup ? 'bg-amber-50/50' : 'bg-white';
+
+            // Генерируем точечки, если дежурств больше одного
+            let dotsHtml = '';
+            if (window.dutySliderData.length > 1) {
+                dotsHtml = '<div class="flex justify-center gap-2.5 p-3 bg-slate-50 border-t border-slate-100">';
+                for (let i = 0; i < window.dutySliderData.length; i++) {
+                    const activeClass = i === index ? 'bg-amber-400 scale-125' : 'bg-slate-300 hover:bg-slate-400 cursor-pointer';
+                    dotsHtml += `<div onclick="renderDutySlide(${i})" class="w-2.5 h-2.5 rounded-full transition-all ${activeClass}"></div>`;
+                }
+                dotsHtml += '</div>';
+            }
+
+            container.innerHTML = `
+                <div class="flex flex-col p-4 ${bgClass} transition-colors min-h-[76px] justify-center">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-sm font-black text-slate-800 truncate pr-2">${d.type}</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${badgeClass} shrink-0">Гр. ${d.group}</span>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${d.dateRange}</span>
+                </div>
+                ${dotsHtml}
+            `;
+        };
+
+        // Запрос к базе
         const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
         onSnapshot(dutiesQuery, (snapshot) => {
             const container = document.getElementById('dashboard-duties');
             if (!container) return;
             
-            let html = '';
+            window.dutySliderData = [];
             const today = new Date();
             today.setHours(0,0,0,0);
             let myDutyFound = false;
@@ -440,34 +483,39 @@ function loadPersonalData() {
             snapshot.forEach(docSnap => {
                 const d = docSnap.data();
                 
-                // Дата начала дежурства (обычно Понедельник)
                 const dutyStart = new Date(d.rawDate);
                 dutyStart.setHours(0,0,0,0);
                 
-                // Дата конца дежурства (Воскресенье)
                 const dutyEnd = new Date(dutyStart);
                 dutyEnd.setDate(dutyStart.getDate() + 6);
                 dutyEnd.setHours(23,59,59,999);
                 
-                // Строгая проверка: Сегодня находится между началом и концом этого дежурства?
-                if (today.getTime() >= dutyStart.getTime() && today.getTime() <= dutyEnd.getTime()) {
-                    const isMyGroup = d.group === currentUserData.group;
-                    if (isMyGroup) myDutyFound = true;
-
-                    const badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
-                    const bgClass = isMyGroup ? 'bg-amber-50/50' : 'bg-white';
-
-                    html += `
-                        <div class="flex flex-col p-3 border-b border-slate-50 ${bgClass}">
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm font-bold text-slate-700">${d.type}</span>
-                                <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${badgeClass}">Гр. ${d.group}</span>
-                            </div>
-                            <span class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">${d.dateRange}</span>
-                        </div>
-                    `;
+                // Берем текущие и БУДУЩИЕ дежурства
+                if (dutyEnd.getTime() >= today.getTime()) {
+                    window.dutySliderData.push(d);
+                    
+                    // Шторку-уведомление показываем ТОЛЬКО если дежурство идет ПРЯМО СЕЙЧАС (на этой неделе)
+                    if (today.getTime() >= dutyStart.getTime()) {
+                        const myGroup = currentUserData ? currentUserData.group : "Без группы";
+                        if (d.group === myGroup) myDutyFound = true;
+                    }
                 }
             });
+
+            // Отрисовка
+            if (window.dutySliderData.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 italic p-4 text-center">Предстоящих дежурств нет</p>';
+            } else {
+                window.renderDutySlide(0); // Показываем самое ближайшее дежурство
+            }
+
+            // Всплывашка-напоминание (Только 1 раз за сессию)
+            if (myDutyFound && !sessionStorage.getItem('duty_toast_shown')) {
+                showToast('🧹 Ваша группа дежурит на этой неделе!', 'warning');
+                sessionStorage.setItem('duty_toast_shown', 'true');
+            }
+        });
+    } catch(e) {}
 
             container.innerHTML = html || '<p class="text-xs text-slate-400 italic p-4 text-center">На этой неделе дежурств нет</p>';
 
