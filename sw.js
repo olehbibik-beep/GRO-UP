@@ -52,7 +52,7 @@ self.addEventListener('notificationclick', (event) => {
 // ==========================================
 // ЛОГИКА КЭШИРОВАНИЯ (ОФФЛАЙН РЕЖИМ)
 // ==========================================
-const CACHE_NAME = 'gro-up-v25'; // ⚠️ ОБЯЗАТЕЛЬНО НОВАЯ ВЕРСИЯ
+const CACHE_NAME = 'gro-up-v26'; // ⚠️ ОБЯЗАТЕЛЬНО НОВАЯ ВЕРСИЯ
 
 const INITIAL_CACHED_RESOURCES = [
   '/GRO-UP/',
@@ -80,24 +80,22 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// МАГИЯ КЛИКА: Бронебойный вариант
 self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-
-  // Железобетонная ссылка - просто корень твоего сайта
-  const urlToOpen = self.location.origin + '/';
+  event.notification.close(); // Смахиваем пуш
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Ищем открытое приложение
-      for (let i = 0; i < windowClients.length; i++) {
-        const client = windowClients[i];
-        if (client.url === urlToOpen && 'focus' in client) {
+      // 1. Если приложение хоть где-то висит в памяти (даже свернутое) - разворачиваем его!
+      if (windowClients.length > 0) {
+        let client = windowClients[0]; // Берем первое попавшееся окно нашего приложения
+        if ('focus' in client) {
           return client.focus();
         }
       }
-      // Если закрыто - открываем
+      // 2. Если приложение было полностью закрыто свайпом вверх - запускаем его с нуля
       if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
+        return clients.openWindow('/'); // '/' означает главную страницу
       }
     })
   );
