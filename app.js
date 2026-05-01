@@ -30,30 +30,39 @@ enableIndexedDbPersistence(db).catch((err) => {
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
-// 5. НАСТРОЙКА ПУШ-УВЕДОМЛЕНИЙ
-async function setupNotifications() {
+// Делаем функцию доступной для кнопки (window.)
+window.setupNotifications = async () => {
     try {
-        // Запрашиваем разрешение у браузера
+        alert("1. Запрашиваем разрешение у телефона...");
         const permission = await Notification.requestPermission();
         
         if (permission === 'granted') {
-            // Получаем токен
+            alert("2. Разрешение получено! Генерируем токен (это может занять пару секунд)...");
+            
             const token = await getToken(messaging, { 
                 vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk' 
             });
 
             if (token) {
-                console.log('Токен получен:', token);
-                // Сохраняем токен в профиль пользователя в базе
+                alert("3. Токен успешно получен! Сохраняем в базу...");
                 await updateDoc(doc(db, "users", userId), {
                     pushToken: token
                 });
+                alert("✅ Готово! Токен сохранен в Firestore.");
+            } else {
+                alert("❌ Токен почему-то пустой.");
             }
+        } else {
+            alert("❌ Разрешение отклонено: " + permission);
         }
     } catch (error) {
+        alert("❌ ОШИБКА: " + error.message);
         console.error('Ошибка при настройке уведомлений:', error);
     }
-}
+};
+
+// УДАЛИ строчку: if (userId) setupNotifications(); 
+// (Запрос должен происходить только по кнопке!)
 
 // Запускаем запрос пушей
 if (userId) setupNotifications();
