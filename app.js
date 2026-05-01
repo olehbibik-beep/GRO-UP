@@ -1,18 +1,43 @@
+// 1. ВСЕ ИМПОРТЫ СТРОГО НАВЕРХУ
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
-import { updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+// 2. КОНФИГ И ИНИЦИАЛИЗАЦИЯ (Сначала создаем базу, потом всё остальное)
+const firebaseConfig = {
+    apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
+    authDomain: "gro-uping.firebaseapp.com",
+    projectId: "gro-uping",
+    storageBucket: "gro-uping.firebasestorage.app",
+    messagingSenderId: "819938349545",
+    appId: "1:819938349545:web:a00c3bef66d99f5b6cfb78"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 const messaging = getMessaging(app);
 
-// Функция для получения токена
+// 3. ВКЛЮЧАЕМ ХРАНЕНИЕ В ПАМЯТИ ТЕЛЕФОНА (ОФФЛАЙН)
+enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code == 'failed-precondition') {
+        console.warn("Много вкладок открыто, оффлайн режим только в одной.");
+    } else if (err.code == 'unimplemented') {
+        console.warn("Браузер не поддерживает оффлайн.");
+    }
+});
+
+// 4. ДОСТАЕМ ПОЛЬЗОВАТЕЛЯ ИЗ ПАМЯТИ
+const userId = localStorage.getItem('userId');
+if (!userId) window.location.href = 'login.html';
+
+// 5. НАСТРОЙКА ПУШ-УВЕДОМЛЕНИЙ
 async function setupNotifications() {
     try {
         // Запрашиваем разрешение у браузера
         const permission = await Notification.requestPermission();
         
         if (permission === 'granted') {
-            // Получаем токен (сюда вставь свой VAPID Public Key из шага 1)
+            // Получаем токен
             const token = await getToken(messaging, { 
                 vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk' 
             });
@@ -30,38 +55,18 @@ async function setupNotifications() {
     }
 }
 
-// Вызываем функцию, например, когда пользователь залогинился
+// Запускаем запрос пушей
 if (userId) setupNotifications();
 
 // Слушаем уведомления, когда приложение ОТКРЫТО
 onMessage(messaging, (payload) => {
     console.log('Пришло уведомление в активном режиме:', payload);
-    alert(`${payload.notification.title}: ${payload.notification.body}`);
-});
-const firebaseConfig = {
-    apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
-    authDomain: "gro-uping.firebaseapp.com",
-    projectId: "gro-uping",
-    storageBucket: "gro-uping.firebasestorage.app",
-    messagingSenderId: "819938349545",
-    appId: "1:819938349545:web:a00c3bef66d99f5b6cfb78"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-import { enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-// Включаем хранение данных в памяти телефона
-enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code == 'failed-precondition') {
-        console.warn("Много вкладок открыто, оффлайн режим только в одной.");
-    } else if (err.code == 'unimplemented') {
-        console.warn("Браузер не поддерживает оффлайн.");
-    }
+    alert(`${payload.notification.title}\n\n${payload.notification.body}`);
 });
 
-const userId = localStorage.getItem('userId');
-if (!userId) window.location.href = 'login.html';
+// ==========================================
+// 6. ОСТАЛЬНАЯ ЛОГИКА ПРИЛОЖЕНИЯ
+// ==========================================
 
 const TOP_ROLES = ["Владелец", "Админ"]; 
 const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
@@ -132,7 +137,10 @@ window.submitReport = async () => {
 };
 
 onSnapshot(doc(db, "users", userId), async (docSnap) => {
-    if (!docSnap.exists()) { window.logout(); return; }
+    if (!docSnap.exists()) {
+        if (navigator.onLine) window.logout(); 
+        return; 
+    }
     currentUserData = docSnap.data();
 
     const pendingScreen = document.getElementById('pending-screen');
@@ -149,7 +157,6 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         
         let userRoles = currentUserData.roles || [];
         
-        // КНОПКИ АДМИНА В ПРОФИЛЕ (Абсолютно защищены от мигания)
         const profileAdminLinks = document.getElementById('profile-admin-links');
         const profileAdminBtn = document.getElementById('profile-admin-btn');
         const profileReportsBtn = document.getElementById('profile-reports-btn');
@@ -393,7 +400,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // 5. КАЛЕНДАРЬ ТОЛЬКО НА СЕГОДНЯ (СВЕТЛЫЙ ДИЗАЙН)
+    // 5. КАЛЕНДАРЬ
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -413,7 +420,6 @@ function loadPersonalData() {
                 const evDate = new Date(ev.date);
                 const evGroup = ev.group || "Все";
                 
-                // Строгая проверка: событие должно быть именно СЕГОДНЯ
                 if (evDate.getFullYear() === todayYear && 
                     evDate.getMonth() === todayMonth && 
                     evDate.getDate() === todayDate) {
