@@ -181,19 +181,17 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         let userRoles = currentUserData.roles || [];
         
 // ==========================================
-        // УМНОЕ УПРАВЛЕНИЕ КОЛОКОЛЬЧИКОМ
+        // УМНОЕ УПРАВЛЕНИЕ КОЛОКОЛЬЧИКОМ (ЖЕСТКОЕ)
         // ==========================================
         const pushBtn = document.getElementById('push-btn');
         if (pushBtn) {
-            const hasPermission = 'Notification' in window && Notification.permission === 'granted';
-            const hasTokenInBase = currentUserData && currentUserData.pushToken;
-
-            // Если уведомления разрешены ИЛИ токен уже в базе — прячем кнопку совсем
-            if (hasPermission || hasTokenInBase) {
-                pushBtn.style.display = 'none';
-            } else {
-                // Если прав нет — показываем колокольчик
+            // Проверяем: есть ли токен именно у этого пользователя в базе?
+            if (!currentUserData.pushToken) {
+                // Токена нет? Показываем колокольчик!
                 pushBtn.style.display = 'flex';
+            } else {
+                // Токен есть? Прячем!
+                pushBtn.style.display = 'none';
             }
         }
 
