@@ -19,7 +19,9 @@ if (!userId) window.location.href = 'login.html';
 let myGroup = "Все"; // По умолчанию
 let allEventsData = []; // Кэш событий для быстрой фильтрации
 
-// 1. ПРОВЕРКА ПРАВ И УМНОЕ МЕНЮ
+// ==========================================
+// 1. ПРОВЕРКА ПРАВ И ЗАЩИТА СТРАНИЦЫ
+// ==========================================
 const uid = typeof currentUserId !== 'undefined' ? currentUserId : userId;
 getDoc(doc(db, "users", uid)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
@@ -36,22 +38,11 @@ getDoc(doc(db, "users", uid)).then(docSnap => {
     if (path.includes('school.html') && !isSchool) window.location.href = 'index.html';
     if (path.includes('territories.html') && !isTerr) window.location.href = 'index.html';
     if ((path.includes('calendar.html') || path.includes('duties.html')) && !isOverseer) window.location.href = 'index.html';
-
-    // УПРАВЛЕНИЕ МЕНЮ (Через классы Tailwind - сверхнадежно)
-    const toggleNav = (selector, hasAccess) => {
-        const el = document.querySelector(selector);
-        if (el) {
-            if (hasAccess) { el.classList.remove('hidden'); el.classList.add('flex'); }
-            else { el.classList.add('hidden'); el.classList.remove('flex'); }
-        }
-    };
-
-    toggleNav('nav a[href="admin.html"]', isFullAdmin);
-    toggleNav('nav a[href="school.html"]', isSchool);
-    toggleNav('nav a[href="territories.html"]', isTerr);
-    toggleNav('nav a[href="calendar.html"]', isOverseer);
 });
+
+// ==========================================
 // 2. ЗАГРУЗКА БРАТЬЕВ ДЛЯ ВЫБОРА ВЕДУЩИХ
+// ==========================================
 onSnapshot(collection(db, "users"), (snapshot) => {
     const checklist = document.getElementById('users-checklist');
     if (!checklist) return;
@@ -73,7 +64,9 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     checklist.innerHTML = html || '<p class="text-xs text-slate-400 italic">Нет активных пользователей</p>';
 });
 
+// ==========================================
 // 3. СОХРАНЕНИЕ СОБЫТИЙ (Умный генератор)
+// ==========================================
 document.getElementById('save-event-btn').addEventListener('click', async (e) => {
     const title = document.getElementById('event-title').value.trim();
     const dateStr = document.getElementById('event-date').value;
@@ -134,7 +127,9 @@ document.getElementById('save-event-btn').addEventListener('click', async (e) =>
     } catch (error) { alert("Ошибка сети."); btn.disabled = false; }
 });
 
-// 4. ОТРИСОВКА КАЛЕНДАРЯ (С фильтром и монолитным списком)
+// ==========================================
+// 4. ОТРИСОВКА КАЛЕНДАРЯ (С фильтром)
+// ==========================================
 const renderEvents = () => {
     const list = document.getElementById('events-list');
     const showAll = document.getElementById('show-all-events-cb').checked;
@@ -216,7 +211,9 @@ onSnapshot(q, (snapshot) => {
 // Слушаем клик по галочке "Показать другие группы"
 document.getElementById('show-all-events-cb').addEventListener('change', renderEvents);
 
+// ==========================================
 // 5. УДАЛЕНИЕ СОБЫТИЯ
+// ==========================================
 window.deleteEvent = (id) => {
     if (confirm("Удалить встречу из календаря?")) deleteDoc(doc(db, "events", id));
 };
