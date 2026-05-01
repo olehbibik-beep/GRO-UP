@@ -1,6 +1,43 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
+import { updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+const messaging = getMessaging(app);
+
+// Функция для получения токена
+async function setupNotifications() {
+    try {
+        // Запрашиваем разрешение у браузера
+        const permission = await Notification.requestPermission();
+        
+        if (permission === 'granted') {
+            // Получаем токен (сюда вставь свой VAPID Public Key из шага 1)
+            const token = await getToken(messaging, { 
+                vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk' 
+            });
+
+            if (token) {
+                console.log('Токен получен:', token);
+                // Сохраняем токен в профиль пользователя в базе
+                await updateDoc(doc(db, "users", userId), {
+                    pushToken: token
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка при настройке уведомлений:', error);
+    }
+}
+
+// Вызываем функцию, например, когда пользователь залогинился
+if (userId) setupNotifications();
+
+// Слушаем уведомления, когда приложение ОТКРЫТО
+onMessage(messaging, (payload) => {
+    console.log('Пришло уведомление в активном режиме:', payload);
+    alert(`${payload.notification.title}: ${payload.notification.body}`);
+});
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
     authDomain: "gro-uping.firebaseapp.com",
