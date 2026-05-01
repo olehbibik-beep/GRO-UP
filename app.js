@@ -30,9 +30,22 @@ enableIndexedDbPersistence(db).catch((err) => {
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
-// Тихая настройка пушей (Без раздражающих окон)
+// Умная настройка пушей (с подсказками для пользователя)
 window.setupNotifications = async () => {
     try {
+        // 1. Проверяем, поддерживает ли вообще устройство пуши
+        if (!('Notification' in window)) {
+            alert("❌ Уведомления не поддерживаются на этом устройстве.\n\nЕсли это iPhone или iPad: нажмите кнопку «Поделиться» (квадратик со стрелочкой) и выберите «На экран Домой».");
+            return;
+        }
+
+        // 2. Если пользователь (или браузер) ранее заблокировал уведомления
+        if (Notification.permission === 'denied') {
+            alert("🔒 Уведомления заблокированы браузером!\n\nЗайдите в настройки этого браузера (или нажмите на значок замочка в адресной строке) и разрешите уведомления для этого сайта.");
+            return;
+        }
+
+        // 3. Если всё ок - запрашиваем права
         const permission = await Notification.requestPermission();
         
         if (permission === 'granted') {
@@ -49,13 +62,17 @@ window.setupNotifications = async () => {
                     pushToken: token
                 });
                 
-                // Прячем колокольчик
+                // Радуем пользователя и прячем колокольчик
+                alert("✅ Уведомления успешно включены!");
                 const pushBtn = document.getElementById('push-btn');
                 if (pushBtn) pushBtn.style.display = 'none';
             }
+        } else {
+            alert("Вы отклонили запрос на уведомления.");
         }
     } catch (error) {
-        console.error('Ошибка при тихой настройке уведомлений:', error);
+        console.error('Ошибка при настройке уведомлений:', error);
+        alert("ОШИБКА: " + error.message);
     }
 };
 
