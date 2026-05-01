@@ -20,7 +20,9 @@ let myGroup = "Без группы";
 let hasFullAccess = false;
 let allReports = [];
 
-// 1. ПРОВЕРКА ПРАВ, ДОСТУПА И УМНОЕ МЕНЮ
+// ==========================================
+// 1. ПРОВЕРКА ПРАВ И ЗАЩИТА СТРАНИЦЫ
+// ==========================================
 getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     
@@ -33,6 +35,14 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     const isTerr = isFullAdmin || roles.includes("Ответственный за участки");
     const isOverseer = isFullAdmin || roles.includes("Надзиратель группы");
 
+    // Жесткая защита страниц от прямого входа
+    const path = window.location.pathname;
+    if (path.includes('admin.html') && !isFullAdmin) window.location.href = 'index.html';
+    if (path.includes('school.html') && !isSchool) window.location.href = 'index.html';
+    if (path.includes('territories.html') && !isTerr) window.location.href = 'index.html';
+    if (path.includes('reports.html') && !isOverseer) window.location.href = 'index.html';
+
+    // Настройка заголовка в зависимости от прав доступа
     if (isFullAdmin) {
         hasFullAccess = true;
         document.getElementById('group-title').innerText = "Все группы (Полный доступ)";
@@ -43,22 +53,12 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
         window.location.href = 'index.html'; 
     }
 
-    const toggleNav = (selector, hasAccess) => {
-        const el = document.querySelector(selector);
-        if (el) {
-            if (hasAccess) { el.classList.remove('hidden'); el.classList.add('flex'); }
-            else { el.classList.add('hidden'); el.classList.remove('flex'); }
-        }
-    };
-
-    toggleNav('nav a[href="admin.html"]', isFullAdmin);
-    toggleNav('nav a[href="school.html"]', isSchool);
-    toggleNav('nav a[href="territories.html"]', isTerr);
-    toggleNav('nav a[href="calendar.html"]', isOverseer);
-
     loadReports();
 });
 
+// ==========================================
+// 2. ЗАГРУЗКА ОТЧЕТОВ
+// ==========================================
 function loadReports() {
     // Получаем все отчеты (отсортированы по дате сдачи по убыванию)
     const q = query(collection(db, "reports"), orderBy("submittedAt", "desc"));
@@ -92,7 +92,9 @@ function loadReports() {
     });
 }
 
-// 2. ОТРИСОВКА ТАБЛИЦЫ И ПОДСЧЕТ ИТОГОВ
+// ==========================================
+// 3. ОТРИСОВКА ТАБЛИЦЫ И ПОДСЧЕТ ИТОГОВ
+// ==========================================
 function renderTable() {
     const list = document.getElementById('reports-list');
     const selectedMonth = document.getElementById('month-filter').value;
