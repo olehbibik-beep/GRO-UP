@@ -6,7 +6,7 @@
     <title>Панель Администратора</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f1f5f9', nav: '#0f172a' } } } } }
+        tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f1f5f9', adminNav: '#0f172a' } } } } }
     </script>
     <style>
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -16,13 +16,10 @@
 </head>
 <body class="bg-ui-bg text-slate-800 min-h-screen font-sans">
 
-    <!-- ТЕМНАЯ НАВИГАЦИЯ -->
-    <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-between z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0">
-        <a href="index.html" title="На сайт" class="flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg></a>
-        <a href="admin.html" title="Пользователи" class="flex flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full md:mb-4 outline-none transition-colors text-white"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M10.341 3.897a.75.75 0 011.318 0l.977 1.977a.75.75 0 00.91.405l2.12-.572a.75.75 0 01.895.895l-.572 2.12a.75.75 0 00.405.91l1.977.977a.75.75 0 010 1.318l-1.977.977a.75.75 0 00-.405.91l.572 2.12a.75.75 0 01-.895.895l-2.12-.572a.75.75 0 00-.91.405l-.977 1.977a.75.75 0 01-1.318 0l-.977-1.977a.75.75 0 00-.91-.405l-2.12.572a.75.75 0 01-.895-.895l.572-2.12a.75.75 0 00-.405-.91l-1.977-.977a.75.75 0 010-1.318l1.977-.977a.75.75 0 00.405-.91l-.572-2.12a.75.75 0 01.895-.895l2.12.572a.75.75 0 00.91-.405l.977-1.977zM12 15a3 3 0 100-6 3 3 0 000 6z" /></svg></a>
-        <a href="school.html" title="Школа" class="hidden flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg></a>
-        <a href="territories.html" title="Участки" class="hidden flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" /></svg></a>
-        <a href="calendar.html" title="Календарь" class="hidden flex-col items-center justify-center flex-1 py-4 md:flex-none md:w-full outline-none mt-auto transition-colors text-indigo-300 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg></a>
+    <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0">
+        <a href="index.html" title="На главную" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
+        </a>
     </nav>
 
     <main class="w-full max-w-[1400px] mx-auto px-4 py-6 md:pl-28 md:pr-6 pb-24">
@@ -33,7 +30,6 @@
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Автосохранение данных</p>
             </div>
             
-            <!-- ГЛОБАЛЬНАЯ НАСТРОЙКА: НАЗВАНИЕ СОБРАНИЯ -->
             <div class="w-full md:w-auto flex flex-col items-start md:items-end">
                 <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 pl-1 md:pl-0">Название собрания (Увидят все)</label>
                 <input type="text" id="congregation-name" onchange="updateCongregation(this.value)" placeholder="МАРИАНСКИЕ ЛАЗНЕ" class="w-full md:w-64 text-sm font-black text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 outline-none focus:border-indigo-400 md:text-right shadow-sm transition-colors">
@@ -77,6 +73,6 @@
         </section>
     </main>
 
-    <script type="module" src="admin.js?v=60"></script>
+    <script type="module" src="admin.js?v=61"></script>
 </body>
 </html>
