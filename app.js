@@ -180,17 +180,13 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         
         let userRoles = currentUserData.roles || [];
         
-        // ==========================================
+       // ==========================================
         // УПРАВЛЕНИЕ ВИДИМОСТЬЮ КНОПКИ УВЕДОМЛЕНИЙ
         // ==========================================
         const pushBtn = document.getElementById('push-btn');
         if (pushBtn) {
-            // Прячем ТОЛЬКО если уведомления уже разрешены
-            if ('Notification' in window && Notification.permission === 'granted') {
-                pushBtn.style.display = 'none';
-            } else {
-                pushBtn.style.display = 'flex'; // ТЕПЕРЬ ОН ПОЯВИТСЯ ЖЕЛЕЗОБЕТОННО
-            }
+            // ВРЕМЕННО ПОКАЗЫВАЕМ КНОПКУ ВООБЩЕ ВСЕМ ДЛЯ ТЕСТА!
+            pushBtn.style.display = 'flex'; 
         }
 
         const profileAdminLinks = document.getElementById('profile-admin-links');
