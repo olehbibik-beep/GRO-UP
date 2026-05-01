@@ -16,9 +16,10 @@ const currentUserId = localStorage.getItem('userId');
 
 if (!currentUserId) window.location.href = 'login.html';
 
-// 1. ПРОВЕРКА ПРАВ И УМНОЕ МЕНЮ
-const uid = typeof currentUserId !== 'undefined' ? currentUserId : userId;
-getDoc(doc(db, "users", uid)).then(docSnap => {
+// ==========================================
+// 1. ПРОВЕРКА ПРАВ И ЗАЩИТА СТРАНИЦЫ
+// ==========================================
+getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     
     const roles = docSnap.data().roles || [];
@@ -33,30 +34,20 @@ getDoc(doc(db, "users", uid)).then(docSnap => {
     if (path.includes('school.html') && !isSchool) window.location.href = 'index.html';
     if (path.includes('territories.html') && !isTerr) window.location.href = 'index.html';
     if ((path.includes('calendar.html') || path.includes('duties.html')) && !isOverseer) window.location.href = 'index.html';
-
-    // УПРАВЛЕНИЕ МЕНЮ (Через классы Tailwind - сверхнадежно)
-    const toggleNav = (selector, hasAccess) => {
-        const el = document.querySelector(selector);
-        if (el) {
-            if (hasAccess) { el.classList.remove('hidden'); el.classList.add('flex'); }
-            else { el.classList.add('hidden'); el.classList.remove('flex'); }
-        }
-    };
-
-    toggleNav('nav a[href="admin.html"]', isFullAdmin);
-    toggleNav('nav a[href="school.html"]', isSchool);
-    toggleNav('nav a[href="territories.html"]', isTerr);
-    toggleNav('nav a[href="calendar.html"]', isOverseer);
 });
 
-// ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ФОРМАТИРОВАНИЯ ДАТ
+// ==========================================
+// 2. ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ДАТ
+// ==========================================
 const formatDateStr = (dateObj) => {
     const d = dateObj.getDate();
     const m = dateObj.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '');
     return `${d} ${m}`;
 };
 
-// СОХРАНЕНИЕ ГРАФИКА
+// ==========================================
+// 3. СОХРАНЕНИЕ ГРАФИКА
+// ==========================================
 document.getElementById('save-duty-btn').addEventListener('click', async (e) => {
     const type = document.getElementById('duty-type').value;
     const startGroup = document.getElementById('duty-group').value.trim();
@@ -88,8 +79,6 @@ document.getElementById('save-duty-btn').addEventListener('click', async (e) => 
             let assignedGroup = "Все";
             if (currentGroupNum !== null) {
                 assignedGroup = currentGroupNum.toString();
-                // Тут можно сделать сброс, если групп всего 5 (например: if(currentGroupNum > 5) currentGroupNum = 1;)
-                // Но мы просто будем прибавлять +1
                 currentGroupNum++;
             }
 
@@ -113,7 +102,9 @@ document.getElementById('save-duty-btn').addEventListener('click', async (e) => 
     } catch (err) { alert("Ошибка!"); btn.disabled = false; btn.innerText = "Назначить"; }
 });
 
-// ОТРИСОВКА СПИСКА
+// ==========================================
+// 4. ОТРИСОВКА СПИСКА
+// ==========================================
 const q = query(collection(db, "duties"), orderBy("rawDate", "asc"));
 onSnapshot(q, (snapshot) => {
     const list = document.getElementById('duties-list');
@@ -157,6 +148,9 @@ onSnapshot(q, (snapshot) => {
     list.innerHTML = html;
 });
 
+// ==========================================
+// 5. УДАЛЕНИЕ ДЕЖУРСТВА
+// ==========================================
 window.deleteDuty = (id) => {
     if (confirm("Удалить дежурство?")) deleteDoc(doc(db, "duties", id));
 };
