@@ -52,7 +52,7 @@ self.addEventListener('notificationclick', (event) => {
 // ==========================================
 // ЛОГИКА КЭШИРОВАНИЯ (ОФФЛАЙН РЕЖИМ)
 // ==========================================
-const CACHE_NAME = 'gro-up-v26'; // ⚠️ ОБЯЗАТЕЛЬНО НОВАЯ ВЕРСИЯ
+const CACHE_NAME = 'gro-up-v30'; // ⚠️ ОБЯЗАТЕЛЬНО НОВАЯ ВЕРСИЯ
 
 const INITIAL_CACHED_RESOURCES = [
   '/GRO-UP/',
