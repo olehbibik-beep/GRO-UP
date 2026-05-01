@@ -180,13 +180,21 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         
         let userRoles = currentUserData.roles || [];
         
-       // ==========================================
-        // УПРАВЛЕНИЕ ВИДИМОСТЬЮ КНОПКИ УВЕДОМЛЕНИЙ
+// ==========================================
+        // УМНОЕ УПРАВЛЕНИЕ КОЛОКОЛЬЧИКОМ
         // ==========================================
         const pushBtn = document.getElementById('push-btn');
         if (pushBtn) {
-            // ВРЕМЕННО ПОКАЗЫВАЕМ КНОПКУ ВООБЩЕ ВСЕМ ДЛЯ ТЕСТА!
-            pushBtn.style.display = 'flex'; 
+            const hasPermission = 'Notification' in window && Notification.permission === 'granted';
+            const hasTokenInBase = currentUserData && currentUserData.pushToken;
+
+            // Если уведомления разрешены ИЛИ токен уже в базе — прячем кнопку совсем
+            if (hasPermission || hasTokenInBase) {
+                pushBtn.style.display = 'none';
+            } else {
+                // Если прав нет — показываем колокольчик
+                pushBtn.style.display = 'flex';
+            }
         }
 
         const profileAdminLinks = document.getElementById('profile-admin-links');
