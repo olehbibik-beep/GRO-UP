@@ -115,6 +115,19 @@
                             <span class="text-ui-news text-xl leading-none">📢</span> Объявления
                         </h3>
                     </div>
+
+                    <div class="mb-4">
+                        <h2 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">На этой неделе</h2>
+                        <div id="dashboard-duties" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                            <p class="text-xs text-slate-400 italic p-4 text-center">Загрузка...</p>
+                        </div>
+                    </div>
+
+                    <div id="add-news-box" class="hidden mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <textarea id="news-input" rows="2" placeholder="Напишите важное объявление..." class="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-indigo-400 resize-none"></textarea>
+                        <button onclick="publishNews()" class="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-4 rounded-lg w-full transition-colors">Опубликовать</button>
+                    </div>
+
                     <div id="content-news" class="flex-grow space-y-3 text-xs md:text-sm text-slate-600 overflow-y-auto max-h-[180px] md:max-h-[220px] pr-2">
                         <p class="italic text-slate-400">Загрузка...</p>
                     </div>
@@ -192,7 +205,7 @@
     });
   }
 </script>
-    <script type="module" src="app.js?v=111"></script>
+    <script type="module" src="app.js?v=116"></script>
     <div id="toast-container" class="fixed bottom-24 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-50 flex flex-col gap-2 pointer-events-none"></div>
 </body>
 </html>
