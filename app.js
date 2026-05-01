@@ -179,8 +179,7 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         if(mainDashboard) { mainDashboard.classList.remove('hidden'); mainDashboard.classList.add('block'); }
         
         let userRoles = currentUserData.roles || [];
-        
-        // ==========================================
+ // ==========================================
         // УПРАВЛЕНИЕ ВИДИМОСТЬЮ КНОПКИ УВЕДОМЛЕНИЙ
         // ==========================================
         const pushBtn = document.getElementById('push-btn');
