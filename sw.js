@@ -52,7 +52,7 @@ self.addEventListener('notificationclick', (event) => {
 // ==========================================
 // ЛОГИКА КЭШИРОВАНИЯ (ОФФЛАЙН РЕЖИМ)
 // ==========================================
-const CACHE_NAME = 'gro-up-v20'; // ⚠️ ОБЯЗАТЕЛЬНО НОВАЯ ВЕРСИЯ
+const CACHE_NAME = 'gro-up-v25'; // ⚠️ ОБЯЗАТЕЛЬНО НОВАЯ ВЕРСИЯ
 
 const INITIAL_CACHED_RESOURCES = [
   '/GRO-UP/',
@@ -81,24 +81,25 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('notificationclick', (event) => {
-  event.notification.close(); // Закрываем уведомление
+  event.notification.close();
 
-  // ВНИМАНИЕ: Проверь этот путь! Если твой сайт лежит в папке GRO-UP, оставь так.
-  const urlToOpen = new URL('/GRO-UP/index.html', self.location.origin).href;
+  // Железобетонная ссылка - просто корень твоего сайта
+  const urlToOpen = self.location.origin + '/';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // 1. Если приложение уже открыто — просто переключаемся на него
+      // Ищем открытое приложение
       for (let i = 0; i < windowClients.length; i++) {
         const client = windowClients[i];
         if (client.url === urlToOpen && 'focus' in client) {
           return client.focus();
         }
       }
-      // 2. Если приложение закрыто — открываем новое окно
+      // Если закрыто - открываем
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
     })
   );
 });
+
