@@ -425,42 +425,57 @@ function loadPersonalData() {
         });
     } catch(e){}
 
-    // 4. Новости (Автоматическое удаление через 7 дней + Toasts)
+   // 1. Дежурства (Выводим на главной)
     try {
-        const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
-        onSnapshot(newsQuery, (snapshot) => {
-            let newsHTML = '';
-            const now = new Date().getTime();
-            const oneWeek = 7 * 24 * 60 * 60 * 1000;
-            const oneDay = 24 * 60 * 60 * 1000;
-
-            const isNewsAdmin = currentUserData.roles && (currentUserData.roles.includes('Админ') || currentUserData.roles.includes('Владелец') || currentUserData.roles.includes('Старейшина'));
+        const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
+        onSnapshot(dutiesQuery, (snapshot) => {
+            const container = document.getElementById('dashboard-duties');
+            if (!container) return;
+            
+            let html = '';
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            let myDutyFound = false;
 
             snapshot.forEach(docSnap => {
-                const item = docSnap.data();
-                if(item.section === 'news') {
-                    const itemTime = new Date(item.createdAt).getTime();
+                const d = docSnap.data();
+                
+                // Дата начала дежурства (обычно Понедельник)
+                const dutyStart = new Date(d.rawDate);
+                dutyStart.setHours(0,0,0,0);
+                
+                // Дата конца дежурства (Воскресенье)
+                const dutyEnd = new Date(dutyStart);
+                dutyEnd.setDate(dutyStart.getDate() + 6);
+                dutyEnd.setHours(23,59,59,999);
+                
+                // Строгая проверка: Сегодня находится между началом и концом этого дежурства?
+                if (today.getTime() >= dutyStart.getTime() && today.getTime() <= dutyEnd.getTime()) {
+                    const isMyGroup = d.group === currentUserData.group;
+                    if (isMyGroup) myDutyFound = true;
 
-                    // ПОКАЗЫВАЕМ ТОЛЬКО ЕСЛИ НОВОСТИ МЕНЬШЕ 7 ДНЕЙ
-                    if (now - itemTime < oneWeek) {
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[10px] text-red-400 hover:text-red-600 mt-2 font-bold uppercase tracking-widest">Удалить</button>` : '';
+                    const badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
+                    const bgClass = isMyGroup ? 'bg-amber-50/50' : 'bg-white';
 
-                        newsHTML += `
-                        <div class="p-3 mb-2 bg-slate-50 border border-slate-100 rounded-xl hover:bg-slate-100 transition-colors">
-                            <p class="text-slate-700 whitespace-pre-wrap text-[11px] md:text-xs leading-relaxed">${item.text}</p>
-                            ${deleteBtn}
-                        </div>`;
-
-                        // Всплывашка: Если новость свежая (меньше 24 часов) и еще не была показана в этой сессии
-                        if (now - itemTime < oneDay && !sessionStorage.getItem('news_toast_' + docSnap.id)) {
-                            showToast('📢 Новое объявление в ленте!', 'info');
-                            sessionStorage.setItem('news_toast_' + docSnap.id, 'true');
-                        }
-                    }
+                    html += `
+                        <div class="flex flex-col p-3 border-b border-slate-50 ${bgClass}">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-bold text-slate-700">${d.type}</span>
+                                <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${badgeClass}">Гр. ${d.group}</span>
+                            </div>
+                            <span class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">${d.dateRange}</span>
+                        </div>
+                    `;
                 }
             });
-            const contentNews = document.getElementById('content-news');
-            if(contentNews) contentNews.innerHTML = newsHTML || '<p class="text-slate-400 italic text-xs text-center p-2">Актуальных объявлений нет</p>';
+
+            container.innerHTML = html || '<p class="text-xs text-slate-400 italic p-4 text-center">На этой неделе дежурств нет</p>';
+
+            // Всплывашка: Если моя группа дежурит
+            if (myDutyFound && !sessionStorage.getItem('duty_toast_shown')) {
+                showToast('🧹 Ваша группа дежурит на этой неделе!', 'warning');
+                sessionStorage.setItem('duty_toast_shown', 'true');
+            }
         });
     } catch(e) {}
 
