@@ -55,6 +55,11 @@ window.setupNotifications = async () => {
                     pushToken: token
                 });
                 alert("✅ УРА! Токен сохранен.");
+                
+                // ПРЯЧЕМ КНОПКУ ПОСЛЕ УСПЕШНОЙ АКТИВАЦИИ
+                const pushBtn = document.getElementById('push-btn');
+                if (pushBtn) pushBtn.style.display = 'none';
+
             } else {
                 alert("❌ Токен пустой.");
             }
@@ -67,11 +72,10 @@ window.setupNotifications = async () => {
     }
 };
 
-// УДАЛИ строчку: if (userId) setupNotifications(); 
-// (Запрос должен происходить только по кнопке!)
-
-// Запускаем запрос пушей
-if (userId) setupNotifications();
+// Запускаем запрос пушей, только если они еще не настроены
+if (userId && 'Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+    // Больше не вызываем автоматически, ждем клика по кнопке
+}
 
 // Слушаем уведомления, когда приложение ОТКРЫТО
 onMessage(messaging, (payload) => {
@@ -172,6 +176,18 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         
         let userRoles = currentUserData.roles || [];
         
+        // ==========================================
+        // УПРАВЛЕНИЕ ВИДИМОСТЬЮ КНОПКИ УВЕДОМЛЕНИЙ
+        // ==========================================
+        const pushBtn = document.getElementById('push-btn');
+        if (pushBtn) {
+            if (!('Notification' in window) || Notification.permission === 'granted' || Notification.permission === 'denied') {
+                pushBtn.style.display = 'none'; // Прячем
+            } else {
+                pushBtn.style.display = 'block'; // Показываем
+            }
+        }
+
         const profileAdminLinks = document.getElementById('profile-admin-links');
         const profileAdminBtn = document.getElementById('profile-admin-btn');
         const profileReportsBtn = document.getElementById('profile-reports-btn');
