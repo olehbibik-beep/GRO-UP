@@ -26,7 +26,7 @@ messaging.onBackgroundMessage((payload) => {
 // ==========================================
 // 4. ЛОГИКА КЭШИРОВАНИЯ (ТВОЙ ОФФЛАЙН РЕЖИМ)
 // ==========================================
-const CACHE_NAME = 'gro-up-v12';
+const CACHE_NAME = 'gro-up-v13';
 
 const INITIAL_CACHED_RESOURCES = [
   '/GRO-UP/',
