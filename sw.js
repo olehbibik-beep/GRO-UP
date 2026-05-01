@@ -1,6 +1,39 @@
-const CACHE_NAME = 'gro-up-v4';
+// 1. ИМПОРТЫ FIREBASE (Для Service Worker используем importScripts)
+importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js');
 
-// Основные файлы для мгновенного запуска
+// 2. КОНФИГ И ИНИЦИАЛИЗАЦИЯ
+const firebaseConfig = {
+    apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
+    authDomain: "gro-uping.firebaseapp.com",
+    projectId: "gro-uping",
+    storageBucket: "gro-uping.firebasestorage.app",
+    messagingSenderId: "819938349545",
+    appId: "1:819938349545:web:a00c3bef66d99f5b6cfb78"
+};
+
+// Инициализируем Firebase в фоновом режиме
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
+// 3. ЛОГИКА ФОНОВЫХ ПУШ-УВЕДОМЛЕНИЙ
+messaging.onBackgroundMessage((payload) => {
+  console.log('Получено фоновое сообщение:', payload);
+
+  const notificationTitle = payload.notification.title;
+  const notificationOptions = {
+    body: payload.notification.body,
+    icon: '/GRO-UP/icon-192x192.png' // ⚠️ Убедись, что такая картинка есть у тебя в репозитории
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// ==========================================
+// 4. ЛОГИКА КЭШИРОВАНИЯ (ТВОЙ ОФФЛАЙН РЕЖИМ)
+// ==========================================
+const CACHE_NAME = 'gro-up-v12';
+
 const INITIAL_CACHED_RESOURCES = [
   '/GRO-UP/',
   '/GRO-UP/index.html',
@@ -8,16 +41,15 @@ const INITIAL_CACHED_RESOURCES = [
   '/GRO-UP/app.js'
 ];
 
-// Установка
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(INITIAL_CACHED_RESOURCES);
     })
   );
+  self.skipWaiting(); // Заставляет SW обновиться сразу
 });
 
-// Активация и чистка старого кэша
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -28,12 +60,13 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// ГЛАВНАЯ МАГИЯ: Стратегия "Сначала сеть, если нет — берем из кэша"
 self.addEventListener('fetch', (event) => {
+  // Игнорируем запросы к другим сайтам и API Firebase (чтобы пуши работали)
+  if (!event.request.url.startsWith(self.location.origin)) return;
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Если получили ответ от сети — сохраняем копию в кэш
         const resClone = response.clone();
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(event.request, resClone);
@@ -41,37 +74,13 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        // Если интернета нет — ищем в кэше
         return caches.match(event.request).then((cachedResponse) => {
           if (cachedResponse) return cachedResponse;
           
-          // Если это переход на страницу, которой нет в кэше — отдаем главную
           if (event.request.mode === 'navigate') {
             return caches.match('/GRO-UP/index.html');
           }
         });
       })
   );
-});
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getMessaging, onBackgroundMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging/sw.js";
-
-const firebaseConfig = {
-    // Твой конфиг Firebase (скопируй из app.js)
-};
-
-const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
-
-// Слушаем фоновые сообщения
-onBackgroundMessage(messaging, (payload) => {
-  console.log('Получено фоновое сообщение:', payload);
-
-  const notificationTitle = payload.notification.title;
-  const notificationOptions = {
-    body: payload.notification.body,
-    icon: '/GRO-UP/icon-192x192.png' // Путь к иконке
-  };
-
-  self.registration.showNotification(notificationTitle, notificationOptions);
 });
