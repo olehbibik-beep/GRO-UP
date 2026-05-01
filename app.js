@@ -3,7 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebas
 import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
-// 2. КОНФИГ И ИНИЦИАЛИЗАЦИЯ (Сначала создаем базу, потом всё остальное)
+// 2. КОНФИГ И ИНИЦИАЛИЗАЦИЯ
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
     authDomain: "gro-uping.firebaseapp.com",
@@ -17,78 +17,73 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const messaging = getMessaging(app);
 
-// 3. ВКЛЮЧАЕМ ХРАНЕНИЕ В ПАМЯТИ ТЕЛЕФОНА (ОФФЛАЙН)
-enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code == 'failed-precondition') {
-        console.warn("Много вкладок открыто, оффлайн режим только в одной.");
-    } else if (err.code == 'unimplemented') {
-        console.warn("Браузер не поддерживает оффлайн.");
-    }
-});
+enableIndexedDbPersistence(db).catch(() => {});
 
-// 4. ДОСТАЕМ ПОЛЬЗОВАТЕЛЯ ИЗ ПАМЯТИ
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
-// Умная настройка пушей (с подсказками для пользователя)
+// ==========================================
+// ГЛОБАЛЬНАЯ ФУНКЦИЯ ДЛЯ ВСПЛЫВАШЕК (TOASTS)
+// ==========================================
+window.showToast = (message, type = 'info') => {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    const bgColor = type === 'warning' ? 'bg-amber-500' : 'bg-indigo-600';
+    toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg text-xs font-bold text-center transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
+    toast.innerText = message;
+
+    container.appendChild(toast);
+
+    // Плавное появление
+    requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-10', 'opacity-0');
+    });
+
+    // Исчезновение ровно через 5 секунд
+    setTimeout(() => {
+        toast.classList.add('translate-y-10', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+};
+
+// ==========================================
+// ЛОГИКА PUSH-УВЕДОМЛЕНИЙ
+// ==========================================
 window.setupNotifications = async () => {
     try {
-        // 1. Проверяем, поддерживает ли вообще устройство пуши
         if (!('Notification' in window)) {
-            alert("❌ Уведомления не поддерживаются на этом устройстве.\n\nЕсли это iPhone или iPad: нажмите кнопку «Поделиться» (квадратик со стрелочкой) и выберите «На экран Домой».");
+            alert("❌ Уведомления не поддерживаются на этом устройстве.\n\nЕсли это iPhone или iPad: нажмите кнопку «Поделиться» и выберите «На экран Домой».");
             return;
         }
-
-        // 2. Если пользователь (или браузер) ранее заблокировал уведомления
         if (Notification.permission === 'denied') {
-            alert("🔒 Уведомления заблокированы браузером!\n\nЗайдите в настройки этого браузера (или нажмите на значок замочка в адресной строке) и разрешите уведомления для этого сайта.");
+            alert("🔒 Уведомления заблокированы браузером!\n\nРазрешите их в настройках браузера.");
             return;
         }
 
-        // 3. Если всё ок - запрашиваем права
         const permission = await Notification.requestPermission();
-        
         if (permission === 'granted') {
             const registration = await navigator.serviceWorker.ready;
-            
             const token = await getToken(messaging, { 
                 vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk',
                 serviceWorkerRegistration: registration 
             });
 
             if (token) {
-                // Тихо сохраняем в базу
-                await updateDoc(doc(db, "users", userId), {
-                    pushToken: token
-                });
-                
-                // Радуем пользователя и прячем колокольчик
+                await updateDoc(doc(db, "users", userId), { pushToken: token });
                 alert("✅ Уведомления успешно включены!");
                 const pushBtn = document.getElementById('push-btn');
                 if (pushBtn) pushBtn.style.display = 'none';
             }
-        } else {
-            alert("Вы отклонили запрос на уведомления.");
         }
-    } catch (error) {
-        console.error('Ошибка при настройке уведомлений:', error);
-        alert("ОШИБКА: " + error.message);
-    }
+    } catch (error) { console.error(error); }
 };
 
-// Запускаем запрос пушей, только если они еще не настроены
-if (userId && 'Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-    // Больше не вызываем автоматически, ждем клика по кнопке
-}
-
 onMessage(messaging, (payload) => {
-    // Просто ловим его в консоль, чтобы приложение не выкидывало ошибку
-    console.log('Пришло уведомление в открытом приложении:', payload.data);
+    console.log('Пришло уведомление:', payload.data);
 });
 
-// ==========================================
-// 6. ОСТАЛЬНАЯ ЛОГИКА ПРИЛОЖЕНИЯ
-// ==========================================
 
 const TOP_ROLES = ["Владелец", "Админ"]; 
 const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
@@ -117,7 +112,6 @@ window.switchTab = (tabId, btnElement) => {
 window.submitReport = async () => {
     const fs = document.getElementById('report-fieldset');
     const btn = document.getElementById('submit-report-btn');
-
     if (!fs || !btn) return;
 
     if (fs.disabled) {
@@ -133,8 +127,7 @@ window.submitReport = async () => {
 
         if (!participated && hours === "") return alert("Отметьте галочку 'Служил(а)' или введите часы!");
         
-        btn.innerText = "Сохранение..."; 
-        btn.disabled = true;
+        btn.innerText = "Сохранение..."; btn.disabled = true;
 
         try {
             await setDoc(doc(db, "reports", `${userId}_${strictMonthId}`), {
@@ -159,10 +152,7 @@ window.submitReport = async () => {
 };
 
 onSnapshot(doc(db, "users", userId), async (docSnap) => {
-    if (!docSnap.exists()) {
-        if (navigator.onLine) window.logout(); 
-        return; 
-    }
+    if (!docSnap.exists()) { if (navigator.onLine) window.logout(); return; }
     currentUserData = docSnap.data();
 
     const pendingScreen = document.getElementById('pending-screen');
@@ -179,21 +169,14 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         
         let userRoles = currentUserData.roles || [];
         
-// ==========================================
-        // УМНОЕ УПРАВЛЕНИЕ КОЛОКОЛЬЧИКОМ (ЖЕСТКОЕ)
-        // ==========================================
+        // Управление Колокольчиком
         const pushBtn = document.getElementById('push-btn');
         if (pushBtn) {
-            // Проверяем: есть ли токен именно у этого пользователя в базе?
-            if (!currentUserData.pushToken) {
-                // Токена нет? Показываем колокольчик!
-                pushBtn.style.display = 'flex';
-            } else {
-                // Токен есть? Прячем!
-                pushBtn.style.display = 'none';
-            }
+            if (!currentUserData.pushToken) pushBtn.style.display = 'flex';
+            else pushBtn.style.display = 'none';
         }
 
+        // Управление меню профиля
         const profileAdminLinks = document.getElementById('profile-admin-links');
         const profileAdminBtn = document.getElementById('profile-admin-btn');
         const profileReportsBtn = document.getElementById('profile-reports-btn');
@@ -239,6 +222,16 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
             else { profileAdminLinks.classList.add('hidden'); profileAdminLinks.classList.remove('flex'); }
         }
 
+        // БОНУС: Показываем форму добавления новостей на главной, если есть права
+        const addNewsBox = document.getElementById('add-news-box');
+        if (addNewsBox) {
+            if (userRoles.includes('Админ') || userRoles.includes('Владелец') || userRoles.includes('Старейшина')) {
+                addNewsBox.classList.remove('hidden');
+            } else {
+                addNewsBox.classList.add('hidden');
+            }
+        }
+
         try { loadPersonalData(); } catch(e) { console.error("Error:", e); }
         try { loadProfileData(); } catch(e) { console.error("Error:", e); }
     }
@@ -262,7 +255,6 @@ async function loadProfileData() {
             else if(r === "Админ" || r === "Владелец") colorClass = "bg-rose-100 text-rose-700 border border-rose-200";
             
             if(["Ответственный за участки", "Ответственный за школу", "Участник школы", "Надзиратель группы"].includes(r)) return '';
-            
             return `<span class="inline-block px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest ${colorClass}">${r}</span>`;
         }).join('');
     }
@@ -283,10 +275,8 @@ async function loadProfileData() {
             const q = query(collection(db, "users"), where("group", "==", myGroup), where("roles", "array-contains", "Надзиратель группы"));
             const snap = await getDocs(q);
             pOverseer.innerText = snap.empty ? "Не назначен" : snap.docs[0].data().name;
-        } else if (pOverseer) { 
-            pOverseer.innerText = "-"; 
-        }
-    } catch(e) { if(pOverseer) pOverseer.innerText = "Ошибка БД"; }
+        } else if (pOverseer) { pOverseer.innerText = "-"; }
+    } catch(e) {}
 }
 
 function loadPersonalData() {
@@ -305,31 +295,47 @@ function loadPersonalData() {
         }
     });
 
-    // 1. Дежурства
+    // 1. Дежурства (Выводим на главной)
     try {
         const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
         onSnapshot(dutiesQuery, (snapshot) => {
-            const card = document.getElementById('upcoming-duty-card');
-            if (!card) return;
+            const container = document.getElementById('dashboard-duties');
+            if (!container) return;
             
-            let foundDuty = null;
-            const today = new Date(); today.setHours(0,0,0,0);
+            let html = '';
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            let myDutyFound = false;
 
             snapshot.forEach(docSnap => {
-                const duty = docSnap.data();
-                const dDate = new Date(duty.rawDate);
-                const isPast = (today.getTime() - dDate.getTime()) > (7 * 24 * 60 * 60 * 1000); 
-                const isMyGroup = duty.group === "Все" || duty.group === currentUserData.group;
+                const d = docSnap.data();
+                const dDate = new Date(d.rawDate);
+                
+                // Проверяем, относится ли дежурство к текущей неделе (+- 6 дней от сегодня)
+                const diffDays = Math.ceil((dDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                
+                if (diffDays >= -6 && diffDays <= 6) {
+                    const isMyGroup = d.group === currentUserData.group;
+                    if (isMyGroup) myDutyFound = true;
 
-                if (!isPast && isMyGroup && !foundDuty) foundDuty = duty;
+                    const badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
+                    const bgClass = isMyGroup ? 'bg-amber-50/50' : 'bg-white';
+
+                    html += `
+                        <div class="flex items-center justify-between p-3 border-b border-slate-50 ${bgClass}">
+                            <span class="text-sm font-bold text-slate-700">${d.type}</span>
+                            <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${badgeClass}">Гр. ${d.group}</span>
+                        </div>
+                    `;
+                }
             });
 
-            if (!foundDuty) { 
-                card.classList.add('hidden'); card.classList.remove('flex'); 
-            } else {
-                const titleEl = document.getElementById('duty-title'); if(titleEl) titleEl.innerText = foundDuty.type;
-                const dateEl = document.getElementById('duty-date'); if(dateEl) dateEl.innerText = foundDuty.dateRange;
-                card.classList.remove('hidden'); card.classList.add('flex');
+            container.innerHTML = html || '<p class="text-xs text-slate-400 italic p-4 text-center">На этой неделе дежурств нет</p>';
+
+            // Всплывашка: Если моя группа дежурит, и мы её еще не показывали
+            if (myDutyFound && !sessionStorage.getItem('duty_toast_shown')) {
+                showToast('🧹 Напоминание: Ваша группа дежурит на этой неделе!', 'warning');
+                sessionStorage.setItem('duty_toast_shown', 'true');
             }
         });
     } catch(e) {}
@@ -419,21 +425,42 @@ function loadPersonalData() {
         });
     } catch(e){}
 
-    // 4. Новости
+    // 4. Новости (Автоматическое удаление через 7 дней + Toasts)
     try {
-        onSnapshot(collection(db, "section_content"), (snapshot) => {
+        const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
+        onSnapshot(newsQuery, (snapshot) => {
             let newsHTML = '';
+            const now = new Date().getTime();
+            const oneWeek = 7 * 24 * 60 * 60 * 1000;
+            const oneDay = 24 * 60 * 60 * 1000;
+
+            const isNewsAdmin = currentUserData.roles && (currentUserData.roles.includes('Админ') || currentUserData.roles.includes('Владелец') || currentUserData.roles.includes('Старейшина'));
+
             snapshot.forEach(docSnap => {
                 const item = docSnap.data();
                 if(item.section === 'news') {
-                    newsHTML += `
-                    <div class="p-3 mb-2 bg-slate-50 border border-slate-100 rounded-xl hover:bg-slate-100 transition-colors">
-                        <p class="text-slate-700 whitespace-pre-wrap text-[11px] md:text-xs leading-relaxed">${item.text}</p>
-                    </div>`;
+                    const itemTime = new Date(item.createdAt).getTime();
+
+                    // ПОКАЗЫВАЕМ ТОЛЬКО ЕСЛИ НОВОСТИ МЕНЬШЕ 7 ДНЕЙ
+                    if (now - itemTime < oneWeek) {
+                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[10px] text-red-400 hover:text-red-600 mt-2 font-bold uppercase tracking-widest">Удалить</button>` : '';
+
+                        newsHTML += `
+                        <div class="p-3 mb-2 bg-slate-50 border border-slate-100 rounded-xl hover:bg-slate-100 transition-colors">
+                            <p class="text-slate-700 whitespace-pre-wrap text-[11px] md:text-xs leading-relaxed">${item.text}</p>
+                            ${deleteBtn}
+                        </div>`;
+
+                        // Всплывашка: Если новость свежая (меньше 24 часов) и еще не была показана в этой сессии
+                        if (now - itemTime < oneDay && !sessionStorage.getItem('news_toast_' + docSnap.id)) {
+                            showToast('📢 Новое объявление в ленте!', 'info');
+                            sessionStorage.setItem('news_toast_' + docSnap.id, 'true');
+                        }
+                    }
                 }
             });
             const contentNews = document.getElementById('content-news');
-            if(contentNews) contentNews.innerHTML = newsHTML || '<p class="text-slate-400 italic text-xs">Пока пусто</p>';
+            if(contentNews) contentNews.innerHTML = newsHTML || '<p class="text-slate-400 italic text-xs text-center p-2">Актуальных объявлений нет</p>';
         });
     } catch(e) {}
 
@@ -457,10 +484,7 @@ function loadPersonalData() {
                 const evDate = new Date(ev.date);
                 const evGroup = ev.group || "Все";
                 
-                if (evDate.getFullYear() === todayYear && 
-                    evDate.getMonth() === todayMonth && 
-                    evDate.getDate() === todayDate) {
-                    
+                if (evDate.getFullYear() === todayYear && evDate.getMonth() === todayMonth && evDate.getDate() === todayDate) {
                     count++; 
                     const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-100 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none">Гр. ${evGroup}</span>` : '';
                     
@@ -487,7 +511,7 @@ function loadPersonalData() {
 
             container.innerHTML = html || '<p class="p-6 text-sm text-slate-400 italic text-center">На сегодня встреч нет</p>';
         });
-    } catch(e) { console.error("Ошибка календаря:", e); }
+    } catch(e) {}
 }
 
 window.requestTerritory = async (btn) => {
@@ -506,14 +530,37 @@ window.openProfileModal = () => {
 window.closeModals = () => {
     const m = document.getElementById('profile-modal');
     if(m) m.classList.replace('flex', 'hidden');
-};window.logout = async () => {
+};
+window.logout = async () => {
     const uid = localStorage.getItem('userId');
     if (uid) {
-        try {
-            // Перед выходом стираем токен из базы, чтобы пуши больше сюда не шли!
-            await updateDoc(doc(db, "users", uid), { pushToken: "" });
-        } catch (e) { console.error("Не удалось удалить токен:", e); }
+        try { await updateDoc(doc(db, "users", uid), { pushToken: "" }); } catch (e) {}
     }
     localStorage.clear(); 
     window.location.href = 'login.html'; 
+};
+
+// ==========================================
+// СОЗДАНИЕ И УДАЛЕНИЕ НОВОСТЕЙ
+// ==========================================
+window.publishNews = async () => {
+    const input = document.getElementById('news-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+        await addDoc(collection(db, "section_content"), {
+            section: 'news',
+            text: text,
+            createdAt: new Date().toISOString()
+        });
+        input.value = '';
+    } catch (e) { alert("Ошибка публикации!"); }
+};
+
+window.deleteNews = async (id) => {
+    if (confirm("Удалить это объявление?")) {
+        try { await deleteDoc(doc(db, "section_content", id)); } 
+        catch (e) { alert("Ошибка удаления!"); }
+    }
 };
