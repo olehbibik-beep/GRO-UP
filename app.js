@@ -509,5 +509,14 @@ window.openProfileModal = () => {
 window.closeModals = () => {
     const m = document.getElementById('profile-modal');
     if(m) m.classList.replace('flex', 'hidden');
+};window.logout = async () => {
+    const uid = localStorage.getItem('userId');
+    if (uid) {
+        try {
+            // Перед выходом стираем токен из базы, чтобы пуши больше сюда не шли!
+            await updateDoc(doc(db, "users", uid), { pushToken: "" });
+        } catch (e) { console.error("Не удалось удалить токен:", e); }
+    }
+    localStorage.clear(); 
+    window.location.href = 'login.html'; 
 };
-window.logout = () => { localStorage.clear(); window.location.href = 'login.html'; };
