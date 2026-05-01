@@ -180,7 +180,7 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         
         let userRoles = currentUserData.roles || [];
         
-// ==========================================
+        // ==========================================
         // УПРАВЛЕНИЕ ВИДИМОСТЬЮ КНОПКИ УВЕДОМЛЕНИЙ
         // ==========================================
         const pushBtn = document.getElementById('push-btn');
@@ -189,7 +189,7 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
             if ('Notification' in window && Notification.permission === 'granted') {
                 pushBtn.style.display = 'none';
             } else {
-                pushBtn.style.display = ''; // Показываем, чтобы пользователь мог нажать и узнать причину
+                pushBtn.style.display = 'flex'; // ТЕПЕРЬ ОН ПОЯВИТСЯ ЖЕЛЕЗОБЕТОННО
             }
         }
 
