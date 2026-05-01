@@ -67,7 +67,7 @@ if (userId && 'Notification' in window && Notification.permission !== 'granted' 
 // Слушаем уведомления, когда приложение ОТКРЫТО
 onMessage(messaging, (payload) => {
     console.log('Пришло уведомление в активном режиме:', payload);
-    alert(`${payload.notification.title}\n\n${payload.notification.body}`);
+    // Убрали alert, теперь приложение просто молча принимает пуш в фоне
 });
 
 // ==========================================
