@@ -52,7 +52,7 @@ self.addEventListener('notificationclick', (event) => {
 // ==========================================
 // ЛОГИКА КЭШИРОВАНИЯ (ОФФЛАЙН РЕЖИМ)
 // ==========================================
-const CACHE_NAME = 'gro-up-v15'; // ⚠️ ОБЯЗАТЕЛЬНО НОВАЯ ВЕРСИЯ
+const CACHE_NAME = 'gro-up-v16'; // ⚠️ ОБЯЗАТЕЛЬНО НОВАЯ ВЕРСИЯ
 
 const INITIAL_CACHED_RESOURCES = [
   '/GRO-UP/',
@@ -80,25 +80,25 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-self.addEventListener('fetch', (event) => {
-  if (!event.request.url.startsWith(self.location.origin)) return;
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close(); // Закрываем уведомление
 
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const resClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, resClone);
-        });
-        return response;
-      })
-      .catch(() => {
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
-          if (event.request.mode === 'navigate') {
-            return caches.match('/GRO-UP/index.html');
-          }
-        });
-      })
+  // ВНИМАНИЕ: Проверь этот путь! Если твой сайт лежит в папке GRO-UP, оставь так.
+  const urlToOpen = new URL('/GRO-UP/index.html', self.location.origin).href;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // 1. Если приложение уже открыто — просто переключаемся на него
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // 2. Если приложение закрыто — открываем новое окно
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
   );
 });
