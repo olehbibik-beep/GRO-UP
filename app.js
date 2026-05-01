@@ -82,7 +82,8 @@ if (userId && 'Notification' in window && Notification.permission !== 'granted' 
 }
 
 onMessage(messaging, (payload) => {
-    console.log('Пришло уведомление в активном режиме:', payload);
+    // Просто ловим его в консоль, чтобы приложение не выкидывало ошибку
+    console.log('Пришло уведомление в открытом приложении:', payload.data);
 });
 
 // ==========================================
