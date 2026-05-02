@@ -149,20 +149,54 @@ onSnapshot(collection(db, "users"), (snapshot) => {
 
         if (u.status === 'pending') {
             pendingCount++;
-            pendingHTML += `
-                <div class="flex items-center justify-between p-3 bg-white hover:bg-slate-50 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <span class="text-3xl">${icon}</span>
-                        <div>
-                            <p class="font-black text-slate-800">${u.name}</p>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">ПИН: <span class="text-slate-700">${u.pin || 'НЕТ'}</span></p>
+            activeHTML += `
+                <tr class="transition-colors border-b border-slate-100 group user-row ${rowClass}" data-name="${u.name.toLowerCase()}">
+                    
+                    <td class="py-1.5 px-3">
+                        <p class="font-black ${nameColor} text-[11px] mb-0.5 truncate">${u.name}</p>
+                        <select onchange="updateField('${id}', 'gender', this.value)" class="text-[8px] uppercase font-bold p-0.5 rounded border border-slate-200 bg-white outline-none text-slate-600 cursor-pointer" ${isBlocked ? 'disabled' : ''}>
+                            <option value="boy" ${u.gender === 'boy' ? 'selected' : ''}>👨‍💼 Брат</option>
+                            <option value="girl" ${u.gender === 'girl' ? 'selected' : ''}>👩‍💼 Сестра</option>
+                        </select>
+                    </td>
+
+                    <td class="py-1.5 px-2 text-center">
+                        <input type="text" maxlength="6" onchange="updatePin('${id}', this.value, this)" value="${u.pin || ''}" placeholder="000000" class="w-[50px] p-1 text-center border border-slate-200 rounded text-[10px] outline-none bg-white font-mono font-black shadow-sm mx-auto" ${isBlocked ? 'disabled' : ''}>
+                    </td>
+                    
+                    <td class="py-1.5 px-2 text-center">
+                        <input type="number" onchange="updateField('${id}', 'group', this.value)" value="${u.group && u.group !== 'Без группы' ? u.group : ''}" placeholder="№" class="w-10 p-1 text-center border border-slate-200 rounded text-[11px] outline-none bg-white font-black shadow-sm mx-auto" ${isBlocked ? 'disabled' : ''}>
+                    </td>
+                    
+                    <td class="py-1.5 px-2 text-center">
+                        <input type="checkbox" onchange="toggleRole('${id}', 'Участник школы', this.checked)" class="w-3 h-3 accent-sky-500 cursor-pointer" ${r.includes('Участник школы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}>
+                    </td>
+                    
+                    <td class="py-1.5 px-3">
+                        <div class="flex flex-wrap gap-1 w-60">
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-slate-600 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-slate-100"><input type="checkbox" onchange="toggleRole('${id}', 'Возвещатель', this.checked)" class="accent-slate-500 w-3 h-3 cursor-pointer" ${r.includes('Возвещатель') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Возвещатель</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-emerald-600 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-emerald-50"><input type="checkbox" onchange="toggleRole('${id}', 'Пионер', this.checked)" class="accent-emerald-500 w-3 h-3 cursor-pointer" ${r.includes('Пионер') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Пионер</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-sky-600 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-sky-50"><input type="checkbox" onchange="toggleRole('${id}', 'Помощник собрания', this.checked)" class="accent-sky-500 w-3 h-3 cursor-pointer" ${r.includes('Помощник собрания') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Помощник собр.</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-amber-600 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-amber-50"><input type="checkbox" onchange="toggleRole('${id}', 'Старейшина', this.checked)" class="accent-amber-500 w-3 h-3 cursor-pointer" ${r.includes('Старейшина') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Старейшина</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-rose-600 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-rose-50"><input type="checkbox" onchange="toggleRole('${id}', 'Админ', this.checked)" class="accent-rose-500 w-3 h-3 cursor-pointer" ${r.includes('Админ') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Админ</label>
                         </div>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="approveUser('${id}')" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-500 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm">Одобрить</button>
-                        <button onclick="rejectUser('${id}')" class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm">Отклонить</button>
-                    </div>
-                </div>
+                    </td>
+                    
+                    <td class="py-1.5 px-3">
+                        <div class="flex flex-wrap gap-1 w-48">
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-purple-700 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-purple-50"><input type="checkbox" onchange="toggleRole('${id}', 'Надзиратель группы', this.checked)" class="accent-purple-500 w-3 h-3 cursor-pointer" ${r.includes('Надзиратель группы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Группа</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-teal-700 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-teal-50"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за участки', this.checked)" class="accent-teal-500 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за участки') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Участки</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-indigo-700 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-indigo-50"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за школу', this.checked)" class="accent-indigo-500 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за школу') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Школа</label>
+                        </div>
+                    </td>
+                    
+                    <td class="py-1.5 px-3 align-middle">
+                        <div class="flex justify-end gap-1.5">
+                            ${lockBtn.replace('p-2', 'p-1 text-xs')}
+                            ${deleteBtn.replace('p-2', 'p-1 text-xs')}
+                        </div>
+                    </td>
+                </tr>
             `;
         } else if (u.status === 'active' || u.status === 'blocked') {
             activeCount++;
