@@ -12,7 +12,7 @@
                     colors: { 
                         ui: { 
                             bg: '#f8fafc', 
-                            adminNav: '#70227E' // Глубокий Индиго (Для Админ-зоны)
+                            adminNav: '#70227E' 
                         } 
                     } 
                 } 
@@ -27,9 +27,9 @@
 </head>
 <body class="bg-ui-bg text-slate-800 min-h-screen font-sans">
 
-   <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0">
+    <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0">
         <a href="index.html" title="На главную" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125.504 1.125 1.125V9.75M8.25 21h8.25" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
         </a>
     </nav>
 
@@ -66,7 +66,7 @@
                             </div>
                             <div class="w-full">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Время</label>
-                                <input type="time" id="event-time" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 transition-all font-bold text-slate-700 cursor-pointer">
+                                <input type="text" id="event-time" placeholder="18:30" maxlength="5" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 transition-all font-bold text-slate-700">
                             </div>
                         </div>
 
@@ -76,10 +76,10 @@
                         </div>
 
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Ведущие (Очередность)</label>
-                            <div id="users-checklist" class="max-h-36 overflow-y-auto bg-slate-50 border border-slate-200 rounded-xl p-2 space-y-1">
-                                <p class="text-xs text-slate-400 italic p-2">Загрузка списка...</p>
-                            </div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Ведущий (Только братья)</label>
+                            <select id="event-leader" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 transition-all font-bold text-slate-700 cursor-pointer">
+                                <option value="" selected>Без ведущего</option>
+                            </select>
                         </div>
 
                         <div class="bg-rose-50 p-4 rounded-xl border border-rose-100 mt-2">
@@ -119,6 +119,6 @@
         </div>
     </main>
 
-    <script type="module" src="calendar.js?v=40"></script> 
+    <script type="module" src="calendar.js?v=41"></script> 
 </body>
 </html>
