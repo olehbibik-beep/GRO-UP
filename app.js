@@ -497,7 +497,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // 5. КАЛЕНДАРЬ
+   // 5. КАЛЕНДАРЬ
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -505,10 +505,10 @@ function loadPersonalData() {
             if (!container) return; 
             let html = '';
             
-            const today = new Date();
-            const todayYear = today.getFullYear();
-            const todayMonth = today.getMonth();
-            const todayDate = today.getDate();
+            const now = new Date();
+            const todayYear = now.getFullYear();
+            const todayMonth = now.getMonth();
+            const todayDate = now.getDate();
             
             let count = 0; 
 
@@ -517,35 +517,58 @@ function loadPersonalData() {
                 const evDate = new Date(ev.date);
                 const evGroup = ev.group || "Все";
                 
+                // Проверяем, наступило ли событие СЕГОДНЯ
                 if (evDate.getFullYear() === todayYear && evDate.getMonth() === todayMonth && evDate.getDate() === todayDate) {
                     count++; 
+                    
+                    // --- УМНАЯ ЛОГИКА ВРЕМЕНИ ---
+                    let isPastEvent = false;
+                    if (ev.time && ev.time.includes(':')) {
+                        const [hours, minutes] = ev.time.split(':');
+                        const eventExactTime = new Date();
+                        eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+                        
+                        // Если событие закончилось (прошло 1.5 часа с его начала)
+                        if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) {
+                            isPastEvent = true;
+                        }
+                    }
+
                     const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-100 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none">Гр. ${evGroup}</span>` : '';
                     
+                    // Делаем прошедшее событие блеклым
+                    const opacityClass = isPastEvent ? "opacity-50 grayscale bg-slate-50" : "bg-white";
+                    
                     html += `
-                        <div class="flex items-center px-4 md:px-5 py-3 md:py-4 hover:bg-slate-50 transition-colors w-full cursor-default ${count > 1 ? 'border-t border-slate-100' : ''}">
+                        <div class="flex items-center px-4 md:px-5 py-3 md:py-4 transition-colors w-full cursor-default ${opacityClass} ${count > 1 ? 'border-t border-slate-100' : ''}">
                             <div class="flex items-center gap-4 w-full">
                                 <div class="flex flex-col items-center justify-center w-12 shrink-0">
-                                    <span class="text-[9px] uppercase text-rose-500 font-bold leading-none mb-1 tracking-widest">СЕГОДНЯ</span>
-                                    <span class="text-xl font-black leading-none text-slate-800">${evDate.getDate()}</span>
+                                    <span class="text-[9px] uppercase ${isPastEvent ? 'text-slate-400' : 'text-rose-500'} font-bold leading-none mb-1 tracking-widest">СЕГОДНЯ</span>
+                                    <span class="text-xl font-black leading-none ${isPastEvent ? 'text-slate-400' : 'text-slate-800'}">${evDate.getDate()}</span>
                                 </div>
                                 <div class="flex flex-col flex-grow truncate">
                                     <div class="flex items-center gap-2 truncate">
                                         ${ev.time ? `<span class="text-sm font-bold text-slate-500 shrink-0">${ev.time}</span>` : ''}
-                                        <span class="font-bold text-sm md:text-base text-slate-800 truncate">${ev.title}</span>
+                                        <span class="font-bold text-sm md:text-base ${isPastEvent ? 'text-slate-500' : 'text-slate-800'} truncate">${ev.title}</span>
                                         ${groupBadge}
                                     </div>
-                                    ${ev.leader ? `<div class="text-[10px] uppercase mt-1 tracking-wider truncate text-slate-400 font-medium">Вед: <span class="text-rose-600 font-bold">${ev.leader}</span></div>` : ''}
+                                    ${ev.leader ? `<div class="text-[10px] uppercase mt-1 tracking-wider truncate text-slate-400 font-medium">Вед: <span class="${isPastEvent ? 'text-slate-500' : 'text-rose-600'} font-bold">${ev.leader}</span></div>` : ''}
                                 </div>
                             </div>
                         </div>
                     `;
+
+                    // 🔥 УВЕДОМЛЕНИЕ (ТОСТ) ВЫСКОЧИТ ТОЛЬКО ЕСЛИ СОБЫТИЕ ЕЩЕ НЕ ПРОШЛО
+                    if (!isPastEvent && !sessionStorage.getItem('event_toast_' + docSnap.id)) {
+                        showToast(`📅 Сегодня: ${ev.title} ${ev.time ? 'в ' + ev.time : ''}`, 'info');
+                        sessionStorage.setItem('event_toast_' + docSnap.id, 'true');
+                    }
                 }
             });
 
             container.innerHTML = html || '<p class="p-6 text-sm text-slate-400 italic text-center">На сегодня встреч нет</p>';
         });
     } catch(e) {}
-}
 
 window.requestTerritory = async (btn) => {
     btn.innerText = "..."; btn.disabled = true;
