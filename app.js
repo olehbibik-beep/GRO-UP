@@ -423,6 +423,7 @@ function loadPersonalData() {
         });
     } catch(e){}
 
+   // 4. Новости с ФОТОГРАФИЯМИ (ГОРИЗОНТАЛЬНАЯ КАРУСЕЛЬ)
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
@@ -433,23 +434,47 @@ function loadPersonalData() {
 
             const isNewsAdmin = currentUserData.roles && (currentUserData.roles.includes('Админ') || currentUserData.roles.includes('Владелец') || currentUserData.roles.includes('Старейшина'));
 
+            // Показываем кнопку "Создать", если есть права
+            const showAddBtn = document.getElementById('show-add-news-btn');
+            if (showAddBtn) {
+                if (isNewsAdmin) showAddBtn.classList.remove('hidden');
+                else showAddBtn.classList.add('hidden');
+            }
+
             snapshot.forEach(docSnap => {
                 const item = docSnap.data();
                 if(item.section === 'news') {
                     const itemTime = new Date(item.createdAt).getTime();
+                    const isNew = (now - itemTime) < oneDay; // Если новости меньше 24 часов
 
                     if (now - itemTime < oneWeek) {
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[10px] text-red-400 hover:text-red-600 mt-3 font-bold uppercase tracking-widest bg-red-50 px-2 py-1 rounded w-full border border-red-100">Удалить объявление</button>` : '';
-                        const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="mt-3 rounded-lg max-h-56 w-full object-cover shadow-sm cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
+                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 px-2 py-1.5 rounded-lg w-full border border-red-100 transition-colors">Удалить объявление</button>` : '';
+
+                        const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="mt-3 rounded-xl max-h-40 w-full object-cover shadow-sm cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
+
+                        // Классы для эффекта JW Library:
+                        // min-w-[85%] - карточка занимает 85% ширины экрана, чтобы было видно краешек следующей
+                        // snap-center - при свайпе карточка сама центрируется
+                        // Если новость свежая (isNew) - делаем фон белым, если старая - чуть бледнее
+                        const bgCardClass = isNew ? "bg-white shadow-md border-transparent" : "bg-slate-50 border-slate-200 shadow-sm opacity-90";
+                        
+                        // Бейджик "НОВОЕ"
+                        const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md mb-2 inline-block">Новое</span>` : '';
 
                         newsHTML += `
-                        <div class="p-4 mb-3 bg-white shadow-sm rounded-2xl transition-colors">
-                            <p class="text-slate-700 whitespace-pre-wrap text-sm leading-relaxed">${item.text}</p>
-                            ${imgHtml}
-                            ${deleteBtn}
+                        <div class="min-w-[85%] md:min-w-[300px] shrink-0 snap-center p-5 border rounded-3xl transition-all ${bgCardClass} flex flex-col justify-between">
+                            <div>
+                                ${newBadge}
+                                <p class="text-slate-700 whitespace-pre-wrap text-sm md:text-base leading-relaxed font-medium">${item.text}</p>
+                                ${imgHtml}
+                            </div>
+                            <div>
+                                ${deleteBtn}
+                            </div>
                         </div>`;
 
-                        if (now - itemTime < oneDay && !sessionStorage.getItem('news_toast_' + docSnap.id)) {
+                        // Всплывашка для совсем свежих новостей
+                        if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) {
                             showToast('📢 Новое объявление в ленте!', 'info');
                             sessionStorage.setItem('news_toast_' + docSnap.id, 'true');
                         }
@@ -457,7 +482,13 @@ function loadPersonalData() {
                 }
             });
             const contentNews = document.getElementById('content-news');
-            if(contentNews) contentNews.innerHTML = newsHTML || '<p class="text-slate-400 italic text-xs text-center p-2">Актуальных объявлений нет</p>';
+            if(contentNews) {
+                // Если новостей нет, показываем красивую заглушку той же формы
+                contentNews.innerHTML = newsHTML || `
+                <div class="min-w-full shrink-0 snap-center p-6 bg-slate-50 border border-slate-200 rounded-3xl flex items-center justify-center">
+                    <p class="text-slate-400 italic text-sm text-center">Актуальных объявлений нет</p>
+                </div>`;
+            }
         });
     } catch(e) {}
 
