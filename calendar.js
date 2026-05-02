@@ -12,22 +12,28 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const userId = localStorage.getItem('userId');
+const currentUserId = localStorage.getItem('userId');
 
-if (!userId) window.location.href = 'login.html';
+if (!currentUserId) window.location.href = 'login.html';
 
-let myGroup = "Все"; // По умолчанию
-let allEventsData = []; // Кэш событий для быстрой фильтрации
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ДЛЯ ПРАВ ДОСТУПА
+let myGroup = "Все"; 
+let isFullAdmin = false;
+let allEventsData = []; 
 
 // ==========================================
 // 1. ПРОВЕРКА ПРАВ И ЗАЩИТА СТРАНИЦЫ
 // ==========================================
-const uid = typeof currentUserId !== 'undefined' ? currentUserId : userId;
-getDoc(doc(db, "users", uid)).then(docSnap => {
+getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     
-    const roles = docSnap.data().roles || [];
-    const isFullAdmin = roles.includes("Владелец") || roles.includes("Админ");
+    const userData = docSnap.data();
+    const roles = userData.roles || [];
+    
+    // Сохраняем группу и статус админа ГЛОБАЛЬНО, чтобы использовать при отрисовке корзины
+    myGroup = userData.group || "Все"; 
+    isFullAdmin = roles.includes("Владелец") || roles.includes("Админ");
+    
     const isSchool = isFullAdmin || roles.includes("Ответственный за школу");
     const isTerr = isFullAdmin || roles.includes("Ответственный за участки");
     const isOverseer = isFullAdmin || roles.includes("Надзиратель группы");
@@ -38,6 +44,9 @@ getDoc(doc(db, "users", uid)).then(docSnap => {
     if (path.includes('school.html') && !isSchool) window.location.href = 'index.html';
     if (path.includes('territories.html') && !isTerr) window.location.href = 'index.html';
     if ((path.includes('calendar.html') || path.includes('duties.html')) && !isOverseer) window.location.href = 'index.html';
+
+    // Принудительно перерисовываем список, так как теперь мы точно знаем права пользователя
+    renderEvents();
 });
 
 // ==========================================
@@ -48,7 +57,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     if (!checklist) return;
     let html = '';
     
-    // Сортируем пользователей по алфавиту для удобства
     let usersArr = [];
     snapshot.forEach(d => { if(d.data().status === 'active') usersArr.push(d.data().name); });
     usersArr.sort();
@@ -76,7 +84,6 @@ document.getElementById('save-event-btn').addEventListener('click', async (e) =>
     const isRecurring = document.getElementById('event-recurring').checked;
     const weeksCount = isRecurring ? parseInt(document.getElementById('event-weeks').value) : 1;
 
-    // Собираем отмеченных ведущих из базы
     const selectedCBs = document.querySelectorAll('.leader-cb:checked');
     const leaders = Array.from(selectedCBs).map(cb => cb.value);
 
@@ -97,7 +104,6 @@ document.getElementById('save-event-btn').addEventListener('click', async (e) =>
             const dd = String(evDate.getDate()).padStart(2, '0');
             const newDateStr = `${yyyy}-${mm}-${dd}`;
 
-            // Очередность ведущих
             let assignedLeader = "";
             if (leaders.length > 0) {
                 assignedLeader = leaders[i % leaders.length];
@@ -114,7 +120,6 @@ document.getElementById('save-event-btn').addEventListener('click', async (e) =>
         }
 
         document.getElementById('event-title').value = '';
-        // Снимаем все галочки после успеха
         document.querySelectorAll('.leader-cb').forEach(cb => cb.checked = false);
         
         btn.classList.replace('bg-slate-800', 'bg-emerald-500');
@@ -128,14 +133,15 @@ document.getElementById('save-event-btn').addEventListener('click', async (e) =>
 });
 
 // ==========================================
-// 4. ОТРИСОВКА КАЛЕНДАРЯ (С фильтром)
+// 4. ОТРИСОВКА КАЛЕНДАРЯ (С правильной корзиной)
 // ==========================================
-const renderEvents = () => {
+window.renderEvents = () => {
     const list = document.getElementById('events-list');
-    const showAll = document.getElementById('show-all-events-cb').checked;
+    const showAllCb = document.getElementById('show-all-events-cb');
+    const showAll = showAllCb ? showAllCb.checked : false;
     
     if (allEventsData.length === 0) {
-        list.innerHTML = '<p class="text-slate-400 italic p-6 text-center text-sm">Событий пока нет.</p>';
+        if(list) list.innerHTML = '<p class="text-slate-400 italic p-6 text-center text-sm">Событий пока нет.</p>';
         return;
     }
 
@@ -148,16 +154,13 @@ const renderEvents = () => {
         const evDate = new Date(ev.date);
         const evGroup = ev.group || "Все";
 
-        // ЛОГИКА ФИЛЬТРА:
-        // Если событие общее или моей группы -> показываем всегда
-        // Если событие чужой группы -> показываем ТОЛЬКО если стоит галочка showAll
+        // Проверяем, относится ли событие к моей группе
         const isMyGroupOrAll = (evGroup === "Все" || evGroup == myGroup);
         
         if (isMyGroupOrAll || showAll) {
             eventCount++;
             
             const isPast = evDate < today;
-            // Если событие чужое, делаем его блеклым. Если прошедшее - тоже.
             const isOtherGroup = !isMyGroupOrAll;
             const opacityClass = (isPast || isOtherGroup) ? "opacity-50 grayscale hover:opacity-100 hover:grayscale-0" : "";
             const bgClass = isOtherGroup ? "bg-slate-50" : "bg-white hover:bg-slate-50";
@@ -171,10 +174,12 @@ const renderEvents = () => {
             const timeHtml = ev.time ? `<span class="text-xs font-mono font-black text-slate-400 mr-3 shrink-0">${ev.time}</span>` : '';
             const leaderHtml = ev.leader ? `<div class="text-[9px] uppercase font-bold text-slate-400 mt-1 truncate">Ведущий: <span class="text-rose-500 font-black">${ev.leader}</span></div>` : '';
 
-            // Кнопка удаления (Маленькая корзина вместо громоздкого текста)
-            // Чужие события удалять нельзя!
-            const deleteBtn = isMyGroupOrAll 
-                ? `<button onclick="deleteEvent('${docSnap.id}')" class="text-slate-300 hover:text-red-500 transition-colors p-2 text-lg outline-none">🗑️</button>` 
+            // КЛЮЧЕВАЯ ПРАВКА ЗДЕСЬ:
+            // Если ты Админ - удаляешь всё. Если ты Надзиратель - удаляешь только своё и общее.
+            const canDelete = isFullAdmin || isMyGroupOrAll;
+
+            const deleteBtn = canDelete 
+                ? `<button onclick="deleteEvent('${docSnap.id}')" class="text-slate-300 hover:text-red-500 transition-colors p-2 text-lg outline-none" title="Удалить">🗑️</button>` 
                 : `<span class="text-[10px] text-slate-400 font-bold uppercase p-2">Чужое</span>`;
 
             html += `
@@ -198,7 +203,7 @@ const renderEvents = () => {
         }
     });
 
-    list.innerHTML = html || '<p class="text-slate-400 italic p-6 text-center text-sm">Событий для вашей группы не найдено.</p>';
+    if(list) list.innerHTML = html || '<p class="text-slate-400 italic p-6 text-center text-sm">Событий для вашей группы не найдено.</p>';
 };
 
 // Слушаем базу и перерисовываем
@@ -209,7 +214,8 @@ onSnapshot(q, (snapshot) => {
 });
 
 // Слушаем клик по галочке "Показать другие группы"
-document.getElementById('show-all-events-cb').addEventListener('change', renderEvents);
+const showAllCb = document.getElementById('show-all-events-cb');
+if(showAllCb) showAllCb.addEventListener('change', renderEvents);
 
 // ==========================================
 // 5. УДАЛЕНИЕ СОБЫТИЯ
