@@ -497,7 +497,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-   // 5. КАЛЕНДАРЬ
+// 5. КАЛЕНДАРЬ
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -521,16 +521,32 @@ function loadPersonalData() {
                 if (evDate.getFullYear() === todayYear && evDate.getMonth() === todayMonth && evDate.getDate() === todayDate) {
                     count++; 
                     
-                    // --- УМНАЯ ЛОГИКА ВРЕМЕНИ ---
+                    // --- СУПЕР-УМНАЯ ЛОГИКА ВРЕМЕНИ (Понимает 1550 и 15:50) ---
                     let isPastEvent = false;
-                    if (ev.time && ev.time.includes(':')) {
-                        const [hours, minutes] = ev.time.split(':');
-                        const eventExactTime = new Date();
-                        eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+                    let displayTime = ev.time || "";
+                    
+                    if (displayTime) {
+                        let hours = 0, minutes = 0;
                         
-                        // Если событие закончилось (прошло 1.5 часа с его начала)
-                        if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) {
-                            isPastEvent = true;
+                        // Если нет двоеточия, но есть 3-4 цифры (например 1550) - ставим его для красоты
+                        if (!displayTime.includes(':') && displayTime.length >= 3) {
+                            if (displayTime.length === 4) {
+                                displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
+                            } else if (displayTime.length === 3) {
+                                displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
+                            }
+                        }
+
+                        // Высчитываем точное время окончания
+                        if (displayTime.includes(':')) {
+                            [hours, minutes] = displayTime.split(':');
+                            const eventExactTime = new Date();
+                            eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+                            
+                            // Если прошло 1.5 часа с начала
+                            if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) {
+                                isPastEvent = true;
+                            }
                         }
                     }
 
@@ -548,7 +564,7 @@ function loadPersonalData() {
                                 </div>
                                 <div class="flex flex-col flex-grow truncate">
                                     <div class="flex items-center gap-2 truncate">
-                                        ${ev.time ? `<span class="text-sm font-bold text-slate-500 shrink-0">${ev.time}</span>` : ''}
+                                        ${displayTime ? `<span class="text-sm font-bold text-slate-500 shrink-0">${displayTime}</span>` : ''}
                                         <span class="font-bold text-sm md:text-base ${isPastEvent ? 'text-slate-500' : 'text-slate-800'} truncate">${ev.title}</span>
                                         ${groupBadge}
                                     </div>
@@ -558,9 +574,9 @@ function loadPersonalData() {
                         </div>
                     `;
 
-                    // 🔥 УВЕДОМЛЕНИЕ (ТОСТ) ВЫСКОЧИТ ТОЛЬКО ЕСЛИ СОБЫТИЕ ЕЩЕ НЕ ПРОШЛО
+                    // 🔥 ТОСТ ВЫСКОЧИТ ТОЛЬКО ЕСЛИ СОБЫТИЕ НЕ ПРОШЛО
                     if (!isPastEvent && !sessionStorage.getItem('event_toast_' + docSnap.id)) {
-                        showToast(`📅 Сегодня: ${ev.title} ${ev.time ? 'в ' + ev.time : ''}`, 'info');
+                        showToast(`📅 Сегодня: ${ev.title} ${displayTime ? 'в ' + displayTime : ''}`, 'info');
                         sessionStorage.setItem('event_toast_' + docSnap.id, 'true');
                     }
                 }
@@ -569,6 +585,7 @@ function loadPersonalData() {
             container.innerHTML = html || '<p class="p-6 text-sm text-slate-400 italic text-center">На сегодня встреч нет</p>';
         });
     } catch(e) {}
+}
 
 window.requestTerritory = async (btn) => {
     btn.innerText = "..."; btn.disabled = true;
