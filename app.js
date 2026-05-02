@@ -1,9 +1,9 @@
-// 1. ВСЕ ИМПОРТЫ СТРОГО НАВЕРХУ
+// 1. ИМПОРТЫ (ДОБАВЛЕН STORAGE)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
-// 2. КОНФИГ И ИНИЦИАЛИЗАЦИЯ
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
     authDomain: "gro-uping.firebaseapp.com",
@@ -15,6 +15,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app); // Инициализация хранилища картинок
 const messaging = getMessaging(app);
 
 enableIndexedDbPersistence(db).catch(() => {});
@@ -23,7 +24,7 @@ const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
 // ==========================================
-// ГЛОБАЛЬНАЯ ФУНКЦИЯ ДЛЯ ВСПЛЫВАШЕК (TOASTS)
+// TOASTS & NOTIFICATIONS
 // ==========================================
 window.showToast = (message, type = 'info') => {
     const container = document.getElementById('toast-container');
@@ -33,32 +34,19 @@ window.showToast = (message, type = 'info') => {
     const bgColor = type === 'warning' ? 'bg-amber-500' : 'bg-indigo-600';
     toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg text-xs font-bold text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
     toast.innerText = message;
-
     container.appendChild(toast);
 
-    requestAnimationFrame(() => {
-        toast.classList.remove('-translate-y-10', 'opacity-0');
-    });
-
+    requestAnimationFrame(() => toast.classList.remove('-translate-y-10', 'opacity-0'));
     setTimeout(() => {
         toast.classList.add('-translate-y-10', 'opacity-0');
         setTimeout(() => toast.remove(), 300);
     }, 5000);
 };
 
-// ==========================================
-// ЛОГИКА PUSH-УВЕДОМЛЕНИЙ
-// ==========================================
 window.setupNotifications = async () => {
     try {
-        if (!('Notification' in window)) {
-            alert("❌ Уведомления не поддерживаются на этом устройстве.");
-            return;
-        }
-        if (Notification.permission === 'denied') {
-            alert("🔒 Уведомления заблокированы браузером!\n\nРазрешите их в настройках браузера.");
-            return;
-        }
+        if (!('Notification' in window)) return alert("❌ Уведомления не поддерживаются на этом устройстве.");
+        if (Notification.permission === 'denied') return alert("🔒 Уведомления заблокированы браузером!\n\nРазрешите их в настройках.");
 
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
@@ -67,7 +55,6 @@ window.setupNotifications = async () => {
                 vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk',
                 serviceWorkerRegistration: registration 
             });
-
             if (token) {
                 await updateDoc(doc(db, "users", userId), { pushToken: token });
                 alert("✅ Уведомления успешно включены!");
@@ -77,13 +64,10 @@ window.setupNotifications = async () => {
         }
     } catch (error) { console.error(error); }
 };
-
-onMessage(messaging, (payload) => {
-    console.log('Пришло уведомление:', payload.data);
-});
+onMessage(messaging, (payload) => console.log('Пришло уведомление:', payload.data));
 
 // ==========================================
-// ОСНОВНАЯ ЛОГИКА ПРИЛОЖЕНИЯ
+// ОСНОВНАЯ ЛОГИКА
 // ==========================================
 const TOP_ROLES = ["Владелец", "Админ"]; 
 const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
@@ -95,17 +79,23 @@ const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`;
 const currentMonthStr = d.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
 document.getElementById('current-month-label')?.setAttribute('innerText', currentMonthStr);
 
+// Обновленная логика меню (Кружочки)
 window.switchTab = (tabId, btnElement) => {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tabId}`);
     if(targetTab) targetTab.classList.add('active');
 
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('text-white'); btn.classList.add('text-slate-500');
+    // Сбрасываем стили у всех кружочков
+    document.querySelectorAll('.nav-icon-container').forEach(icon => {
+        icon.classList.remove('bg-slate-700', 'text-white', 'shadow-inner');
+        icon.classList.add('text-slate-500');
     });
     
+    // Закрашиваем выбранный
     if(btnElement) {
-        btnElement.classList.remove('text-slate-500'); btnElement.classList.add('text-white');
+        const icon = btnElement.querySelector('.nav-icon-container');
+        icon.classList.remove('text-slate-500'); 
+        icon.classList.add('bg-slate-700', 'text-white', 'shadow-inner');
     }
 };
 
@@ -123,7 +113,7 @@ window.submitReport = async () => {
         const participated = document.getElementById('rep-participated')?.checked || false;
         const hours = document.getElementById('rep-hours')?.value || "";
         const studies = document.getElementById('rep-studies')?.value || "";
-        const credit = document.getElementById('rep-credit')?.value || ""; // НОВОЕ ПОЛЕ
+        const credit = document.getElementById('rep-credit')?.value || "";
 
         if (!participated && hours === "") return alert("Отметьте галочку 'Служил(а)' или введите часы!");
         
@@ -139,7 +129,6 @@ window.submitReport = async () => {
             
             btn.classList.replace('bg-ui-report', 'bg-ui-success');
             btn.innerText = "Успешно ✔️";
-            
             setTimeout(() => {
                 fs.disabled = true;
                 fs.classList.add('opacity-50', 'grayscale-[50%]');
@@ -250,7 +239,6 @@ async function loadProfileData() {
             else if(r === "Помощник собрания") colorClass = "bg-sky-100 text-sky-700 border border-sky-200";
             else if(r === "Пионер") colorClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
             else if(r === "Админ" || r === "Владелец") colorClass = "bg-rose-100 text-rose-700 border border-rose-200";
-            
             if(["Ответственный за участки", "Ответственный за школу", "Участник школы", "Надзиратель группы"].includes(r)) return '';
             return `<span class="inline-block px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest ${colorClass}">${r}</span>`;
         }).join('');
@@ -277,22 +265,19 @@ async function loadProfileData() {
 }
 
 function loadPersonalData() {
-    // 0. Отчет
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
         if (docSnap.exists()) {
             const r = docSnap.data();
             const repP = document.getElementById('rep-participated'); if(repP) repP.checked = r.participated || false;
             const repH = document.getElementById('rep-hours'); if(repH) repH.value = r.hours || '';
             const repS = document.getElementById('rep-studies'); if(repS) repS.value = r.studies || '';
-            const repC = document.getElementById('rep-credit'); if(repC) repC.value = r.credit || r.pubs || ''; // Загружаем Кредит (или старый Кр)
+            const repC = document.getElementById('rep-credit'); if(repC) repC.value = r.credit || r.pubs || ''; 
             const log = document.getElementById('last-report-log'); if(log) log.innerText = `Последняя запись: ${new Date(r.submittedAt).toLocaleString('ru-RU')}`;
-            
             const btn = document.getElementById('submit-report-btn');
             if(btn && document.getElementById('report-fieldset')?.disabled) btn.innerText = "✏️ Изменить";
         }
     });
 
-    // 1. Дежурства (Выводим на главной - КАРУСЕЛЬ С ТОЧКАМИ)
     try {
         window.dutySliderData = [];
         window.currentDutySlide = 0;
@@ -303,7 +288,6 @@ function loadPersonalData() {
 
             window.currentDutySlide = index;
             const d = window.dutySliderData[index];
-            
             const myGroup = currentUserData ? currentUserData.group : "Без группы";
             const isMyGroup = d.group === myGroup;
             
@@ -338,23 +322,16 @@ function loadPersonalData() {
             if (!container) return;
             
             window.dutySliderData = [];
-            const today = new Date();
-            today.setHours(0,0,0,0);
+            const today = new Date(); today.setHours(0,0,0,0);
             let myDutyFound = false;
 
             snapshot.forEach(docSnap => {
                 const d = docSnap.data();
-                
-                const dutyStart = new Date(d.rawDate);
-                dutyStart.setHours(0,0,0,0);
-                
-                const dutyEnd = new Date(dutyStart);
-                dutyEnd.setDate(dutyStart.getDate() + 6);
-                dutyEnd.setHours(23,59,59,999);
+                const dutyStart = new Date(d.rawDate); dutyStart.setHours(0,0,0,0);
+                const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6); dutyEnd.setHours(23,59,59,999);
                 
                 if (dutyEnd.getTime() >= today.getTime()) {
                     window.dutySliderData.push(d);
-                    
                     if (today.getTime() >= dutyStart.getTime()) {
                         const myGroup = currentUserData ? currentUserData.group : "Без группы";
                         if (d.group === myGroup) myDutyFound = true;
@@ -375,7 +352,6 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // 2. Участки
     try {
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
         onSnapshot(terrQuery, (snapshot) => {
@@ -400,7 +376,6 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // 3. Задания (Школа)
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
         onSnapshot(tasksQuery, (snapshot) => {
@@ -418,9 +393,7 @@ function loadPersonalData() {
                     const taskDate = new Date(task.date);
                     const isPast = taskDate < today;
                     const isAssistant = task.assistant === currentUserData.name;
-                    
                     const opacityClass = isPast ? "opacity-60 grayscale bg-slate-50 border-slate-200" : "bg-white border-slate-200 shadow-sm";
-
                     let roleText = isAssistant 
                         ? `Помощник у <span class="text-sky-600 ml-1 truncate">${task.userName}</span>` 
                         : `Выступление ${task.assistant ? `<span class="text-slate-500 text-[10px] md:text-xs block mt-0.5 truncate">Пом: <span class="text-sky-600">${task.assistant}</span></span>` : ''}`;
@@ -454,13 +427,12 @@ function loadPersonalData() {
                     else { pastCount++; pastList.innerHTML += cardHtml; }
                 }
             });
-            
             if (upCount === 0) upList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 bg-white rounded-xl p-4 border border-slate-200 text-center">У тебя пока нет активных заданий</p>';
             if (pastCount === 0) pastList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 text-center">История пуста</p>';
         });
     } catch(e){}
 
-    // 4. Новости
+    // 4. Новости с ФОТОГРАФИЯМИ
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
@@ -477,11 +449,15 @@ function loadPersonalData() {
                     const itemTime = new Date(item.createdAt).getTime();
 
                     if (now - itemTime < oneWeek) {
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[10px] text-red-400 hover:text-red-600 mt-2 font-bold uppercase tracking-widest">Удалить</button>` : '';
+                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[10px] text-red-400 hover:text-red-600 mt-3 font-bold uppercase tracking-widest bg-red-50 px-2 py-1 rounded w-full border border-red-100">Удалить объявление</button>` : '';
+
+                        // Добавили отрисовку картинки, если она есть
+                        const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="mt-3 rounded-lg max-h-56 w-full object-cover border border-slate-200 shadow-sm cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
 
                         newsHTML += `
-                        <div class="p-3 mb-2 bg-slate-50 border border-slate-100 rounded-xl hover:bg-slate-100 transition-colors">
-                            <p class="text-slate-700 whitespace-pre-wrap text-[11px] md:text-xs leading-relaxed">${item.text}</p>
+                        <div class="p-4 mb-3 bg-white shadow-sm border border-slate-200 rounded-2xl transition-colors">
+                            <p class="text-slate-700 whitespace-pre-wrap text-sm leading-relaxed">${item.text}</p>
+                            ${imgHtml}
                             ${deleteBtn}
                         </div>`;
 
@@ -497,7 +473,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-   // 5. КАЛЕНДАРЬ
+   // 5. КАЛЕНДАРЬ (ВЫДЕЛЯЕМ КАРТОЧКИ)
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -509,8 +485,6 @@ function loadPersonalData() {
             const todayYear = now.getFullYear();
             const todayMonth = now.getMonth();
             const todayDate = now.getDate();
-            
-            let count = 0; 
 
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
@@ -518,39 +492,31 @@ function loadPersonalData() {
                 const evGroup = ev.group || "Все";
                 
                 if (evDate.getFullYear() === todayYear && evDate.getMonth() === todayMonth && evDate.getDate() === todayDate) {
-                    count++; 
                     
                     let isPastEvent = false;
                     let displayTime = ev.time || "";
                     
                     if (displayTime) {
                         let hours = 0, minutes = 0;
-                        
                         if (!displayTime.includes(':') && displayTime.length >= 3) {
-                            if (displayTime.length === 4) {
-                                displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
-                            } else if (displayTime.length === 3) {
-                                displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
-                            }
+                            if (displayTime.length === 4) displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
+                            else if (displayTime.length === 3) displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
                         }
-
                         if (displayTime.includes(':')) {
                             [hours, minutes] = displayTime.split(':');
                             const eventExactTime = new Date();
                             eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-                            
-                            if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) {
-                                isPastEvent = true;
-                            }
+                            if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
                         }
                     }
 
                     const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-100 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none">Гр. ${evGroup}</span>` : '';
                     
-                    const opacityClass = isPastEvent ? "opacity-50 grayscale bg-slate-50" : "bg-white";
+                    // КРАСИВЫЙ СВЕТЛЫЙ КРАСНОВАТЫЙ ФОН И ТЕНЬ ДЛЯ АКТИВНЫХ ВСТРЕЧ
+                    const activeClass = isPastEvent ? "opacity-50 grayscale bg-slate-50 border-slate-200" : "bg-gradient-to-r from-white to-rose-50/50 border-rose-100 shadow-md";
                     
                     html += `
-                        <div class="flex items-center px-4 md:px-5 py-3 md:py-4 transition-colors w-full cursor-default ${opacityClass} ${count > 1 ? 'border-t border-slate-100' : ''}">
+                        <div class="flex items-center px-4 py-4 w-full cursor-default border rounded-2xl ${activeClass}">
                             <div class="flex items-center gap-4 w-full">
                                 <div class="flex flex-col items-center justify-center w-12 shrink-0">
                                     <span class="text-[9px] uppercase ${isPastEvent ? 'text-slate-400' : 'text-rose-500'} font-bold leading-none mb-1 tracking-widest">СЕГОДНЯ</span>
@@ -594,7 +560,6 @@ window.openProfileModal = () => {
     if(m) m.classList.replace('hidden', 'flex');
 }
 
-// НОВАЯ ФУНКЦИЯ ДЛЯ ОТКРЫТИЯ АРХИВА ОТЧЕТОВ
 window.openReportHistory = () => {
     const m = document.getElementById('report-history-modal');
     if(m) m.classList.replace('hidden', 'flex');
@@ -612,7 +577,6 @@ window.openReportHistory = () => {
         let reports = [];
         snapshot.forEach(doc => reports.push(doc.data()));
         
-        // Сортировка от новых к старым
         reports.sort((a,b) => {
             const dA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
             const dB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
@@ -663,25 +627,70 @@ window.logout = async () => {
 };
 
 // ==========================================
-// СОЗДАНИЕ И УДАЛЕНИЕ НОВОСТЕЙ
+// СОЗДАНИЕ И УДАЛЕНИЕ НОВОСТЕЙ (С ФОТО)
 // ==========================================
+let selectedImageFile = null;
+
+window.previewImage = (input) => {
+    if (input.files && input.files[0]) {
+        selectedImageFile = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('image-preview').src = e.target.result;
+            document.getElementById('image-preview-container').classList.remove('hidden');
+        };
+        reader.readAsDataURL(selectedImageFile);
+    }
+};
+
+window.removeImage = () => {
+    selectedImageFile = null;
+    document.getElementById('news-image').value = '';
+    document.getElementById('image-preview-container').classList.add('hidden');
+};
+
 window.publishNews = async () => {
     const input = document.getElementById('news-input');
     const text = input.value.trim();
-    if (!text) return;
+    if (!text && !selectedImageFile) return alert("Добавьте текст или фото!");
+
+    const btn = document.getElementById('publish-news-btn');
+    btn.innerText = "Загрузка..."; btn.disabled = true;
 
     try {
+        let imageUrl = "";
+        
+        // Если прикрепили картинку, сначала грузим её в Firebase Storage
+        if (selectedImageFile) {
+            const fileName = Date.now() + '_' + selectedImageFile.name;
+            const storageRef = ref(storage, 'news/' + fileName);
+            await uploadBytes(storageRef, selectedImageFile);
+            imageUrl = await getDownloadURL(storageRef);
+        }
+
+        // Сохраняем в базу (даже если imageUrl пустой)
         await addDoc(collection(db, "section_content"), {
             section: 'news',
             text: text,
+            imageUrl: imageUrl,
             createdAt: new Date().toISOString()
         });
+        
         input.value = '';
-    } catch (e) { alert("Ошибка публикации!"); }
+        removeImage();
+        
+        btn.innerText = "Успешно! ✔️";
+        setTimeout(() => { btn.innerText = "Опубликовать"; btn.disabled = false; }, 2000);
+        
+    } catch (e) { 
+        console.log(e);
+        alert("Ошибка публикации! Убедитесь, что правила Firebase Storage разрешают запись."); 
+        btn.innerText = "Опубликовать"; btn.disabled = false; 
+    }
 };
 
 window.deleteNews = async (id) => {
-    if (confirm("Удалить это объявление?")) {
+    if (confirm("Удалить это объявление? (Картинка из хранилища не удалится автоматически)")) {
         try { await deleteDoc(doc(db, "section_content", id)); } 
         catch (e) { alert("Ошибка удаления!"); }
     }
