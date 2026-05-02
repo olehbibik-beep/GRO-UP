@@ -46,8 +46,18 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
 });
 
 // ==========================================
-// 2. ЗАГРУЗКА БРАТЬЕВ ДЛЯ СПИСКА ВЕДУЩИХ
+// 2. ЗАГРУЗКА БРАТЬЕВ И УМНОЕ ВРЕМЯ
 // ==========================================
+// Автоматически ставим двоеточие при вводе времени (например: 1550 -> 15:50)
+const timeInput = document.getElementById('event-time');
+if (timeInput) {
+    timeInput.addEventListener('input', (e) => {
+        let v = e.target.value.replace(/\D/g, ''); // Удаляем всё, кроме цифр
+        if (v.length > 2) v = v.substring(0, 2) + ':' + v.substring(2, 4);
+        e.target.value = v;
+    });
+}
+
 onSnapshot(collection(db, "users"), (snapshot) => {
     const select = document.getElementById('event-leader');
     if (!select) return;
