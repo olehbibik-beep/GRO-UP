@@ -122,8 +122,8 @@ window.submitReport = async () => {
     } else {
         const participated = document.getElementById('rep-participated')?.checked || false;
         const hours = document.getElementById('rep-hours')?.value || "";
-        const pubs = document.getElementById('rep-pubs')?.value || "";
         const studies = document.getElementById('rep-studies')?.value || "";
+        const credit = document.getElementById('rep-credit')?.value || ""; // НОВОЕ ПОЛЕ
 
         if (!participated && hours === "") return alert("Отметьте галочку 'Служил(а)' или введите часы!");
         
@@ -132,7 +132,7 @@ window.submitReport = async () => {
         try {
             await setDoc(doc(db, "reports", `${userId}_${strictMonthId}`), {
                 userId, userName: currentUserData.name, group: currentUserData.group || "Без группы", month: currentMonthStr,
-                participated, hours: Number(hours), pubs: Number(pubs), studies: Number(studies), submittedAt: new Date().toISOString()
+                participated, hours: Number(hours), studies: Number(studies), credit: Number(credit), submittedAt: new Date().toISOString()
             });
             const log = document.getElementById('last-report-log');
             if(log) log.innerText = `Сохранено: ${new Date().toLocaleString('ru-RU')}`;
@@ -283,8 +283,8 @@ function loadPersonalData() {
             const r = docSnap.data();
             const repP = document.getElementById('rep-participated'); if(repP) repP.checked = r.participated || false;
             const repH = document.getElementById('rep-hours'); if(repH) repH.value = r.hours || '';
-            const repPub = document.getElementById('rep-pubs'); if(repPub) repPub.value = r.pubs || '';
             const repS = document.getElementById('rep-studies'); if(repS) repS.value = r.studies || '';
+            const repC = document.getElementById('rep-credit'); if(repC) repC.value = r.credit || r.pubs || ''; // Загружаем Кредит (или старый Кр)
             const log = document.getElementById('last-report-log'); if(log) log.innerText = `Последняя запись: ${new Date(r.submittedAt).toLocaleString('ru-RU')}`;
             
             const btn = document.getElementById('submit-report-btn');
@@ -460,7 +460,7 @@ function loadPersonalData() {
         });
     } catch(e){}
 
-    // 4. Новости (Автоматическое удаление через 7 дней + Toasts)
+    // 4. Новости
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
@@ -497,7 +497,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-// 5. КАЛЕНДАРЬ
+   // 5. КАЛЕНДАРЬ
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -517,18 +517,15 @@ function loadPersonalData() {
                 const evDate = new Date(ev.date);
                 const evGroup = ev.group || "Все";
                 
-                // Проверяем, наступило ли событие СЕГОДНЯ
                 if (evDate.getFullYear() === todayYear && evDate.getMonth() === todayMonth && evDate.getDate() === todayDate) {
                     count++; 
                     
-                    // --- СУПЕР-УМНАЯ ЛОГИКА ВРЕМЕНИ (Понимает 1550 и 15:50) ---
                     let isPastEvent = false;
                     let displayTime = ev.time || "";
                     
                     if (displayTime) {
                         let hours = 0, minutes = 0;
                         
-                        // Если нет двоеточия, но есть 3-4 цифры (например 1550) - ставим его для красоты
                         if (!displayTime.includes(':') && displayTime.length >= 3) {
                             if (displayTime.length === 4) {
                                 displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
@@ -537,13 +534,11 @@ function loadPersonalData() {
                             }
                         }
 
-                        // Высчитываем точное время окончания
                         if (displayTime.includes(':')) {
                             [hours, minutes] = displayTime.split(':');
                             const eventExactTime = new Date();
                             eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
                             
-                            // Если прошло 1.5 часа с начала
                             if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) {
                                 isPastEvent = true;
                             }
@@ -552,7 +547,6 @@ function loadPersonalData() {
 
                     const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-100 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none">Гр. ${evGroup}</span>` : '';
                     
-                    // Делаем прошедшее событие блеклым
                     const opacityClass = isPastEvent ? "opacity-50 grayscale bg-slate-50" : "bg-white";
                     
                     html += `
@@ -574,7 +568,6 @@ function loadPersonalData() {
                         </div>
                     `;
 
-                    // 🔥 ТОСТ ВЫСКОЧИТ ТОЛЬКО ЕСЛИ СОБЫТИЕ НЕ ПРОШЛО
                     if (!isPastEvent && !sessionStorage.getItem('event_toast_' + docSnap.id)) {
                         showToast(`📅 Сегодня: ${ev.title} ${displayTime ? 'в ' + displayTime : ''}`, 'info');
                         sessionStorage.setItem('event_toast_' + docSnap.id, 'true');
@@ -600,10 +593,66 @@ window.openProfileModal = () => {
     const m = document.getElementById('profile-modal');
     if(m) m.classList.replace('hidden', 'flex');
 }
-window.closeModals = () => {
-    const m = document.getElementById('profile-modal');
-    if(m) m.classList.replace('flex', 'hidden');
+
+// НОВАЯ ФУНКЦИЯ ДЛЯ ОТКРЫТИЯ АРХИВА ОТЧЕТОВ
+window.openReportHistory = () => {
+    const m = document.getElementById('report-history-modal');
+    if(m) m.classList.replace('hidden', 'flex');
+
+    const list = document.getElementById('report-history-list');
+    list.innerHTML = '<p class="text-slate-400 text-sm italic py-4">Загрузка...</p>';
+
+    const q = query(collection(db, "reports"), where("userId", "==", userId));
+    getDocs(q).then(snapshot => {
+        if(snapshot.empty) {
+            list.innerHTML = '<p class="text-slate-400 text-sm italic py-4">Архив пуст</p>';
+            return;
+        }
+        
+        let reports = [];
+        snapshot.forEach(doc => reports.push(doc.data()));
+        
+        // Сортировка от новых к старым
+        reports.sort((a,b) => {
+            const dA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+            const dB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+            return dB - dA;
+        });
+
+        let html = '';
+        reports.forEach(r => {
+            const checkIcon = r.participated || r.hours > 0 ? `✅` : `-`;
+            html += `
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-left">
+                    <div class="flex justify-between items-center mb-2 border-b border-slate-200 pb-2">
+                        <span class="font-black text-purple-700 text-sm">${r.month || 'Неизвестно'}</span>
+                        <span class="text-[10px] text-slate-400 font-bold">${r.submittedAt ? new Date(r.submittedAt).toLocaleDateString('ru-RU') : ''}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-600">
+                        <span>Служил(а): ${checkIcon}</span>
+                        <span>Часы: <span class="text-slate-800 font-black text-sm">${r.hours || '-'}</span></span>
+                    </div>
+                    <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 mt-1 uppercase">
+                        <span>Изучения: ${r.studies || '-'}</span>
+                        <span>Кредит: ${r.credit || r.pubs || '-'}</span>
+                    </div>
+                </div>
+            `;
+        });
+        list.innerHTML = html;
+    }).catch(e => {
+        list.innerHTML = '<p class="text-red-400 text-sm italic">Ошибка загрузки</p>';
+    });
 };
+
+window.closeModals = () => {
+    const m1 = document.getElementById('profile-modal');
+    if(m1) m1.classList.replace('flex', 'hidden');
+    
+    const m2 = document.getElementById('report-history-modal');
+    if(m2) m2.classList.replace('flex', 'hidden');
+};
+
 window.logout = async () => {
     const uid = localStorage.getItem('userId');
     if (uid) {
