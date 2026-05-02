@@ -29,17 +29,14 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     const u = docSnap.data();
     const roles = u.roles || [];
     
-    // Принудительно делаем группу строкой, чтобы "5" и 5 совпадали при поиске
     myGroup = String(u.group || "Без группы");
 
     const isFullAdmin = roles.includes("Владелец") || roles.includes("Админ");
     const isOverseer = isFullAdmin || roles.includes("Надзиратель группы");
 
-    // Жесткая защита страниц от прямого входа
     const path = window.location.pathname;
     if (path.includes('reports.html') && !isOverseer) window.location.href = 'index.html';
 
-    // Настройка заголовка в зависимости от прав доступа
     if (isFullAdmin) {
         hasFullAccess = true;
         document.getElementById('group-title').innerText = "Все группы (Полный доступ)";
@@ -55,8 +52,6 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
 // 2. ЗАГРУЗКА ОТЧЕТОВ
 // ==========================================
 function loadReports() {
-    // Убираем orderBy из запроса к БД! База отдаст всё, а отсортируем мы сами.
-    // Это спасет от пропажи старых отчетов, у которых не было поля submittedAt.
     const q = query(collection(db, "reports"));
     
     onSnapshot(q, (snapshot) => {
@@ -66,21 +61,18 @@ function loadReports() {
         snapshot.forEach(docSnap => {
             const r = docSnap.data();
             
-            // ФИЛЬТРАЦИЯ ДОСТУПА: Админ видит всех. Надзиратель - только свою.
             if (hasFullAccess || String(r.group) === myGroup) {
                 allReports.push(r);
                 if (r.month) monthsSet.add(r.month);
             }
         });
 
-        // СОРТИРУЕМ ВРУЧНУЮ (Новые сверху)
         allReports.sort((a, b) => {
             const dateA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
             const dateB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
-            return dateB - dateA; // От новых к старым
+            return dateB - dateA; 
         });
 
-        // Заполняем фильтр месяцев
         const monthFilter = document.getElementById('month-filter');
         if (monthFilter) {
             const currentSelection = monthFilter.value;
@@ -98,7 +90,7 @@ function loadReports() {
 }
 
 // ==========================================
-// 3. ОТРИСОВКА ТАБЛИЦЫ И ПОДСЧЕТ ИТОГОВ
+// 3. ОТРИСОВКА ТАБЛИЦЫ
 // ==========================================
 function renderTable() {
     const list = document.getElementById('reports-list');
@@ -127,8 +119,8 @@ function renderTable() {
                 </td>
                 <td class="py-3 px-4 text-center">${checkIcon}</td>
                 <td class="py-3 px-4 text-center font-black text-purple-600">${r.hours || '-'}</td>
-                <td class="py-3 px-4 text-center text-slate-500 font-bold">${r.pubs || '-'}</td>
                 <td class="py-3 px-4 text-center text-slate-500 font-bold">${r.studies || '-'}</td>
+                <td class="py-3 px-4 text-center text-slate-500 font-bold">${r.credit || r.pubs || '-'}</td>
                 <td class="py-3 px-4 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">${r.month || 'Неизвестно'}</td>
             </tr>
         `;
@@ -147,6 +139,5 @@ function renderTable() {
     }
 }
 
-// Слушаем переключение фильтра месяцев
 const mFilter = document.getElementById('month-filter');
 if (mFilter) mFilter.addEventListener('change', renderTable);
