@@ -74,42 +74,35 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
-                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm flex flex-col">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-base md:text-xl font-black text-slate-800 flex items-center gap-2">
-                            <span class="text-ui-report text-xl leading-none">📝</span> Мой отчет
+                <div class="bg-transparent flex flex-col md:col-span-1 w-full overflow-hidden">
+                    <div class="flex items-center justify-between mb-3 px-1">
+                        <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                            <span class="text-ui-news text-xl leading-none">📢</span> Объявления
                         </h3>
+                        <button id="show-add-news-btn" onclick="document.getElementById('add-news-box').classList.toggle('hidden')" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors outline-none">
+                            ➕ Создать
+                        </button>
                     </div>
-                    
-                    <fieldset id="report-fieldset" disabled class="flex-grow flex flex-col gap-2 transition-opacity duration-200 opacity-50 grayscale-[50%]">
-                        <div class="flex items-center justify-between">
-                            <label class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100 cursor-pointer">
-                                <input type="checkbox" id="rep-participated" class="w-4 h-4 md:w-5 md:h-5 accent-ui-report rounded cursor-pointer shrink-0">
-                                <span class="font-bold text-slate-700 text-xs md:text-sm leading-none mt-0.5">Служил(а)</span>
+
+                    <div id="add-news-box" class="hidden mb-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <textarea id="news-input" rows="2" placeholder="Напишите важное объявление..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs outline-none focus:border-indigo-400 resize-none font-medium text-slate-700"></textarea>
+                        
+                        <div class="flex items-center justify-between mt-2 gap-2">
+                            <label class="cursor-pointer bg-slate-50 border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-xl transition-colors flex items-center justify-center shadow-sm w-12 h-10 shrink-0">
+                                📷
+                                <input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)">
                             </label>
-                            <span class="text-[8px] font-black text-ui-report uppercase bg-slate-100 px-2 py-0.5 rounded border border-slate-200" id="current-month-label">Месяц</span>
+                            <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 rounded-xl flex-grow transition-colors shadow-sm h-10">Опубликовать</button>
                         </div>
-
-                        <div class="flex gap-2 mt-2">
-                            <div class="w-full">
-                                <label class="text-[8px] uppercase font-bold text-slate-400 block mb-1 text-center tracking-widest leading-tight">Часы<br>&nbsp;</label>
-                                <input type="number" id="rep-hours" class="w-full p-2 rounded-xl text-center font-black text-base md:text-xl text-slate-800 outline-none border border-slate-200 focus:border-ui-report bg-slate-50">
-                            </div>
-                            <div class="w-full">
-                                <label class="text-[8px] uppercase font-bold text-slate-400 block mb-1 text-center tracking-widest leading-tight">Изучения<br>Библии</label>
-                                <input type="number" id="rep-studies" class="w-full p-2 rounded-xl text-center font-bold text-base md:text-xl text-slate-800 outline-none border border-slate-200 focus:border-ui-report bg-slate-50">
-                            </div>
-                            <div class="w-full">
-                                <label class="text-[8px] uppercase font-bold text-slate-400 block mb-1 text-center tracking-widest leading-tight">Кредит<br>&nbsp;</label>
-                                <input type="number" id="rep-credit" class="w-full p-2 rounded-xl text-center font-bold text-base md:text-xl text-slate-800 outline-none border border-slate-200 focus:border-ui-report bg-slate-50">
-                            </div>
+                        
+                        <div id="image-preview-container" class="hidden mt-3 relative inline-block w-full">
+                            <img id="image-preview" src="" class="rounded-xl max-h-32 w-full object-cover border border-slate-200">
+                            <button onclick="removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs shadow-md border-2 border-white outline-none">✖</button>
                         </div>
-                        <p id="last-report-log" class="text-[8px] text-slate-400 text-center font-medium mt-1 min-h-[12px]"></p>
-                    </fieldset>
+                    </div>
 
-                    <div class="mt-3 flex gap-2 w-full h-12">
-                        <button onclick="submitReport()" id="submit-report-btn" class="w-4/5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition-colors duration-200 text-sm active:bg-slate-700 outline-none flex items-center justify-center">✏️ Заполнить</button>
-                        <button onclick="openReportHistory()" class="w-1/5 bg-purple-50 hover:bg-purple-100 text-purple-600 font-bold rounded-xl transition-colors duration-200 text-lg outline-none flex items-center justify-center" title="Архив отчетов">👁️</button>
+                    <div id="content-news" class="flex flex-nowrap overflow-x-auto gap-4 pb-4 snap-x snap-mandatory custom-scrollbar w-full">
+                        <p class="italic text-slate-400 text-sm px-2">Загрузка...</p>
                     </div>
                 </div>
 
