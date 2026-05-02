@@ -77,7 +77,6 @@ window.switchTab = (tabId, btnElement) => {
     const targetTab = document.getElementById(`tab-${tabId}`);
     if(targetTab) targetTab.classList.add('active');
 
-    // Сброс и закрашивание кружочков меню
     document.querySelectorAll('.nav-icon-container').forEach(icon => {
         icon.classList.remove('bg-slate-700', 'text-white', 'shadow-inner');
         icon.classList.add('text-slate-500');
@@ -200,15 +199,6 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
             else { profileAdminLinks.classList.add('hidden'); profileAdminLinks.classList.remove('grid'); }
         }
 
-        const addNewsBox = document.getElementById('add-news-box');
-        if (addNewsBox) {
-            if (userRoles.includes('Админ') || userRoles.includes('Владелец') || userRoles.includes('Старейшина')) {
-                addNewsBox.classList.remove('hidden');
-            } else {
-                addNewsBox.classList.add('hidden');
-            }
-        }
-
         try { loadPersonalData(); } catch(e) { console.error("Error:", e); }
         try { loadProfileData(); } catch(e) { console.error("Error:", e); }
     }
@@ -283,11 +273,11 @@ function loadPersonalData() {
             const isMyGroup = d.group === myGroup;
             
             const badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
-            const bgClass = isMyGroup ? 'bg-amber-50/50' : 'bg-slate-50';
+            const bgClass = isMyGroup ? 'bg-amber-50/50' : 'bg-transparent';
 
             let dotsHtml = '';
             if (window.dutySliderData.length > 1) {
-                dotsHtml = '<div class="flex justify-center gap-2.5 p-3 bg-slate-50 border-t border-slate-100">';
+                dotsHtml = '<div class="flex justify-center gap-2.5 p-3">';
                 for (let i = 0; i < window.dutySliderData.length; i++) {
                     const activeClass = i === index ? 'bg-amber-400 scale-125' : 'bg-slate-300 hover:bg-slate-400 cursor-pointer';
                     dotsHtml += `<div onclick="renderDutySlide(${i})" class="w-2.5 h-2.5 rounded-full transition-all ${activeClass}"></div>`;
@@ -296,7 +286,7 @@ function loadPersonalData() {
             }
 
             container.innerHTML = `
-                <div class="flex flex-col p-4 ${bgClass} transition-colors min-h-[76px] justify-center">
+                <div class="flex flex-col p-4 ${bgClass} transition-colors justify-center flex-grow">
                     <div class="flex items-center justify-between mb-1.5">
                         <span class="text-sm font-black text-slate-800 truncate pr-2">${d.type}</span>
                         <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${badgeClass} shrink-0">Гр. ${d.group}</span>
@@ -353,10 +343,10 @@ function loadPersonalData() {
             snapshot.forEach(docSnap => {
                 const terr = docSnap.data();
                 container.innerHTML += `
-                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
-                        <div class="p-3 flex justify-between items-center bg-emerald-50">
+                    <div class="bg-white rounded-3xl shadow-sm overflow-hidden flex flex-col">
+                        <div class="p-4 flex justify-between items-center bg-emerald-50">
                             <h3 class="font-black text-slate-800 text-sm">Участок № ${terr.number}</h3>
-                            <span class="text-[9px] font-bold text-emerald-600 bg-white px-2 py-1 rounded uppercase">Активен</span>
+                            <span class="text-[9px] font-bold text-emerald-600 bg-white px-2 py-1 rounded-md shadow-sm uppercase">Активен</span>
                         </div>
                         <div class="w-full h-32 bg-slate-50 flex items-center justify-center relative">
                             <span class="text-3xl absolute opacity-10">🗺️</span>
@@ -423,7 +413,7 @@ function loadPersonalData() {
         });
     } catch(e){}
 
-   // 4. Новости с ФОТОГРАФИЯМИ (ГОРИЗОНТАЛЬНАЯ КАРУСЕЛЬ)
+    // 4. ГОРИЗОНТАЛЬНЫЕ НОВОСТИ С ПЛИТКОЙ ДОБАВЛЕНИЯ
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
@@ -434,46 +424,29 @@ function loadPersonalData() {
 
             const isNewsAdmin = currentUserData.roles && (currentUserData.roles.includes('Админ') || currentUserData.roles.includes('Владелец') || currentUserData.roles.includes('Старейшина'));
 
-            // Показываем кнопку "Создать", если есть права
-            const showAddBtn = document.getElementById('show-add-news-btn');
-            if (showAddBtn) {
-                if (isNewsAdmin) showAddBtn.classList.remove('hidden');
-                else showAddBtn.classList.add('hidden');
-            }
-
             snapshot.forEach(docSnap => {
                 const item = docSnap.data();
                 if(item.section === 'news') {
                     const itemTime = new Date(item.createdAt).getTime();
-                    const isNew = (now - itemTime) < oneDay; // Если новости меньше 24 часов
 
                     if (now - itemTime < oneWeek) {
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 px-2 py-1.5 rounded-lg w-full border border-red-100 transition-colors">Удалить объявление</button>` : '';
+                        const isNew = (now - itemTime) < oneDay;
+                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 px-2 py-1.5 rounded-xl w-full transition-colors">Удалить объявление</button>` : '';
+                        const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="mt-3 rounded-2xl max-h-48 w-full object-cover shadow-sm cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
 
-                        const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="mt-3 rounded-xl max-h-40 w-full object-cover shadow-sm cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
-
-                        // Классы для эффекта JW Library:
-                        // min-w-[85%] - карточка занимает 85% ширины экрана, чтобы было видно краешек следующей
-                        // snap-center - при свайпе карточка сама центрируется
-                        // Если новость свежая (isNew) - делаем фон белым, если старая - чуть бледнее
-                        const bgCardClass = isNew ? "bg-white shadow-md border-transparent" : "bg-slate-50 border-slate-200 shadow-sm opacity-90";
-                        
-                        // Бейджик "НОВОЕ"
-                        const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md mb-2 inline-block">Новое</span>` : '';
+                        const bgCardClass = isNew ? "bg-white shadow-md" : "bg-slate-50/80 shadow-sm opacity-90";
+                        const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md mb-2 inline-block shadow-sm">Новое</span>` : '';
 
                         newsHTML += `
-                        <div class="min-w-[85%] md:min-w-[300px] shrink-0 snap-center p-5 border rounded-3xl transition-all ${bgCardClass} flex flex-col justify-between">
+                        <div class="min-w-[85%] md:min-w-[320px] max-w-xs shrink-0 snap-center p-5 rounded-[2rem] transition-all flex flex-col justify-between ${bgCardClass}">
                             <div>
                                 ${newBadge}
                                 <p class="text-slate-700 whitespace-pre-wrap text-sm md:text-base leading-relaxed font-medium">${item.text}</p>
                                 ${imgHtml}
                             </div>
-                            <div>
-                                ${deleteBtn}
-                            </div>
+                            <div>${deleteBtn}</div>
                         </div>`;
 
-                        // Всплывашка для совсем свежих новостей
                         if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) {
                             showToast('📢 Новое объявление в ленте!', 'info');
                             sessionStorage.setItem('news_toast_' + docSnap.id, 'true');
@@ -481,18 +454,38 @@ function loadPersonalData() {
                     }
                 }
             });
+
+            // Плитка ДОБАВИТЬ НОВОСТЬ уезжает в конец (вправо)
+            if (isNewsAdmin) {
+                newsHTML += `
+                <div class="min-w-[85%] md:min-w-[320px] max-w-xs shrink-0 snap-center p-5 rounded-[2rem] border-2 border-dashed border-slate-300 bg-slate-100/50 flex flex-col justify-center relative">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center">Добавить объявление</p>
+                    <textarea id="news-input" rows="2" placeholder="Напишите текст..." class="w-full bg-white rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-100 resize-none font-medium text-slate-700 shadow-sm"></textarea>
+                    <div class="flex items-center justify-between mt-3 gap-2">
+                        <label class="cursor-pointer bg-white text-slate-500 hover:text-indigo-500 rounded-xl transition-colors flex items-center justify-center shadow-sm w-12 h-10 shrink-0">
+                            📷
+                            <input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)">
+                        </label>
+                        <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 rounded-xl flex-grow transition-colors shadow-sm h-10">Опубликовать</button>
+                    </div>
+                    <div id="image-preview-container" class="hidden mt-3 relative inline-block w-full">
+                        <img id="image-preview" src="" class="rounded-xl max-h-24 w-full object-cover shadow-sm">
+                        <button onclick="removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-md border-2 border-white outline-none">✖</button>
+                    </div>
+                </div>`;
+            }
+
             const contentNews = document.getElementById('content-news');
             if(contentNews) {
-                // Если новостей нет, показываем красивую заглушку той же формы
                 contentNews.innerHTML = newsHTML || `
-                <div class="min-w-full shrink-0 snap-center p-6 bg-slate-50 border border-slate-200 rounded-3xl flex items-center justify-center">
+                <div class="min-w-full shrink-0 snap-center p-6 bg-slate-50 rounded-[2rem] flex items-center justify-center">
                     <p class="text-slate-400 italic text-sm text-center">Актуальных объявлений нет</p>
                 </div>`;
             }
         });
     } catch(e) {}
 
-   // 5. КАЛЕНДАРЬ (ПЛОСКИЙ И ОРАНЖЕВЫЙ ДИЗАЙН БЕЗ РАМОК)
+   // 5. КАЛЕНДАРЬ (ПЛОСКИЙ И ОРАНЖЕВЫЙ ДИЗАЙН БЕЗ РАМОК И ТЕНЕЙ)
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -504,7 +497,6 @@ function loadPersonalData() {
             const todayYear = now.getFullYear();
             const todayMonth = now.getMonth();
             const todayDate = now.getDate();
-            let count = 0;
 
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
@@ -512,7 +504,6 @@ function loadPersonalData() {
                 const evGroup = ev.group || "Все";
                 
                 if (evDate.getFullYear() === todayYear && evDate.getMonth() === todayMonth && evDate.getDate() === todayDate) {
-                    count++;
                     let isPastEvent = false;
                     let displayTime = ev.time || "";
                     
@@ -530,25 +521,25 @@ function loadPersonalData() {
                         }
                     }
 
-                    const groupBadge = evGroup !== "Все" ? `<span class="bg-indigo-100 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none">Гр. ${evGroup}</span>` : '';
+                    const groupBadge = evGroup !== "Все" ? `<span class="bg-slate-800 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase leading-none">Гр. ${evGroup}</span>` : '';
                     
-                    // БЕЗ РАМОК, БЕЗ ТЕНЕЙ. ЛЕГКИЙ ОРАНЖЕВЫЙ ОТТЕНОК.
-                    const activeClass = isPastEvent ? "opacity-50 grayscale bg-slate-50" : "bg-orange-50/80";
+                    // Плоский дизайн. Только цвет фона, никаких рамок и теней.
+                    const activeClass = isPastEvent ? "opacity-50 grayscale bg-transparent" : "bg-orange-100/50";
                     
                     html += `
-                        <div class="flex items-center px-4 md:px-5 py-3 md:py-4 transition-colors w-full cursor-default ${activeClass} ${count > 1 ? 'border-t border-slate-100' : ''}">
+                        <div class="flex items-center px-4 md:px-5 py-4 w-full cursor-default ${activeClass}">
                             <div class="flex items-center gap-4 w-full">
-                                <div class="flex flex-col items-center justify-center w-12 shrink-0">
-                                    <span class="text-[9px] uppercase ${isPastEvent ? 'text-slate-400' : 'text-orange-500'} font-bold leading-none mb-1 tracking-widest">СЕГОДНЯ</span>
-                                    <span class="text-xl font-black leading-none ${isPastEvent ? 'text-slate-400' : 'text-slate-800'}">${evDate.getDate()}</span>
+                                <div class="flex flex-col items-center justify-center w-14 shrink-0">
+                                    <span class="text-[9px] uppercase ${isPastEvent ? 'text-slate-400' : 'text-orange-600'} font-black leading-none mb-1 tracking-widest">СЕГОДНЯ</span>
+                                    <span class="text-2xl font-black leading-none ${isPastEvent ? 'text-slate-400' : 'text-slate-800'}">${evDate.getDate()}</span>
                                 </div>
                                 <div class="flex flex-col flex-grow truncate">
                                     <div class="flex items-center gap-2 truncate">
-                                        ${displayTime ? `<span class="text-sm font-bold text-slate-500 shrink-0">${displayTime}</span>` : ''}
-                                        <span class="font-bold text-sm md:text-base ${isPastEvent ? 'text-slate-500' : 'text-slate-800'} truncate">${ev.title}</span>
+                                        ${displayTime ? `<span class="text-sm font-black text-slate-500 shrink-0">${displayTime}</span>` : ''}
+                                        <span class="font-black text-sm md:text-base ${isPastEvent ? 'text-slate-500' : 'text-slate-800'} truncate">${ev.title}</span>
                                         ${groupBadge}
                                     </div>
-                                    ${ev.leader ? `<div class="text-[10px] uppercase mt-1 tracking-wider truncate text-slate-400 font-medium">Вед: <span class="${isPastEvent ? 'text-slate-500' : 'text-orange-600'} font-bold">${ev.leader}</span></div>` : ''}
+                                    ${ev.leader ? `<div class="text-[10px] uppercase mt-1 tracking-wider truncate text-slate-400 font-bold">Вед: <span class="${isPastEvent ? 'text-slate-500' : 'text-orange-600'} font-black">${ev.leader}</span></div>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -668,11 +659,11 @@ window.removeImage = () => {
 
 window.publishNews = async () => {
     const input = document.getElementById('news-input');
-    const text = input.value.trim();
+    const text = input ? input.value.trim() : '';
     if (!text && !selectedImageFile) return alert("Добавьте текст или фото!");
 
     const btn = document.getElementById('publish-news-btn');
-    btn.innerText = "Загрузка..."; btn.disabled = true;
+    if(btn) { btn.innerText = "Загрузка..."; btn.disabled = true; }
 
     try {
         let imageUrl = "";
@@ -691,21 +682,22 @@ window.publishNews = async () => {
             createdAt: new Date().toISOString()
         });
         
-        input.value = '';
+        if(input) input.value = '';
         removeImage();
         
-        btn.innerText = "Успешно! ✔️";
-        setTimeout(() => { btn.innerText = "Опубликовать"; btn.disabled = false; }, 2000);
-        
+        if(btn) {
+            btn.innerText = "Успешно! ✔️";
+            setTimeout(() => { btn.innerText = "Опубликовать"; btn.disabled = false; }, 2000);
+        }
     } catch (e) { 
         console.log(e);
         alert("Ошибка публикации! Проверьте правила Storage."); 
-        btn.innerText = "Опубликовать"; btn.disabled = false; 
+        if(btn) { btn.innerText = "Опубликовать"; btn.disabled = false; }
     }
 };
 
 window.deleteNews = async (id) => {
-    if (confirm("Удалить это объявление? (Картинка из хранилища удаляется вручную)")) {
+    if (confirm("Удалить это объявление?")) {
         try { await deleteDoc(doc(db, "section_content", id)); } 
         catch (e) { alert("Ошибка удаления!"); }
     }
