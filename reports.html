@@ -12,7 +12,7 @@
                     colors: { 
                         ui: { 
                             bg: '#f8fafc', 
-                            adminNav: '#1D7373' // Глубокий Индиго (Для Админ-зоны)
+                            adminNav: '#1D7373' 
                         } 
                     } 
                 } 
@@ -24,7 +24,6 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
         
-        /* Скрываем лишнее при печати */
         @media print {
             nav, .no-print { display: none !important; }
             main { padding: 0 !important; margin: 0 !important; }
@@ -58,7 +57,6 @@
         </div>
 
         <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row gap-4 md:items-center justify-between no-print">
-            
             <div class="flex gap-6 items-center">
                 <div>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Сдали отчеты</p>
@@ -88,8 +86,8 @@
                             <th class="py-3 px-4 font-bold text-center w-20">Группа</th>
                             <th class="py-3 px-4 font-bold text-center w-20 text-emerald-600">Служил</th>
                             <th class="py-3 px-4 font-bold text-center w-20 text-purple-600">Часы</th>
-                            <th class="py-3 px-4 font-bold text-center w-20">Кр</th>
-                            <th class="py-3 px-4 font-bold text-center w-20">BS</th>
+                            <th class="py-3 px-4 font-bold text-center w-24">Изучения</th>
+                            <th class="py-3 px-4 font-bold text-center w-20">Кредит</th>
                             <th class="py-3 px-4 font-bold text-right w-32">Месяц</th>
                         </tr>
                     </thead>
@@ -102,6 +100,6 @@
 
     </main>
 
-    <script type="module" src="reports.js?v=95"></script>
+    <script type="module" src="reports.js?v=97"></script>
 </body>
 </html>
