@@ -1,8 +1,6 @@
-// 1. ВСЕ ИМПОРТЫ СТРОГО НАВЕРХУ
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// 2. КОНФИГ И ИНИЦИАЛИЗАЦИЯ
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
     authDomain: "gro-uping.firebaseapp.com",
@@ -15,12 +13,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Проверка авторизации
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
 // ==========================================
-// 3. ПРОВЕРКА ПРАВ И ЗАЩИТА СТРАНИЦ
+// 1. ПРОВЕРКА ПРАВ И ЗАЩИТА СТРАНИЦ
 // ==========================================
 const uid = typeof currentUserId !== 'undefined' ? currentUserId : userId;
 getDoc(doc(db, "users", uid)).then(docSnap => {
@@ -32,7 +29,6 @@ getDoc(doc(db, "users", uid)).then(docSnap => {
     const isTerr = isFullAdmin || roles.includes("Ответственный за участки");
     const isOverseer = isFullAdmin || roles.includes("Надзиратель группы");
 
-    // Жесткая защита страниц от прямого входа по ссылке
     const path = window.location.pathname;
     if (path.includes('admin.html') && !isFullAdmin) window.location.href = 'index.html';
     if (path.includes('school.html') && !isSchool) window.location.href = 'index.html';
@@ -41,7 +37,7 @@ getDoc(doc(db, "users", uid)).then(docSnap => {
 });
 
 // ==========================================
-// 4. ГЛОБАЛЬНАЯ НАСТРОЙКА: СОБРАНИЕ
+// 2. ГЛОБАЛЬНАЯ НАСТРОЙКА: СОБРАНИЕ
 // ==========================================
 onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
     const el = document.getElementById('congregation-name');
@@ -60,10 +56,9 @@ window.updateCongregation = async (val) => {
 };
 
 // ==========================================
-// 5. АВТОСОХРАНЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ
+// 3. АВТОСОХРАНЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ
 // ==========================================
 
-// Пол и Группа
 window.updateField = async (id, field, value) => {
     try {
         let valToSave = value.trim();
@@ -72,7 +67,6 @@ window.updateField = async (id, field, value) => {
     } catch (e) { alert("Ошибка при сохранении!"); }
 };
 
-// ПИН-КОД
 window.updatePin = async (id, val, inputEl) => {
     const cleanVal = val.replace(/\D/g, ''); 
     if (cleanVal.length !== 6) {
@@ -89,7 +83,6 @@ window.updatePin = async (id, val, inputEl) => {
     } catch (e) { alert("Ошибка при сохранении ПИН-кода!"); }
 };
 
-// Роли (Галочки)
 window.toggleRole = async (id, roleName, isChecked) => {
     try {
         const userRef = doc(db, "users", id);
@@ -108,7 +101,7 @@ window.toggleRole = async (id, roleName, isChecked) => {
 };
 
 // ==========================================
-// 6. УПРАВЛЕНИЕ: БАН И УДАЛЕНИЕ
+// 4. УПРАВЛЕНИЕ: БАН И УДАЛЕНИЕ
 // ==========================================
 window.blockUser = async (id) => {
     if(confirm("Заблокировать пользователя?")) await updateDoc(doc(db, "users", id), { status: 'blocked' });
@@ -131,7 +124,7 @@ window.rejectUser = async (id) => {
 };
 
 // ==========================================
-// 7. ПОЛУЧЕНИЕ И ОТРИСОВКА СПИСКА
+// 5. ПОЛУЧЕНИЕ И ОТРИСОВКА СПИСКА
 // ==========================================
 onSnapshot(collection(db, "users"), (snapshot) => {
     const pendingList = document.getElementById('pending-list');
@@ -148,7 +141,37 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         const icon = u.gender === 'girl' ? '👩‍💼' : '👨‍💼';
 
         if (u.status === 'pending') {
+            // ОЖИДАЮЩИЕ ПОЛЬЗОВАТЕЛИ
             pendingCount++;
+            pendingHTML += `
+                <div class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl shadow-sm user-row" data-name="${u.name.toLowerCase()}">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">${icon}</span>
+                        <div>
+                            <p class="font-black text-slate-800 text-sm leading-tight">${u.name}</p>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Ожидает</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="approveUser('${id}')" title="Одобрить" class="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors shadow-sm outline-none">✔️</button>
+                        <button onclick="rejectUser('${id}')" title="Отклонить" class="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shadow-sm outline-none">✖</button>
+                    </div>
+                </div>
+            `;
+        } else if (u.status === 'active' || u.status === 'blocked') {
+            // АКТИВНЫЕ ПОЛЬЗОВАТЕЛИ (Компактный дизайн)
+            activeCount++;
+            let r = u.roles || [];
+            
+            const isBlocked = u.status === 'blocked';
+            const rowClass = isBlocked ? 'bg-red-50/50 opacity-60 grayscale' : 'hover:bg-slate-50';
+            const nameColor = isBlocked ? 'text-red-700' : 'text-slate-800';
+
+            const lockBtn = isBlocked 
+                ? `<button onclick="unblockUser('${id}')" title="Разблокировать" class="p-1 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors shadow-sm border border-emerald-100 outline-none">🔓</button>`
+                : `<button onclick="blockUser('${id}')" title="Заблокировать" class="p-1 text-xs bg-slate-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors shadow-sm border border-slate-200 hover:border-amber-300 outline-none">🔒</button>`;
+            const deleteBtn = `<button onclick="deleteUser('${id}')" title="Удалить" class="p-1 text-xs bg-slate-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors shadow-sm border border-slate-200 hover:border-red-300 outline-none">🗑️</button>`;
+
             activeHTML += `
                 <tr class="transition-colors border-b border-slate-100 group user-row ${rowClass}" data-name="${u.name.toLowerCase()}">
                     
@@ -174,88 +197,24 @@ onSnapshot(collection(db, "users"), (snapshot) => {
                     
                     <td class="py-1.5 px-3">
                         <div class="flex flex-wrap gap-1 w-60">
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-slate-600 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-slate-100"><input type="checkbox" onchange="toggleRole('${id}', 'Возвещатель', this.checked)" class="accent-slate-500 w-3 h-3 cursor-pointer" ${r.includes('Возвещатель') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Возвещатель</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-emerald-600 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-emerald-50"><input type="checkbox" onchange="toggleRole('${id}', 'Пионер', this.checked)" class="accent-emerald-500 w-3 h-3 cursor-pointer" ${r.includes('Пионер') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Пионер</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-sky-600 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-sky-50"><input type="checkbox" onchange="toggleRole('${id}', 'Помощник собрания', this.checked)" class="accent-sky-500 w-3 h-3 cursor-pointer" ${r.includes('Помощник собрания') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Помощник собр.</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-amber-600 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-amber-50"><input type="checkbox" onchange="toggleRole('${id}', 'Старейшина', this.checked)" class="accent-amber-500 w-3 h-3 cursor-pointer" ${r.includes('Старейшина') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Старейшина</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-rose-600 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-rose-50"><input type="checkbox" onchange="toggleRole('${id}', 'Админ', this.checked)" class="accent-rose-500 w-3 h-3 cursor-pointer" ${r.includes('Админ') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Админ</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-slate-600 font-bold uppercase hover:bg-slate-100 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Возвещатель', this.checked)" class="accent-slate-500 w-3 h-3 cursor-pointer" ${r.includes('Возвещатель') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Возвещатель</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-emerald-600 font-bold uppercase hover:bg-emerald-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Пионер', this.checked)" class="accent-emerald-500 w-3 h-3 cursor-pointer" ${r.includes('Пионер') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Пионер</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-sky-600 font-bold uppercase hover:bg-sky-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Помощник собрания', this.checked)" class="accent-sky-500 w-3 h-3 cursor-pointer" ${r.includes('Помощник собрания') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Помощник собр.</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-amber-600 font-bold uppercase hover:bg-amber-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Старейшина', this.checked)" class="accent-amber-500 w-3 h-3 cursor-pointer" ${r.includes('Старейшина') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Старейшина</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-rose-600 font-bold uppercase hover:bg-rose-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Админ', this.checked)" class="accent-rose-500 w-3 h-3 cursor-pointer" ${r.includes('Админ') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Админ</label>
                         </div>
                     </td>
                     
                     <td class="py-1.5 px-3">
                         <div class="flex flex-wrap gap-1 w-48">
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-purple-700 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-purple-50"><input type="checkbox" onchange="toggleRole('${id}', 'Надзиратель группы', this.checked)" class="accent-purple-500 w-3 h-3 cursor-pointer" ${r.includes('Надзиратель группы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Группа</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-teal-700 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-teal-50"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за участки', this.checked)" class="accent-teal-500 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за участки') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Участки</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-indigo-700 font-bold uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded transition-colors hover:bg-indigo-50"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за школу', this.checked)" class="accent-indigo-500 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за школу') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Школа</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-purple-700 font-bold uppercase hover:bg-purple-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Надзиратель группы', this.checked)" class="accent-purple-500 w-3 h-3 cursor-pointer" ${r.includes('Надзиратель группы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Группа</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-teal-700 font-bold uppercase hover:bg-teal-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за участки', this.checked)" class="accent-teal-500 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за участки') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Участки</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-indigo-700 font-bold uppercase hover:bg-indigo-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за школу', this.checked)" class="accent-indigo-500 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за школу') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Школа</label>
                         </div>
                     </td>
                     
                     <td class="py-1.5 px-3 align-middle">
                         <div class="flex justify-end gap-1.5">
-                            ${lockBtn.replace('p-2', 'p-1 text-xs')}
-                            ${deleteBtn.replace('p-2', 'p-1 text-xs')}
-                        </div>
-                    </td>
-                </tr>
-            `;
-        } else if (u.status === 'active' || u.status === 'blocked') {
-            activeCount++;
-            let r = u.roles || [];
-            
-            const isBlocked = u.status === 'blocked';
-            const rowClass = isBlocked ? 'bg-red-50/50 opacity-60 grayscale' : 'hover:bg-slate-50';
-            const nameColor = isBlocked ? 'text-red-700' : 'text-slate-800';
-
-            const lockBtn = isBlocked 
-                ? `<button onclick="unblockUser('${id}')" title="Разблокировать" class="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors text-base shadow-sm border border-emerald-100">🔓</button>`
-                : `<button onclick="blockUser('${id}')" title="Заблокировать" class="p-2 bg-slate-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors text-base shadow-sm border border-slate-200 hover:border-amber-300">🔒</button>`;
-            const deleteBtn = `<button onclick="deleteUser('${id}')" title="Удалить" class="p-2 bg-slate-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-base shadow-sm border border-slate-200 hover:border-red-300">🗑️</button>`;
-
-            activeHTML += `
-                <tr class="transition-colors border-b border-slate-100 group user-row ${rowClass}" data-name="${u.name.toLowerCase()}">
-                    
-                    <td class="py-2 px-4">
-                        <p class="font-black ${nameColor} text-sm mb-1 truncate">${u.name}</p>
-                        <select onchange="updateField('${id}', 'gender', this.value)" class="text-[10px] uppercase font-bold p-1 rounded border border-slate-200 bg-white outline-none focus:border-indigo-500 text-slate-600 shadow-sm cursor-pointer" ${isBlocked ? 'disabled' : ''}>
-                            <option value="boy" ${u.gender === 'boy' ? 'selected' : ''}>👨‍💼 Брат</option>
-                            <option value="girl" ${u.gender === 'girl' ? 'selected' : ''}>👩‍💼 Сестра</option>
-                        </select>
-                    </td>
-
-                    <td class="py-2 px-2 text-center">
-                        <input type="text" maxlength="6" onchange="updatePin('${id}', this.value, this)" value="${u.pin || ''}" placeholder="000000" class="w-[60px] p-1.5 text-center border border-slate-200 rounded-lg text-xs outline-none bg-white focus:border-indigo-500 font-mono font-black tracking-widest shadow-sm mx-auto transition-all" ${isBlocked ? 'disabled' : ''}>
-                    </td>
-                    
-                    <td class="py-2 px-2 text-center">
-                        <input type="number" onchange="updateField('${id}', 'group', this.value)" value="${u.group && u.group !== 'Без группы' ? u.group : ''}" placeholder="№" class="w-12 p-1.5 text-center border border-slate-200 rounded-lg text-sm outline-none bg-white focus:border-indigo-500 font-black shadow-sm mx-auto" ${isBlocked ? 'disabled' : ''}>
-                    </td>
-                    
-                    <td class="py-2 px-2 text-center">
-                        <label class="inline-flex items-center cursor-pointer p-1.5 rounded hover:bg-sky-50 transition-colors">
-                            <input type="checkbox" onchange="toggleRole('${id}', 'Участник школы', this.checked)" class="w-4 h-4 accent-sky-500 shadow-sm cursor-pointer" ${r.includes('Участник школы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}>
-                        </label>
-                    </td>
-                    
-                    <td class="py-2 px-4">
-                        <div class="flex flex-wrap gap-1.5 w-64">
-                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-slate-600 font-bold uppercase hover:bg-slate-100 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Возвещатель', this.checked)" class="accent-slate-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Возвещатель') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Возвещатель</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-emerald-600 font-bold uppercase hover:bg-emerald-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Пионер', this.checked)" class="accent-emerald-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Пионер') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Пионер</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-sky-600 font-bold uppercase hover:bg-sky-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Помощник собрания', this.checked)" class="accent-sky-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Помощник собрания') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Помощник собр.</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-amber-600 font-bold uppercase hover:bg-amber-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Старейшина', this.checked)" class="accent-amber-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Старейшина') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Старейшина</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-rose-600 font-bold uppercase hover:bg-rose-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Админ', this.checked)" class="accent-rose-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Админ') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Админ</label>
-                        </div>
-                    </td>
-                    
-                    <td class="py-2 px-4">
-                        <div class="flex flex-wrap gap-1.5 w-48">
-                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-purple-700 font-bold uppercase hover:bg-purple-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Надзиратель группы', this.checked)" class="accent-purple-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Надзиратель группы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Группа</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-teal-700 font-bold uppercase hover:bg-teal-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за участки', this.checked)" class="accent-teal-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Ответственный за участки') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Участки</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[10px] text-indigo-700 font-bold uppercase hover:bg-indigo-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за школу', this.checked)" class="accent-indigo-500 w-3.5 h-3.5 cursor-pointer" ${r.includes('Ответственный за школу') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Школа</label>
-                        </div>
-                    </td>
-                    
-                    <td class="py-2 px-4 align-middle">
-                        <div class="flex justify-end gap-2">
                             ${lockBtn}
                             ${deleteBtn}
                         </div>
@@ -272,7 +231,7 @@ onSnapshot(collection(db, "users"), (snapshot) => {
 });
 
 // ==========================================
-// 8. ЖИВОЙ ПОИСК ПО ИМЕНИ
+// 6. ЖИВОЙ ПОИСК ПО ИМЕНИ
 // ==========================================
 document.getElementById('search-user').addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
