@@ -258,7 +258,7 @@ function loadPersonalData() {
         }
     });
 
-    // ДЕЖУРСТВА: ТОЛЬКО ТЕКУЩАЯ НЕДЕЛЯ, БЕЗ ТОЧЕК
+    // ИСПРАВЛЕНИЕ: ДЕЖУРСТВА - ТОЛЬКО ОДНО БЛИЖАЙШЕЕ
     try {
         const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
         onSnapshot(dutiesQuery, (snapshot) => {
@@ -266,7 +266,7 @@ function loadPersonalData() {
             if (!container) return;
             
             const today = new Date(); today.setHours(0,0,0,0);
-            let currentDuty = null;
+            let upcomingDuties = [];
             let myDutyFound = false;
 
             snapshot.forEach(docSnap => {
@@ -274,26 +274,32 @@ function loadPersonalData() {
                 const dutyStart = new Date(d.rawDate); dutyStart.setHours(0,0,0,0);
                 const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6); dutyEnd.setHours(23,59,59,999);
                 
-                if (today.getTime() >= dutyStart.getTime() && today.getTime() <= dutyEnd.getTime()) {
-                    currentDuty = d;
-                    const myGroup = currentUserData ? currentUserData.group : "Без группы";
-                    if (d.group === myGroup) myDutyFound = true;
+                // Собираем все дежурства, которые идут СЕЙЧАС или в БУДУЩЕМ
+                if (dutyEnd.getTime() >= today.getTime()) {
+                    upcomingDuties.push(d);
+                    // Тост показываем только если дежурство идет прямо на ЭТОЙ неделе
+                    if (today.getTime() >= dutyStart.getTime()) {
+                        const myGroup = currentUserData ? currentUserData.group : "Без группы";
+                        if (d.group === myGroup) myDutyFound = true;
+                    }
                 }
             });
 
-            if (!currentDuty) {
-                container.innerHTML = '<p class="text-xs text-slate-400 italic p-4 text-center">На этой неделе дежурств нет</p>';
+            if (upcomingDuties.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 italic p-4 text-center">График пуст</p>';
             } else {
+                // Берем самое ближайшее к сегодняшнему дню
+                const nextDuty = upcomingDuties[0];
                 const myGroup = currentUserData ? currentUserData.group : "Без группы";
-                const isMyGroup = currentDuty.group === myGroup;
+                const isMyGroup = nextDuty.group === myGroup;
                 const badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
                 
                 container.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-black text-slate-800 truncate pr-2">${currentDuty.type}</span>
-                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border ${badgeClass} shrink-0">Гр. ${currentDuty.group}</span>
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-sm font-black text-slate-800 truncate pr-2">${nextDuty.type}</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border ${badgeClass} shrink-0">Гр. ${nextDuty.group}</span>
                     </div>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mt-1">${currentDuty.dateRange}</span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${nextDuty.dateRange}</span>
                 `;
             }
 
@@ -317,9 +323,9 @@ function loadPersonalData() {
                     <div class="bg-white rounded-lg border border-slate-200 overflow-hidden flex flex-col">
                         <div class="p-4 flex justify-between items-center bg-emerald-50 border-b border-slate-100">
                             <h3 class="font-black text-slate-800 text-sm">Участок № ${terr.number}</h3>
-                            <span class="text-[9px] font-bold text-emerald-600 bg-white px-2 py-1 rounded-md shadow-sm uppercase">Активен</span>
+                            <span class="text-[9px] font-bold text-emerald-600 bg-white px-2 py-1 rounded-md shadow-sm uppercase border border-emerald-100">Активен</span>
                         </div>
-                        <div class="w-full h-32 bg-slate-50 flex items-center justify-center relative">
+                        <div class="w-full h-24 bg-slate-50 flex items-center justify-center relative">
                             <span class="text-3xl absolute opacity-10">🗺️</span>
                         </div>
                     </div>
@@ -351,27 +357,21 @@ function loadPersonalData() {
                         : `Выступление ${task.assistant ? `<span class="text-slate-500 text-[10px] md:text-xs block mt-0.5 truncate">Пом: <span class="text-sky-600">${task.assistant}</span></span>` : ''}`;
 
                     const cardHtml = `
-                        <div class="p-4 md:p-5 rounded-lg border ${opacityClass} mb-4 relative overflow-hidden transition-all">
-                            <div class="flex items-start mb-4">
-                                <div class="flex gap-3 md:gap-4 items-center min-w-0">
-                                    <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 ${isPast ? 'bg-slate-100 border-slate-200' : 'bg-sky-50 border-sky-100'} rounded-lg border shrink-0">
-                                        <span class="text-[8px] md:text-[9px] uppercase ${isPast ? 'text-slate-400' : 'text-sky-500'} font-bold leading-none mb-1 tracking-widest">${taskDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
-                                        <span class="text-xl md:text-2xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${taskDate.getDate()}</span>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <h3 class="font-black text-slate-800 text-sm md:text-base leading-tight">${roleText}</h3>
+                        <div class="p-4 rounded-lg border ${opacityClass} mb-3 relative overflow-hidden transition-all">
+                            <div class="flex items-center gap-3">
+                                <div class="flex flex-col items-center justify-center w-12 h-12 ${isPast ? 'bg-slate-100 border-slate-200' : 'bg-sky-50 border-sky-100'} rounded-lg border shrink-0">
+                                    <span class="text-[8px] uppercase ${isPast ? 'text-slate-400' : 'text-sky-500'} font-bold leading-none mb-0.5 tracking-widest">${taskDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
+                                    <span class="text-xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${taskDate.getDate()}</span>
+                                </div>
+                                <div class="min-w-0 flex flex-col justify-center gap-1 w-full">
+                                    <h3 class="font-black text-slate-800 text-sm leading-tight">${roleText}</h3>
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div class="flex items-center gap-1.5 min-w-0">
+                                            <span class="font-black ${isPast ? 'text-slate-500' : 'text-sky-700'} text-[9px] uppercase tracking-wide leading-tight truncate">${task.category || task.title}</span>
+                                        </div>
+                                        ${task.lesson ? `<span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-lg shrink-0">Урок ${task.lesson}</span>` : ''}
                                     </div>
                                 </div>
-                            </div>
-                            <div class="bg-slate-50 p-2.5 rounded-lg flex items-center justify-between gap-2 border border-slate-100">
-                                <div class="flex items-center gap-2 flex-grow min-w-0">
-                                    <span class="bg-slate-800 text-white px-2 py-1 rounded-lg flex items-center shrink-0">
-                                        <span class="text-[8px] uppercase tracking-widest font-bold text-slate-400 mr-1">№</span>
-                                        <span class="text-sm font-black leading-none">${task.taskNumber || '-'}</span>
-                                    </span>
-                                    <span class="font-black ${isPast ? 'text-slate-500' : 'text-sky-700'} text-[9px] md:text-[10px] uppercase tracking-wide leading-tight whitespace-normal break-words">${task.category || task.title}</span>
-                                </div>
-                                ${task.lesson ? `<span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-lg shrink-0 whitespace-nowrap">Урок ${task.lesson}</span>` : ''}
                             </div>
                         </div>
                     `;
@@ -443,7 +443,7 @@ function loadPersonalData() {
                     </div>
                 </div>`;
             }
-
+            
             const contentNews = document.getElementById('content-news');
             if(contentNews) {
                 contentNews.innerHTML = newsHTML || `
@@ -454,7 +454,6 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-   // 5. КАЛЕНДАРЬ
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -466,7 +465,6 @@ function loadPersonalData() {
             const todayYear = now.getFullYear();
             const todayMonth = now.getMonth();
             const todayDate = now.getDate();
-            let count = 0;
 
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
@@ -474,7 +472,6 @@ function loadPersonalData() {
                 const evGroup = ev.group || "Все";
                 
                 if (evDate.getFullYear() === todayYear && evDate.getMonth() === todayMonth && evDate.getDate() === todayDate) {
-                    count++;
                     let isPastEvent = false;
                     let displayTime = ev.time || "";
                     
@@ -492,20 +489,13 @@ function loadPersonalData() {
                         }
                     }
 
-                    const groupBadge = evGroup !== "Все" 
-                        ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">Гр. ${evGroup}</span>` 
-                        : '';
-                    
-                    // ПЛОСКИЙ ДИЗАЙН: Активные - темно-серый фон, Прошедшие - светло-серый
-                    const activeClass = isPastEvent 
-                        ? "bg-slate-200 text-slate-500" 
-                        : "bg-slate-700 text-white"; 
-                    
+                    const groupBadge = evGroup !== "Все" ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">Гр. ${evGroup}</span>` : '';
+                    const activeClass = isPastEvent ? "bg-slate-200 text-slate-500 border-b border-slate-300" : "bg-slate-700 text-white";
                     const timeColor = isPastEvent ? "text-slate-400" : "text-slate-300";
                     const leaderColor = isPastEvent ? "text-slate-500" : "text-white";
 
                     html += `
-                        <div class="flex items-center px-4 md:px-5 py-3 w-full cursor-default ${activeClass}">
+                        <div class="flex items-center px-4 md:px-5 py-4 w-full cursor-default ${activeClass}">
                             <div class="flex items-center gap-4 w-full">
                                 <div class="flex flex-col items-center justify-center w-14 shrink-0">
                                     <span class="text-[9px] uppercase font-bold leading-none mb-1 tracking-widest opacity-70">СЕГОДНЯ</span>
@@ -531,9 +521,10 @@ function loadPersonalData() {
             });
 
             container.innerHTML = html || '';
+            // ОТКЛЮЧАЕМ ЛОАДЕР ТОЛЬКО КОГДА ВСЕ 4 БЛОКА ЗАГРУЗИЛИСЬ
             window.hideGlobalLoader();
         });
-    } catch(e) {}
+    } catch(e) { window.hideGlobalLoader(); }
 }
 
 window.requestTerritory = async (btn) => {
