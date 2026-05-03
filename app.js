@@ -199,7 +199,7 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         try { loadPersonalData(); } catch(e) { console.error("Error:", e); }
         try { loadProfileData(); } catch(e) { console.error("Error:", e); }
         
-        setTimeout(window.hideGlobalLoader, 1500); // Резервное отключение лоадера
+        setTimeout(window.hideGlobalLoader, 1500); 
     }
 });
 
@@ -258,7 +258,7 @@ function loadPersonalData() {
         }
     });
 
-    // ИСПРАВЛЕНИЕ: ДЕЖУРСТВА - ТОЛЬКО ОДНО БЛИЖАЙШЕЕ
+    // ИСПРАВЛЕНИЕ: ДЕЖУРСТВА - Находим текущее или самое ближайшее будущее
     try {
         const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
         onSnapshot(dutiesQuery, (snapshot) => {
@@ -274,10 +274,8 @@ function loadPersonalData() {
                 const dutyStart = new Date(d.rawDate); dutyStart.setHours(0,0,0,0);
                 const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6); dutyEnd.setHours(23,59,59,999);
                 
-                // Собираем все дежурства, которые идут СЕЙЧАС или в БУДУЩЕМ
                 if (dutyEnd.getTime() >= today.getTime()) {
                     upcomingDuties.push(d);
-                    // Тост показываем только если дежурство идет прямо на ЭТОЙ неделе
                     if (today.getTime() >= dutyStart.getTime()) {
                         const myGroup = currentUserData ? currentUserData.group : "Без группы";
                         if (d.group === myGroup) myDutyFound = true;
@@ -286,9 +284,8 @@ function loadPersonalData() {
             });
 
             if (upcomingDuties.length === 0) {
-                container.innerHTML = '<p class="text-xs text-slate-400 italic p-4 text-center">График пуст</p>';
+                container.innerHTML = '<p class="text-xs text-slate-400 italic text-center">График пуст</p>';
             } else {
-                // Берем самое ближайшее к сегодняшнему дню
                 const nextDuty = upcomingDuties[0];
                 const myGroup = currentUserData ? currentUserData.group : "Без группы";
                 const isMyGroup = nextDuty.group === myGroup;
@@ -315,7 +312,7 @@ function loadPersonalData() {
         onSnapshot(terrQuery, (snapshot) => {
             const container = document.getElementById('territories-container');
             if(!container) return;
-            if (snapshot.empty) return container.innerHTML = '<p class="text-slate-400 text-sm italic py-4">У вас пока нет активных участков</p>';
+            if (snapshot.empty) return container.innerHTML = '<p class="text-slate-400 text-sm italic py-4 text-center">У вас пока нет активных участков</p>';
             container.innerHTML = '';
             snapshot.forEach(docSnap => {
                 const terr = docSnap.data();
@@ -379,7 +376,7 @@ function loadPersonalData() {
                     else { pastCount++; pastList.innerHTML += cardHtml; }
                 }
             });
-            if (upCount === 0) upList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 bg-white rounded-lg p-4 text-center border border-slate-200">У тебя пока нет активных заданий</p>';
+            if (upCount === 0) upList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 text-center">У тебя пока нет активных заданий</p>';
             if (pastCount === 0) pastList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 text-center">История пуста</p>';
         });
     } catch(e){}
@@ -387,7 +384,9 @@ function loadPersonalData() {
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
-            let newsHTML = '';
+            // ИСПРАВЛЕНИЕ КАРУСЕЛИ: Добавлена невидимая распорка в начало ленты для телефона
+            let newsHTML = `<div class="shrink-0 w-1 md:hidden"></div>`; 
+            
             const now = new Date().getTime();
             const oneWeek = 7 * 24 * 60 * 60 * 1000;
             const oneDay = 24 * 60 * 60 * 1000;
@@ -443,13 +442,13 @@ function loadPersonalData() {
                     </div>
                 </div>`;
             }
-            
+
+            // ИСПРАВЛЕНИЕ КАРУСЕЛИ: Распорка в конец ленты
+            newsHTML += `<div class="shrink-0 w-1 md:hidden"></div>`;
+
             const contentNews = document.getElementById('content-news');
             if(contentNews) {
-                contentNews.innerHTML = newsHTML || `
-                <div class="w-full shrink-0 p-6 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center">
-                    <p class="text-slate-400 italic text-sm text-center">Актуальных объявлений нет</p>
-                </div>`;
+                contentNews.innerHTML = newsHTML;
             }
         });
     } catch(e) {}
@@ -521,7 +520,6 @@ function loadPersonalData() {
             });
 
             container.innerHTML = html || '';
-            // ОТКЛЮЧАЕМ ЛОАДЕР ТОЛЬКО КОГДА ВСЕ 4 БЛОКА ЗАГРУЗИЛИСЬ
             window.hideGlobalLoader();
         });
     } catch(e) { window.hideGlobalLoader(); }
