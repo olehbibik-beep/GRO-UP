@@ -22,7 +22,18 @@ enableIndexedDbPersistence(db).catch(() => {});
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
-// ПРОКРУТКА ДЛЯ КАРУСЕЛИ НОВОСТЕЙ
+// УПРАВЛЕНИЕ ЛОАДЕРОМ И КАРУСЕЛЬЮ
+let isLoaderHidden = false;
+window.hideGlobalLoader = () => {
+    if (isLoaderHidden) return;
+    isLoaderHidden = true;
+    const loader = document.getElementById('global-loader');
+    if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.style.display = 'none', 500);
+    }
+};
+
 window.scrollNews = (offset) => {
     const container = document.getElementById('content-news');
     if (container) container.scrollBy({ left: offset, behavior: 'smooth' });
@@ -31,13 +42,11 @@ window.scrollNews = (offset) => {
 window.showToast = (message, type = 'info') => {
     const container = document.getElementById('toast-container');
     if (!container) return;
-
     const toast = document.createElement('div');
     const bgColor = type === 'warning' ? 'bg-amber-500' : 'bg-indigo-600';
     toast.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-lg text-xs font-bold text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
     toast.innerText = message;
     container.appendChild(toast);
-
     requestAnimationFrame(() => toast.classList.remove('-translate-y-10', 'opacity-0'));
     setTimeout(() => {
         toast.classList.add('-translate-y-10', 'opacity-0');
@@ -49,7 +58,6 @@ window.setupNotifications = async () => {
     try {
         if (!('Notification' in window)) return alert("❌ Уведомления не поддерживаются на этом устройстве.");
         if (Notification.permission === 'denied') return alert("🔒 Уведомления заблокированы браузером!\n\nРазрешите их в настройках.");
-
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
             const registration = await navigator.serviceWorker.ready;
@@ -137,13 +145,6 @@ window.submitReport = async () => {
 };
 
 onSnapshot(doc(db, "users", userId), async (docSnap) => {
-    // СКРЫВАЕМ ЛОАДЕР КАК ТОЛЬКО ПРИШЛИ ДАННЫЕ ПОЛЬЗОВАТЕЛЯ
-    const globalLoader = document.getElementById('global-loader');
-    if (globalLoader) {
-        globalLoader.style.opacity = '0';
-        setTimeout(() => globalLoader.style.display = 'none', 300);
-    }
-
     if (!docSnap.exists()) { if (navigator.onLine) window.logout(); return; }
     currentUserData = docSnap.data();
 
@@ -153,8 +154,10 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
     if (currentUserData.status === 'pending') {
         if(pendingScreen) { pendingScreen.classList.remove('hidden'); pendingScreen.classList.add('flex'); }
         if(mainDashboard) { mainDashboard.classList.add('hidden'); mainDashboard.classList.remove('block'); }
+        window.hideGlobalLoader();
     } else if (currentUserData.status === 'blocked') {
         document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">ДОСТУП ЗАКРЫТ</h1></div>`;
+        window.hideGlobalLoader();
     } else {
         if(pendingScreen) { pendingScreen.classList.add('hidden'); pendingScreen.classList.remove('flex'); }
         if(mainDashboard) { mainDashboard.classList.remove('hidden'); mainDashboard.classList.add('block'); }
@@ -168,44 +171,25 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         }
 
         const profileAdminLinks = document.getElementById('profile-admin-links');
-        const profileAdminBtn = document.getElementById('profile-admin-btn');
-        const profileReportsBtn = document.getElementById('profile-reports-btn');
-        const profileCalendarBtn = document.getElementById('profile-calendar-btn');
-        const profileDutiesBtn = document.getElementById('profile-duties-btn');
-        const profileTerrBtn = document.getElementById('profile-terr-btn');
-        const profileSchoolBtn = document.getElementById('profile-school-btn');
         
         let showAdminMenu = false;
+        if (userRoles.some(r => TOP_ROLES.includes(r))) hasFullAccess = true;
+        else hasFullAccess = false;
 
-        if (userRoles.some(r => TOP_ROLES.includes(r))) {
-            hasFullAccess = true;
-            if(profileAdminBtn) { profileAdminBtn.classList.remove('hidden'); profileAdminBtn.classList.add('flex'); showAdminMenu = true; }
-        } else {
-            hasFullAccess = false;
-            if(profileAdminBtn) { profileAdminBtn.classList.add('hidden'); profileAdminBtn.classList.remove('flex'); }
-        }
+        const setAdminLink = (id, condition) => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                if (condition) { btn.classList.remove('hidden'); btn.classList.add('flex'); showAdminMenu = true; }
+                else { btn.classList.add('hidden'); btn.classList.remove('flex'); }
+            }
+        };
 
-        if (userRoles.some(r => OVERSEER_ROLES.includes(r))) {
-            if(profileReportsBtn) { profileReportsBtn.classList.remove('hidden'); profileReportsBtn.classList.add('flex'); showAdminMenu = true; }
-            if(profileCalendarBtn) { profileCalendarBtn.classList.remove('hidden'); profileCalendarBtn.classList.add('flex'); }
-            if(profileDutiesBtn) { profileDutiesBtn.classList.remove('hidden'); profileDutiesBtn.classList.add('flex'); }
-        } else {
-            if(profileReportsBtn) { profileReportsBtn.classList.add('hidden'); profileReportsBtn.classList.remove('flex'); }
-            if(profileCalendarBtn) { profileCalendarBtn.classList.add('hidden'); profileCalendarBtn.classList.remove('flex'); }
-            if(profileDutiesBtn) { profileDutiesBtn.classList.add('hidden'); profileDutiesBtn.classList.remove('flex'); }
-        }
-
-        if (userRoles.includes('Ответственный за участки') || hasFullAccess) {
-            if(profileTerrBtn) { profileTerrBtn.classList.remove('hidden'); profileTerrBtn.classList.add('flex'); showAdminMenu = true; }
-        } else {
-            if(profileTerrBtn) { profileTerrBtn.classList.add('hidden'); profileTerrBtn.classList.remove('flex'); }
-        }
-
-        if (userRoles.includes('Ответственный за школу') || hasFullAccess) {
-            if(profileSchoolBtn) { profileSchoolBtn.classList.remove('hidden'); profileSchoolBtn.classList.add('flex'); showAdminMenu = true; }
-        } else {
-            if(profileSchoolBtn) { profileSchoolBtn.classList.add('hidden'); profileSchoolBtn.classList.remove('flex'); }
-        }
+        setAdminLink('profile-admin-btn', hasFullAccess);
+        setAdminLink('profile-reports-btn', hasFullAccess || userRoles.includes("Надзиратель группы"));
+        setAdminLink('profile-calendar-btn', hasFullAccess || userRoles.includes("Надзиратель группы"));
+        setAdminLink('profile-duties-btn', hasFullAccess || userRoles.includes("Надзиратель группы"));
+        setAdminLink('profile-terr-btn', hasFullAccess || userRoles.includes("Ответственный за участки"));
+        setAdminLink('profile-school-btn', hasFullAccess || userRoles.includes("Ответственный за школу"));
 
         if(profileAdminLinks) {
             if(showAdminMenu) { profileAdminLinks.classList.remove('hidden'); profileAdminLinks.classList.add('grid'); } 
@@ -214,6 +198,9 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
 
         try { loadPersonalData(); } catch(e) { console.error("Error:", e); }
         try { loadProfileData(); } catch(e) { console.error("Error:", e); }
+        
+        // Резервное отключение лоадера, если контент грузится слишком долго
+        setTimeout(window.hideGlobalLoader, 1500);
     }
 });
 
@@ -286,7 +273,7 @@ function loadPersonalData() {
             const isMyGroup = d.group === myGroup;
             
             const badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
-            const bgClass = isMyGroup ? 'bg-amber-50/50' : 'bg-transparent';
+            const bgClass = isMyGroup ? 'bg-amber-50/50' : 'bg-slate-50';
 
             let dotsHtml = '';
             if (window.dutySliderData.length > 1) {
@@ -357,7 +344,7 @@ function loadPersonalData() {
                 const terr = docSnap.data();
                 container.innerHTML += `
                     <div class="bg-white rounded-lg border border-slate-200 overflow-hidden flex flex-col">
-                        <div class="p-4 flex justify-between items-center bg-emerald-50">
+                        <div class="p-4 flex justify-between items-center bg-emerald-50 border-b border-slate-100">
                             <h3 class="font-black text-slate-800 text-sm">Участок № ${terr.number}</h3>
                             <span class="text-[9px] font-bold text-emerald-600 bg-white px-2 py-1 rounded-md uppercase border border-emerald-100">Активен</span>
                         </div>
@@ -426,7 +413,6 @@ function loadPersonalData() {
         });
     } catch(e){}
 
-    // 4. КОМПАКТНАЯ ГОРИЗОНТАЛЬНАЯ КАРУСЕЛЬ НОВОСТЕЙ
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
@@ -450,7 +436,6 @@ function loadPersonalData() {
                         const bgCardClass = isNew ? "bg-white border-slate-200" : "bg-slate-50 opacity-90 border-slate-200";
                         const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-block mb-2">Новое</span>` : '';
 
-                        // Более компактные карточки: w-[240px] md:w-[280px]
                         newsHTML += `
                         <div class="w-[240px] md:w-[280px] shrink-0 snap-center p-4 rounded-lg border transition-all flex flex-col justify-between ${bgCardClass}">
                             <div>
@@ -487,18 +472,19 @@ function loadPersonalData() {
                     </div>
                 </div>`;
             }
+            
+            // ВАЖНО: Добавляем пустой блок в конец карусели, чтобы правый край не "прилипал" к экрану на телефоне
+            newsHTML += `<div class="shrink-0 w-2 md:hidden"></div>`;
 
             const contentNews = document.getElementById('content-news');
             if(contentNews) {
-                contentNews.innerHTML = newsHTML || `
-                <div class="w-full shrink-0 p-6 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center">
-                    <p class="text-slate-400 italic text-sm text-center">Актуальных объявлений нет</p>
-                </div>`;
+                contentNews.innerHTML = newsHTML;
             }
+
+            window.hideGlobalLoader();
         });
     } catch(e) {}
 
-   // 5. КАЛЕНДАРЬ (ТЕМНЫЙ ГРАФИТ И СВЕТЛО-СЕРЫЙ - ПЛОСКИЙ ДИЗАЙН)
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -538,12 +524,10 @@ function loadPersonalData() {
                         ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">Гр. ${evGroup}</span>` 
                         : '';
                     
-                    // ЦВЕТА ИЗМЕНЕНЫ ТУТ
                     const activeClass = isPastEvent 
-                        ? "bg-slate-200 text-slate-500 border-b border-slate-300" // ПРОШЛО: Светло-серый, текст серый
-                        : "bg-slate-700 text-white"; // АКТИВНО: Темный графит, текст белый
+                        ? "bg-slate-200 text-slate-500 border-b border-slate-300" 
+                        : "bg-slate-700 text-white";
                     
-                    // Текста времени и ведущего тоже зависят от фона
                     const timeColor = isPastEvent ? "text-slate-400" : "text-slate-300";
                     const leaderColor = isPastEvent ? "text-slate-500" : "text-white";
 
@@ -574,6 +558,7 @@ function loadPersonalData() {
             });
 
             container.innerHTML = html || '';
+            window.hideGlobalLoader();
         });
     } catch(e) {}
 }
@@ -619,7 +604,7 @@ window.openReportHistory = () => {
         reports.forEach(r => {
             const checkIcon = r.participated || r.hours > 0 ? `✅` : `-`;
             html += `
-                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-left">
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-left">
                     <div class="flex justify-between items-center mb-2 border-b border-slate-200 pb-2">
                         <span class="font-black text-purple-700 text-sm">${r.month || 'Неизвестно'}</span>
                         <span class="text-[10px] text-slate-400 font-bold">${r.submittedAt ? new Date(r.submittedAt).toLocaleDateString('ru-RU') : ''}</span>
