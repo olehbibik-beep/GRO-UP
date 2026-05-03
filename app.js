@@ -22,13 +22,21 @@ enableIndexedDbPersistence(db).catch(() => {});
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
+// ФУНКЦИЯ ПРОКРУТКИ НОВОСТЕЙ
+window.scrollNews = (offset) => {
+    const container = document.getElementById('content-news');
+    if (container) {
+        container.scrollBy({ left: offset, behavior: 'smooth' });
+    }
+};
+
 window.showToast = (message, type = 'info') => {
     const container = document.getElementById('toast-container');
     if (!container) return;
 
     const toast = document.createElement('div');
     const bgColor = type === 'warning' ? 'bg-amber-500' : 'bg-indigo-600';
-    toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg text-xs font-bold text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
+    toast.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-lg text-xs font-bold text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
     toast.innerText = message;
     container.appendChild(toast);
 
@@ -273,7 +281,7 @@ function loadPersonalData() {
             const isMyGroup = d.group === myGroup;
             
             const badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
-            const bgClass = isMyGroup ? 'bg-amber-50/50' : 'bg-transparent';
+            const bgClass = isMyGroup ? 'bg-amber-50/50' : 'bg-slate-50';
 
             let dotsHtml = '';
             if (window.dutySliderData.length > 1) {
@@ -343,7 +351,7 @@ function loadPersonalData() {
             snapshot.forEach(docSnap => {
                 const terr = docSnap.data();
                 container.innerHTML += `
-                    <div class="bg-white rounded-3xl shadow-sm overflow-hidden flex flex-col">
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
                         <div class="p-4 flex justify-between items-center bg-emerald-50">
                             <h3 class="font-black text-slate-800 text-sm">Участок № ${terr.number}</h3>
                             <span class="text-[9px] font-bold text-emerald-600 bg-white px-2 py-1 rounded-md shadow-sm uppercase">Активен</span>
@@ -380,10 +388,10 @@ function loadPersonalData() {
                         : `Выступление ${task.assistant ? `<span class="text-slate-500 text-[10px] md:text-xs block mt-0.5 truncate">Пом: <span class="text-sky-600">${task.assistant}</span></span>` : ''}`;
 
                     const cardHtml = `
-                        <div class="p-4 md:p-5 rounded-3xl border ${opacityClass} mb-4 relative overflow-hidden transition-all">
+                        <div class="p-4 md:p-5 rounded-lg border ${opacityClass} mb-4 relative overflow-hidden transition-all">
                             <div class="flex items-start mb-4">
                                 <div class="flex gap-3 md:gap-4 items-center min-w-0">
-                                    <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 ${isPast ? 'bg-slate-100' : 'bg-sky-50'} rounded-2xl border ${isPast ? 'border-slate-200' : 'border-sky-100'} shadow-inner shrink-0">
+                                    <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 ${isPast ? 'bg-slate-100' : 'bg-sky-50'} rounded-lg border ${isPast ? 'border-slate-200' : 'border-sky-100'} shadow-inner shrink-0">
                                         <span class="text-[8px] md:text-[9px] uppercase ${isPast ? 'text-slate-400' : 'text-sky-500'} font-bold leading-none mb-1 tracking-widest">${taskDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
                                         <span class="text-xl md:text-2xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${taskDate.getDate()}</span>
                                     </div>
@@ -392,7 +400,7 @@ function loadPersonalData() {
                                     </div>
                                 </div>
                             </div>
-                            <div class="bg-slate-50 p-2.5 rounded-xl flex items-center justify-between gap-2">
+                            <div class="bg-slate-50 p-2.5 rounded-lg flex items-center justify-between gap-2">
                                 <div class="flex items-center gap-2 flex-grow min-w-0">
                                     <span class="bg-slate-800 text-white px-2 py-1 rounded-lg shadow-sm flex items-center shrink-0">
                                         <span class="text-[8px] uppercase tracking-widest font-bold text-slate-400 mr-1">№</span>
@@ -408,12 +416,11 @@ function loadPersonalData() {
                     else { pastCount++; pastList.innerHTML += cardHtml; }
                 }
             });
-            if (upCount === 0) upList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 bg-white rounded-xl p-4 text-center">У тебя пока нет активных заданий</p>';
+            if (upCount === 0) upList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 bg-white rounded-lg p-4 text-center">У тебя пока нет активных заданий</p>';
             if (pastCount === 0) pastList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 text-center">История пуста</p>';
         });
     } catch(e){}
 
-    // 4. ГОРИЗОНТАЛЬНЫЕ НОВОСТИ С ПЛИТКОЙ ДОБАВЛЕНИЯ
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
@@ -431,14 +438,14 @@ function loadPersonalData() {
 
                     if (now - itemTime < oneWeek) {
                         const isNew = (now - itemTime) < oneDay;
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 px-2 py-1.5 rounded-xl w-full transition-colors">Удалить объявление</button>` : '';
-                        const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="mt-3 rounded-2xl max-h-48 w-full object-cover shadow-sm cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
+                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 px-2 py-1.5 rounded-lg w-full transition-colors">Удалить объявление</button>` : '';
+                        const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="mt-3 rounded-lg max-h-48 w-full object-cover shadow-sm cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
 
                         const bgCardClass = isNew ? "bg-white shadow-md" : "bg-slate-50/80 shadow-sm opacity-90";
                         const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md mb-2 inline-block shadow-sm">Новое</span>` : '';
 
                         newsHTML += `
-                        <div class="min-w-[85%] md:min-w-[320px] max-w-xs shrink-0 snap-center p-5 rounded-[2rem] transition-all flex flex-col justify-between ${bgCardClass}">
+                        <div class="min-w-[85%] md:min-w-[320px] max-w-xs shrink-0 snap-center p-5 rounded-lg transition-all flex flex-col justify-between ${bgCardClass}">
                             <div>
                                 ${newBadge}
                                 <p class="text-slate-700 whitespace-pre-wrap text-sm md:text-base leading-relaxed font-medium">${item.text}</p>
@@ -455,21 +462,20 @@ function loadPersonalData() {
                 }
             });
 
-            // Плитка ДОБАВИТЬ НОВОСТЬ уезжает в конец (вправо)
             if (isNewsAdmin) {
                 newsHTML += `
-                <div class="min-w-[85%] md:min-w-[320px] max-w-xs shrink-0 snap-center p-5 rounded-[2rem] border-2 border-dashed border-slate-300 bg-slate-100/50 flex flex-col justify-center relative">
+                <div class="min-w-[85%] md:min-w-[320px] max-w-xs shrink-0 snap-center p-5 rounded-lg border-2 border-dashed border-slate-300 bg-slate-100/50 flex flex-col justify-center relative">
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center">Добавить объявление</p>
-                    <textarea id="news-input" rows="2" placeholder="Напишите текст..." class="w-full bg-white rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-100 resize-none font-medium text-slate-700 shadow-sm"></textarea>
+                    <textarea id="news-input" rows="2" placeholder="Напишите текст..." class="w-full bg-white rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-100 resize-none font-medium text-slate-700 shadow-sm"></textarea>
                     <div class="flex items-center justify-between mt-3 gap-2">
-                        <label class="cursor-pointer bg-white text-slate-500 hover:text-indigo-500 rounded-xl transition-colors flex items-center justify-center shadow-sm w-12 h-10 shrink-0">
+                        <label class="cursor-pointer bg-white text-slate-500 hover:text-indigo-500 rounded-lg transition-colors flex items-center justify-center shadow-sm w-12 h-10 shrink-0">
                             📷
                             <input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)">
                         </label>
-                        <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 rounded-xl flex-grow transition-colors shadow-sm h-10">Опубликовать</button>
+                        <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 rounded-lg flex-grow transition-colors shadow-sm h-10">Опубликовать</button>
                     </div>
                     <div id="image-preview-container" class="hidden mt-3 relative inline-block w-full">
-                        <img id="image-preview" src="" class="rounded-xl max-h-24 w-full object-cover shadow-sm">
+                        <img id="image-preview" src="" class="rounded-lg max-h-24 w-full object-cover shadow-sm">
                         <button onclick="removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-md border-2 border-white outline-none">✖</button>
                     </div>
                 </div>`;
@@ -478,14 +484,13 @@ function loadPersonalData() {
             const contentNews = document.getElementById('content-news');
             if(contentNews) {
                 contentNews.innerHTML = newsHTML || `
-                <div class="min-w-full shrink-0 snap-center p-6 bg-slate-50 rounded-[2rem] flex items-center justify-center">
+                <div class="min-w-full shrink-0 snap-center p-6 bg-slate-50 rounded-lg flex items-center justify-center">
                     <p class="text-slate-400 italic text-sm text-center">Актуальных объявлений нет</p>
                 </div>`;
             }
         });
     } catch(e) {}
 
-   // 5. КАЛЕНДАРЬ (ПЛОСКИЙ И ОРАНЖЕВЫЙ ДИЗАЙН БЕЗ РАМОК И ТЕНЕЙ)
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -497,6 +502,7 @@ function loadPersonalData() {
             const todayYear = now.getFullYear();
             const todayMonth = now.getMonth();
             const todayDate = now.getDate();
+            let count = 0;
 
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
@@ -504,6 +510,7 @@ function loadPersonalData() {
                 const evGroup = ev.group || "Все";
                 
                 if (evDate.getFullYear() === todayYear && evDate.getMonth() === todayMonth && evDate.getDate() === todayDate) {
+                    count++;
                     let isPastEvent = false;
                     let displayTime = ev.time || "";
                     
@@ -523,11 +530,10 @@ function loadPersonalData() {
 
                     const groupBadge = evGroup !== "Все" ? `<span class="bg-slate-800 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase leading-none">Гр. ${evGroup}</span>` : '';
                     
-                    // Плоский дизайн. Только цвет фона, никаких рамок и теней.
                     const activeClass = isPastEvent ? "opacity-50 grayscale bg-transparent" : "bg-orange-100/50";
                     
                     html += `
-                        <div class="flex items-center px-4 md:px-5 py-4 w-full cursor-default ${activeClass}">
+                        <div class="flex items-center px-4 md:px-5 py-4 w-full cursor-default ${activeClass} ${count > 1 ? 'border-t border-slate-100' : ''}">
                             <div class="flex items-center gap-4 w-full">
                                 <div class="flex flex-col items-center justify-center w-14 shrink-0">
                                     <span class="text-[9px] uppercase ${isPastEvent ? 'text-slate-400' : 'text-orange-600'} font-black leading-none mb-1 tracking-widest">СЕГОДНЯ</span>
@@ -598,7 +604,7 @@ window.openReportHistory = () => {
         reports.forEach(r => {
             const checkIcon = r.participated || r.hours > 0 ? `✅` : `-`;
             html += `
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-left">
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-left">
                     <div class="flex justify-between items-center mb-2 border-b border-slate-200 pb-2">
                         <span class="font-black text-purple-700 text-sm">${r.month || 'Неизвестно'}</span>
                         <span class="text-[10px] text-slate-400 font-bold">${r.submittedAt ? new Date(r.submittedAt).toLocaleDateString('ru-RU') : ''}</span>
