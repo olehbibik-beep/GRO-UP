@@ -22,7 +22,7 @@ enableIndexedDbPersistence(db).catch(() => {});
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
-// УПРАВЛЕНИЕ ЛОАДЕРОМ И КАРУСЕЛЬЮ
+// УПРАВЛЕНИЕ ЛОАДЕРОМ
 let isLoaderHidden = false;
 window.hideGlobalLoader = () => {
     if (isLoaderHidden) return;
@@ -199,8 +199,7 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         try { loadPersonalData(); } catch(e) { console.error("Error:", e); }
         try { loadProfileData(); } catch(e) { console.error("Error:", e); }
         
-        // Резервное отключение лоадера, если контент грузится слишком долго
-        setTimeout(window.hideGlobalLoader, 1500);
+        setTimeout(window.hideGlobalLoader, 1500); // Резервное отключение лоадера
     }
 });
 
@@ -259,51 +258,15 @@ function loadPersonalData() {
         }
     });
 
+    // ДЕЖУРСТВА: ТОЛЬКО ТЕКУЩАЯ НЕДЕЛЯ, БЕЗ ТОЧЕК
     try {
-        window.dutySliderData = [];
-        window.currentDutySlide = 0;
-
-        window.renderDutySlide = (index) => {
-            const container = document.getElementById('dashboard-duties');
-            if (!container || window.dutySliderData.length === 0) return;
-
-            window.currentDutySlide = index;
-            const d = window.dutySliderData[index];
-            const myGroup = currentUserData ? currentUserData.group : "Без группы";
-            const isMyGroup = d.group === myGroup;
-            
-            const badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
-            const bgClass = isMyGroup ? 'bg-amber-50/50' : 'bg-slate-50';
-
-            let dotsHtml = '';
-            if (window.dutySliderData.length > 1) {
-                dotsHtml = '<div class="flex justify-center gap-2.5 p-3">';
-                for (let i = 0; i < window.dutySliderData.length; i++) {
-                    const activeClass = i === index ? 'bg-amber-400 scale-125' : 'bg-slate-300 hover:bg-slate-400 cursor-pointer';
-                    dotsHtml += `<div onclick="renderDutySlide(${i})" class="w-2.5 h-2.5 rounded-full transition-all ${activeClass}"></div>`;
-                }
-                dotsHtml += '</div>';
-            }
-
-            container.innerHTML = `
-                <div class="flex flex-col p-4 ${bgClass} transition-colors justify-center flex-grow rounded-lg border border-slate-100">
-                    <div class="flex items-center justify-between mb-1.5">
-                        <span class="text-sm font-black text-slate-800 truncate pr-2">${d.type}</span>
-                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${badgeClass} shrink-0">Гр. ${d.group}</span>
-                    </div>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${d.dateRange}</span>
-                </div>
-                ${dotsHtml}
-            `;
-        };
-
         const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
         onSnapshot(dutiesQuery, (snapshot) => {
             const container = document.getElementById('dashboard-duties');
             if (!container) return;
             
-            window.dutySliderData = [];
             const today = new Date(); today.setHours(0,0,0,0);
+            let currentDuty = null;
             let myDutyFound = false;
 
             snapshot.forEach(docSnap => {
@@ -311,19 +274,27 @@ function loadPersonalData() {
                 const dutyStart = new Date(d.rawDate); dutyStart.setHours(0,0,0,0);
                 const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6); dutyEnd.setHours(23,59,59,999);
                 
-                if (dutyEnd.getTime() >= today.getTime()) {
-                    window.dutySliderData.push(d);
-                    if (today.getTime() >= dutyStart.getTime()) {
-                        const myGroup = currentUserData ? currentUserData.group : "Без группы";
-                        if (d.group === myGroup) myDutyFound = true;
-                    }
+                if (today.getTime() >= dutyStart.getTime() && today.getTime() <= dutyEnd.getTime()) {
+                    currentDuty = d;
+                    const myGroup = currentUserData ? currentUserData.group : "Без группы";
+                    if (d.group === myGroup) myDutyFound = true;
                 }
             });
 
-            if (window.dutySliderData.length === 0) {
-                container.innerHTML = '<p class="text-xs text-slate-400 italic p-4 text-center border border-slate-100 rounded-lg">Предстоящих дежурств нет</p>';
+            if (!currentDuty) {
+                container.innerHTML = '<p class="text-xs text-slate-400 italic p-4 text-center">На этой неделе дежурств нет</p>';
             } else {
-                window.renderDutySlide(0); 
+                const myGroup = currentUserData ? currentUserData.group : "Без группы";
+                const isMyGroup = currentDuty.group === myGroup;
+                const badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
+                
+                container.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-black text-slate-800 truncate pr-2">${currentDuty.type}</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border ${badgeClass} shrink-0">Гр. ${currentDuty.group}</span>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mt-1">${currentDuty.dateRange}</span>
+                `;
             }
 
             if (myDutyFound && !sessionStorage.getItem('duty_toast_shown')) {
@@ -346,7 +317,7 @@ function loadPersonalData() {
                     <div class="bg-white rounded-lg border border-slate-200 overflow-hidden flex flex-col">
                         <div class="p-4 flex justify-between items-center bg-emerald-50 border-b border-slate-100">
                             <h3 class="font-black text-slate-800 text-sm">Участок № ${terr.number}</h3>
-                            <span class="text-[9px] font-bold text-emerald-600 bg-white px-2 py-1 rounded-md uppercase border border-emerald-100">Активен</span>
+                            <span class="text-[9px] font-bold text-emerald-600 bg-white px-2 py-1 rounded-md shadow-sm uppercase">Активен</span>
                         </div>
                         <div class="w-full h-32 bg-slate-50 flex items-center justify-center relative">
                             <span class="text-3xl absolute opacity-10">🗺️</span>
@@ -430,8 +401,8 @@ function loadPersonalData() {
 
                     if (now - itemTime < oneWeek) {
                         const isNew = (now - itemTime) < oneDay;
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 px-2 py-1.5 rounded-lg w-full transition-colors border border-red-100">Удалить объявление</button>` : '';
-                        const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="mt-3 rounded-lg max-h-32 w-full object-cover border border-slate-200 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
+                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 px-2 py-1.5 rounded-lg w-full transition-colors border border-red-100 outline-none">Удалить объявление</button>` : '';
+                        const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="mt-3 rounded-lg max-h-48 w-full object-cover border border-slate-200 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
 
                         const bgCardClass = isNew ? "bg-white border-slate-200" : "bg-slate-50 opacity-90 border-slate-200";
                         const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-block mb-2">Новое</span>` : '';
@@ -464,7 +435,7 @@ function loadPersonalData() {
                             📷
                             <input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)">
                         </label>
-                        <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 rounded-lg flex-grow transition-colors h-8">Опубликовать</button>
+                        <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 rounded-lg flex-grow transition-colors h-8 outline-none">Опубликовать</button>
                     </div>
                     <div id="image-preview-container" class="hidden mt-3 relative inline-block w-full">
                         <img id="image-preview" src="" class="rounded-lg max-h-20 w-full object-cover border border-slate-200">
@@ -472,19 +443,18 @@ function loadPersonalData() {
                     </div>
                 </div>`;
             }
-            
-            // ВАЖНО: Добавляем пустой блок в конец карусели, чтобы правый край не "прилипал" к экрану на телефоне
-            newsHTML += `<div class="shrink-0 w-2 md:hidden"></div>`;
 
             const contentNews = document.getElementById('content-news');
             if(contentNews) {
-                contentNews.innerHTML = newsHTML;
+                contentNews.innerHTML = newsHTML || `
+                <div class="w-full shrink-0 p-6 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center">
+                    <p class="text-slate-400 italic text-sm text-center">Актуальных объявлений нет</p>
+                </div>`;
             }
-
-            window.hideGlobalLoader();
         });
     } catch(e) {}
 
+   // 5. КАЛЕНДАРЬ
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -496,6 +466,7 @@ function loadPersonalData() {
             const todayYear = now.getFullYear();
             const todayMonth = now.getMonth();
             const todayDate = now.getDate();
+            let count = 0;
 
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
@@ -503,6 +474,7 @@ function loadPersonalData() {
                 const evGroup = ev.group || "Все";
                 
                 if (evDate.getFullYear() === todayYear && evDate.getMonth() === todayMonth && evDate.getDate() === todayDate) {
+                    count++;
                     let isPastEvent = false;
                     let displayTime = ev.time || "";
                     
@@ -524,15 +496,16 @@ function loadPersonalData() {
                         ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">Гр. ${evGroup}</span>` 
                         : '';
                     
+                    // ПЛОСКИЙ ДИЗАЙН: Активные - темно-серый фон, Прошедшие - светло-серый
                     const activeClass = isPastEvent 
-                        ? "bg-slate-200 text-slate-500 border-b border-slate-300" 
-                        : "bg-slate-700 text-white";
+                        ? "bg-slate-200 text-slate-500" 
+                        : "bg-slate-700 text-white"; 
                     
                     const timeColor = isPastEvent ? "text-slate-400" : "text-slate-300";
                     const leaderColor = isPastEvent ? "text-slate-500" : "text-white";
 
                     html += `
-                        <div class="flex items-center px-4 md:px-5 py-4 w-full cursor-default ${activeClass}">
+                        <div class="flex items-center px-4 md:px-5 py-3 w-full cursor-default ${activeClass}">
                             <div class="flex items-center gap-4 w-full">
                                 <div class="flex flex-col items-center justify-center w-14 shrink-0">
                                     <span class="text-[9px] uppercase font-bold leading-none mb-1 tracking-widest opacity-70">СЕГОДНЯ</span>
