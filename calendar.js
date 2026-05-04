@@ -46,45 +46,53 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
 });
 
 // ==========================================
-// 2. ЗАГРУЗКА БРАТЬЕВ И УМНОЕ ВРЕМЯ
+// 2. ЗАГРУЗКА БРАТЬЕВ ДЛЯ ОЧЕРЕДИ
 // ==========================================
-// Автоматически ставим двоеточие при вводе времени (например: 1550 -> 15:50)
 const timeInput = document.getElementById('event-time');
 if (timeInput) {
     timeInput.addEventListener('input', (e) => {
-        let v = e.target.value.replace(/\D/g, ''); // Удаляем всё, кроме цифр
+        let v = e.target.value.replace(/\D/g, ''); 
         if (v.length > 2) v = v.substring(0, 2) + ':' + v.substring(2, 4);
         e.target.value = v;
     });
 }
 
 onSnapshot(collection(db, "users"), (snapshot) => {
-    const select = document.getElementById('event-leader');
-    if (!select) return;
+    const list = document.getElementById('leaders-list');
+    if (!list) return;
     
-    let html = '<option value="" selected>Без ведущего</option>';
     let usersArr = [];
     
-    // Фильтруем: только активные и ТОЛЬКО БРАТЬЯ
     snapshot.forEach(d => { 
         const u = d.data();
         if(u.status === 'active' && u.gender === 'boy') usersArr.push(u.name); 
     });
     usersArr.sort();
 
-    usersArr.forEach(name => { html += `<option value="${name}">${name}</option>`; });
-    select.innerHTML = html;
+    let html = '';
+    usersArr.forEach(name => { 
+        html += `
+        <label class="flex items-center gap-2 p-1.5 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors">
+            <input type="checkbox" value="${name}" class="leader-checkbox accent-rose-600 w-4 h-4 rounded cursor-pointer">
+            <span class="text-xs font-bold text-slate-700 select-none">${name}</span>
+        </label>
+        `; 
+    });
+    
+    list.innerHTML = html || '<p class="text-xs text-slate-400 italic">Братья не найдены</p>';
 });
 
 // ==========================================
-// 3. СОХРАНЕНИЕ СОБЫТИЙ 
+// 3. СОХРАНЕНИЕ СОБЫТИЙ (С ОЧЕРЕДЬЮ ВЕДУЩИХ)
 // ==========================================
 document.getElementById('save-event-btn').addEventListener('click', async (e) => {
     const title = document.getElementById('event-title').value.trim();
     const dateStr = document.getElementById('event-date').value;
     const timeStr = document.getElementById('event-time').value || "";
     const groupVal = document.getElementById('event-group').value.trim();
-    const leader = document.getElementById('event-leader').value; // Берем 1 ведущего
+    
+    // Собираем всех отмеченных ведущих в массив
+    const selectedLeaders = Array.from(document.querySelectorAll('.leader-checkbox:checked')).map(cb => cb.value);
     
     const isRecurring = document.getElementById('event-recurring').checked;
     const weeksCount = isRecurring ? parseInt(document.getElementById('event-weeks').value) : 1;
@@ -106,18 +114,25 @@ document.getElementById('save-event-btn').addEventListener('click', async (e) =>
             const dd = String(evDate.getDate()).padStart(2, '0');
             const newDateStr = `${yyyy}-${mm}-${dd}`;
 
+            // МАГИЯ ОЧЕРЕДИ: Выбираем ведущего по кругу (round-robin)
+            let leaderForWeek = "";
+            if (selectedLeaders.length > 0) {
+                leaderForWeek = selectedLeaders[i % selectedLeaders.length];
+            }
+
             await addDoc(collection(db, "events"), {
                 title: title,
                 date: newDateStr,
                 time: timeStr,
                 group: groupVal || "Все",
-                leader: leader, // Назначаем всем одинковым ведущего
+                leader: leaderForWeek,
                 createdAt: new Date().toISOString()
             });
         }
 
+        // Очистка формы
         document.getElementById('event-title').value = '';
-        document.getElementById('event-leader').value = '';
+        document.querySelectorAll('.leader-checkbox').forEach(cb => cb.checked = false);
         
         btn.classList.replace('bg-slate-800', 'bg-emerald-500');
         btn.innerText = "Успешно! ✔️";
@@ -138,7 +153,8 @@ window.renderEvents = () => {
     const showAll = showAllCb ? showAllCb.checked : false;
     
     let html = '';
-    const today = new Date(); today.setHours(0,0,0,0);
+    const today = new Date(); 
+    today.setHours(0,0,0,0); // Начало сегодняшнего дня
     let activeCount = 0;
 
     allEventsData.forEach(docSnap => {
@@ -146,13 +162,11 @@ window.renderEvents = () => {
         const evDate = new Date(ev.date);
         const evGroup = ev.group || "Все";
 
-        const isPast = evDate < today;
-
-        // 🔥 МАГИЯ: Автоматически удаляем прошедшие события!
-        if (isPast) {
-            // Удаляет только админ, чтобы не было дублей запросов к серверу
+        // 🔥 АВТОУДАЛЕНИЕ: Если дата события МЕНЬШЕ сегодняшнего дня (то есть вчера или раньше)
+        if (evDate < today) {
+            // Удаляем тихо в фоне (только админы, чтобы не было дублей команд)
             if (isFullAdmin) deleteDoc(doc(db, "events", docSnap.id));
-            return; // Пропускаем прошедшие события, не рисуем их!
+            return; // Пропускаем старье, не рисуем его!
         }
 
         const isMyGroupOrAll = (evGroup === "Все" || evGroup == myGroup);
@@ -161,26 +175,25 @@ window.renderEvents = () => {
             activeCount++;
             
             const isOtherGroup = !isMyGroupOrAll;
-            const opacityClass = isOtherGroup ? "opacity-50 grayscale hover:opacity-100 hover:grayscale-0" : "";
-            const bgClass = isOtherGroup ? "bg-slate-50" : "bg-white hover:bg-slate-50";
+            const opacityClass = isOtherGroup ? "opacity-50 hover:opacity-100 bg-slate-50" : "bg-white";
 
             const niceDate = evDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
             
             const groupBadge = evGroup !== "Все" 
-                ? `<span class="bg-indigo-100 text-indigo-700 text-[9px] px-2 py-0.5 rounded font-black uppercase shrink-0">Гр. ${evGroup}</span>` 
-                : `<span class="bg-slate-100 text-slate-500 text-[9px] px-2 py-0.5 rounded font-black uppercase shrink-0">Общее</span>`;
+                ? `<span class="bg-indigo-50 border border-indigo-200 text-indigo-700 text-[9px] px-2 py-0.5 rounded-md font-black uppercase shrink-0">Гр. ${evGroup}</span>` 
+                : `<span class="bg-slate-100 border border-slate-200 text-slate-500 text-[9px] px-2 py-0.5 rounded-md font-black uppercase shrink-0">Общее</span>`;
             
             const timeHtml = ev.time ? `<span class="text-xs font-mono font-black text-slate-400 mr-3 shrink-0">${ev.time}</span>` : '';
-            const leaderHtml = ev.leader ? `<div class="text-[9px] uppercase font-bold text-slate-400 mt-1 truncate">Ведущий: <span class="text-rose-500 font-black">${ev.leader}</span></div>` : '';
+            const leaderHtml = ev.leader ? `<div class="text-[10px] uppercase font-bold text-slate-400 mt-1 truncate">Ведущий: <span class="text-rose-500 font-black">${ev.leader}</span></div>` : '';
 
             const canDelete = isFullAdmin || isMyGroupOrAll;
 
             const deleteBtn = canDelete 
-                ? `<button onclick="deleteEvent('${docSnap.id}')" class="text-slate-300 hover:text-red-500 transition-colors p-2 text-lg outline-none" title="Удалить">🗑️</button>` 
+                ? `<button onclick="deleteEvent('${docSnap.id}')" class="text-slate-300 hover:text-red-500 bg-slate-50 hover:bg-red-50 rounded-lg transition-colors p-2 text-lg outline-none border border-slate-100" title="Удалить">🗑️</button>` 
                 : `<span class="text-[10px] text-slate-400 font-bold uppercase p-2">Чужое</span>`;
 
             html += `
-                <div class="flex items-center justify-between p-4 border-b border-slate-100 transition-all ${bgClass} ${opacityClass}">
+                <div class="flex items-center justify-between p-4 border-b border-slate-100 transition-colors ${opacityClass}">
                     <div class="flex items-center w-full min-w-0 pr-4">
                         ${timeHtml}
                         <div class="flex flex-col min-w-0">
