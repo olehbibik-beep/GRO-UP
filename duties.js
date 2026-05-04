@@ -16,141 +16,138 @@ const currentUserId = localStorage.getItem('userId');
 
 if (!currentUserId) window.location.href = 'login.html';
 
+let isFullAdmin = false;
+
 // ==========================================
-// 1. ПРОВЕРКА ПРАВ И ЗАЩИТА СТРАНИЦЫ
+// 1. ПРОВЕРКА ПРАВ
 // ==========================================
 getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     
     const roles = docSnap.data().roles || [];
-    const isFullAdmin = roles.includes("Владелец") || roles.includes("Админ");
-    const isSchool = isFullAdmin || roles.includes("Ответственный за школу");
-    const isTerr = isFullAdmin || roles.includes("Ответственный за участки");
+    isFullAdmin = roles.includes("Владелец") || roles.includes("Админ");
     const isOverseer = isFullAdmin || roles.includes("Надзиратель группы");
 
-    // Жесткая защита страниц от прямого входа
     const path = window.location.pathname;
-    if (path.includes('admin.html') && !isFullAdmin) window.location.href = 'index.html';
-    if (path.includes('school.html') && !isSchool) window.location.href = 'index.html';
-    if (path.includes('territories.html') && !isTerr) window.location.href = 'index.html';
-    if ((path.includes('calendar.html') || path.includes('duties.html')) && !isOverseer) window.location.href = 'index.html';
+    if (path.includes('duties.html') && !isOverseer) window.location.href = 'index.html';
 });
 
 // ==========================================
-// 2. ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ДАТ
-// ==========================================
-const formatDateStr = (dateObj) => {
-    const d = dateObj.getDate();
-    const m = dateObj.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '');
-    return `${d} ${m}`;
-};
-
-// ==========================================
-// 3. СОХРАНЕНИЕ ГРАФИКА
+// 2. СОХРАНЕНИЕ (АВТОРАСКИДЫВАНИЕ)
 // ==========================================
 document.getElementById('save-duty-btn').addEventListener('click', async (e) => {
     const type = document.getElementById('duty-type').value;
-    const startGroup = document.getElementById('duty-group').value.trim();
+    const groupVal = document.getElementById('duty-group').value.trim() || "Все"; // Теперь это строка!
     const dateStr = document.getElementById('duty-date').value;
+    
     const isRecurring = document.getElementById('duty-recurring').checked;
     const weeksCount = isRecurring ? parseInt(document.getElementById('duty-weeks').value) : 1;
 
-    if (!dateStr) return alert("Выберите дату начала недели!");
+    if (!dateStr) return alert("Выберите дату понедельника!");
 
     const btn = e.target;
     btn.innerText = "Генерация..."; btn.disabled = true;
 
     try {
         const baseDate = new Date(dateStr);
-        let currentGroupNum = startGroup ? parseInt(startGroup) : null;
+        // Защита от дурака: если выбрали не понедельник, отматываем к понедельнику
+        const day = baseDate.getDay();
+        const diff = baseDate.getDate() - day + (day === 0 ? -6 : 1); 
+        baseDate.setDate(diff);
+
+        // Разбиваем строку "1, 2" на массив ["1", "2"], если есть запятые
+        let groupQueue = [groupVal];
+        if (groupVal !== "Все") {
+            groupQueue = groupVal.split(',').map(g => g.trim()).filter(g => g);
+        }
 
         for (let i = 0; i < weeksCount; i++) {
-            // Вычисляем начало и конец недели (Понедельник - Воскресенье)
-            const weekStart = new Date(baseDate);
-            weekStart.setDate(weekStart.getDate() + (i * 7));
+            const startDate = new Date(baseDate);
+            startDate.setDate(startDate.getDate() + (i * 7));
             
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekEnd.getDate() + 6);
-            
-            // Форматируем красивую строку: "4 мая - 10 мая"
-            const rangeStr = `${formatDateStr(weekStart)} - ${formatDateStr(weekEnd)}`;
-            
-            // Определяем группу (увеличиваем на 1 каждую неделю, если группа была указана)
-            let assignedGroup = "Все";
-            if (currentGroupNum !== null) {
-                assignedGroup = currentGroupNum.toString();
-                currentGroupNum++;
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+
+            // Форматируем красиво "1 - 7 мая"
+            const startStr = startDate.getDate();
+            const endStr = endDate.getDate() + " " + endDate.toLocaleDateString('ru-RU', { month: 'long' });
+            let niceDateRange = `${startStr} - ${endStr}`;
+            if (startDate.getMonth() !== endDate.getMonth()) {
+                niceDateRange = `${startDate.getDate()} ${startDate.toLocaleDateString('ru-RU', { month: 'short' })} - ${endStr}`;
             }
+
+            // Магия групп: если мы авто-раскидываем "1, 2, 3", то они пойдут по очереди по неделям
+            // Если введено только "1", то скрипт просто будет назначать 1 на каждую неделю
+            const assignedGroup = groupQueue[i % groupQueue.length];
 
             await addDoc(collection(db, "duties"), {
                 type: type,
                 group: assignedGroup,
-                dateRange: rangeStr,
-                rawDate: weekStart.toISOString(), // Для правильной сортировки
+                dateRange: niceDateRange,
+                rawDate: startDate.toISOString().split('T')[0],
                 createdAt: new Date().toISOString()
             });
         }
 
         document.getElementById('duty-group').value = '';
-        
         btn.classList.replace('bg-slate-800', 'bg-emerald-500');
         btn.innerText = "Успешно! ✔️";
         setTimeout(() => { 
             btn.classList.replace('bg-emerald-500', 'bg-slate-800');
-            btn.innerText = "Назначить"; btn.disabled = false; 
+            btn.innerText = "Назначить"; 
+            btn.disabled = false; 
         }, 2000);
-    } catch (err) { alert("Ошибка!"); btn.disabled = false; btn.innerText = "Назначить"; }
+    } catch (error) { alert("Ошибка сети."); btn.disabled = false; btn.innerText = "Назначить"; }
 });
 
 // ==========================================
-// 4. ОТРИСОВКА СПИСКА
+// 3. ОТРИСОВКА И АВТОУДАЛЕНИЕ ПРОШЛЫХ
 // ==========================================
 const q = query(collection(db, "duties"), orderBy("rawDate", "asc"));
 onSnapshot(q, (snapshot) => {
     const list = document.getElementById('duties-list');
-    if (snapshot.empty) return list.innerHTML = '<p class="text-slate-400 italic p-6 text-center text-sm">График пуст.</p>';
-
     let html = '';
     const today = new Date(); today.setHours(0,0,0,0);
-    let count = 0;
+    
+    let renderedCount = 0;
 
     snapshot.forEach(docSnap => {
-        count++;
         const d = docSnap.data();
-        // Считаем, что если дата начала недели старше 7 дней назад, то оно прошло
-        const dDate = new Date(d.rawDate);
-        const isPast = (today.getTime() - dDate.getTime()) > (7 * 24 * 60 * 60 * 1000); 
         
-        const opacityClass = isPast ? "opacity-50 grayscale hover:opacity-100 bg-slate-50" : "bg-white";
-        const groupBadge = d.group !== "Все" 
-            ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest shrink-0 border border-indigo-200">Группа ${d.group}</span>`
-            : `<span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest shrink-0">Все</span>`;
+        const dutyStart = new Date(d.rawDate); dutyStart.setHours(0,0,0,0);
+        // Неделя дежурства заканчивается в Воскресенье 23:59
+        const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6); dutyEnd.setHours(23,59,59,999);
 
+        // 🔥 АВТОУДАЛЕНИЕ ПРОШЛОЙ НЕДЕЛИ: Если воскресенье этой недели уже прошло (меньше чем начало сегодняшнего дня)
+        if (dutyEnd.getTime() < today.getTime()) {
+            if (isFullAdmin) deleteDoc(doc(db, "duties", docSnap.id)); // Админ молча удаляет из базы
+            return; // Не рисуем это на экране
+        }
+
+        renderedCount++;
+        
+        // Плоский дизайн, без теней
         html += `
-            <div class="flex items-center justify-between p-4 md:p-5 ${count > 1 ? 'border-t border-slate-100' : ''} transition-all ${opacityClass} relative group">
-                <div class="flex items-center gap-4 w-full pr-10">
-                    <div class="flex flex-col items-center justify-center w-12 h-12 bg-amber-50 rounded-xl shrink-0 border border-amber-100 shadow-sm">
-                        <span class="text-2xl drop-shadow-sm">🗓️</span>
-                    </div>
-                    <div class="flex flex-col min-w-0 truncate">
-                        <div class="flex items-center gap-2 truncate mb-1">
-                            <h3 class="font-black text-slate-800 text-sm md:text-base leading-tight">${d.type}</h3>
-                            ${groupBadge}
+            <div class="flex items-center justify-between p-4 border-b border-slate-100 transition-colors bg-white hover:bg-slate-50">
+                <div class="flex items-center w-full min-w-0 pr-4">
+                    <div class="flex flex-col min-w-0">
+                        <div class="flex items-center gap-2 truncate">
+                            <h3 class="font-black text-slate-800 text-sm truncate">${d.type}</h3>
+                            <span class="bg-amber-100 text-amber-700 text-[9px] px-2 py-0.5 rounded-md font-black uppercase shrink-0">Гр. ${d.group}</span>
                         </div>
-                        <span class="text-[10px] md:text-xs font-bold text-amber-600 uppercase tracking-widest truncate">${d.dateRange}</span>
+                        <div class="flex items-center gap-2 mt-0.5 truncate">
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">📅 ${d.dateRange}</p>
+                        </div>
                     </div>
                 </div>
-                <button onclick="deleteDuty('${docSnap.id}')" class="absolute top-1/2 -translate-y-1/2 right-4 p-2 text-slate-300 hover:text-red-500 bg-white border border-slate-100 shadow-sm rounded-full transition-colors z-10 outline-none" title="Удалить">🗑️</button>
+                <button onclick="deleteDuty('${docSnap.id}')" class="text-slate-300 hover:text-red-500 bg-slate-50 hover:bg-red-50 transition-colors p-2 rounded-lg text-lg outline-none border border-slate-100" title="Удалить">🗑️</button>
             </div>
         `;
     });
 
-    list.innerHTML = html;
+    if(list) list.innerHTML = html || '<p class="text-slate-400 italic p-6 text-center text-sm">Предстоящих дежурств нет.</p>';
 });
 
-// ==========================================
-// 5. УДАЛЕНИЕ ДЕЖУРСТВА
-// ==========================================
 window.deleteDuty = (id) => {
-    if (confirm("Удалить дежурство?")) deleteDoc(doc(db, "duties", id));
+    if (confirm("Удалить дежурство из графика?")) deleteDoc(doc(db, "duties", id));
 };
