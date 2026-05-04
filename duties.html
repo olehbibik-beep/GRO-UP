@@ -6,15 +6,15 @@
     <title>График Дежурств - GRO-UP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f8fafc', adminNav: '#1e1b4b' } } } } }
+        tailwind.config = { theme: { extend: { colors: { ui: { bg: '#cbd5e1', adminNav: '#1e1b4b' } } } } }
     </script>
     <style>
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 8px; }
     </style>
 </head>
-<body class="bg-ui-bg text-slate-800 min-h-screen font-sans">
+<body class="bg-ui-bg text-slate-800 min-h-screen font-sans pb-24 overflow-x-hidden w-full">
 
     <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0">
         <a href="index.html" title="На главную" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white">
@@ -22,60 +22,57 @@
         </a>
     </nav>
 
-    <main class="w-full max-w-5xl mx-auto pt-4 md:pt-6 px-4 pb-24 md:pl-28 md:pr-6">
+    <main class="w-full max-w-5xl mx-auto pt-4 md:pt-6 px-4 md:pl-28 md:pr-6">
         
-        <div class="mb-6 flex justify-between items-center bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200">
+        <div class="mb-4 md:mb-6 flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200">
             <div class="flex items-center gap-3">
-                <span class="text-amber-500 text-3xl drop-shadow-sm">🗓️</span>
+                <span class="text-amber-500 text-2xl md:text-3xl">🗓️</span>
                 <div>
-                    <h1 class="text-xl md:text-2xl font-black text-amber-600">График</h1>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Управление дежурствами</p>
+                    <h1 class="text-lg md:text-2xl font-black text-amber-600 leading-tight">График</h1>
+                    <p class="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Управление дежурствами</p>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             
             <div class="md:col-span-1">
-                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-md border border-slate-200 sticky top-6">
-                    <h2 class="text-lg font-black text-slate-800 mb-5 flex items-center gap-2">
+                <div class="bg-white p-5 rounded-lg border border-slate-200 sticky top-6">
+                    <h2 class="text-base md:text-lg font-black text-slate-800 mb-5 flex items-center gap-2">
                         <span class="text-amber-500">➕</span> Назначить
                     </h2>
                     
                     <div class="space-y-4">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Тип дежурства</label>
-                            <select id="duty-type" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-amber-400 font-bold text-slate-700">
+                            <select id="duty-type" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-amber-400 font-bold text-slate-700">
                                 <option value="Уборка зала">🧹 Уборка зала</option>
-                                <option value="Распорядитель">👔 Распорядитель</option>
-                                <option value="Микрофоны">🎤 Микрофоны</option>
-                                <option value="Звук / Сцена">🎛️ Звук / Сцена</option>
                                 <option value="Специальное событие">⭐ Специальное событие</option>
                             </select>
                         </div>
 
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Начальная группа (пусто = Все)</label>
-                            <input type="number" id="duty-group" placeholder="Например: 1" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-amber-400 font-bold text-slate-700">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Начальная группа (можно 1, 2)</label>
+                            <input type="text" id="duty-group" placeholder="Например: 1, 2" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-amber-400 font-bold text-slate-700">
                         </div>
                         
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">С понедельника (Дата начала)</label>
-                            <input type="date" id="duty-date" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-amber-400 font-bold text-slate-700">
+                            <input type="date" id="duty-date" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-amber-400 font-bold text-slate-700 cursor-pointer">
                         </div>
 
-                        <div class="bg-amber-50 p-4 rounded-xl border border-amber-100 mt-2">
+                        <div class="bg-amber-50/50 p-4 rounded-lg border border-amber-100 mt-2">
                             <label class="flex items-center gap-2 cursor-pointer mb-2">
                                 <input type="checkbox" id="duty-recurring" class="w-4 h-4 accent-amber-600 rounded cursor-pointer" onchange="document.getElementById('weeks-container').classList.toggle('hidden')">
                                 <span class="text-xs font-bold text-amber-900 uppercase tracking-wide mt-0.5">Авто-раскидать на месяц</span>
                             </label>
                             <div id="weeks-container" class="hidden flex items-center justify-between gap-2 mt-3 bg-white p-2 rounded-lg border border-amber-200">
                                 <span class="text-xs text-amber-700 font-bold">На сколько недель?</span>
-                                <input type="number" id="duty-weeks" value="4" min="2" max="12" class="w-16 p-1.5 text-center font-black text-amber-900 bg-amber-50 rounded-md border border-amber-200 outline-none">
+                                <input type="number" id="duty-weeks" value="4" min="2" max="12" class="w-16 p-1.5 text-center font-black text-amber-900 bg-amber-50 rounded-lg border border-amber-200 outline-none">
                             </div>
                         </div>
 
-                        <button id="save-duty-btn" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl shadow-md transition-all active:scale-95 mt-4 text-sm uppercase tracking-widest outline-none">
+                        <button id="save-duty-btn" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-lg transition-colors active:bg-slate-700 mt-4 text-sm uppercase tracking-widest outline-none">
                             Назначить
                         </button>
                     </div>
@@ -84,7 +81,7 @@
 
             <div class="md:col-span-2">
                 <h2 class="text-xl font-black text-slate-800 mb-4 flex items-center gap-2">Текущий график</h2>
-                <div id="duties-list" class="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+                <div id="duties-list" class="bg-white rounded-lg border border-slate-200 flex flex-col overflow-hidden">
                     <p class="text-slate-500 italic p-6 text-center text-sm">Загрузка...</p>
                 </div>
             </div>
@@ -92,6 +89,6 @@
         </div>
     </main>
 
-    <script type="module" src="duties.js?v=96"></script>
+    <script type="module" src="duties.js?v=98"></script>
 </body>
 </html>
