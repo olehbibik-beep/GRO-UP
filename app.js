@@ -22,7 +22,6 @@ enableIndexedDbPersistence(db).catch(() => {});
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
-// УПРАВЛЕНИЕ ЛОАДЕРОМ
 let isLoaderHidden = false;
 window.hideGlobalLoader = () => {
     if (isLoaderHidden) return;
@@ -33,6 +32,9 @@ window.hideGlobalLoader = () => {
         setTimeout(() => loader.style.display = 'none', 500);
     }
 };
+
+// Железобетонный предохранитель загрузки
+setTimeout(window.hideGlobalLoader, 2500);
 
 window.scrollNews = (offset) => {
     const container = document.getElementById('content-news');
@@ -170,8 +172,6 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
             else pushBtn.style.display = 'none';
         }
 
-        const profileAdminLinks = document.getElementById('profile-admin-links');
-        
         let showAdminMenu = false;
         if (userRoles.some(r => TOP_ROLES.includes(r))) hasFullAccess = true;
         else hasFullAccess = false;
@@ -191,6 +191,7 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         setAdminLink('profile-terr-btn', hasFullAccess || userRoles.includes("Ответственный за участки"));
         setAdminLink('profile-school-btn', hasFullAccess || userRoles.includes("Ответственный за школу"));
 
+        const profileAdminLinks = document.getElementById('profile-admin-links');
         if(profileAdminLinks) {
             if(showAdminMenu) { profileAdminLinks.classList.remove('hidden'); profileAdminLinks.classList.add('grid'); } 
             else { profileAdminLinks.classList.add('hidden'); profileAdminLinks.classList.remove('grid'); }
@@ -199,7 +200,7 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         try { loadPersonalData(); } catch(e) { console.error("Error:", e); }
         try { loadProfileData(); } catch(e) { console.error("Error:", e); }
         
-        setTimeout(window.hideGlobalLoader, 1500); 
+        window.hideGlobalLoader();
     }
 });
 
@@ -258,7 +259,7 @@ function loadPersonalData() {
         }
     });
 
-    // ИСПРАВЛЕНИЕ: ДЕЖУРСТВА - Находим текущее или самое ближайшее будущее
+    // ИСПРАВЛЕНИЕ ДЕЖУРСТВ: Строгая проверка на ТЕКУЩУЮ неделю
     try {
         const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
         onSnapshot(dutiesQuery, (snapshot) => {
@@ -266,7 +267,7 @@ function loadPersonalData() {
             if (!container) return;
             
             const today = new Date(); today.setHours(0,0,0,0);
-            let upcomingDuties = [];
+            let currentDuty = null;
             let myDutyFound = false;
 
             snapshot.forEach(docSnap => {
@@ -274,34 +275,46 @@ function loadPersonalData() {
                 const dutyStart = new Date(d.rawDate); dutyStart.setHours(0,0,0,0);
                 const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6); dutyEnd.setHours(23,59,59,999);
                 
-                if (dutyEnd.getTime() >= today.getTime()) {
-                    upcomingDuties.push(d);
-                    if (today.getTime() >= dutyStart.getTime()) {
-                        const myGroup = currentUserData ? currentUserData.group : "Без группы";
-                        if (d.group === myGroup) myDutyFound = true;
+                // Проверяем: попадает ли СЕГОДНЯ в рамки недели этого дежурства
+                if (today.getTime() >= dutyStart.getTime() && today.getTime() <= dutyEnd.getTime()) {
+                    currentDuty = d;
+                    const myGroup = currentUserData ? currentUserData.group : "Без группы";
+                    if (String(d.group) === String(myGroup)) {
+                        myDutyFound = true;
                     }
                 }
             });
 
-            if (upcomingDuties.length === 0) {
-                container.innerHTML = '<p class="text-xs text-slate-400 italic text-center">График пуст</p>';
+            const dayOfWeek = today.getDay();
+            // Внутренние часы: Пятница (5), Суббота (6), Воскресенье (0)
+            const isCleaningDay = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0);
+
+            if (!currentDuty) {
+                container.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-2">На этой неделе дежурств нет</p>';
             } else {
-                const nextDuty = upcomingDuties[0];
                 const myGroup = currentUserData ? currentUserData.group : "Без группы";
-                const isMyGroup = nextDuty.group === myGroup;
-                const badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
+                const isMyGroup = String(currentDuty.group) === String(myGroup);
                 
+                let badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
+                
+                let alertHtml = '';
+                if (isMyGroup && isCleaningDay) {
+                    badgeClass = 'bg-rose-500 text-white border-rose-600 shadow-sm';
+                    alertHtml = `<p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-2 animate-pulse">🔥 Уборка в эти выходные!</p>`;
+                }
+
                 container.innerHTML = `
                     <div class="flex items-center justify-between mb-1">
-                        <span class="text-sm font-black text-slate-800 truncate pr-2">${nextDuty.type}</span>
-                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border ${badgeClass} shrink-0">Гр. ${nextDuty.group}</span>
+                        <span class="text-sm font-black text-slate-800 truncate pr-2">${currentDuty.type}</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border ${badgeClass} shrink-0">Гр. ${currentDuty.group}</span>
                     </div>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${nextDuty.dateRange}</span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">${currentDuty.dateRange}</span>
+                    ${alertHtml}
                 `;
             }
 
-            if (myDutyFound && !sessionStorage.getItem('duty_toast_shown')) {
-                showToast('🧹 Ваша группа дежурит на этой неделе!', 'warning');
+            if (myDutyFound && isCleaningDay && !sessionStorage.getItem('duty_toast_shown')) {
+                showToast('🧹 Напоминание: Ваша группа дежурит в эти выходные!', 'warning');
                 sessionStorage.setItem('duty_toast_shown', 'true');
             }
         });
@@ -312,7 +325,7 @@ function loadPersonalData() {
         onSnapshot(terrQuery, (snapshot) => {
             const container = document.getElementById('territories-container');
             if(!container) return;
-            if (snapshot.empty) return container.innerHTML = '<p class="text-slate-400 text-sm italic py-4 text-center">У вас пока нет активных участков</p>';
+            if (snapshot.empty) return container.innerHTML = '<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-lg">У вас пока нет активных участков</p>';
             container.innerHTML = '';
             snapshot.forEach(docSnap => {
                 const terr = docSnap.data();
@@ -376,16 +389,16 @@ function loadPersonalData() {
                     else { pastCount++; pastList.innerHTML += cardHtml; }
                 }
             });
-            if (upCount === 0) upList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 text-center">У тебя пока нет активных заданий</p>';
+            if (upCount === 0) upList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 text-center border border-slate-200 rounded-lg">У тебя пока нет активных заданий</p>';
             if (pastCount === 0) pastList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 text-center">История пуста</p>';
         });
     } catch(e){}
 
+    // ИСПРАВЛЕНИЕ КАРУСЕЛИ: Идеальное выравнивание высоты плиток
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
-            // ИСПРАВЛЕНИЕ КАРУСЕЛИ: Добавлена невидимая распорка в начало ленты для телефона
-            let newsHTML = `<div class="shrink-0 w-1 md:hidden"></div>`; 
+            let newsHTML = ''; 
             
             const now = new Date().getTime();
             const oneWeek = 7 * 24 * 60 * 60 * 1000;
@@ -406,14 +419,15 @@ function loadPersonalData() {
                         const bgCardClass = isNew ? "bg-white border-slate-200" : "bg-slate-50 opacity-90 border-slate-200";
                         const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-block mb-2">Новое</span>` : '';
 
+                        // Класс h-auto self-stretch заставляет карточку тянуться до высоты самой высокой в ленте
                         newsHTML += `
-                        <div class="w-[240px] md:w-[280px] shrink-0 snap-center p-4 rounded-lg border transition-all flex flex-col justify-between ${bgCardClass}">
+                        <div class="w-[240px] md:w-[280px] h-auto self-stretch shrink-0 snap-center p-4 rounded-lg border transition-all flex flex-col justify-between ${bgCardClass}">
                             <div>
                                 ${newBadge}
                                 <p class="text-slate-700 whitespace-pre-wrap text-xs md:text-sm leading-relaxed font-medium">${item.text}</p>
                                 ${imgHtml}
                             </div>
-                            <div>${deleteBtn}</div>
+                            <div class="mt-auto">${deleteBtn}</div>
                         </div>`;
 
                         if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) {
@@ -426,9 +440,9 @@ function loadPersonalData() {
 
             if (isNewsAdmin) {
                 newsHTML += `
-                <div class="w-[240px] md:w-[280px] shrink-0 snap-center p-4 rounded-lg border border-dashed border-slate-400 bg-slate-100/50 flex flex-col justify-center relative">
+                <div class="w-[240px] md:w-[280px] h-auto self-stretch shrink-0 snap-center p-4 rounded-lg border border-dashed border-slate-400 bg-slate-100/50 flex flex-col justify-center relative">
                     <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 text-center">Создать объявление</p>
-                    <textarea id="news-input" rows="2" placeholder="Напишите текст..." class="w-full bg-white rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400 resize-none font-medium text-slate-700"></textarea>
+                    <textarea id="news-input" rows="2" placeholder="Напишите текст..." class="w-full bg-white rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow"></textarea>
                     <div class="flex items-center justify-between mt-3 gap-2">
                         <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-lg transition-colors flex items-center justify-center w-10 h-8 shrink-0">
                             📷
@@ -443,12 +457,15 @@ function loadPersonalData() {
                 </div>`;
             }
 
-            // ИСПРАВЛЕНИЕ КАРУСЕЛИ: Распорка в конец ленты
-            newsHTML += `<div class="shrink-0 w-1 md:hidden"></div>`;
+            // Распорка в конец для телефона
+            newsHTML += `<div class="shrink-0 w-2 md:hidden"></div>`;
 
             const contentNews = document.getElementById('content-news');
             if(contentNews) {
-                contentNews.innerHTML = newsHTML;
+                contentNews.innerHTML = newsHTML || `
+                <div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center">
+                    <p class="text-slate-400 italic text-sm text-center">Актуальных объявлений нет</p>
+                </div>`;
             }
         });
     } catch(e) {}
@@ -520,9 +537,8 @@ function loadPersonalData() {
             });
 
             container.innerHTML = html || '';
-            window.hideGlobalLoader();
         });
-    } catch(e) { window.hideGlobalLoader(); }
+    } catch(e) {}
 }
 
 window.requestTerritory = async (btn) => {
