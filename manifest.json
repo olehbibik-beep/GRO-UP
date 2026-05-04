@@ -1,17 +1,23 @@
 {
+  "name": "GRO-UP App",
   "short_name": "GRO-UP",
-  "name": "Система Собрания GRO-UP",
+  "description": "Приложение для нашего собрания",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#cbd5e1",
+  "theme_color": "#0f172a",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2641/2641409.png",
+      "src": "icon-512.png",
+      "sizes": "192x192",
       "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
       "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "start_url": "/GRO-UP/index.html",
-  "display": "standalone",
-  "background_color": "#f1f5f9",
-  "theme_color": "#0f172a",
-  "scope": "/GRO-UP/"
+  ]
 }
