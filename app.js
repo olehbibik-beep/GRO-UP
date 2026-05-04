@@ -258,7 +258,6 @@ function loadPersonalData() {
         }
     });
 
-    // ИСПРАВЛЕНИЕ: ДЕЖУРСТВА - Находим текущее или самое ближайшее будущее
     try {
         const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
         onSnapshot(dutiesQuery, (snapshot) => {
@@ -381,11 +380,11 @@ function loadPersonalData() {
         });
     } catch(e){}
 
+    // ИСПРАВЛЕНИЕ: КОМПАКТНЫЕ КАРТОЧКИ (w-[200px]) И НЕВИДИМАЯ РАСПОРКА В КОНЦЕ
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
-            // ИСПРАВЛЕНИЕ КАРУСЕЛИ: Добавлена невидимая распорка в начало ленты для телефона
-            let newsHTML = `<div class="shrink-0 w-1 md:hidden"></div>`; 
+            let newsHTML = ''; 
             
             const now = new Date().getTime();
             const oneWeek = 7 * 24 * 60 * 60 * 1000;
@@ -400,17 +399,19 @@ function loadPersonalData() {
 
                     if (now - itemTime < oneWeek) {
                         const isNew = (now - itemTime) < oneDay;
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 px-2 py-1.5 rounded-lg w-full transition-colors border border-red-100 outline-none">Удалить объявление</button>` : '';
-                        const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="mt-3 rounded-lg max-h-48 w-full object-cover border border-slate-200 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
+                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 px-2 py-1.5 rounded-lg w-full transition-colors border border-red-100 outline-none">Удалить</button>` : '';
+                        
+                        // aspect-video жестко фиксирует картинку (16:9), она больше не растянет карточку!
+                        const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="mt-3 rounded-md aspect-video w-full object-cover border border-slate-200 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
 
                         const bgCardClass = isNew ? "bg-white border-slate-200" : "bg-slate-50 opacity-90 border-slate-200";
                         const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-block mb-2">Новое</span>` : '';
 
                         newsHTML += `
-                        <div class="w-[240px] md:w-[280px] shrink-0 snap-center p-4 rounded-lg border transition-all flex flex-col justify-between ${bgCardClass}">
+                        <div class="w-[200px] md:w-[240px] shrink-0 snap-center p-3.5 rounded-lg border transition-all flex flex-col justify-between ${bgCardClass}">
                             <div>
                                 ${newBadge}
-                                <p class="text-slate-700 whitespace-pre-wrap text-xs md:text-sm leading-relaxed font-medium">${item.text}</p>
+                                <p class="text-slate-700 whitespace-pre-wrap text-xs leading-relaxed font-medium">${item.text}</p>
                                 ${imgHtml}
                             </div>
                             <div>${deleteBtn}</div>
@@ -426,29 +427,32 @@ function loadPersonalData() {
 
             if (isNewsAdmin) {
                 newsHTML += `
-                <div class="w-[240px] md:w-[280px] shrink-0 snap-center p-4 rounded-lg border border-dashed border-slate-400 bg-slate-100/50 flex flex-col justify-center relative">
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 text-center">Создать объявление</p>
-                    <textarea id="news-input" rows="2" placeholder="Напишите текст..." class="w-full bg-white rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400 resize-none font-medium text-slate-700"></textarea>
-                    <div class="flex items-center justify-between mt-3 gap-2">
-                        <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-lg transition-colors flex items-center justify-center w-10 h-8 shrink-0">
+                <div class="w-[200px] md:w-[240px] shrink-0 snap-center p-3.5 rounded-lg border border-dashed border-slate-400 bg-slate-100/50 flex flex-col justify-center relative">
+                    <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2 text-center">Создать объявление</p>
+                    <textarea id="news-input" rows="2" placeholder="Текст..." class="w-full bg-white rounded-md border border-slate-200 p-2 text-xs outline-none focus:border-indigo-400 resize-none font-medium text-slate-700"></textarea>
+                    <div class="flex items-center justify-between mt-2 gap-2">
+                        <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-md transition-colors flex items-center justify-center w-8 h-8 shrink-0">
                             📷
                             <input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)">
                         </label>
-                        <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 rounded-lg flex-grow transition-colors h-8 outline-none">Опубликовать</button>
+                        <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-2 rounded-md flex-grow transition-colors h-8 outline-none">Опубликовать</button>
                     </div>
-                    <div id="image-preview-container" class="hidden mt-3 relative inline-block w-full">
-                        <img id="image-preview" src="" class="rounded-lg max-h-20 w-full object-cover border border-slate-200">
-                        <button onclick="removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs outline-none">✖</button>
+                    <div id="image-preview-container" class="hidden mt-2 relative inline-block w-full">
+                        <img id="image-preview" src="" class="rounded-md aspect-video w-full object-cover border border-slate-200">
+                        <button onclick="removeImage()" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs outline-none shadow-sm">✖</button>
                     </div>
                 </div>`;
             }
 
-            // ИСПРАВЛЕНИЕ КАРУСЕЛИ: Распорка в конец ленты
-            newsHTML += `<div class="shrink-0 w-1 md:hidden"></div>`;
+            // НЕВИДИМАЯ РАСПОРКА (Дает красивый отступ справа на телефоне)
+            newsHTML += `<div class="shrink-0 w-4"></div>`;
 
             const contentNews = document.getElementById('content-news');
             if(contentNews) {
-                contentNews.innerHTML = newsHTML;
+                contentNews.innerHTML = newsHTML || `
+                <div class="w-full shrink-0 p-6 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center">
+                    <p class="text-slate-400 italic text-sm text-center">Актуальных объявлений нет</p>
+                </div>`;
             }
         });
     } catch(e) {}
@@ -488,8 +492,14 @@ function loadPersonalData() {
                         }
                     }
 
-                    const groupBadge = evGroup !== "Все" ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">Гр. ${evGroup}</span>` : '';
-                    const activeClass = isPastEvent ? "bg-slate-200 text-slate-500 border-b border-slate-300" : "bg-slate-700 text-white";
+                    const groupBadge = evGroup !== "Все" 
+                        ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">Гр. ${evGroup}</span>` 
+                        : '';
+                    
+                    const activeClass = isPastEvent 
+                        ? "bg-slate-200 text-slate-500 border-b border-slate-300" 
+                        : "bg-slate-700 text-white"; 
+                    
                     const timeColor = isPastEvent ? "text-slate-400" : "text-slate-300";
                     const leaderColor = isPastEvent ? "text-slate-500" : "text-white";
 
