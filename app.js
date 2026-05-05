@@ -162,6 +162,7 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
     } else {
         if(pendingScreen) { pendingScreen.classList.add('hidden'); pendingScreen.classList.remove('flex'); }
         if(mainDashboard) { mainDashboard.classList.remove('hidden'); mainDashboard.classList.add('block'); }
+        if(mainDashboard) mainDashboard.style.display = 'block';
         
         let userRoles = currentUserData.roles || [];
         
@@ -393,7 +394,7 @@ function loadPersonalData() {
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
-            let newsHTML = ``; 
+            let newsHTML = `<div class="shrink-0 w-1 md:hidden"></div>`; 
             
             const now = new Date().getTime();
             const oneWeek = 7 * 24 * 60 * 60 * 1000;
@@ -451,6 +452,8 @@ function loadPersonalData() {
                 </div>`;
             }
 
+            newsHTML += `<div class="shrink-0 w-2 md:hidden"></div>`;
+
             const contentNews = document.getElementById('content-news');
             if(contentNews) {
                 contentNews.innerHTML = newsHTML || `
@@ -461,7 +464,6 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // ИСПРАВЛЕНИЕ: НОВЫЙ КОМПАКТНЫЙ РЕНДЕР СОБЫТИЙ
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -497,9 +499,9 @@ function loadPersonalData() {
                         }
                     }
 
-                    const groupBadge = evGroup !== "Все" ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">Гр. ${evGroup}</span>` : '';
+                    const groupBadge = evGroup !== "Все" ? `<span class="bg-slate-100 text-slate-500 border border-slate-200 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none">Гр. ${evGroup}</span>` : '';
                     const activeClass = isPastEvent ? "bg-slate-50 text-slate-400 border-b border-slate-200" : "bg-white text-slate-800 border-b border-slate-100";
-                    const timeColor = isPastEvent ? "text-slate-400" : "text-slate-500";
+                    const timeColor = isPastEvent ? "text-slate-400" : "text-rose-500";
                     const leaderColor = isPastEvent ? "text-slate-400" : "text-rose-600";
 
                     html += `
