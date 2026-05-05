@@ -123,7 +123,7 @@ document.getElementById('student-select').addEventListener('change', (e) => {
     }
 });
 
-// 4. НАЗНАЧИТЬ ЗАДАНИЕ
+// 4. НАЗНАЧИТЬ ЗАДАНИЕ (С ИКОНКОЙ ДЛЯ PUSH-УВЕДОМЛЕНИЙ)
 document.getElementById('assign-btn').addEventListener('click', async (e) => {
     const studentData = document.getElementById('student-select').value;
     const assistantName = document.getElementById('assistant-select').value;
@@ -140,6 +140,9 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
     btn.innerText = "Сохранение..."; btn.disabled = true;
 
     const [userId, userName, userGender] = studentData.split('|');
+    
+    // Формируем абсолютный путь к нашей иконке
+    const iconUrl = window.location.origin + '/icon-512.png';
 
     try {
         await addDoc(collection(db, "personal_tasks"), {
@@ -150,6 +153,9 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
             category: tCat,
             lesson: tLes,
             date: tDate,
+            // Добавляем ссылки на иконку, чтобы Cloud Functions забрали её в уведомление
+            notificationIcon: iconUrl,
+            notificationBadge: iconUrl,
             createdAt: new Date().toISOString()
         });
 
