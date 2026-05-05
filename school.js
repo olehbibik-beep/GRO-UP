@@ -34,7 +34,7 @@ getDoc(doc(db, "users", uid)).then(docSnap => {
     if (path.includes('territories.html') && !isTerr) window.location.href = 'index.html';
     if ((path.includes('calendar.html') || path.includes('duties.html')) && !isOverseer) window.location.href = 'index.html';
 
-    // УПРАВЛЕНИЕ МЕНЮ (Через классы Tailwind - сверхнадежно)
+    // УПРАВЛЕНИЕ МЕНЮ
     const toggleNav = (selector, hasAccess) => {
         const el = document.querySelector(selector);
         if (el) {
@@ -141,8 +141,8 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
 
     const [userId, userName, userGender] = studentData.split('|');
     
-    // Формируем абсолютный путь к нашей иконке
-    const iconUrl = window.location.origin + '/icon-512.png';
+    // 🔴 ЗДЕСЬ ДОБАВЛЕНА ССЫЛКА НА ТВОЮ ИКОНКУ С GITHUB
+    const iconUrl = "https://olehbibik-beep.github.io/GRO-UP/icon-512.png";
 
     try {
         await addDoc(collection(db, "personal_tasks"), {
@@ -153,7 +153,7 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
             category: tCat,
             lesson: tLes,
             date: tDate,
-            // Добавляем ссылки на иконку, чтобы Cloud Functions забрали её в уведомление
+            // 🔴 КЛАДЕМ ССЫЛКИ В БАЗУ ДАННЫХ
             notificationIcon: iconUrl,
             notificationBadge: iconUrl,
             createdAt: new Date().toISOString()
@@ -182,7 +182,7 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
     }
 });
 
-// 5. ОТРИСОВКА ВЫДАННЫХ ЗАДАНИЙ (АДАПТИРОВАННАЯ КАРТОЧКА + ВИДИМАЯ КНОПКА УДАЛЕНИЯ)
+// 5. ОТРИСОВКА ВЫДАННЫХ ЗАДАНИЙ
 const q = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
 onSnapshot(q, (snapshot) => {
     const list = document.getElementById('tasks-list');
