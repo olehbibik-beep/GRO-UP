@@ -393,7 +393,7 @@ function loadPersonalData() {
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
-            let newsHTML = `<div class="shrink-0 w-1 md:hidden"></div>`; 
+            let newsHTML = ``; 
             
             const now = new Date().getTime();
             const oneWeek = 7 * 24 * 60 * 60 * 1000;
@@ -451,15 +451,17 @@ function loadPersonalData() {
                 </div>`;
             }
 
-            newsHTML += `<div class="shrink-0 w-2 md:hidden"></div>`;
-
             const contentNews = document.getElementById('content-news');
             if(contentNews) {
-                contentNews.innerHTML = newsHTML;
+                contentNews.innerHTML = newsHTML || `
+                <div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center">
+                    <p class="text-slate-400 italic text-sm text-center">Актуальных объявлений нет</p>
+                </div>`;
             }
         });
     } catch(e) {}
 
+    // ИСПРАВЛЕНИЕ: НОВЫЙ КОМПАКТНЫЙ РЕНДЕР СОБЫТИЙ
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -496,24 +498,26 @@ function loadPersonalData() {
                     }
 
                     const groupBadge = evGroup !== "Все" ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">Гр. ${evGroup}</span>` : '';
-                    const activeClass = isPastEvent ? "bg-slate-200 text-slate-500 border-b border-slate-300" : "bg-slate-700 text-white";
-                    const timeColor = isPastEvent ? "text-slate-400" : "text-slate-300";
-                    const leaderColor = isPastEvent ? "text-slate-500" : "text-white";
+                    const activeClass = isPastEvent ? "bg-slate-50 text-slate-400 border-b border-slate-200" : "bg-white text-slate-800 border-b border-slate-100";
+                    const timeColor = isPastEvent ? "text-slate-400" : "text-slate-500";
+                    const leaderColor = isPastEvent ? "text-slate-400" : "text-rose-600";
 
                     html += `
-                        <div class="flex items-center px-4 md:px-5 py-4 w-full cursor-default ${activeClass}">
-                            <div class="flex items-center gap-4 w-full">
-                                <div class="flex flex-col items-center justify-center w-14 shrink-0">
-                                    <span class="text-[9px] uppercase font-bold leading-none mb-1 tracking-widest opacity-70">СЕГОДНЯ</span>
-                                    <span class="text-2xl font-black leading-none">${evDate.getDate()}</span>
+                        <div class="flex items-center p-3 w-full cursor-default ${activeClass}">
+                            <div class="flex items-center gap-3 w-full">
+                                <div class="flex flex-col items-center justify-center w-12 shrink-0">
+                                    <span class="text-[8px] uppercase font-bold leading-none mb-1 opacity-70">СЕГОДНЯ</span>
+                                    <span class="text-xl font-black leading-none">${evDate.getDate()}</span>
                                 </div>
-                                <div class="flex flex-col flex-grow truncate">
+                                <div class="flex flex-col flex-grow truncate min-w-0">
                                     <div class="flex items-center gap-2 truncate">
-                                        ${displayTime ? `<span class="text-sm font-bold shrink-0 ${timeColor}">${displayTime}</span>` : ''}
-                                        <span class="font-black text-sm md:text-base truncate">${ev.title}</span>
-                                        ${groupBadge}
+                                        ${displayTime ? `<span class="text-xs font-bold shrink-0 ${timeColor}">${displayTime}</span>` : ''}
+                                        <span class="font-black text-sm truncate">${ev.title}</span>
                                     </div>
-                                    ${ev.leader ? `<div class="text-[10px] uppercase mt-1 tracking-wider truncate font-medium opacity-80">Вед: <span class="font-black ${leaderColor}">${ev.leader}</span></div>` : ''}
+                                    <div class="flex items-center gap-2 mt-1 truncate">
+                                        ${groupBadge}
+                                        ${ev.leader ? `<span class="text-[9px] uppercase font-medium opacity-80 truncate">Вед: <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -526,8 +530,7 @@ function loadPersonalData() {
                 }
             });
 
-            // ИСПРАВЛЕНИЕ: Обновленный текст для пустого списка внутри белого контейнера
-            container.innerHTML = html || '<p class="p-6 text-sm text-slate-400 italic text-center">На сегодня событий нет</p>';
+            container.innerHTML = html || '<p class="p-4 text-xs text-slate-400 italic text-center">На сегодня событий нет</p>';
         });
     } catch(e) {}
 }
