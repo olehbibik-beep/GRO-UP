@@ -10,10 +10,8 @@
             theme: { 
                 extend: { 
                     colors: { 
-                        ui: { 
-                            bg: '#cbd5e1', 
-                            adminNav: '#70227E' 
-                        } 
+                        ui: { bg: '#cbd5e1', adminNav: '#70227E' },
+                        brand: { green: '#66C085', dark: '#161B26' } /* Цвета с твоей иконки */
                     } 
                 } 
             } 
@@ -55,24 +53,32 @@
                     
                     <div class="space-y-4">
                         <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Тип события</label>
+                            <select id="event-category" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-rose-400 font-bold text-slate-700 cursor-pointer">
+                                <option value="meeting" selected>🔵 Обычная встреча</option>
+                                <option value="special">🔴 Особое событие (важно)</option>
+                            </select>
+                        </div>
+
+                        <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Название</label>
-                            <input type="text" id="event-title" placeholder="Встреча для проповеди" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-rose-400 focus:bg-white transition-colors font-bold text-slate-700">
+                            <input type="text" id="event-title" placeholder="Встреча для проповеди" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-rose-400 transition-colors font-bold text-slate-700">
                         </div>
                         
                         <div class="flex gap-3">
                             <div class="w-full">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Дата</label>
-                                <input type="date" id="event-date" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-rose-400 focus:bg-white transition-colors font-bold text-slate-700 cursor-pointer">
+                                <input type="date" id="event-date" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-rose-400 transition-colors font-bold text-slate-700 cursor-pointer">
                             </div>
                             <div class="w-full">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Время</label>
-                                <input type="text" id="event-time" placeholder="18:30" maxlength="5" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-rose-400 focus:bg-white transition-colors font-bold text-slate-700">
+                                <input type="text" id="event-time" placeholder="18:30" maxlength="5" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-rose-400 transition-colors font-bold text-slate-700">
                             </div>
                         </div>
 
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Группа (пусто = для всех)</label>
-                            <input type="number" id="event-group" placeholder="Например: 5" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-rose-400 focus:bg-white transition-colors font-bold text-slate-700">
+                            <input type="number" id="event-group" placeholder="Например: 5" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-rose-400 transition-colors font-bold text-slate-700">
                         </div>
 
                         <div>
@@ -119,6 +125,6 @@
         </div>
     </main>
 
-    <script type="module" src="calendar.js?v=48"></script> 
+    <script type="module" src="calendar.js?v=52"></script> 
 </body>
 </html>
