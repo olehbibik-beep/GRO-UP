@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Полный Календарь - GRO-UP</title>
+    <title>Календарь Заметок</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { 
             theme: { 
                 extend: { 
                     colors: { 
-                        ui: { bg: '#cbd5e1', adminNav: '#1e1b4b' } 
+                        ui: { bg: '#cbd5e1' },
+                        ev: { memorial: '#ef4444', meeting: '#0ea5e9', congress: '#8b5cf6', personal: '#94a3b8' }
                     } 
                 } 
             } 
@@ -18,174 +19,252 @@
     </script>
     <style>
         ::-webkit-scrollbar { display: none; }
-        body { -ms-overflow-style: none; scrollbar-width: none; overflow-x: hidden; }
-        .dot { width: 6px; height: 6px; border-radius: 50%; }
-        .dot.memorial { background-color: #ef4444; } /* Red-500 */
-        .dot.congress { background-color: #8b5cf6; } /* Violet-500 */
-        .dot.meeting { background-color: #0ea5e9; }  /* Sky-500 */
+        body { -ms-overflow-style: none; scrollbar-width: none; overflow: hidden; }
+        .custom-scrollbar::-webkit-scrollbar { display: block; width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-ui-bg text-slate-800 min-h-screen font-sans pb-24">
+<!-- h-[100dvh] держит экран намертво, делим его на 3 блока flex-col -->
+<body class="bg-ui-bg text-slate-800 h-[100dvh] font-sans w-full flex flex-col">
 
-    <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0">
-        <a href="index.html" title="Назад" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+    <!-- 10%: ШАПКА И ВЫБОР ГОДА -->
+    <div class="h-[10%] shrink-0 flex items-center justify-between px-4 md:px-8 w-full max-w-2xl mx-auto">
+        <a href="index.html" class="text-slate-500 hover:text-slate-800 bg-white p-2 rounded-lg shadow-sm transition-colors outline-none flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
         </a>
-    </nav>
+        <div class="flex items-center gap-4 bg-white px-4 py-1.5 rounded-lg shadow-sm">
+            <button onclick="changeYear(-1)" class="text-slate-400 hover:text-rose-500 text-2xl font-black transition-colors outline-none">‹</button>
+            <div id="display-year" class="text-xl font-black text-slate-800 w-12 text-center">2026</div>
+            <button onclick="changeYear(1)" class="text-slate-400 hover:text-rose-500 text-2xl font-black transition-colors outline-none">›</button>
+        </div>
+    </div>
 
-    <main class="w-full max-w-3xl mx-auto pt-4 md:pt-6 px-4 md:pl-28 md:pr-6">
+    <!-- 35%: СЕТКА МЕСЯЦЕВ -->
+    <div class="h-[35%] shrink-0 w-full max-w-2xl mx-auto px-4 pb-2">
+        <div id="months-grid" class="grid grid-cols-4 grid-rows-3 gap-2 h-full">
+            <!-- Месяцы генерируются через JS -->
+        </div>
+    </div>
+
+    <!-- 55%: СЕТКА ДНЕЙ ВЫБРАННОГО МЕСЯЦА -->
+    <div class="h-[55%] flex-grow w-full max-w-2xl mx-auto bg-white rounded-t-3xl shadow-[0_-5px_15px_rgba(0,0,0,0.05)] flex flex-col pt-4 px-4 pb-safe border-t border-slate-200 relative">
+        <h2 id="month-title" class="text-center font-black text-slate-800 uppercase tracking-widest text-sm mb-2">МЕСЯЦ</h2>
         
-        <div class="mb-4 flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-lg border border-slate-200 gap-4">
-            <div class="flex items-center gap-3">
-                <span class="text-rose-500 text-3xl">📅</span>
-                <div>
-                    <h1 class="text-xl md:text-2xl font-black text-rose-600 leading-tight">Весь год</h1>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Архив событий собрания</p>
-                </div>
+        <!-- Дни недели -->
+        <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-2 shrink-0">
+            <span>ПН</span><span>ВТ</span><span>СР</span><span>ЧТ</span><span>ПТ</span><span>СБ</span><span>ВС</span>
+        </div>
+        
+        <!-- Сетка дней -->
+        <div id="days-grid" class="grid grid-cols-7 gap-1 flex-1 overflow-y-auto custom-scrollbar content-start pb-4">
+            <!-- Дни генерируются через JS -->
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ЗАМЕТОК -->
+    <div id="modal" class="hidden fixed inset-0 bg-slate-900/80 z-[100] items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-xl p-5 shadow-2xl relative flex flex-col">
+            <h3 id="modal-title" class="text-rose-600 font-black text-center mb-4 uppercase tracking-widest text-sm"></h3>
+            
+            <div id="modal-list" class="max-h-32 overflow-y-auto custom-scrollbar mb-4 space-y-2 pr-2">
+                <!-- Заметки генерируются тут -->
             </div>
             
-            <div class="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200">
-                <button onclick="changeYear(-1)" class="text-slate-400 hover:text-rose-500 text-2xl font-black transition-colors outline-none">‹</button>
-                <div id="display-year" class="text-2xl font-black text-slate-800 w-16 text-center">2026</div>
-                <button onclick="changeYear(1)" class="text-slate-400 hover:text-rose-500 text-2xl font-black transition-colors outline-none">›</button>
+            <textarea id="note-input" rows="2" placeholder="Текст заметки..." class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs outline-none focus:border-rose-400 resize-none font-medium text-slate-700 mb-4"></textarea>
+            
+            <div id="admin-buttons" class="grid grid-cols-2 gap-2 mb-2 hidden">
+                <button onclick="saveNote('memorial')" class="bg-ev-memorial text-white font-bold py-2.5 rounded-lg text-[10px] uppercase tracking-widest shadow-sm outline-none">Вечеря</button>
+                <button onclick="saveNote('meeting')" class="bg-ev-meeting text-white font-bold py-2.5 rounded-lg text-[10px] uppercase tracking-widest shadow-sm outline-none">Встреча</button>
+                <button onclick="saveNote('congress')" class="bg-ev-congress text-white font-bold py-2.5 rounded-lg text-[10px] uppercase tracking-widest shadow-sm outline-none col-span-2">Конгресс</button>
             </div>
+            
+            <button onclick="saveNote('personal')" class="w-full bg-ev-personal text-white font-bold py-2.5 rounded-lg text-[10px] uppercase tracking-widest shadow-sm mb-3 outline-none">Личное событие</button>
+            
+            <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-bold py-2.5 rounded-lg text-[10px] uppercase tracking-widest outline-none transition-colors">Закрыть</button>
         </div>
-
-        <div id="months-grid" class="grid grid-cols-3 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-            </div>
-
-        <div class="bg-white p-4 rounded-lg border border-slate-200">
-            <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Ближайшие крупные события</h2>
-            <div id="upcoming-events" class="flex flex-col gap-2">
-                <p class="text-xs text-slate-400 italic text-center py-4">Загрузка...</p>
-            </div>
-        </div>
-
-    </main>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Firebase от Calendarium (как было в твоем оригинальном файле)
-        const firebaseConfig = {
-            apiKey: "AIzaSyBHtxnILGvSyWfrBDkp-ye4yNKACVVdDAE",
-            authDomain: "calendarium-1f7d7.firebaseapp.com",
-            projectId: "calendarium-1f7d7",
-            storageBucket: "calendarium-1f7d7.firebasestorage.app",
-            appId: "1:204240857105:web:6ece4e6a4031f61a62a9b0"
+        // 1. ИНИЦИАЛИЗАЦИЯ GRO-UP (Для проверки админа)
+        const groupConfig = {
+            apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
+            projectId: "gro-uping"
         };
+        const appGroup = initializeApp(groupConfig, "GroUpApp");
+        const dbGroup = getFirestore(appGroup);
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        
+        // 2. ИНИЦИАЛИЗАЦИЯ CALENDARIUM (Твоя база с заметками)
+        const calConfig = {
+            apiKey: "AIzaSyBHtxnILGvSyWfrBDkp-ye4yNKACVVdDAE",
+            projectId: "calendarium-1f7d7"
+        };
+        const appCal = initializeApp(calConfig, "CalApp");
+        const dbCal = getFirestore(appCal);
+
+        const userId = localStorage.getItem('userId');
+        if (!userId) window.location.href = 'index.html';
+
+        let currentUserStr = "Пользователь";
+        let isAdmin = false;
+
+        getDoc(doc(dbGroup, "users", userId)).then(snap => {
+            if(snap.exists()) {
+                const data = snap.data();
+                currentUserStr = data.name;
+                const roles = data.roles || [];
+                isAdmin = roles.some(r => ["Владелец", "Админ", "Старейшина"].includes(r));
+                if(isAdmin) document.getElementById('admin-buttons').classList.remove('hidden');
+            }
+        });
+
         const monthsNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-        let currentYear = parseInt(localStorage.getItem('selectedYear')) || new Date().getFullYear();
+        let currentYear = new Date().getFullYear();
+        let currentMonth = new Date().getMonth(); 
+        
+        let dbData = {};
+        let selectedDay = null;
+        let unsubscribe = null;
 
         window.changeYear = (dir) => {
             currentYear += dir;
             document.getElementById('display-year').innerText = currentYear;
-            localStorage.setItem('selectedYear', currentYear);
             renderMonths();
-            loadUpcoming();
+            loadMonthData();
+        };
+
+        window.selectMonth = (mIdx) => {
+            currentMonth = mIdx;
+            renderMonths();
+            loadMonthData();
         };
 
         function renderMonths() {
             const grid = document.getElementById('months-grid');
-            const now = new Date();
-            const todayMonth = now.getMonth(); 
-            const todayYear = now.getFullYear();
-
             let html = '';
             for (let i = 0; i < 12; i++) {
-                const isToday = (i === todayMonth && currentYear === todayYear);
-                const bgClass = isToday ? 'bg-rose-50 border-rose-200' : 'bg-white border-slate-200 hover:bg-slate-50';
-                const textClass = isToday ? 'text-rose-600' : 'text-slate-700';
-
+                const isSelected = (i === currentMonth);
+                const bgClass = isSelected ? 'bg-rose-500 text-white shadow-md scale-105 z-10' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50';
+                
                 html += `
-                    <div onclick="goToMonth(${i})" class="${bgClass} border rounded-lg aspect-square flex flex-col items-center justify-center cursor-pointer transition-colors relative group">
-                        <span class="text-3xl md:text-4xl font-black ${textClass} opacity-20 group-hover:opacity-100 transition-opacity absolute">
-                            ${(i + 1).toString().padStart(2, '0')}
-                        </span>
-                        <span class="z-10 font-bold text-xs md:text-sm uppercase tracking-widest ${textClass}">${monthsNames[i]}</span>
-                        <div id="ind-${i}" class="absolute bottom-3 flex gap-1 z-10"></div>
-                    </div>
+                    <button onclick="selectMonth(${i})" class="${bgClass} rounded-lg flex items-center justify-center font-black text-[10px] md:text-xs uppercase tracking-widest transition-all outline-none">
+                        ${monthsNames[i].substring(0,3)}
+                    </button>
                 `;
             }
             grid.innerHTML = html;
+            document.getElementById('month-title').innerText = `${monthsNames[currentMonth]} ${currentYear}`;
         }
 
-        window.goToMonth = (i) => {
-            localStorage.setItem('selectedMonth', i);
-            localStorage.setItem('selectedYear', currentYear);
-            // Если у тебя есть страница notes.html, переход сработает. Если нет - создай ее или убери эту строку.
-            window.location.href = 'notes.html';
-        };
-
-        async function loadUpcoming() {
-            const container = document.getElementById('upcoming-events');
+        function loadMonthData() {
+            if (unsubscribe) unsubscribe();
+            const docId = `${currentYear}_${currentMonth}`;
             
-            const now = new Date();
-            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-            let upcomingEvents = [];
-
-            const monthPromises = Array.from({length: 12}, (_, i) => getDoc(doc(db, "calendar", `${currentYear}_${i}`)));
-            const snapshots = await Promise.all(monthPromises);
-
-            snapshots.forEach((snap, i) => {
-                if (snap.exists()) {
-                    const data = snap.data();
-                    const ind = document.getElementById(`ind-${i}`);
-                    
-                    let hasMemorial = false, hasCongress = false, hasMeeting = false;
-
-                    Object.entries(data).forEach(([day, notes]) => {
-                        if (!Array.isArray(notes)) return;
-                        notes.forEach(n => {
-                            if (n.category === 'memorial') hasMemorial = true;
-                            else if (n.category === 'congress') hasCongress = true;
-                            else hasMeeting = true;
-                            
-                            const eventDate = new Date(currentYear, i, parseInt(day)).getTime();
-                            if (eventDate >= todayStart) {
-                                upcomingEvents.push({ text: n.text, day: day, mName: monthsNames[i], stamp: eventDate, cat: n.category });
-                            }
-                        });
-                    });
-
-                    if (ind) {
-                        if (hasMemorial) ind.innerHTML += '<div class="dot memorial"></div>';
-                        if (hasCongress) ind.innerHTML += '<div class="dot congress"></div>';
-                        if (hasMeeting) ind.innerHTML += '<div class="dot meeting"></div>';
-                    }
-                }
+            unsubscribe = onSnapshot(doc(dbCal, "calendar", docId), (snap) => {
+                dbData = snap.exists() ? snap.data() : {};
+                renderDays();
             });
+        }
 
-            upcomingEvents.sort((a, b) => a.stamp - b.stamp);
+        function renderDays() {
+            const grid = document.getElementById('days-grid');
+            grid.innerHTML = '';
             
-            if (upcomingEvents.length > 0) {
-                let html = '';
-                upcomingEvents.slice(0, 5).forEach(ev => {
-                    let borderClass = 'border-sky-500';
-                    if (ev.cat === 'memorial') borderClass = 'border-red-500';
-                    if (ev.cat === 'congress') borderClass = 'border-violet-500';
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            const shift = firstDay === 0 ? 6 : firstDay - 1; 
+            const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const now = new Date();
 
-                    html += `
-                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border-l-4 ${borderClass}">
-                            <span class="text-xs font-bold text-slate-700">${ev.text}</span>
-                            <span class="text-[10px] font-black uppercase text-slate-400 shrink-0 bg-white px-2 py-1 rounded">${ev.day} ${ev.mName}</span>
-                        </div>
-                    `;
+            for (let i = 0; i < shift; i++) {
+                grid.innerHTML += `<div class="aspect-square"></div>`;
+            }
+
+            for (let d = 1; d <= totalDays; d++) {
+                const isToday = (d === now.getDate() && currentMonth === now.getMonth() && currentYear === now.getFullYear());
+                const notes = dbData[d] || [];
+                
+                let dotsHtml = '';
+                notes.forEach(n => {
+                    let color = 'bg-slate-400';
+                    if (n.category === 'memorial') color = 'bg-ev-memorial';
+                    if (n.category === 'meeting') color = 'bg-ev-meeting';
+                    if (n.category === 'congress') color = 'bg-ev-congress';
+                    dotsHtml += `<div class="w-1.5 h-1.5 rounded-full ${color}"></div>`;
                 });
-                container.innerHTML = html;
-            } else {
-                container.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-2">Событий не найдено</p>';
+
+                const todayClass = isToday ? 'border-2 border-rose-500 text-rose-600 bg-rose-50' : 'bg-slate-50 border border-slate-100 text-slate-700';
+
+                grid.innerHTML += `
+                    <div onclick="openModal(${d})" class="aspect-square rounded-lg ${todayClass} flex flex-col items-center justify-center text-sm md:text-base font-black relative cursor-pointer hover:bg-slate-100 transition-colors">
+                        ${d}
+                        <div class="absolute bottom-1.5 flex gap-0.5 justify-center w-full px-1 flex-wrap">
+                            ${dotsHtml}
+                        </div>
+                    </div>
+                `;
             }
         }
 
+        window.openModal = (d) => {
+            selectedDay = d;
+            document.getElementById('modal-title').innerText = `${d} ${monthsNames[currentMonth]} ${currentYear}`;
+            const list = document.getElementById('modal-list');
+            const notes = dbData[d] || [];
+            
+            list.innerHTML = notes.map((n, idx) => {
+                let badgeClass = 'bg-slate-100 text-slate-500';
+                if (n.category === 'memorial') badgeClass = 'bg-red-50 text-ev-memorial border border-red-100';
+                if (n.category === 'meeting') badgeClass = 'bg-sky-50 text-ev-meeting border border-sky-100';
+                if (n.category === 'congress') badgeClass = 'bg-purple-50 text-ev-congress border border-purple-100';
+
+                const canDelete = isAdmin || n.author === currentUserStr;
+                const delBtn = canDelete ? `<button onclick="delNote(${idx})" class="text-red-400 hover:text-red-600 font-bold p-1 outline-none">✕</button>` : '';
+
+                return `
+                    <div class="flex justify-between items-center p-2.5 rounded-lg ${badgeClass}">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold leading-tight">${n.text}</span>
+                        </div>
+                        ${delBtn}
+                    </div>
+                `;
+            }).join('') || '<p class="text-[10px] text-slate-400 text-center italic py-2">Событий нет</p>';
+            
+            document.getElementById('modal').style.display = 'flex';
+        };
+
+        window.closeModal = () => document.getElementById('modal').style.display = 'none';
+
+        window.saveNote = async (cat) => {
+            if(!selectedDay) return;
+            const input = document.getElementById('note-input');
+            const text = input.value.trim() || cat.toUpperCase();
+            
+            const notes = [...(dbData[selectedDay] || [])];
+            notes.push({ text, category: cat, author: currentUserStr });
+            
+            const docId = `${currentYear}_${currentMonth}`;
+            try {
+                await setDoc(doc(dbCal, "calendar", docId), { [selectedDay]: notes }, { merge: true });
+                input.value = '';
+                openModal(selectedDay); 
+            } catch (e) { alert("Ошибка сохранения!"); }
+        };
+
+        window.delNote = async (idx) => {
+            const notes = [...(dbData[selectedDay] || [])];
+            notes.splice(idx, 1);
+            const docId = `${currentYear}_${currentMonth}`;
+            await setDoc(doc(dbCal, "calendar", docId), { [selectedDay]: notes }, { merge: true });
+            openModal(selectedDay);
+        };
+
         document.getElementById('display-year').innerText = currentYear;
         renderMonths();
-        loadUpcoming();
+        loadMonthData();
     </script>
 </body>
 </html>
