@@ -138,7 +138,7 @@ window.submitReport = async () => {
                 fs.disabled = true;
                 fs.classList.add('opacity-50', 'grayscale-[50%]');
                 btn.classList.replace('bg-ui-success', 'bg-slate-800');
-                btn.innerText = "✏️ Изменить";
+                btn.innerHTML = `<svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>Изменить`;
                 btn.disabled = false;
             }, 2000);
         } catch (e) { alert("Ошибка сети!"); btn.disabled = false; btn.innerText = "Отправить отчет"; }
@@ -264,7 +264,9 @@ function loadPersonalData() {
             const repC = document.getElementById('rep-credit'); if(repC) repC.value = r.credit || r.pubs || ''; 
             const log = document.getElementById('last-report-log'); if(log) log.innerText = `Последняя запись: ${new Date(r.submittedAt).toLocaleString('ru-RU')}`;
             const btn = document.getElementById('submit-report-btn');
-            if(btn && document.getElementById('report-fieldset')?.disabled) btn.innerText = "✏️ Изменить";
+            if(btn && document.getElementById('report-fieldset')?.disabled) {
+                btn.innerHTML = `<svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>Изменить`;
+            }
         }
     });
 
@@ -306,7 +308,7 @@ function loadPersonalData() {
                 let alertHtml = '';
                 if (isMyGroup && isCleaningDay) {
                     badgeClass = 'bg-rose-500 text-white border-rose-600 shadow-sm';
-                    alertHtml = `<p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-2 animate-pulse">🔥 Уборка в эти выходные!</p>`;
+                    alertHtml = `<p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-2 animate-pulse flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>Уборка в эти выходные!</p>`;
                 }
 
                 container.innerHTML = `
@@ -320,7 +322,7 @@ function loadPersonalData() {
             }
 
             if (myDutyFound && isCleaningDay && !sessionStorage.getItem('duty_toast_shown')) {
-                showToast('🧹 Напоминание: Ваша группа дежурит в эти выходные!', 'warning');
+                showToast('Напоминание: Ваша группа дежурит в эти выходные!', 'warning');
                 sessionStorage.setItem('duty_toast_shown', 'true');
             }
         });
@@ -342,7 +344,7 @@ function loadPersonalData() {
                             <span class="text-[9px] font-bold text-emerald-600 bg-white px-2 py-1 rounded-md shadow-sm uppercase border border-emerald-100">Активен</span>
                         </div>
                         <div class="w-full h-24 bg-slate-50 flex items-center justify-center relative">
-                            <span class="text-3xl absolute opacity-10">🗺️</span>
+                            <svg class="w-12 h-12 text-slate-300 absolute opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
                         </div>
                     </div>
                 `;
@@ -375,8 +377,8 @@ function loadPersonalData() {
                     const cardHtml = `
                         <div class="p-4 rounded-lg border ${opacityClass} mb-3 relative overflow-hidden transition-all">
                             <div class="flex items-center gap-3">
-                                <div class="flex flex-col items-center justify-center w-12 h-12 ${isPast ? 'bg-slate-100 border-slate-200' : 'bg-sky-50 border-sky-100'} rounded-lg border shrink-0">
-                                    <span class="text-[8px] uppercase ${isPast ? 'text-slate-400' : 'text-sky-500'} font-bold leading-none mb-0.5 tracking-widest">${taskDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
+                                <div class="flex flex-col items-center justify-center w-12 h-12 ${isPast ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-sky-50 border-sky-100 text-sky-500'} rounded-lg border shrink-0">
+                                    <span class="text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${taskDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
                                     <span class="text-xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${taskDate.getDate()}</span>
                                 </div>
                                 <div class="min-w-0 flex flex-col justify-center gap-1 w-full">
@@ -418,7 +420,7 @@ function loadPersonalData() {
 
                     if (now - itemTime < oneWeek) {
                         const isNew = (now - itemTime) < oneDay;
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 px-2 py-1.5 rounded-lg w-full transition-colors border border-red-100 outline-none">Удалить объявление</button>` : '';
+                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 border border-red-100 px-2 py-2 rounded-lg w-full transition-colors outline-none flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>Удалить</button>` : '';
                         const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="mt-3 rounded-lg max-h-48 w-full object-cover border border-slate-200 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
 
                         const bgCardClass = isNew ? "bg-white border-slate-200" : "bg-slate-50 opacity-90 border-slate-200";
@@ -435,7 +437,7 @@ function loadPersonalData() {
                         </div>`;
 
                         if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) {
-                            showToast('📢 Новое объявление в ленте!', 'info');
+                            showToast('Новое объявление в ленте!', 'info');
                             sessionStorage.setItem('news_toast_' + docSnap.id, 'true');
                         }
                     }
@@ -445,18 +447,20 @@ function loadPersonalData() {
             if (isNewsAdmin) {
                 newsHTML += `
                 <div class="w-[240px] md:w-[280px] h-auto self-stretch shrink-0 snap-center p-4 rounded-lg border border-dashed border-slate-400 bg-slate-100/50 flex flex-col justify-center relative">
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 text-center">Создать объявление</p>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 text-center flex items-center justify-center gap-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>Создать объявление</p>
                     <textarea id="news-input" rows="2" placeholder="Напишите текст..." class="w-full bg-white rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow"></textarea>
                     <div class="flex items-center justify-between mt-3 gap-2">
                         <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-lg transition-colors flex items-center justify-center w-10 h-8 shrink-0">
-                            📷
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             <input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)">
                         </label>
                         <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 rounded-lg flex-grow transition-colors h-8 outline-none">Опубликовать</button>
                     </div>
                     <div id="image-preview-container" class="hidden mt-3 relative inline-block w-full">
                         <img id="image-preview" src="" class="rounded-lg max-h-20 w-full object-cover border border-slate-200">
-                        <button onclick="removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs outline-none">✖</button>
+                        <button onclick="removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center outline-none">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
                     </div>
                 </div>`;
             }
@@ -464,14 +468,13 @@ function loadPersonalData() {
             const contentNews = document.getElementById('content-news');
             if(contentNews) {
                 contentNews.innerHTML = newsHTML || `
-                <div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center">
+                <div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center mx-4 md:mx-0">
                     <p class="text-slate-400 italic text-sm text-center">Актуальных объявлений нет</p>
                 </div>`;
             }
         });
     } catch(e) {}
 
-    // ИСПРАВЛЕНИЕ: БЛОК СОБЫТИЙ ТЕПЕРЬ ОДНОЙ СТРОКОЙ 80/20
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -534,7 +537,7 @@ function loadPersonalData() {
                     `;
 
                     if (!isPastEvent && !sessionStorage.getItem('event_toast_' + docSnap.id)) {
-                        showToast(`📅 Сегодня: ${ev.title} ${displayTime ? 'в ' + displayTime : ''}`, 'info');
+                        showToast(`Сегодня: ${ev.title} ${displayTime ? 'в ' + displayTime : ''}`, 'info');
                         sessionStorage.setItem('event_toast_' + docSnap.id, 'true');
                     }
                 }
@@ -549,7 +552,7 @@ window.requestTerritory = async (btn) => {
     btn.innerText = "..."; btn.disabled = true;
     try {
         await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
-        btn.innerText = "Успешно ✔️";
+        btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Успешно`;
         setTimeout(() => { btn.innerText = "Попросить"; btn.disabled = false; }, 3000);
     } catch (e) { alert("Ошибка!"); btn.innerText = "Попросить"; btn.disabled = false; }
 };
@@ -584,7 +587,7 @@ window.openReportHistory = () => {
 
         let html = '';
         reports.forEach(r => {
-            const checkIcon = r.participated || r.hours > 0 ? `✅` : `-`;
+            const checkIcon = r.participated || r.hours > 0 ? `<svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>` : `-`;
             html += `
                 <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-left">
                     <div class="flex justify-between items-center mb-2 border-b border-slate-200 pb-2">
@@ -592,7 +595,7 @@ window.openReportHistory = () => {
                         <span class="text-[10px] text-slate-400 font-bold">${r.submittedAt ? new Date(r.submittedAt).toLocaleDateString('ru-RU') : ''}</span>
                     </div>
                     <div class="flex justify-between items-center text-xs font-bold text-slate-600">
-                        <span>Служил(а): ${checkIcon}</span>
+                        <span class="flex items-center gap-1">Служил(а): ${checkIcon}</span>
                         <span>Часы: <span class="text-slate-800 font-black text-sm">${r.hours || '-'}</span></span>
                     </div>
                     <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 mt-1 uppercase">
@@ -674,7 +677,7 @@ window.publishNews = async () => {
         removeImage();
         
         if(btn) {
-            btn.innerText = "Успешно! ✔️";
+            btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Успешно!`;
             setTimeout(() => { btn.innerText = "Опубликовать"; btn.disabled = false; }, 2000);
         }
     } catch (e) { 
