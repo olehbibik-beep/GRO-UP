@@ -22,10 +22,40 @@
         body { -ms-overflow-style: none; scrollbar-width: none; overflow: hidden; }
         .custom-scrollbar::-webkit-scrollbar { display: block; width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; } /* Темный скролл для темной модалки */
     </style>
 </head>
-<body class="bg-ui-bg font-sans text-slate-800 overflow-hidden w-full h-[100dvh]">
+<body class="bg-ui-bg text-slate-800 font-sans w-full h-[100dvh] overflow-hidden flex flex-col relative">
+
+    <main class="flex-1 flex flex-col w-full max-w-2xl mx-auto pt-4 md:pt-6 px-4 md:pl-24 md:pr-6 pb-20 md:pb-6 min-h-0 gap-3">
+        
+        <div class="flex items-center justify-between shrink-0 bg-white rounded-xl p-2 px-4 shadow-sm border border-slate-200">
+            <h1 class="text-xl md:text-2xl font-black text-slate-800 leading-none">Архив</h1>
+            <div class="flex items-center gap-4">
+                <button onclick="changeYear(-1)" class="text-slate-400 hover:text-brand-green text-2xl font-black transition-colors outline-none">‹</button>
+                <div id="display-year" class="text-xl font-black text-slate-800 w-12 text-center">2026</div>
+                <button onclick="changeYear(1)" class="text-slate-400 hover:text-brand-green text-2xl font-black transition-colors outline-none">›</button>
+            </div>
+        </div>
+
+        <div class="shrink-0 h-[25vh] md:h-[200px]">
+            <div id="months-grid" class="grid grid-cols-4 grid-rows-3 gap-2 h-full">
+                </div>
+        </div>
+
+        <div class="flex-1 min-h-0 bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+            <div class="p-3 md:p-4 flex flex-col h-full">
+                <h2 id="month-title" class="text-center font-black text-slate-800 uppercase tracking-widest text-sm mb-2 shrink-0">МЕСЯЦ</h2>
+                
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1 shrink-0">
+                    <span>ПН</span><span>ВТ</span><span>СР</span><span>ЧТ</span><span>ПТ</span><span>СБ</span><span>ВС</span>
+                </div>
+                
+                <div id="days-grid" class="grid grid-cols-7 gap-1 flex-1 auto-rows-fr content-start">
+                    </div>
+            </div>
+        </div>
+    </main>
 
     <nav class="fixed bottom-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-between z-40 pb-safe md:h-[100dvh] md:w-20 md:flex-col md:justify-start md:py-6 md:border-t-0">
         <a href="index.html" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
@@ -36,41 +66,13 @@
         </a>
     </nav>
 
-    <main class="w-full max-w-2xl mx-auto h-[100dvh] pt-4 md:pt-6 pb-20 md:pb-6 md:pl-24 md:pr-6 flex flex-col">
-        
-        <div class="h-[10%] shrink-0 flex items-center justify-between px-2 w-full">
-            <h1 class="text-xl md:text-2xl font-black text-slate-800 leading-tight">Весь год</h1>
-            <div class="flex items-center gap-4 bg-white px-4 py-1.5 rounded-lg shadow-sm border border-slate-200">
-                <button onclick="changeYear(-1)" class="text-slate-400 hover:text-brand-green text-2xl font-black transition-colors outline-none">‹</button>
-                <div id="display-year" class="text-xl font-black text-slate-800 w-12 text-center">2026</div>
-                <button onclick="changeYear(1)" class="text-slate-400 hover:text-brand-green text-2xl font-black transition-colors outline-none">›</button>
-            </div>
-        </div>
-
-        <div class="h-[35%] shrink-0 w-full pb-2">
-            <div id="months-grid" class="grid grid-cols-4 grid-rows-3 gap-2 h-full">
-                </div>
-        </div>
-
-        <div class="h-[55%] flex-grow w-full bg-white rounded-t-3xl shadow-sm flex flex-col pt-4 px-4 pb-2 border-t border-slate-200 relative">
-            <h2 id="month-title" class="text-center font-black text-slate-800 uppercase tracking-widest text-sm mb-2">МЕСЯЦ</h2>
+    <div id="modal" class="hidden fixed inset-0 bg-slate-900/80 z-[100] items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-brand-dark w-full max-w-sm rounded-3xl p-6 shadow-2xl relative flex flex-col border border-slate-800">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white text-2xl font-black outline-none transition-colors leading-none">✖</button>
             
-            <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-2 shrink-0">
-                <span>ПН</span><span>ВТ</span><span>СР</span><span>ЧТ</span><span>ПТ</span><span>СБ</span><span>ВС</span>
-            </div>
+            <h3 id="modal-title" class="text-brand-green font-black text-left mb-4 uppercase tracking-widest text-sm pr-8 border-b border-slate-800 pb-4"></h3>
             
-            <div id="days-grid" class="grid grid-cols-7 gap-1 flex-1 overflow-y-auto custom-scrollbar content-start pb-4">
-                </div>
-        </div>
-    </main>
-
-    <div id="modal" class="hidden fixed inset-0 bg-slate-900/80 z-[100] items-center justify-center p-4">
-        <div class="bg-white w-full max-w-sm rounded-xl p-5 shadow-2xl relative flex flex-col">
-            <button onclick="closeModal()" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-xl font-black outline-none transition-colors">✖</button>
-            
-            <h3 id="modal-title" class="text-brand-green font-black text-center mb-5 uppercase tracking-widest text-sm pr-6"></h3>
-            
-            <div id="modal-list" class="max-h-64 overflow-y-auto custom-scrollbar space-y-2 pr-2">
+            <div id="modal-list" class="max-h-[60vh] overflow-y-auto custom-scrollbar flex flex-col">
                 </div>
         </div>
     </div>
@@ -79,6 +81,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // Подключаемся к основной базе GRO-UP
         const firebaseConfig = {
             apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
             authDomain: "gro-uping.firebaseapp.com",
@@ -97,7 +100,7 @@
         let currentYear = new Date().getFullYear();
         let currentMonth = new Date().getMonth(); 
         
-        let allEvents = {}; // year -> month -> day -> array of events
+        let allEvents = {}; 
 
         window.changeYear = (dir) => {
             currentYear += dir;
@@ -121,7 +124,7 @@
                 const bgClass = isSelected ? 'bg-brand-green text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50';
                 
                 html += `
-                    <button onclick="selectMonth(${i})" class="${bgClass} rounded-lg flex items-center justify-center font-black text-[10px] md:text-xs uppercase tracking-widest transition-colors outline-none">
+                    <button onclick="selectMonth(${i})" class="${bgClass} rounded-lg flex items-center justify-center font-black text-[10px] md:text-xs uppercase tracking-widest transition-colors outline-none h-full">
                         ${monthsNames[i].substring(0,3)}
                     </button>
                 `;
@@ -140,7 +143,7 @@
             const now = new Date();
 
             for (let i = 0; i < shift; i++) {
-                grid.innerHTML += `<div class="aspect-square"></div>`;
+                grid.innerHTML += `<div></div>`;
             }
 
             for (let d = 1; d <= totalDays; d++) {
@@ -149,19 +152,19 @@
                 
                 let dotsHtml = '';
                 dayEvents.forEach(ev => {
-                    // Синие точки - обычная встреча. Красные точки - особое событие.
-                    // ИСПРАВЛЕНИЕ: Размер точки теперь w-1 h-1 (очень маленькие)
+                    // ИСПРАВЛЕНИЕ: Размер точки теперь w-1 h-1 (очень маленькие 4x4px)
                     let dotColor = 'bg-sky-500';
                     if (ev.category === 'special') dotColor = 'bg-rose-500';
                     dotsHtml += `<div class="w-1 h-1 rounded-full ${dotColor}"></div>`;
                 });
 
-                const todayClass = isToday ? 'border-2 border-brand-green text-brand-green bg-green-50' : 'bg-slate-50 border border-slate-100 text-slate-700';
+                const todayClass = isToday ? 'border-2 border-brand-green text-brand-green bg-green-50/50' : 'bg-slate-50 border border-slate-100 text-slate-700';
 
+                // Убрали aspect-square, теперь плитки тянутся по высоте равномерно
                 grid.innerHTML += `
-                    <div onclick="openModal(${d})" class="aspect-square rounded-lg ${todayClass} flex flex-col items-center justify-center text-sm md:text-base font-black relative cursor-pointer hover:bg-slate-100 transition-colors">
-                        ${d}
-                        <div class="absolute bottom-1.5 flex gap-1 justify-center w-full px-1 flex-wrap">
+                    <div onclick="openModal(${d})" class="rounded-lg ${todayClass} flex flex-col items-center justify-center text-sm md:text-base font-black relative cursor-pointer hover:bg-slate-100 transition-colors min-h-0">
+                        <span>${d}</span>
+                        <div class="absolute bottom-1 flex gap-0.5 justify-center w-full px-1 flex-wrap">
                             ${dotsHtml}
                         </div>
                     </div>
@@ -174,26 +177,31 @@
             const list = document.getElementById('modal-list');
             const dayEvents = (allEvents[currentYear] && allEvents[currentYear][currentMonth] && allEvents[currentYear][currentMonth][d]) || [];
             
+            // ИСПРАВЛЕНИЕ: Чистый текст внутри темной модалки
             list.innerHTML = dayEvents.map((ev) => {
-                // ИСПРАВЛЕНИЕ: Темно-графитовая карточка
-                const badgeClass = 'bg-brand-dark text-white border border-slate-700';
-                // Особые события помечаем красной линией сбоку
-                const specialBorder = ev.category === 'special' ? 'border-l-4 border-l-rose-500' : 'border-l-4 border-l-sky-500';
+                const isSpecial = ev.category === 'special';
+                const colorTitle = isSpecial ? 'text-rose-400' : 'text-white';
+                const dotColor = isSpecial ? 'bg-rose-500' : 'bg-sky-500';
 
-                const timeHtml = ev.time ? `<span class="text-[10px] text-slate-400 font-mono font-black mr-2">${ev.time}</span>` : '';
-                const groupHtml = ev.group !== "Все" ? `<span class="text-[8px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded ml-2 whitespace-nowrap">Гр. ${ev.group}</span>` : '';
+                const timeHtml = ev.time ? `<span class="text-xs text-slate-500 font-mono font-bold mr-3">${ev.time}</span>` : '';
+                const groupHtml = ev.group !== "Все" ? `<span class="text-[9px] font-bold text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded ml-2 uppercase">Гр. ${ev.group}</span>` : '';
 
                 return `
-                    <div class="flex flex-col p-3 rounded-lg ${badgeClass} ${specialBorder}">
-                        <div class="flex items-center">
+                    <div class="flex flex-col py-3 border-b border-slate-800/50 last:border-0">
+                        <div class="flex items-start">
+                            <div class="mt-1.5 mr-2 shrink-0 w-1.5 h-1.5 rounded-full ${dotColor}"></div>
                             ${timeHtml}
-                            <span class="text-xs font-bold leading-tight flex-grow">${ev.title}</span>
-                            ${groupHtml}
+                            <div class="flex flex-col flex-grow">
+                                <div class="flex items-center flex-wrap gap-y-1">
+                                    <span class="text-sm font-bold leading-tight ${colorTitle}">${ev.title}</span>
+                                    ${groupHtml}
+                                </div>
+                                ${ev.leader ? `<div class="text-[10px] uppercase font-bold text-brand-green mt-1.5 tracking-wider opacity-90">Вед: ${ev.leader}</div>` : ''}
+                            </div>
                         </div>
-                        ${ev.leader ? `<div class="text-[9px] uppercase font-bold text-brand-green mt-1.5 tracking-wider">Вед: ${ev.leader}</div>` : ''}
                     </div>
                 `;
-            }).join('') || '<p class="text-xs text-slate-400 text-center italic py-4">Событий нет</p>';
+            }).join('') || '<p class="text-xs text-slate-500 text-center italic py-6">В этот день событий нет</p>';
             
             document.getElementById('modal').style.display = 'flex';
         };
