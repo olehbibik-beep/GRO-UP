@@ -266,9 +266,17 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/GRO-UP/sw.js')
-            .then(reg => console.log('Успех:', reg))
-            .catch(err => console.log('Ошибка:', err));
+          // Сначала принудительно удаляем ВСЕ старые сервис-воркеры
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+              registration.unregister();
+            }
+          }).then(() => {
+            // И только потом регистрируем наш чистый, новый файл
+            navigator.serviceWorker.register('/GRO-UP/sw.js')
+              .then(reg => console.log('Service Worker успешно установлен:', reg))
+              .catch(err => console.log('Ошибка установки Service Worker:', err));
+          });
         });
       }
     </script>
