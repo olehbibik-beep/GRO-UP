@@ -22,6 +22,7 @@ enableIndexedDbPersistence(db).catch(() => {});
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
+// УПРАВЛЕНИЕ ЛОАДЕРОМ
 let isLoaderHidden = false;
 window.hideGlobalLoader = () => {
     if (isLoaderHidden) return;
@@ -153,16 +154,32 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
     const mainDashboard = document.getElementById('main-dashboard');
 
     if (currentUserData.status === 'pending') {
-        if(pendingScreen) { pendingScreen.classList.remove('hidden'); pendingScreen.classList.add('flex'); }
-        if(mainDashboard) { mainDashboard.classList.add('hidden'); mainDashboard.classList.remove('block'); }
+        if(pendingScreen) { 
+            pendingScreen.classList.remove('hidden'); 
+            pendingScreen.classList.add('flex'); 
+            pendingScreen.style.display = 'flex';
+        }
+        if(mainDashboard) { 
+            mainDashboard.classList.add('hidden'); 
+            mainDashboard.classList.remove('block'); 
+            mainDashboard.style.display = 'none';
+        }
         window.hideGlobalLoader();
     } else if (currentUserData.status === 'blocked') {
         document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">ДОСТУП ЗАКРЫТ</h1></div>`;
         window.hideGlobalLoader();
     } else {
-        if(pendingScreen) { pendingScreen.classList.add('hidden'); pendingScreen.classList.remove('flex'); }
-        if(mainDashboard) { mainDashboard.classList.remove('hidden'); mainDashboard.classList.add('block'); }
-        if(mainDashboard) mainDashboard.style.display = 'block';
+        if(pendingScreen) { 
+            pendingScreen.classList.add('hidden'); 
+            pendingScreen.classList.remove('flex'); 
+            pendingScreen.style.display = 'none';
+        }
+        if(mainDashboard) { 
+            mainDashboard.classList.remove('hidden'); 
+            mainDashboard.classList.add('block'); 
+            // 🔥 ЭТА СТРОЧКА ВОЗВРАЩАЕТ ТВОЙ ЭКРАН К ЖИЗНИ 🔥
+            mainDashboard.style.display = 'block'; 
+        }
         
         let userRoles = currentUserData.roles || [];
         
@@ -283,9 +300,6 @@ function loadPersonalData() {
                 }
             });
 
-            const dayOfWeek = today.getDay();
-            const isCleaningDay = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0);
-
             if (!currentDuty) {
                 container.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-2">На этой неделе дежурств нет</p>';
             } else {
@@ -295,9 +309,9 @@ function loadPersonalData() {
                 let badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
                 
                 let alertHtml = '';
-                if (isMyGroup && isCleaningDay) {
+                if (isMyGroup) {
                     badgeClass = 'bg-rose-500 text-white border-rose-600 shadow-sm';
-                    alertHtml = `<p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-2 animate-pulse">🔥 Уборка в эти выходные!</p>`;
+                    alertHtml = `<p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-2 animate-pulse">🔥 Ваша группа дежурит!</p>`;
                 }
 
                 container.innerHTML = `
@@ -310,8 +324,8 @@ function loadPersonalData() {
                 `;
             }
 
-            if (myDutyFound && isCleaningDay && !sessionStorage.getItem('duty_toast_shown')) {
-                showToast('🧹 Напоминание: Ваша группа дежурит в эти выходные!', 'warning');
+            if (myDutyFound && !sessionStorage.getItem('duty_toast_shown')) {
+                showToast('🧹 Напоминание: Ваша группа дежурит на этой неделе!', 'warning');
                 sessionStorage.setItem('duty_toast_shown', 'true');
             }
         });
