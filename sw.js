@@ -37,22 +37,23 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ==========================================
-// ЛОГИКА КЭШИРОВАНИЯ
+// ЛОГИКА КЭШИРОВАНИЯ И ЗАЩИТА ОТ ДУБЛЕЙ
 // ==========================================
-const CACHE_NAME = 'gro-up-v40'; // Прыгнули сразу на 40 версию
+const CACHE_NAME = 'gro-up-v41'; 
 
 const INITIAL_CACHED_RESOURCES = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/app.js'
+  '/app.js',
+  '/icon-512.png' // Кэшируем иконку для уведомлений
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // 🔥 ЖЕСТКО: Заставляем новый кэш примениться немедленно и убиваем старые воркеры (защита от дублей)
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(INITIAL_CACHED_RESOURCES))
   );
-  self.skipWaiting(); // Заставляем новый кэш примениться немедленно!
 });
 
 self.addEventListener('activate', (event) => {
@@ -63,7 +64,7 @@ self.addEventListener('activate', (event) => {
       }));
     })
   );
-  self.clients.claim();
+  self.clients.claim(); // 🔥 Перехватываем контроль над всеми вкладками
 });
 
 self.addEventListener('fetch', (event) => {
