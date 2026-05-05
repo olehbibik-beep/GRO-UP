@@ -33,7 +33,6 @@ window.hideGlobalLoader = () => {
     }
 };
 
-// Железобетонный предохранитель загрузки
 setTimeout(window.hideGlobalLoader, 2500);
 
 window.scrollNews = (offset) => {
@@ -259,7 +258,6 @@ function loadPersonalData() {
         }
     });
 
-    // ИСПРАВЛЕНИЕ ДЕЖУРСТВ: Строгая проверка на ТЕКУЩУЮ неделю
     try {
         const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
         onSnapshot(dutiesQuery, (snapshot) => {
@@ -275,7 +273,6 @@ function loadPersonalData() {
                 const dutyStart = new Date(d.rawDate); dutyStart.setHours(0,0,0,0);
                 const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6); dutyEnd.setHours(23,59,59,999);
                 
-                // Проверяем: попадает ли СЕГОДНЯ в рамки недели этого дежурства
                 if (today.getTime() >= dutyStart.getTime() && today.getTime() <= dutyEnd.getTime()) {
                     currentDuty = d;
                     const myGroup = currentUserData ? currentUserData.group : "Без группы";
@@ -286,7 +283,6 @@ function loadPersonalData() {
             });
 
             const dayOfWeek = today.getDay();
-            // Внутренние часы: Пятница (5), Суббота (6), Воскресенье (0)
             const isCleaningDay = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0);
 
             if (!currentDuty) {
@@ -394,11 +390,10 @@ function loadPersonalData() {
         });
     } catch(e){}
 
-    // ИСПРАВЛЕНИЕ КАРУСЕЛИ: Идеальное выравнивание высоты плиток
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
-            let newsHTML = ''; 
+            let newsHTML = `<div class="shrink-0 w-1 md:hidden"></div>`; 
             
             const now = new Date().getTime();
             const oneWeek = 7 * 24 * 60 * 60 * 1000;
@@ -419,7 +414,6 @@ function loadPersonalData() {
                         const bgCardClass = isNew ? "bg-white border-slate-200" : "bg-slate-50 opacity-90 border-slate-200";
                         const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-block mb-2">Новое</span>` : '';
 
-                        // Класс h-auto self-stretch заставляет карточку тянуться до высоты самой высокой в ленте
                         newsHTML += `
                         <div class="w-[240px] md:w-[280px] h-auto self-stretch shrink-0 snap-center p-4 rounded-lg border transition-all flex flex-col justify-between ${bgCardClass}">
                             <div>
@@ -427,7 +421,7 @@ function loadPersonalData() {
                                 <p class="text-slate-700 whitespace-pre-wrap text-xs md:text-sm leading-relaxed font-medium">${item.text}</p>
                                 ${imgHtml}
                             </div>
-                            <div class="mt-auto">${deleteBtn}</div>
+                            <div class="mt-auto pt-4">${deleteBtn}</div>
                         </div>`;
 
                         if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) {
@@ -457,15 +451,11 @@ function loadPersonalData() {
                 </div>`;
             }
 
-            // Распорка в конец для телефона
             newsHTML += `<div class="shrink-0 w-2 md:hidden"></div>`;
 
             const contentNews = document.getElementById('content-news');
             if(contentNews) {
-                contentNews.innerHTML = newsHTML || `
-                <div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center">
-                    <p class="text-slate-400 italic text-sm text-center">Актуальных объявлений нет</p>
-                </div>`;
+                contentNews.innerHTML = newsHTML;
             }
         });
     } catch(e) {}
@@ -536,7 +526,8 @@ function loadPersonalData() {
                 }
             });
 
-            container.innerHTML = html || '';
+            // ИСПРАВЛЕНИЕ: Обновленный текст для пустого списка внутри белого контейнера
+            container.innerHTML = html || '<p class="p-6 text-sm text-slate-400 italic text-center">На сегодня событий нет</p>';
         });
     } catch(e) {}
 }
