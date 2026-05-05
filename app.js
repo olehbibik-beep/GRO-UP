@@ -22,7 +22,6 @@ enableIndexedDbPersistence(db).catch(() => {});
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
-// УПРАВЛЕНИЕ ЛОАДЕРОМ
 let isLoaderHidden = false;
 window.hideGlobalLoader = () => {
     if (isLoaderHidden) return;
@@ -157,11 +156,8 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         if(pendingScreen) { 
             pendingScreen.classList.remove('hidden'); 
             pendingScreen.classList.add('flex'); 
-            pendingScreen.style.display = 'flex';
         }
         if(mainDashboard) { 
-            mainDashboard.classList.add('hidden'); 
-            mainDashboard.classList.remove('block'); 
             mainDashboard.style.display = 'none';
         }
         window.hideGlobalLoader();
@@ -172,12 +168,8 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         if(pendingScreen) { 
             pendingScreen.classList.add('hidden'); 
             pendingScreen.classList.remove('flex'); 
-            pendingScreen.style.display = 'none';
         }
         if(mainDashboard) { 
-            mainDashboard.classList.remove('hidden'); 
-            mainDashboard.classList.add('block'); 
-            // 🔥 ЭТА СТРОЧКА ВОЗВРАЩАЕТ ТВОЙ ЭКРАН К ЖИЗНИ 🔥
             mainDashboard.style.display = 'block'; 
         }
         
@@ -300,6 +292,9 @@ function loadPersonalData() {
                 }
             });
 
+            const dayOfWeek = today.getDay();
+            const isCleaningDay = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0);
+
             if (!currentDuty) {
                 container.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-2">На этой неделе дежурств нет</p>';
             } else {
@@ -309,9 +304,9 @@ function loadPersonalData() {
                 let badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
                 
                 let alertHtml = '';
-                if (isMyGroup) {
+                if (isMyGroup && isCleaningDay) {
                     badgeClass = 'bg-rose-500 text-white border-rose-600 shadow-sm';
-                    alertHtml = `<p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-2 animate-pulse">🔥 Ваша группа дежурит!</p>`;
+                    alertHtml = `<p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-2 animate-pulse">🔥 Уборка в эти выходные!</p>`;
                 }
 
                 container.innerHTML = `
@@ -324,8 +319,8 @@ function loadPersonalData() {
                 `;
             }
 
-            if (myDutyFound && !sessionStorage.getItem('duty_toast_shown')) {
-                showToast('🧹 Напоминание: Ваша группа дежурит на этой неделе!', 'warning');
+            if (myDutyFound && isCleaningDay && !sessionStorage.getItem('duty_toast_shown')) {
+                showToast('🧹 Напоминание: Ваша группа дежурит в эти выходные!', 'warning');
                 sessionStorage.setItem('duty_toast_shown', 'true');
             }
         });
@@ -408,7 +403,7 @@ function loadPersonalData() {
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
-            let newsHTML = `<div class="shrink-0 w-1 md:hidden"></div>`; 
+            let newsHTML = ``; 
             
             const now = new Date().getTime();
             const oneWeek = 7 * 24 * 60 * 60 * 1000;
@@ -466,8 +461,6 @@ function loadPersonalData() {
                 </div>`;
             }
 
-            newsHTML += `<div class="shrink-0 w-2 md:hidden"></div>`;
-
             const contentNews = document.getElementById('content-news');
             if(contentNews) {
                 contentNews.innerHTML = newsHTML || `
@@ -478,6 +471,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
+    // ИСПРАВЛЕНИЕ: БЛОК СОБЫТИЙ ТЕПЕРЬ ОДНОЙ СТРОКОЙ 80/20
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -513,7 +507,7 @@ function loadPersonalData() {
                         }
                     }
 
-                    const groupBadge = evGroup !== "Все" ? `<span class="bg-slate-100 text-slate-500 border border-slate-200 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none">Гр. ${evGroup}</span>` : '';
+                    const groupBadge = evGroup !== "Все" ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">Гр. ${evGroup}</span>` : '';
                     const activeClass = isPastEvent ? "bg-slate-50 text-slate-400 border-b border-slate-200" : "bg-white text-slate-800 border-b border-slate-100";
                     const timeColor = isPastEvent ? "text-slate-400" : "text-rose-500";
                     const leaderColor = isPastEvent ? "text-slate-400" : "text-rose-600";
