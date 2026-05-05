@@ -20,9 +20,6 @@ let myGroup = "Все";
 let isFullAdmin = false;
 let allEventsData = []; 
 
-// ==========================================
-// 1. ПРОВЕРКА ПРАВ
-// ==========================================
 getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     
@@ -45,9 +42,6 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (allEventsData.length > 0) renderEvents();
 });
 
-// ==========================================
-// 2. ЗАГРУЗКА БРАТЬЕВ ДЛЯ ОЧЕРЕДИ
-// ==========================================
 const timeInput = document.getElementById('event-time');
 if (timeInput) {
     timeInput.addEventListener('input', (e) => {
@@ -82,16 +76,13 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     list.innerHTML = html || '<p class="text-xs text-slate-400 italic">Братья не найдены</p>';
 });
 
-// ==========================================
-// 3. СОХРАНЕНИЕ СОБЫТИЙ (С ОЧЕРЕДЬЮ ВЕДУЩИХ)
-// ==========================================
 document.getElementById('save-event-btn').addEventListener('click', async (e) => {
+    const category = document.getElementById('event-category').value; // Новое поле
     const title = document.getElementById('event-title').value.trim();
     const dateStr = document.getElementById('event-date').value;
     const timeStr = document.getElementById('event-time').value || "";
     const groupVal = document.getElementById('event-group').value.trim();
     
-    // Собираем всех отмеченных ведущих в массив
     const selectedLeaders = Array.from(document.querySelectorAll('.leader-checkbox:checked')).map(cb => cb.value);
     
     const isRecurring = document.getElementById('event-recurring').checked;
@@ -114,7 +105,6 @@ document.getElementById('save-event-btn').addEventListener('click', async (e) =>
             const dd = String(evDate.getDate()).padStart(2, '0');
             const newDateStr = `${yyyy}-${mm}-${dd}`;
 
-            // МАГИЯ ОЧЕРЕДИ: Выбираем ведущего по кругу (round-robin)
             let leaderForWeek = "";
             if (selectedLeaders.length > 0) {
                 leaderForWeek = selectedLeaders[i % selectedLeaders.length];
@@ -126,11 +116,11 @@ document.getElementById('save-event-btn').addEventListener('click', async (e) =>
                 time: timeStr,
                 group: groupVal || "Все",
                 leader: leaderForWeek,
+                category: category, // Сохраняем тип события!
                 createdAt: new Date().toISOString()
             });
         }
 
-        // Очистка формы
         document.getElementById('event-title').value = '';
         document.querySelectorAll('.leader-checkbox').forEach(cb => cb.checked = false);
         
@@ -144,9 +134,6 @@ document.getElementById('save-event-btn').addEventListener('click', async (e) =>
     } catch (error) { alert("Ошибка сети."); btn.disabled = false; }
 });
 
-// ==========================================
-// 4. ОТРИСОВКА И АВТОУДАЛЕНИЕ ПРОШЛЫХ
-// ==========================================
 window.renderEvents = () => {
     const list = document.getElementById('events-list');
     const showAllCb = document.getElementById('show-all-events-cb');
@@ -154,7 +141,7 @@ window.renderEvents = () => {
     
     let html = '';
     const today = new Date(); 
-    today.setHours(0,0,0,0); // Начало сегодняшнего дня
+    today.setHours(0,0,0,0);
     let activeCount = 0;
 
     allEventsData.forEach(docSnap => {
@@ -162,11 +149,9 @@ window.renderEvents = () => {
         const evDate = new Date(ev.date);
         const evGroup = ev.group || "Все";
 
-        // 🔥 АВТОУДАЛЕНИЕ: Если дата события МЕНЬШЕ сегодняшнего дня (то есть вчера или раньше)
         if (evDate < today) {
-            // Удаляем тихо в фоне (только админы, чтобы не было дублей команд)
             if (isFullAdmin) deleteDoc(doc(db, "events", docSnap.id));
-            return; // Пропускаем старье, не рисуем его!
+            return; 
         }
 
         const isMyGroupOrAll = (evGroup === "Все" || evGroup == myGroup);
@@ -176,7 +161,6 @@ window.renderEvents = () => {
             
             const isOtherGroup = !isMyGroupOrAll;
             const opacityClass = isOtherGroup ? "opacity-50 hover:opacity-100 bg-slate-50" : "bg-white";
-
             const niceDate = evDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
             
             const groupBadge = evGroup !== "Все" 
@@ -185,6 +169,9 @@ window.renderEvents = () => {
             
             const timeHtml = ev.time ? `<span class="text-xs font-mono font-black text-slate-400 mr-3 shrink-0">${ev.time}</span>` : '';
             const leaderHtml = ev.leader ? `<div class="text-[10px] uppercase font-bold text-slate-400 mt-1 truncate">Ведущий: <span class="text-rose-500 font-black">${ev.leader}</span></div>` : '';
+            
+            // Звездочка для особых событий
+            const specialBadge = ev.category === 'special' ? `<span class="text-rose-500 text-xs ml-1" title="Особое событие">⭐</span>` : '';
 
             const canDelete = isFullAdmin || isMyGroupOrAll;
 
@@ -198,7 +185,7 @@ window.renderEvents = () => {
                         ${timeHtml}
                         <div class="flex flex-col min-w-0">
                             <div class="flex items-center gap-2 truncate">
-                                <h3 class="font-black text-slate-800 text-sm truncate">${ev.title}</h3>
+                                <h3 class="font-black text-slate-800 text-sm truncate">${ev.title}${specialBadge}</h3>
                                 ${groupBadge}
                             </div>
                             <div class="flex items-center gap-2 mt-0.5 truncate">
