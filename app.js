@@ -358,20 +358,24 @@ window.setupNotifications = async () => {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
             
-            // 🔥 ОБХОДИМ БАГ iOS: Не ждем .ready, а берем напрямую
-            let registration = await navigator.serviceWorker.getRegistration();
-            if (!registration) {
-                // Если почему-то не найден, регистрируем принудительно
-                registration = await navigator.serviceWorker.register('/GRO-UP/sw.js');
+            // 1. Принудительно регистрируем Service Worker
+            let registration = await navigator.serviceWorker.register('/GRO-UP/sw.js');
+
+            // 2. Если он еще "устанавливается" или "ждет", ждем пока он станет "Активным"
+            if (!registration.active) {
+                const worker = registration.installing || registration.waiting;
+                if (worker) {
+                    await new Promise((resolve) => {
+                        worker.addEventListener('statechange', (e) => {
+                            if (e.target.state === 'activated') {
+                                resolve();
+                            }
+                        });
+                    });
+                }
             }
 
-            if (!registration) {
-                alert("❌ Ошибка: Service Worker так и не запустился на iOS.");
-                if (pushBtn) pushBtn.innerHTML = `🔔`;
-                return;
-            }
-
-            // Получаем токен
+            // 3. Теперь он ТОЧНО активен. Запрашиваем токен!
             const token = await getToken(messaging, { 
                 vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk',
                 serviceWorkerRegistration: registration 
@@ -382,7 +386,7 @@ window.setupNotifications = async () => {
                 window.showToast("✅ " + window.t('toast_notifications_enabled'));
                 if (pushBtn) pushBtn.style.display = 'none';
             } else {
-                alert("⚠️ Ошибка: Firebase не смог сгенерировать токен.");
+                alert("⚠️ Ошибка: Firebase не сгенерировал токен.");
                 if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
             }
         } else {
