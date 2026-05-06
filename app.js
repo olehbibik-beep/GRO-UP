@@ -2,6 +2,34 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebas
 import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
+import { dict } from './lang.js'; // 🔥 ПОДКЛЮЧАЕМ СЛОВАРЬ
+
+// 🔥 ДВИЖОК ПЕРЕВОДОВ
+const currentLang = localStorage.getItem('app_lang') || 'ru';
+
+window.t = (key) => {
+    if (dict[currentLang] && dict[currentLang][key]) {
+        return dict[currentLang][key];
+    }
+    return key; // Возвращаем ключ, если перевода нет
+};
+
+window.changeLanguage = (lang) => {
+    localStorage.setItem('app_lang', lang);
+    location.reload(); 
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const selector = document.getElementById('lang-selector');
+    if (selector) selector.value = currentLang;
+
+    // Переводим статичный HTML
+    document.querySelectorAll('[data-lang]').forEach(el => {
+        const key = el.getAttribute('data-lang');
+        el.innerHTML = window.t(key);
+    });
+});
+// ============================================
 
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
@@ -57,8 +85,8 @@ window.showToast = (message, type = 'info') => {
 
 window.setupNotifications = async () => {
     try {
-        if (!('Notification' in window)) return alert("❌ Уведомления не поддерживаются на этом устройстве.");
-        if (Notification.permission === 'denied') return alert("🔒 Уведомления заблокированы браузером!\n\nРазрешите их в настройках.");
+        if (!('Notification' in window)) return alert("❌ " + window.t('alert_no_notifications'));
+        if (Notification.permission === 'denied') return alert("🔒 " + window.t('alert_notifications_blocked'));
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
             const registration = await navigator.serviceWorker.ready;
@@ -68,14 +96,14 @@ window.setupNotifications = async () => {
             });
             if (token) {
                 await updateDoc(doc(db, "users", userId), { pushToken: token });
-                alert("✅ Уведомления успешно включены!");
+                window.showToast("✅ " + window.t('toast_notifications_enabled'));
                 const pushBtn = document.getElementById('push-btn');
                 if (pushBtn) pushBtn.style.display = 'none';
             }
         }
     } catch (error) { console.error(error); }
 };
-// Ловим пуш, если приложение открыто, и показываем красивую шторку!
+
 onMessage(messaging, (payload) => {
     console.log('Пришло уведомление:', payload);
     if (payload && payload.notification) {
@@ -90,7 +118,10 @@ let hasFullAccess = false;
 
 const d = new Date();
 const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
-const currentMonthStr = d.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+
+// Локализуем месяц в шапке отчета
+const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU';
+const currentMonthStr = d.toLocaleString(localeFormat, { month: 'long', year: 'numeric' });
 document.getElementById('current-month-label')?.setAttribute('innerText', currentMonthStr);
 
 window.switchTab = (tabId, btnElement) => {
@@ -119,35 +150,35 @@ window.submitReport = async () => {
         fs.disabled = false;
         fs.classList.remove('opacity-50', 'grayscale-[50%]');
         btn.classList.replace('bg-slate-800', 'bg-ui-report');
-        btn.innerText = 'Отправить отчет';
+        btn.innerText = window.t('submit_report');
     } else {
         const participated = document.getElementById('rep-participated')?.checked || false;
         const hours = document.getElementById('rep-hours')?.value || "";
         const studies = document.getElementById('rep-studies')?.value || "";
         const credit = document.getElementById('rep-credit')?.value || "";
 
-        if (!participated && hours === "") return alert("Отметьте галочку 'Служил(а)' или введите часы!");
+        if (!participated && hours === "") return alert(window.t('alert_report_empty'));
         
-        btn.innerText = "Сохранение..."; btn.disabled = true;
+        btn.innerText = window.t('saving'); btn.disabled = true;
 
         try {
             await setDoc(doc(db, "reports", `${userId}_${strictMonthId}`), {
-                userId, userName: currentUserData.name, group: currentUserData.group || "Без группы", month: currentMonthStr,
+                userId, userName: currentUserData.name, group: currentUserData.group || window.t('no_group'), month: currentMonthStr,
                 participated, hours: Number(hours), studies: Number(studies), credit: Number(credit), submittedAt: new Date().toISOString()
             });
             const log = document.getElementById('last-report-log');
-            if(log) log.innerText = `Сохранено: ${new Date().toLocaleString('ru-RU')}`;
+            if(log) log.innerText = `${window.t('saved')} ${new Date().toLocaleString(localeFormat)}`;
             
             btn.classList.replace('bg-ui-report', 'bg-ui-success');
-            btn.innerText = "Успешно ✔️";
+            btn.innerText = window.t('success');
             setTimeout(() => {
                 fs.disabled = true;
                 fs.classList.add('opacity-50', 'grayscale-[50%]');
                 btn.classList.replace('bg-ui-success', 'bg-slate-800');
-                btn.innerHTML = `<svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>Изменить`;
+                btn.innerHTML = `<svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>${window.t('change')}`;
                 btn.disabled = false;
             }, 2000);
-        } catch (e) { alert("Ошибка сети!"); btn.disabled = false; btn.innerText = "Отправить отчет"; }
+        } catch (e) { alert(window.t('error_network')); btn.disabled = false; btn.innerText = window.t('submit_report'); }
     }
 };
 
@@ -159,25 +190,15 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
     const mainDashboard = document.getElementById('main-dashboard');
 
     if (currentUserData.status === 'pending') {
-        if(pendingScreen) { 
-            pendingScreen.classList.remove('hidden'); 
-            pendingScreen.classList.add('flex'); 
-        }
-        if(mainDashboard) { 
-            mainDashboard.style.display = 'none';
-        }
+        if(pendingScreen) { pendingScreen.classList.remove('hidden'); pendingScreen.classList.add('flex'); }
+        if(mainDashboard) { mainDashboard.style.display = 'none'; }
         window.hideGlobalLoader();
     } else if (currentUserData.status === 'blocked') {
-        document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">ДОСТУП ЗАКРЫТ</h1></div>`;
+        document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">${window.t('access_denied')}</h1></div>`;
         window.hideGlobalLoader();
     } else {
-        if(pendingScreen) { 
-            pendingScreen.classList.add('hidden'); 
-            pendingScreen.classList.remove('flex'); 
-        }
-        if(mainDashboard) { 
-            mainDashboard.style.display = 'block'; 
-        }
+        if(pendingScreen) { pendingScreen.classList.add('hidden'); pendingScreen.classList.remove('flex'); }
+        if(mainDashboard) { mainDashboard.style.display = 'block'; }
         
         let userRoles = currentUserData.roles || [];
         
@@ -248,11 +269,11 @@ async function loadProfileData() {
         }
     });
 
-    const myGroup = currentUserData.group || "Без группы";
+    const myGroup = currentUserData.group || window.t('no_group');
     if(pGroup) pGroup.innerText = `№ ${myGroup}`;
 
     try {
-        if (myGroup !== "Без группы" && pOverseer) {
+        if (myGroup !== window.t('no_group') && pOverseer) {
             const q = query(collection(db, "users"), where("group", "==", myGroup), where("roles", "array-contains", "Надзиратель группы"));
             const snap = await getDocs(q);
             pOverseer.innerText = snap.empty ? "-" : snap.docs[0].data().name;
@@ -268,10 +289,10 @@ function loadPersonalData() {
             const repH = document.getElementById('rep-hours'); if(repH) repH.value = r.hours || '';
             const repS = document.getElementById('rep-studies'); if(repS) repS.value = r.studies || '';
             const repC = document.getElementById('rep-credit'); if(repC) repC.value = r.credit || r.pubs || ''; 
-            const log = document.getElementById('last-report-log'); if(log) log.innerText = `Последняя запись: ${new Date(r.submittedAt).toLocaleString('ru-RU')}`;
+            const log = document.getElementById('last-report-log'); if(log) log.innerText = `${window.t('saved')} ${new Date(r.submittedAt).toLocaleString(localeFormat)}`;
             const btn = document.getElementById('submit-report-btn');
             if(btn && document.getElementById('report-fieldset')?.disabled) {
-                btn.innerHTML = `<svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>Изменить`;
+                btn.innerHTML = `<svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>${window.t('change')}`;
             }
         }
     });
@@ -293,7 +314,7 @@ function loadPersonalData() {
                 
                 if (today.getTime() >= dutyStart.getTime() && today.getTime() <= dutyEnd.getTime()) {
                     currentDuty = d;
-                    const myGroup = currentUserData ? currentUserData.group : "Без группы";
+                    const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
                     if (String(d.group) === String(myGroup)) {
                         myDutyFound = true;
                     }
@@ -304,9 +325,9 @@ function loadPersonalData() {
             const isCleaningDay = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0);
 
             if (!currentDuty) {
-                container.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-2">На этой неделе дежурств нет</p>';
+                container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-2">${window.t('no_duties')}</p>`;
             } else {
-                const myGroup = currentUserData ? currentUserData.group : "Без группы";
+                const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
                 const isMyGroup = String(currentDuty.group) === String(myGroup);
                 
                 let badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
@@ -314,13 +335,13 @@ function loadPersonalData() {
                 let alertHtml = '';
                 if (isMyGroup && isCleaningDay) {
                     badgeClass = 'bg-rose-500 text-white border-rose-600 shadow-sm';
-                    alertHtml = `<p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-2 animate-pulse flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>Уборка в эти выходные!</p>`;
+                    alertHtml = `<p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-2 animate-pulse flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>${window.t('cleaning_weekend')}</p>`;
                 }
 
                 container.innerHTML = `
                     <div class="flex items-center justify-between mb-1">
                         <span class="text-sm font-black text-slate-800 truncate pr-2">${currentDuty.type}</span>
-                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border ${badgeClass} shrink-0">Гр. ${currentDuty.group}</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border ${badgeClass} shrink-0">${window.t('group_short')} ${currentDuty.group}</span>
                     </div>
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">${currentDuty.dateRange}</span>
                     ${alertHtml}
@@ -328,7 +349,7 @@ function loadPersonalData() {
             }
 
             if (myDutyFound && isCleaningDay && !sessionStorage.getItem('duty_toast_shown')) {
-                showToast('Напоминание: Ваша группа дежурит в эти выходные!', 'warning');
+                window.showToast(window.t('duty_reminder'), 'warning');
                 sessionStorage.setItem('duty_toast_shown', 'true');
             }
         });
@@ -339,15 +360,15 @@ function loadPersonalData() {
         onSnapshot(terrQuery, (snapshot) => {
             const container = document.getElementById('territories-container');
             if(!container) return;
-            if (snapshot.empty) return container.innerHTML = '<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-lg">У вас пока нет активных участков</p>';
+            if (snapshot.empty) return container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-lg">${window.t('no_active_territories')}</p>`;
             container.innerHTML = '';
             snapshot.forEach(docSnap => {
                 const terr = docSnap.data();
                 container.innerHTML += `
                     <div class="bg-white rounded-lg border border-slate-200 overflow-hidden flex flex-col">
                         <div class="p-4 flex justify-between items-center bg-emerald-50 border-b border-slate-100">
-                            <h3 class="font-black text-slate-800 text-sm">Участок № ${terr.number}</h3>
-                            <span class="text-[9px] font-bold text-emerald-600 bg-white px-2 py-1 rounded-md shadow-sm uppercase border border-emerald-100">Активен</span>
+                            <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num')} ${terr.number}</h3>
+                            <span class="text-[9px] font-bold text-emerald-600 bg-white px-2 py-1 rounded-md shadow-sm uppercase border border-emerald-100">${window.t('active')}</span>
                         </div>
                         <div class="w-full h-24 bg-slate-50 flex items-center justify-center relative">
                             <svg class="w-12 h-12 text-slate-300 absolute opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
@@ -377,14 +398,14 @@ function loadPersonalData() {
                     const isAssistant = task.assistant === currentUserData.name;
                     const opacityClass = isPast ? "opacity-60 grayscale bg-slate-50 border-slate-200" : "bg-white border-slate-200";
                     let roleText = isAssistant 
-                        ? `Помощник у <span class="text-sky-600 ml-1 truncate">${task.userName}</span>` 
-                        : `Выступление ${task.assistant ? `<span class="text-slate-500 text-[10px] md:text-xs block mt-0.5 truncate">Пом: <span class="text-sky-600">${task.assistant}</span></span>` : ''}`;
+                        ? `${window.t('assistant_for')} <span class="text-sky-600 ml-1 truncate">${task.userName}</span>` 
+                        : `${window.t('speech')} ${task.assistant ? `<span class="text-slate-500 text-[10px] md:text-xs block mt-0.5 truncate">${window.t('assistant_short')} <span class="text-sky-600">${task.assistant}</span></span>` : ''}`;
 
                     const cardHtml = `
                         <div class="p-4 rounded-lg border ${opacityClass} mb-3 relative overflow-hidden transition-all">
                             <div class="flex items-center gap-3">
                                 <div class="flex flex-col items-center justify-center w-12 h-12 ${isPast ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-sky-50 border-sky-100 text-sky-500'} rounded-lg border shrink-0">
-                                    <span class="text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${taskDate.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}</span>
+                                    <span class="text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${taskDate.toLocaleDateString(localeFormat, { month: 'short' }).replace('.', '')}</span>
                                     <span class="text-xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${taskDate.getDate()}</span>
                                 </div>
                                 <div class="min-w-0 flex flex-col justify-center gap-1 w-full">
@@ -393,18 +414,30 @@ function loadPersonalData() {
                                         <div class="flex items-center gap-1.5 min-w-0">
                                             <span class="font-black ${isPast ? 'text-slate-500' : 'text-sky-700'} text-[9px] uppercase tracking-wide leading-tight truncate">${task.category || task.title}</span>
                                         </div>
-                                        ${task.lesson ? `<span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-lg shrink-0">Урок ${task.lesson}</span>` : ''}
+                                        ${task.lesson ? `<span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-lg shrink-0">${window.t('lesson')} ${task.lesson}</span>` : ''}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     `;
-                    if (!isPast) { upCount++; upList.innerHTML += cardHtml; } 
-                    else { pastCount++; pastList.innerHTML += cardHtml; }
+                    
+                    if (!isPast) { 
+                        upCount++; 
+                        upList.innerHTML += cardHtml; 
+                        
+                        if (!sessionStorage.getItem('task_toast_' + docSnap.id)) {
+                            window.showToast(`📚 ${window.t('new_task_toast')} ${task.category || task.title}`, 'info');
+                            sessionStorage.setItem('task_toast_' + docSnap.id, 'true');
+                        }
+                    } 
+                    else { 
+                        pastCount++; 
+                        pastList.innerHTML += cardHtml; 
+                    }
                 }
             });
-            if (upCount === 0) upList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 text-center border border-slate-200 rounded-lg">У тебя пока нет активных заданий</p>';
-            if (pastCount === 0) pastList.innerHTML = '<p class="text-slate-400 text-sm italic py-2 text-center">История пуста</p>';
+            if (upCount === 0) upList.innerHTML = `<p class="text-slate-400 text-sm italic py-2 text-center border border-slate-200 rounded-lg">${window.t('no_tasks_upcoming')}</p>`;
+            if (pastCount === 0) pastList.innerHTML = `<p class="text-slate-400 text-sm italic py-2 text-center">${window.t('history_empty')}</p>`;
         });
     } catch(e){}
 
@@ -426,11 +459,11 @@ function loadPersonalData() {
 
                     if (now - itemTime < oneWeek) {
                         const isNew = (now - itemTime) < oneDay;
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 border border-red-100 px-2 py-2 rounded-lg w-full transition-colors outline-none flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>Удалить</button>` : '';
+                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 border border-red-100 px-2 py-2 rounded-lg w-full transition-colors outline-none flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>${window.t('delete')}</button>` : '';
                         const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="mt-3 rounded-lg max-h-48 w-full object-cover border border-slate-200 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
 
                         const bgCardClass = isNew ? "bg-white border-slate-200" : "bg-slate-50 opacity-90 border-slate-200";
-                        const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-block mb-2">Новое</span>` : '';
+                        const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-block mb-2">${window.t('new_badge')}</span>` : '';
 
                         newsHTML += `
                         <div class="w-[240px] md:w-[280px] h-auto self-stretch shrink-0 snap-center p-4 rounded-lg border transition-all flex flex-col justify-between ${bgCardClass}">
@@ -443,7 +476,7 @@ function loadPersonalData() {
                         </div>`;
 
                         if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) {
-                            showToast('Новое объявление в ленте!', 'info');
+                            window.showToast(window.t('new_announcement_toast'), 'info');
                             sessionStorage.setItem('news_toast_' + docSnap.id, 'true');
                         }
                     }
@@ -453,14 +486,14 @@ function loadPersonalData() {
             if (isNewsAdmin) {
                 newsHTML += `
                 <div class="w-[240px] md:w-[280px] h-auto self-stretch shrink-0 snap-center p-4 rounded-lg border border-dashed border-slate-400 bg-slate-100/50 flex flex-col justify-center relative">
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 text-center flex items-center justify-center gap-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>Создать объявление</p>
-                    <textarea id="news-input" rows="2" placeholder="Напишите текст..." class="w-full bg-white rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow"></textarea>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 text-center flex items-center justify-center gap-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>${window.t('create_announcement')}</p>
+                    <textarea id="news-input" rows="2" placeholder="${window.t('write_text')}" class="w-full bg-white rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow"></textarea>
                     <div class="flex items-center justify-between mt-3 gap-2">
                         <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-lg transition-colors flex items-center justify-center w-10 h-8 shrink-0">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             <input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)">
                         </label>
-                        <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 rounded-lg flex-grow transition-colors h-8 outline-none">Опубликовать</button>
+                        <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 rounded-lg flex-grow transition-colors h-8 outline-none">${window.t('publish')}</button>
                     </div>
                     <div id="image-preview-container" class="hidden mt-3 relative inline-block w-full">
                         <img id="image-preview" src="" class="rounded-lg max-h-20 w-full object-cover border border-slate-200">
@@ -475,7 +508,7 @@ function loadPersonalData() {
             if(contentNews) {
                 contentNews.innerHTML = newsHTML || `
                 <div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center mx-4 md:mx-0">
-                    <p class="text-slate-400 italic text-sm text-center">Актуальных объявлений нет</p>
+                    <p class="text-slate-400 italic text-sm text-center">${window.t('no_news')}</p>
                 </div>`;
             }
         });
@@ -496,7 +529,7 @@ function loadPersonalData() {
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 const evDate = new Date(ev.date);
-                const evGroup = ev.group || "Все";
+                const evGroup = ev.group || window.t('no_group');
                 
                 if (evDate.getFullYear() === todayYear && evDate.getMonth() === todayMonth && evDate.getDate() === todayDate) {
                     let isPastEvent = false;
@@ -516,7 +549,7 @@ function loadPersonalData() {
                         }
                     }
 
-                    const groupBadge = evGroup !== "Все" ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">Гр. ${evGroup}</span>` : '';
+                    const groupBadge = evGroup !== window.t('no_group') ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">${window.t('group_short')} ${evGroup}</span>` : '';
                     const activeClass = isPastEvent ? "bg-slate-50 text-slate-400 border-b border-slate-200" : "bg-white text-slate-800 border-b border-slate-100";
                     const timeColor = isPastEvent ? "text-slate-400" : "text-rose-500";
                     const leaderColor = isPastEvent ? "text-slate-400" : "text-rose-600";
@@ -525,7 +558,7 @@ function loadPersonalData() {
                         <div class="flex items-center p-3 w-full cursor-default ${activeClass}">
                             <div class="flex items-center gap-3 w-full">
                                 <div class="flex flex-col items-center justify-center w-12 shrink-0">
-                                    <span class="text-[8px] uppercase font-bold leading-none mb-1 opacity-70">СЕГОДНЯ</span>
+                                    <span class="text-[8px] uppercase font-bold leading-none mb-1 opacity-70">${window.t('today_badge')}</span>
                                     <span class="text-xl font-black leading-none">${evDate.getDate()}</span>
                                 </div>
                                 <div class="flex flex-col flex-grow truncate min-w-0">
@@ -535,7 +568,7 @@ function loadPersonalData() {
                                     </div>
                                     <div class="flex items-center gap-2 mt-1 truncate">
                                         ${groupBadge}
-                                        ${ev.leader ? `<span class="text-[9px] uppercase font-medium opacity-80 truncate">Вед: <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
+                                        ${ev.leader ? `<span class="text-[9px] uppercase font-medium opacity-80 truncate">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -543,13 +576,13 @@ function loadPersonalData() {
                     `;
 
                     if (!isPastEvent && !sessionStorage.getItem('event_toast_' + docSnap.id)) {
-                        showToast(`Сегодня: ${ev.title} ${displayTime ? 'в ' + displayTime : ''}`, 'info');
+                        window.showToast(`${window.t('today_event_toast')} ${ev.title} ${displayTime ? ' ' + displayTime : ''}`, 'info');
                         sessionStorage.setItem('event_toast_' + docSnap.id, 'true');
                     }
                 }
             });
 
-            container.innerHTML = html || '<p class="p-4 text-xs text-slate-400 italic text-center">На сегодня событий нет</p>';
+            container.innerHTML = html || `<p class="p-4 text-xs text-slate-400 italic text-center">${window.t('no_events_today')}</p>`;
         });
     } catch(e) {}
 }
@@ -558,9 +591,9 @@ window.requestTerritory = async (btn) => {
     btn.innerText = "..."; btn.disabled = true;
     try {
         await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
-        btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Успешно`;
-        setTimeout(() => { btn.innerText = "Попросить"; btn.disabled = false; }, 3000);
-    } catch (e) { alert("Ошибка!"); btn.innerText = "Попросить"; btn.disabled = false; }
+        btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success')}`;
+        setTimeout(() => { btn.innerText = window.t('request_btn'); btn.disabled = false; }, 3000);
+    } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('request_btn'); btn.disabled = false; }
 };
 
 window.openProfileModal = () => {
@@ -573,12 +606,12 @@ window.openReportHistory = () => {
     if(m) m.classList.replace('hidden', 'flex');
 
     const list = document.getElementById('report-history-list');
-    list.innerHTML = '<p class="text-slate-400 text-sm italic py-4">Загрузка...</p>';
+    list.innerHTML = `<p class="text-slate-400 text-sm italic py-4">${window.t('loading')}</p>`;
 
     const q = query(collection(db, "reports"), where("userId", "==", userId));
     getDocs(q).then(snapshot => {
         if(snapshot.empty) {
-            list.innerHTML = '<p class="text-slate-400 text-sm italic py-4">Архив пуст</p>';
+            list.innerHTML = `<p class="text-slate-400 text-sm italic py-4">${window.t('archive_empty')}</p>`;
             return;
         }
         
@@ -597,23 +630,23 @@ window.openReportHistory = () => {
             html += `
                 <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-left">
                     <div class="flex justify-between items-center mb-2 border-b border-slate-200 pb-2">
-                        <span class="font-black text-purple-700 text-sm">${r.month || 'Неизвестно'}</span>
-                        <span class="text-[10px] text-slate-400 font-bold">${r.submittedAt ? new Date(r.submittedAt).toLocaleDateString('ru-RU') : ''}</span>
+                        <span class="font-black text-purple-700 text-sm">${r.month || window.t('unknown')}</span>
+                        <span class="text-[10px] text-slate-400 font-bold">${r.submittedAt ? new Date(r.submittedAt).toLocaleDateString(localeFormat) : ''}</span>
                     </div>
                     <div class="flex justify-between items-center text-xs font-bold text-slate-600">
-                        <span class="flex items-center gap-1">Служил(а): ${checkIcon}</span>
-                        <span>Часы: <span class="text-slate-800 font-black text-sm">${r.hours || '-'}</span></span>
+                        <span class="flex items-center gap-1">${window.t('participated')}: ${checkIcon}</span>
+                        <span>${window.t('hours_label').replace('<br>&nbsp;','')} <span class="text-slate-800 font-black text-sm">${r.hours || '-'}</span></span>
                     </div>
                     <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 mt-1 uppercase">
-                        <span>Изучения: ${r.studies || '-'}</span>
-                        <span>Кредит: ${r.credit || r.pubs || '-'}</span>
+                        <span>${window.t('studies_label').replace('<br>',' ')}: ${r.studies || '-'}</span>
+                        <span>${window.t('credit_label').replace('<br>&nbsp;','')} ${r.credit || r.pubs || '-'}</span>
                     </div>
                 </div>
             `;
         });
         list.innerHTML = html;
     }).catch(e => {
-        list.innerHTML = '<p class="text-red-400 text-sm italic">Ошибка загрузки</p>';
+        list.innerHTML = `<p class="text-red-400 text-sm italic">${window.t('error_loading')}</p>`;
     });
 };
 
@@ -657,10 +690,10 @@ window.removeImage = () => {
 window.publishNews = async () => {
     const input = document.getElementById('news-input');
     const text = input ? input.value.trim() : '';
-    if (!text && !selectedImageFile) return alert("Добавьте текст или фото!");
+    if (!text && !selectedImageFile) return alert(window.t('alert_add_text_photo'));
 
     const btn = document.getElementById('publish-news-btn');
-    if(btn) { btn.innerText = "Загрузка..."; btn.disabled = true; }
+    if(btn) { btn.innerText = window.t('loading'); btn.disabled = true; }
 
     try {
         let imageUrl = "";
@@ -683,19 +716,19 @@ window.publishNews = async () => {
         removeImage();
         
         if(btn) {
-            btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Успешно!`;
-            setTimeout(() => { btn.innerText = "Опубликовать"; btn.disabled = false; }, 2000);
+            btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success')}`;
+            setTimeout(() => { btn.innerText = window.t('publish'); btn.disabled = false; }, 2000);
         }
     } catch (e) { 
         console.log(e);
-        alert("Ошибка публикации! Проверьте правила Storage."); 
-        if(btn) { btn.innerText = "Опубликовать"; btn.disabled = false; }
+        alert(window.t('alert_publish_error')); 
+        if(btn) { btn.innerText = window.t('publish'); btn.disabled = false; }
     }
 };
 
 window.deleteNews = async (id) => {
-    if (confirm("Удалить это объявление?")) {
+    if (confirm(window.t('confirm_delete_news'))) {
         try { await deleteDoc(doc(db, "section_content", id)); } 
-        catch (e) { alert("Ошибка удаления!"); }
+        catch (e) { alert(window.t('error_network')); }
     }
 };
