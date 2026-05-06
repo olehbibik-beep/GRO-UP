@@ -3,7 +3,6 @@ import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, del
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
-// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ ДЛЯ ВСЕГО ПРИЛОЖЕНИЯ
 const dict = {
     ru: {
         "loading_data": "Загрузка данных...",
@@ -360,7 +359,6 @@ window.setupNotifications = async () => {
         
         if (pushBtn) pushBtn.innerHTML = '⏳'; 
 
-        // 1. Просим права
         let permission = Notification.permission;
         if (permission !== 'granted') {
             permission = await new Promise((resolve) => {
@@ -370,10 +368,8 @@ window.setupNotifications = async () => {
         }
         if (permission !== 'granted') throw new Error("Нет разрешения на пуши");
 
-        // 2. Регистрируем Service Worker
         let registration = await navigator.serviceWorker.register('./sw.js');
         
-        // 3. Ждем пока он активируется (максимум 3 секунды)
         if (!registration.active) {
             await new Promise((resolve) => {
                 const worker = registration.installing || registration.waiting;
@@ -381,11 +377,10 @@ window.setupNotifications = async () => {
                 worker.addEventListener('statechange', (e) => {
                     if (e.target.state === 'activated') resolve();
                 });
-                setTimeout(resolve, 3000); // Не ждем вечно
+                setTimeout(resolve, 3000); 
             });
         }
 
-        // 4. Получаем токен
         const token = await getToken(messaging, { 
             vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk',
             serviceWorkerRegistration: registration 
@@ -399,7 +394,6 @@ window.setupNotifications = async () => {
             throw new Error("Пустой токен");
         }
     } catch (error) { 
-        // Если iOS все-таки заупрямился про "active service worker"
         if (error.message.includes('active service worker') || error.message.includes('A service worker must be active')) {
             alert("⏳ iOS почти настроил уведомления!\n\nПриложение сейчас перезагрузится. После этого нажмите на колокольчик еще раз!");
             window.location.reload();
@@ -559,8 +553,20 @@ async function loadProfileData() {
     const pName = document.getElementById('profile-name');
     const pGroup = document.getElementById('profile-group');
     const pOverseer = document.getElementById('profile-overseer');
+    const avatar = document.getElementById('profile-avatar');
 
     if(pName) pName.innerText = currentUserData.name || "Имя";
+    
+    // 🔥 ГЕНДЕРНАЯ ИКОНКА (Марс / Венера)
+    if (avatar) {
+        if (currentUserData.gender === 'girl') {
+            avatar.className = "w-16 h-16 bg-rose-50 text-rose-500 border border-rose-200 rounded-full mx-auto flex items-center justify-center mb-3 shadow-sm";
+            avatar.innerHTML = `<svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v6m-3-3h6M12 15a6 6 0 100-12 6 6 0 000 12z" /></svg>`;
+        } else {
+            avatar.className = "w-16 h-16 bg-sky-50 text-sky-500 border border-sky-200 rounded-full mx-auto flex items-center justify-center mb-3 shadow-sm";
+            avatar.innerHTML = `<svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 4.5M21 4.5V12M21 4.5L14.7 10.8M15 15a6 6 0 11-12 0 6 6 0 0112 0z" /></svg>`;
+        }
+    }
     
     let roles = currentUserData.roles || ["Возвещатель"];
     const rolesContainer = document.getElementById('profile-roles-container');
