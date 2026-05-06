@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Управление Участками - GRO-UP</title>
+    <title data-lang="terr_title">Управление Участками - GRO-UP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { 
@@ -28,7 +28,7 @@
 <body class="bg-ui-bg text-slate-800 min-h-screen font-sans">
 
    <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0">
-        <a href="index.html" title="На главную" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white">
+        <a href="index.html" data-lang-title="back_home" title="На главную" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
         </a>
     </nav>
@@ -39,8 +39,8 @@
             <div class="flex items-center gap-3">
                 <span class="text-emerald-500 text-3xl drop-shadow-sm">🗺️</span>
                 <div>
-                    <h1 class="text-xl md:text-2xl font-black text-emerald-600">Участки</h1>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Управление территориями</p>
+                    <h1 class="text-xl md:text-2xl font-black text-emerald-600" data-lang="terr_h1">Участки</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5" data-lang="manage_terr">Управление территориями</p>
                 </div>
             </div>
         </div>
@@ -52,30 +52,30 @@
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-md border border-slate-200">
                     <h2 class="text-sm font-bold flex items-center gap-2 mb-4 uppercase tracking-widest text-slate-500">
                         <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                        Запросы (<span id="requests-count">0</span>)
+                        <span data-lang="requests_title">Запросы</span> (<span id="requests-count">0</span>)
                     </h2>
                     <div id="requests-list" class="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-                        <p class="text-slate-400 italic text-xs text-center py-4 bg-slate-50 rounded-xl">Нет новых запросов</p>
+                        <p class="text-slate-400 italic text-xs text-center py-4 bg-slate-50 rounded-xl" data-lang="no_new_requests">Нет новых запросов</p>
                     </div>
                 </div>
 
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-md border border-slate-200 sticky top-6">
                     <h2 class="text-lg font-black text-slate-800 mb-5 flex items-center gap-2">
-                        <span class="text-emerald-500">➕</span> Выдать участок
+                        <span class="text-emerald-500">➕</span> <span data-lang="issue_terr">Выдать участок</span>
                     </h2>
                     
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Кому выдать</label>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="to_whom">Кому выдать</label>
                             <select id="user-select" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all font-bold text-slate-700 cursor-pointer">
-                                <option value="" disabled selected>Загрузка...</option>
+                                <option value="" disabled selected data-lang="loading">Загрузка...</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Номер участка</label>
-                            <input type="number" id="territory-number" placeholder="Например: 105" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all font-black font-mono text-lg text-emerald-700 text-center">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="terr_number_label">Номер участка</label>
+                            <input type="number" id="territory-number" data-lang-placeholder="ph_terr_num" placeholder="Например: 105" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all font-black font-mono text-lg text-emerald-700 text-center">
                         </div>
-                        <button id="assign-btn" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl shadow-md transition-all active:scale-95 mt-2 text-sm uppercase tracking-widest outline-none">
+                        <button id="assign-btn" data-lang="btn_assign" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl shadow-md transition-all active:scale-95 mt-2 text-sm uppercase tracking-widest outline-none">
                             Назначить
                         </button>
                     </div>
@@ -85,8 +85,8 @@
 
             <div class="md:col-span-2">
                 <div class="flex justify-between items-end mb-4">
-                    <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">В работе</h2>
-                    <input type="text" id="search-terr" placeholder="Поиск по имени или №..." class="p-2 px-4 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 w-64 text-sm font-medium bg-white shadow-sm">
+                    <h2 class="text-xl font-black text-slate-800 flex items-center gap-2" data-lang="in_progress">В работе</h2>
+                    <input type="text" id="search-terr" data-lang-placeholder="ph_search_terr" placeholder="Поиск по имени или №..." class="p-2 px-4 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 w-64 text-sm font-medium bg-white shadow-sm">
                 </div>
                 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -94,14 +94,14 @@
                         <table class="w-full text-left border-collapse min-w-[500px]">
                             <thead>
                                 <tr class="bg-slate-50 border-b border-slate-200 text-[9px] text-slate-400 uppercase tracking-widest">
-                                    <th class="py-3 px-4 font-bold w-20 text-center">Номер</th>
-                                    <th class="py-3 px-4 font-bold">Возвещатель</th>
-                                    <th class="py-3 px-4 font-bold text-center">Взят</th>
-                                    <th class="py-3 px-4 font-bold text-right w-24">Действие</th>
+                                    <th class="py-3 px-4 font-bold w-20 text-center" data-lang="th_number">Номер</th>
+                                    <th class="py-3 px-4 font-bold" data-lang="th_publisher">Возвещатель</th>
+                                    <th class="py-3 px-4 font-bold text-center" data-lang="th_taken">Взят</th>
+                                    <th class="py-3 px-4 font-bold text-right w-24" data-lang="th_action">Действие</th>
                                 </tr>
                             </thead>
                             <tbody id="territories-list" class="divide-y divide-slate-100 text-sm font-medium">
-                                </tbody>
+                            </tbody>
                         </table>
                     </div>
                 </div>
