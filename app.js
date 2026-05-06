@@ -2,16 +2,166 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebas
 import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
-import { dict } from './lang.js'; // 🔥 ПОДКЛЮЧАЕМ СЛОВАРЬ
 
-// 🔥 ДВИЖОК ПЕРЕВОДОВ
+// 🔥 ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (ПРЯМО ВНУТРИ APP.JS)
+const dict = {
+    ru: {
+        "loading_data": "Загрузка данных...",
+        "pending_title": "Заявка на рассмотрении",
+        "pending_desc": "Ожидайте подтверждения администратора.",
+        "logout_btn": "Выйти",
+        "loading_events": "Загрузка встреч...",
+        "all_year": "Весь<br>год",
+        "loading_feed": "Загрузка ленты...",
+        "my_report": "Мой отчет",
+        "participated": "Служил(а)",
+        "hours_label": "Часы<br>&nbsp;",
+        "studies_label": "Изучения<br>Библии",
+        "credit_label": "Кредит<br>&nbsp;",
+        "fill_btn": "Заполнить",
+        "this_week": "На этой неделе",
+        "loading_duties": "Загрузка...",
+        "active_tasks": "Активные задания",
+        "no_active_tasks": "Нет активных заданий",
+        "archive_title": "Архив",
+        "history_empty": "История пуста",
+        "my_territories": "Мои участки",
+        "request_btn": "Попросить",
+        "no_territories": "У вас пока нет участков",
+        "profile_group": "Группа",
+        "profile_overseer": "Ответственный",
+        "language": "Язык / Jazyk",
+        "profile_logout": "Выйти из аккаунта",
+        "my_archive": "Мой архив",
+        "loading_archive": "Загрузка...",
+        "alert_no_notifications": "Уведомления не поддерживаются на этом устройстве.",
+        "alert_notifications_blocked": "Уведомления заблокированы браузером!\n\nРазрешите их в настройках.",
+        "toast_notifications_enabled": "Уведомления успешно включены!",
+        "submit_report": "Отправить отчет",
+        "alert_report_empty": "Отметьте галочку 'Служил(а)' или введите часы!",
+        "saving": "Сохранение...",
+        "saved": "Сохранено:",
+        "success": "Успешно",
+        "change": "Изменить",
+        "error_network": "Ошибка сети!",
+        "access_denied": "ДОСТУП ЗАКРЫТ",
+        "no_group": "Без группы",
+        "no_duties": "На этой неделе дежурств нет",
+        "duty_reminder": "Напоминание: Ваша группа дежурит в эти выходные!",
+        "cleaning_weekend": "Уборка в эти выходные!",
+        "no_active_territories": "У вас пока нет активных участков",
+        "territory_num": "Участок №",
+        "active": "Активен",
+        "assistant_for": "Помощник у",
+        "speech": "Выступление",
+        "assistant_short": "Пом:",
+        "lesson": "Урок",
+        "no_tasks_upcoming": "У тебя пока нет активных заданий",
+        "new_task_toast": "У вас новое задание",
+        "delete": "Удалить",
+        "new_badge": "Новое",
+        "new_announcement_toast": "📢 Новое объявление в ленте!",
+        "create_announcement": "Создать объявление",
+        "write_text": "Напишите текст...",
+        "publish": "Опубликовать",
+        "no_news": "Актуальных объявлений нет",
+        "today_badge": "СЕГОДНЯ",
+        "group_short": "Гр.",
+        "leader_short": "Вед:",
+        "today_event_toast": "📅 Сегодня:",
+        "no_events_today": "На сегодня событий нет",
+        "loading": "Загрузка...",
+        "archive_empty": "Архив пуст",
+        "unknown": "Неизвестно",
+        "error_loading": "Ошибка загрузки",
+        "alert_add_text_photo": "Добавьте текст или фото!",
+        "alert_publish_error": "Ошибка публикации! Проверьте правила Storage.",
+        "confirm_delete_news": "Удалить это объявление?",
+        "confirm_delete_task": "Точно удалить это задание?"
+    },
+    cs: {
+        "loading_data": "Načítání dat...",
+        "pending_title": "Žádost se vyřizuje",
+        "pending_desc": "Čekejte na potvrzení administrátorem.",
+        "logout_btn": "Odejít",
+        "loading_events": "Načítání schůzek...",
+        "all_year": "Celý<br>rok",
+        "loading_feed": "Načítání příspěvků...",
+        "my_report": "Moje zpráva",
+        "participated": "Ve službě",
+        "hours_label": "Hodiny<br>&nbsp;",
+        "studies_label": "Biblická<br>studia",
+        "credit_label": "Kredit<br>&nbsp;",
+        "fill_btn": "Vyplnit",
+        "this_week": "Tento týden",
+        "loading_duties": "Načítání...",
+        "active_tasks": "Aktivní úkoly",
+        "no_active_tasks": "Žádné aktivní úkoly",
+        "archive_title": "Archiv",
+        "history_empty": "Historie je prázdná",
+        "my_territories": "Moje obvody",
+        "request_btn": "Požádat",
+        "no_territories": "Zatím nemáte žádné obvody",
+        "profile_group": "Skupina",
+        "profile_overseer": "Dozorce",
+        "language": "Jazyk / Язык",
+        "profile_logout": "Odhlásit se",
+        "my_archive": "Můj archiv",
+        "loading_archive": "Načítání...",
+        "alert_no_notifications": "Oznámení nejsou na tomto zařízení podporována.",
+        "alert_notifications_blocked": "Oznámení jsou blokována prohlížečem!\n\nPovolte je v nastavení.",
+        "toast_notifications_enabled": "Oznámení byla úspěšně zapnuta!",
+        "submit_report": "Odeslat zprávu",
+        "alert_report_empty": "Zaškrtněte 'Ve službě' nebo zadejte hodiny!",
+        "saving": "Ukládání...",
+        "saved": "Uloženo:",
+        "success": "Úspěšně",
+        "change": "Změnit",
+        "error_network": "Chyba sítě!",
+        "access_denied": "PŘÍSTUP ODEPŘEN",
+        "no_group": "Bez skupiny",
+        "no_duties": "Tento týden nejsou žádné služby",
+        "duty_reminder": "Připomenutí: Vaše skupina má tento víkend službu!",
+        "cleaning_weekend": "Úklid tento víkend!",
+        "no_active_territories": "Zatím nemáte žádné aktivní obvody",
+        "territory_num": "Obvod č.",
+        "active": "Aktivní",
+        "assistant_for": "Pomocník u",
+        "speech": "Proslov",
+        "assistant_short": "Pom:",
+        "lesson": "Lekce",
+        "no_tasks_upcoming": "Zatím nemáte žádné aktivní úkoly",
+        "new_task_toast": "Máte nový úkol",
+        "delete": "Smazat",
+        "new_badge": "Nové",
+        "new_announcement_toast": "📢 Nové oznámení v kanálu!",
+        "create_announcement": "Vytvořit oznámení",
+        "write_text": "Napište text...",
+        "publish": "Publikovat",
+        "no_news": "Žádná aktuální oznámení",
+        "today_badge": "DNES",
+        "group_short": "Sk.",
+        "leader_short": "Ved:",
+        "today_event_toast": "📅 Dnes:",
+        "no_events_today": "Dnes nejsou žádné události",
+        "loading": "Načítání...",
+        "archive_empty": "Archiv je prázdný",
+        "unknown": "Neznámé",
+        "error_loading": "Chyba načítání",
+        "alert_add_text_photo": "Přidejte text nebo fotku!",
+        "alert_publish_error": "Chyba publikování! Zkontrolujte pravidla Storage.",
+        "confirm_delete_news": "Smazat toto oznámení?",
+        "confirm_delete_task": "Opravdu smazat tento úkol?"
+    }
+};
+
 const currentLang = localStorage.getItem('app_lang') || 'ru';
 
 window.t = (key) => {
     if (dict[currentLang] && dict[currentLang][key]) {
         return dict[currentLang][key];
     }
-    return key; // Возвращаем ключ, если перевода нет
+    return key; 
 };
 
 window.changeLanguage = (lang) => {
@@ -19,16 +169,22 @@ window.changeLanguage = (lang) => {
     location.reload(); 
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+// Принудительно применяем перевод к HTML
+const applyTranslations = () => {
     const selector = document.getElementById('lang-selector');
     if (selector) selector.value = currentLang;
 
-    // Переводим статичный HTML
     document.querySelectorAll('[data-lang]').forEach(el => {
         const key = el.getAttribute('data-lang');
         el.innerHTML = window.t(key);
     });
-});
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyTranslations);
+} else {
+    applyTranslations();
+}
 // ============================================
 
 const firebaseConfig = {
@@ -119,7 +275,6 @@ let hasFullAccess = false;
 const d = new Date();
 const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
 
-// Локализуем месяц в шапке отчета
 const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU';
 const currentMonthStr = d.toLocaleString(localeFormat, { month: 'long', year: 'numeric' });
 document.getElementById('current-month-label')?.setAttribute('innerText', currentMonthStr);
