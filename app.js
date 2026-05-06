@@ -368,9 +368,9 @@ window.setupNotifications = async () => {
             }
             if (permission !== 'granted') throw new Error("Нет разрешения на пуши");
 
-            const registration = await navigator.serviceWorker.register('/GRO-UP/sw.js');
+            let registration = await navigator.serviceWorker.register('/GRO-UP/sw.js');
             
-            // Ждем пару секунд на случай, если воркер соизволит активироваться сам
+            // Ждем пару секунд на случай, если воркер соизволит активироваться
             if (registration.installing || registration.waiting) {
                 const worker = registration.installing || registration.waiting;
                 await new Promise((resolve) => {
@@ -381,6 +381,9 @@ window.setupNotifications = async () => {
                 });
             }
 
+            // Обновляем регистрацию перед запросом в Firebase
+            registration = await navigator.serviceWorker.getRegistration('/GRO-UP/');
+
             try {
                 // Пытаемся получить токен
                 const token = await getToken(messaging, { 
@@ -390,16 +393,16 @@ window.setupNotifications = async () => {
                 if (!token) throw new Error("Firebase вернул пустой токен");
                 return token;
             } catch (err) {
-                // 🔥 ЕСЛИ IOS РУГАЕТСЯ НА "ACTIVE SERVICE WORKER" — ТРЕБУЕМ ПЕРЕЗАГРУЗКУ
-                if (err.message.includes("active service worker")) {
-                    throw new Error("RELOAD_REQUIRED");
+                // 🔥 ТЕПЕРЬ ПЕРЕХВАТЫВАЕМ ЛЮБУЮ ОШИБКУ ПРО SERVICE WORKER
+                if (err.message.toLowerCase().includes("service worker")) {
+                    throw new Error("RELOAD_REQUIRED:" + err.message);
                 }
                 throw err;
             }
         };
 
         const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error("Таймаут ожидания!")), 15000);
+            setTimeout(() => reject(new Error("Таймаут ожидания! iOS завис.")), 15000);
         });
 
         try {
@@ -408,10 +411,17 @@ window.setupNotifications = async () => {
             window.showToast("✅ " + window.t('toast_notifications_enabled'));
             if (pushBtn) pushBtn.style.display = 'none';
         } catch (err) {
-            if (err.message === "RELOAD_REQUIRED") {
-                // Спасательный круг для айфона
-                alert("⏳ iOS почти настроил уведомления! Приложение сейчас перезагрузится.\n\n👉 После загрузки просто НАЖМИТЕ НА КОЛОКОЛЬЧИК ЕЩЕ РАЗ!");
-                window.location.reload();
+            if (err.message.startsWith("RELOAD_REQUIRED")) {
+                // Спасательный круг для айфона (с защитой от бесконечного цикла)
+                if (!sessionStorage.getItem('sw_reload_attempted')) {
+                    sessionStorage.setItem('sw_reload_attempted', 'true');
+                    alert("⏳ iOS почти настроил уведомления! Приложение сейчас перезагрузится.\n\n👉 После загрузки НАЖМИТЕ НА КОЛОКОЛЬЧИК ЕЩЕ РАЗ!");
+                    window.location.reload();
+                } else {
+                    alert("❌ iOS всё ещё блокирует Service Worker. Ошибка: " + err.message.split(':')[1]);
+                    sessionStorage.removeItem('sw_reload_attempted');
+                    if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
+                }
             } else {
                 throw err;
             }
