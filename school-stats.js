@@ -1,37 +1,41 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// 🔥 ТОТ ЖЕ СЛОВАРЬ (СКОПИРОВАН)
+// 🔥 СЛОВАРЬ (Добавлены короткие названия для колонок таблицы)
 const dict = {
     ru: {
         "btn_back": "Назад",
         "school_stats": "Статистика школы",
-        "student_progress": "Успеваемость учеников",
+        "student_progress": "Аналитика заданий",
         "loading": "Загрузка...",
-        "total_performances": "Всего заданий:",
-        "no_performances": "Еще не выступал",
-        "last_perf": "Последнее:",
-        "cat_reading_db": "📖 Чтение Библии",
-        "cat_conversation": "🗣️ Разговор",
-        "cat_interest": "🌱 Интерес",
-        "cat_disciples": "👥 Подготавливайте",
-        "cat_beliefs": "💡 Взгляды",
-        "cat_talk_db": "🎙️ Речь"
+        "student_label": "Ученик",
+        "th_total": "Всего",
+        "cat_short_reading": "Чтение",
+        "cat_short_conv": "Разговор",
+        "cat_short_int": "Интерес",
+        "cat_short_disc": "Ученики",
+        "cat_short_bel": "Взгляды",
+        "cat_short_talk": "Речь",
+        "last_perf": "Последнее",
+        "no_performances": "Нет",
+        "unknown": "Неизвестно"
     },
     cs: {
         "btn_back": "Zpět",
         "school_stats": "Statistika školy",
-        "student_progress": "Pokrok studentů",
+        "student_progress": "Analytika úkolů",
         "loading": "Načítání...",
-        "total_performances": "Celkem úkolů:",
-        "no_performances": "Zatím nevystupoval",
-        "last_perf": "Poslední:",
-        "cat_reading_db": "📖 Čtení Bible",
-        "cat_conversation": "🗣️ Rozhovor",
-        "cat_interest": "🌱 Zájem",
-        "cat_disciples": "👥 Čiňte učedníky",
-        "cat_beliefs": "💡 Přesvědčení",
-        "cat_talk_db": "🎙️ Proslov"
+        "student_label": "Student",
+        "th_total": "Celkem",
+        "cat_short_reading": "Čtení",
+        "cat_short_conv": "Rozhovor",
+        "cat_short_int": "Zájem",
+        "cat_short_disc": "Učedníci",
+        "cat_short_bel": "Přesvědčení",
+        "cat_short_talk": "Proslov",
+        "last_perf": "Poslední",
+        "no_performances": "Žádné",
+        "unknown": "Neznámé"
     }
 };
 
@@ -85,108 +89,104 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
 let allStudents = [];
 let allTasks = [];
 
+// 1. Загружаем учеников
 onSnapshot(collection(db, "users"), (snapshot) => {
     allStudents = [];
     snapshot.forEach(d => {
         const u = d.data();
         if (u.status === 'active' && u.roles && u.roles.includes('Участник школы')) {
-            allStudents.push({ id: d.id, name: u.name });
+            allStudents.push({ id: d.id, name: u.name, gender: u.gender });
         }
     });
-    renderStats();
+    renderMatrix();
 });
 
+// 2. Загружаем все задания
 onSnapshot(collection(db, "personal_tasks"), (snapshot) => {
     allTasks = [];
     snapshot.forEach(doc => {
         allTasks.push(doc.data());
     });
-    renderStats();
+    renderMatrix();
 });
 
-window.toggleDetails = (id) => {
-    const el = document.getElementById(`details-${id}`);
-    if(el) el.classList.toggle('hidden');
-};
-
-function renderStats() {
+// 3. Строим матрицу аналитики
+function renderMatrix() {
     const list = document.getElementById('stats-list');
     if (!list) return;
 
     if (allStudents.length === 0) {
-        list.innerHTML = `<p class="text-slate-400 italic p-6 text-center text-sm">${window.t('loading')}</p>`;
+        list.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400 italic">${window.t('loading')}</td></tr>`;
         return;
     }
 
-    // Собираем статистику для каждого студента
+    // Собираем данные
     let statsData = allStudents.map(student => {
         const userTasks = allTasks.filter(t => t.userId === student.id);
-        userTasks.sort((a, b) => new Date(b.date) - new Date(a.date)); // Сортировка от новых к старым
+        userTasks.sort((a, b) => new Date(b.date) - new Date(a.date)); // Сортируем от новых к старым
+
+        // Считаем категории
+        let counts = { reading: 0, conv: 0, int: 0, disc: 0, bel: 0, talk: 0 };
+        
+        userTasks.forEach(t => {
+            if (t.category === 'ЧТЕНИЕ БИБЛИИ') counts.reading++;
+            else if (t.category === 'НАЧИНАЙТЕ РАЗГОВОР') counts.conv++;
+            else if (t.category === 'РАЗВИВАЙТЕ ИНТЕРЕС') counts.int++;
+            else if (t.category === 'ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ') counts.disc++;
+            else if (t.category === 'ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ') counts.bel++;
+            else if (t.category === 'РЕЧЬ') counts.talk++;
+        });
+
         return {
             ...student,
             totalTasks: userTasks.length,
-            tasks: userTasks
+            lastDate: userTasks.length > 0 ? new Date(userTasks[0].date) : null,
+            counts: counts
         };
     });
 
-    // Сортируем: сначала те, у кого меньше всего заданий (или давно не выступали)
-    statsData.sort((a, b) => a.totalTasks - b.totalTasks);
+    // Сортировка: сначала алфавит
+    statsData.sort((a, b) => a.name.localeCompare(b.name));
 
     let html = '';
 
-    statsData.forEach((student, index) => {
-        let lastPerfHtml = `<span class="text-rose-500">${window.t('no_performances')}</span>`;
-        let detailsHtml = '';
+    statsData.forEach(s => {
+        // Функция для рисования красивого бейджика (цифра в кружке)
+        const renderBadge = (count, colorClass, bgClass) => {
+            if (count === 0) return `<span class="text-slate-200">-</span>`;
+            return `<div class="mx-auto w-6 h-6 rounded-full ${bgClass} ${colorClass} flex items-center justify-center text-[11px] font-black">${count}</div>`;
+        };
 
-        if (student.tasks.length > 0) {
-            const lastTask = student.tasks[0];
-            const lastDate = new Date(lastTask.date).toLocaleDateString(localeFormat, { day: 'numeric', month: 'short' });
-            
-            let catStr = lastTask.category;
-            if (catStr === 'ЧТЕНИЕ БИБЛИИ') catStr = window.t('cat_reading_db').replace('📖 ','');
-            if (catStr === 'НАЧИНАЙТЕ РАЗГОВОР') catStr = window.t('cat_conversation').replace('🗣️ ','');
-            if (catStr === 'РАЗВИВАЙТЕ ИНТЕРЕС') catStr = window.t('cat_interest').replace('🌱 ','');
-            if (catStr === 'ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ') catStr = window.t('cat_disciples').replace('👥 ','');
-            if (catStr === 'ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ') catStr = window.t('cat_beliefs').replace('💡 ','');
-            if (catStr === 'РЕЧЬ') catStr = window.t('cat_talk_db').replace('🎙️ ','');
+        const totalBadge = s.totalTasks > 0 
+            ? `<span class="font-black text-slate-700">${s.totalTasks}</span>` 
+            : `<span class="text-slate-300">0</span>`;
 
-            lastPerfHtml = `<span class="text-emerald-600">${window.t('last_perf')} ${lastDate} (${catStr})</span>`;
-
-            detailsHtml = student.tasks.map(t => {
-                const d = new Date(t.date).toLocaleDateString(localeFormat, { day: 'numeric', month: 'short', year: 'numeric' });
-                
-                let cStr = t.category;
-                if (cStr === 'ЧТЕНИЕ БИБЛИИ') cStr = window.t('cat_reading_db').replace('📖 ','');
-                if (cStr === 'НАЧИНАЙТЕ РАЗГОВОР') cStr = window.t('cat_conversation').replace('🗣️ ','');
-                if (cStr === 'РАЗВИВАЙТЕ ИНТЕРЕС') cStr = window.t('cat_interest').replace('🌱 ','');
-                if (cStr === 'ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ') cStr = window.t('cat_disciples').replace('👥 ','');
-                if (cStr === 'ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ') cStr = window.t('cat_beliefs').replace('💡 ','');
-                if (cStr === 'РЕЧЬ') cStr = window.t('cat_talk_db').replace('🎙️ ','');
-
-                return `
-                <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0">
-                    <span class="text-xs font-bold text-slate-500">${d}</span>
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-sky-600 truncate max-w-[150px] text-right">${cStr}</span>
-                </div>`;
-            }).join('');
+        let lastDateStr = `<span class="text-[10px] font-bold text-slate-300 uppercase tracking-widest">${window.t('no_performances')}</span>`;
+        if (s.lastDate) {
+            lastDateStr = `<span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">${s.lastDate.toLocaleDateString(localeFormat, { day: 'numeric', month: 'short' })}</span>`;
         }
 
+        // Блокируем женские/мужские задания визуально, если пол не позволяет
+        const readingBadge = s.gender === 'girl' ? `<span class="text-slate-200">✖</span>` : renderBadge(s.counts.reading, 'text-emerald-700', 'bg-emerald-100');
+        const talkBadge = s.gender === 'girl' ? `<span class="text-slate-200">✖</span>` : renderBadge(s.counts.talk, 'text-indigo-700', 'bg-indigo-100');
+
         html += `
-            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                <div class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors" onclick="toggleDetails('${student.id}')">
-                    <div>
-                        <h3 class="font-black text-slate-800 text-sm md:text-base">${student.name}</h3>
-                        <p class="text-[9px] text-slate-400 font-bold uppercase mt-1 tracking-widest">${window.t('total_performances')} ${student.totalTasks}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-[10px] font-bold uppercase tracking-widest">${lastPerfHtml}</p>
-                        <svg class="w-4 h-4 text-slate-300 inline-block mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                    </div>
-                </div>
-                <div id="details-${student.id}" class="hidden bg-slate-50 px-4 py-2 border-t border-slate-100">
-                    ${detailsHtml || `<p class="text-xs text-slate-400 italic py-2">${window.t('no_performances')}</p>`}
-                </div>
-            </div>
+            <tr class="hover:bg-slate-50 transition-colors">
+                <td class="py-3 px-4 font-black text-slate-800 sticky-col truncate">
+                    ${s.name}
+                    <span class="ml-1 text-xs opacity-50">${s.gender === 'girl' ? '👩‍💼' : '👨‍💼'}</span>
+                </td>
+                <td class="py-3 px-3 text-center border-l border-slate-100">${totalBadge}</td>
+                
+                <td class="py-3 px-2 text-center border-l border-slate-100">${readingBadge}</td>
+                <td class="py-3 px-2 text-center border-l border-slate-100">${renderBadge(s.counts.conv, 'text-sky-700', 'bg-sky-100')}</td>
+                <td class="py-3 px-2 text-center border-l border-slate-100">${renderBadge(s.counts.int, 'text-amber-700', 'bg-amber-100')}</td>
+                <td class="py-3 px-2 text-center border-l border-slate-100">${renderBadge(s.counts.disc, 'text-purple-700', 'bg-purple-100')}</td>
+                <td class="py-3 px-2 text-center border-l border-slate-100">${renderBadge(s.counts.bel, 'text-rose-700', 'bg-rose-100')}</td>
+                <td class="py-3 px-2 text-center border-l border-slate-100">${talkBadge}</td>
+                
+                <td class="py-3 px-4 text-right border-l border-slate-100">${lastDateStr}</td>
+            </tr>
         `;
     });
 
