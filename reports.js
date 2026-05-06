@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, query, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, query, doc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (С ФРАЗАМИ ДЛЯ ОТЧЕТОВ)
+// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (добавлены ключи для удаления)
 const dict = {
     ru: {
         "loading_data": "Загрузка данных...",
@@ -79,6 +79,7 @@ const dict = {
         // Админка
         "admin_title": "Панель Администратора",
         "back_home": "На главную",
+        "btn_back": "Назад",
         "users_title": "Пользователи",
         "autosave_data": "Автосохранение данных",
         "cong_name_label": "Название собрания (Увидят все)",
@@ -168,7 +169,9 @@ const dict = {
         "th_month": "Месяц",
         "all_groups_full_access": "Все группы (Полный доступ)",
         "overseer_access": "Доступ надзирателя",
-        "no_reports_found": "Отчеты не найдены."
+        "no_reports_found": "Отчеты не найдены.",
+        "th_action": "Действие",
+        "confirm_delete_report": "Точно удалить этот отчет?"
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -246,6 +249,7 @@ const dict = {
         // Админка
         "admin_title": "Panel administrátora",
         "back_home": "Na hlavní stránku",
+        "btn_back": "Zpět",
         "users_title": "Uživatelé",
         "autosave_data": "Automatické ukládání dat",
         "cong_name_label": "Název sboru (Uvidí všichni)",
@@ -335,11 +339,14 @@ const dict = {
         "th_month": "Měsíc",
         "all_groups_full_access": "Všechny skupiny (Plný přístup)",
         "overseer_access": "Přístup dozorce",
-        "no_reports_found": "Nebyly nalezeny žádné zprávy."
+        "no_reports_found": "Nebyly nalezeny žádné zprávy.",
+        "th_action": "Akce",
+        "confirm_delete_report": "Opravdu smazat tuto zprávu?"
     }
 };
 
 const currentLang = localStorage.getItem('app_lang') || 'ru';
+const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU';
 
 window.t = (key) => {
     if (dict[currentLang] && dict[currentLang][key]) {
@@ -406,7 +413,10 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (isFullAdmin) {
         hasFullAccess = true;
         document.getElementById('group-title').innerText = window.t('all_groups_full_access');
-    } else if (isOverseer) {
+        // Показываем заголовок столбца "Действие" (Удалить)
+        const actionCol = document.getElementById('th-action-col');
+        if (actionCol) actionCol.innerText = window.t('th_action');
+    } else {
         hasFullAccess = false;
         document.getElementById('group-title').innerText = `${window.t('group_short')} ${myGroup} (${window.t('overseer_access')})`;
     }
@@ -428,7 +438,8 @@ function loadReports() {
             const r = docSnap.data();
             
             if (hasFullAccess || String(r.group) === myGroup) {
-                allReports.push(r);
+                // Добавляем ID документа, чтобы можно было его удалить
+                allReports.push({ id: docSnap.id, ...r });
                 if (r.month) monthsSet.add(r.month);
             }
         });
@@ -456,6 +467,19 @@ function loadReports() {
 }
 
 // ==========================================
+// ФУНКЦИЯ УДАЛЕНИЯ (ТОЛЬКО ДЛЯ АДМИНА)
+// ==========================================
+window.deleteReport = async (id) => {
+    if (confirm(window.t('confirm_delete_report'))) {
+        try {
+            await deleteDoc(doc(db, "reports", id));
+        } catch (e) {
+            alert(window.t('error_network'));
+        }
+    }
+};
+
+// ==========================================
 // 3. ОТРИСОВКА ТАБЛИЦЫ
 // ==========================================
 function renderTable() {
@@ -477,17 +501,29 @@ function renderTable() {
             ? `<span class="text-emerald-500 font-bold text-lg">✅</span>` 
             : `<span class="text-slate-300">-</span>`;
 
+        // Получаем дату отправки
+        const subDate = r.submittedAt ? new Date(r.submittedAt).toLocaleDateString(localeFormat, {day: 'numeric', month: 'short', year: 'numeric'}) : window.t('unknown');
+
+        // Кнопка удаления показывается только админу
+        const deleteBtn = hasFullAccess 
+            ? `<button onclick="deleteReport('${r.id}')" class="text-slate-300 hover:text-red-500 bg-slate-50 hover:bg-red-50 transition-colors p-2 rounded-lg text-lg outline-none border border-slate-100" title="${window.t('delete')}">🗑️</button>` 
+            : '';
+
         html += `
             <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
-                <td class="py-3 px-4 font-black text-slate-800">${r.userName}</td>
+                <td class="py-3 px-4">
+                    <p class="font-black text-slate-800 truncate">${r.userName}</p>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">📅 ${subDate}</p>
+                </td>
                 <td class="py-3 px-4 text-center">
-                    <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest">${r.group}</span>
+                    <span class="bg-slate-50 border border-slate-200 text-slate-600 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest">${r.group}</span>
                 </td>
                 <td class="py-3 px-4 text-center">${checkIcon}</td>
                 <td class="py-3 px-4 text-center font-black text-purple-600">${r.hours || '-'}</td>
                 <td class="py-3 px-4 text-center text-slate-500 font-bold">${r.studies || '-'}</td>
                 <td class="py-3 px-4 text-center text-slate-500 font-bold">${r.credit || r.pubs || '-'}</td>
-                <td class="py-3 px-4 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">${r.month || window.t('unknown')}</td>
+                <td class="py-3 px-4 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">${r.month || window.t('unknown')}</td>
+                <td class="py-3 px-4 text-right no-print">${deleteBtn}</td>
             </tr>
         `;
     });
@@ -499,7 +535,7 @@ function renderTable() {
     if (tpEl) tpEl.innerText = totalPubs;
 
     if (filteredReports.length === 0) {
-        if (list) list.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400 italic">${window.t('no_reports_found')}</td></tr>`;
+        if (list) list.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400 italic">${window.t('no_reports_found')}</td></tr>`;
     } else {
         if (list) list.innerHTML = html;
     }
