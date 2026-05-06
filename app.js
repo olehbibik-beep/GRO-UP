@@ -3,6 +3,7 @@ import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, del
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
+// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (добавлены переводы для виджета дежурств)
 const dict = {
     ru: {
         "loading_data": "Загрузка данных...",
@@ -128,9 +129,12 @@ const dict = {
         "cat_disciples": "👥 Подготавливайте",
         "cat_beliefs": "💡 Взгляды",
         "cat_talk_db": "🎙️ Речь",
-        // Для карт
+        // Для карт и дежурств
         "open_map": "Открыть карту",
-        "no_map": "Нет карты"
+        "no_map": "Нет карты",
+        "opt_cleaning": "🧹 Уборка зала",
+        "opt_special_event": "⭐ Специальное событие",
+        "all_groups": "Все"
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -256,9 +260,12 @@ const dict = {
         "cat_disciples": "👥 Čiňte učedníky",
         "cat_beliefs": "💡 Přesvědčení",
         "cat_talk_db": "🎙️ Proslov",
-        // Для карт
+        // Для карт и дежурств
         "open_map": "Otevřít mapu",
-        "no_map": "Bez mapy"
+        "no_map": "Bez mapy",
+        "opt_cleaning": "🧹 Úklid sálu",
+        "opt_special_event": "⭐ Zvláštní událost",
+        "all_groups": "Vše"
     }
 };
 
@@ -659,12 +666,31 @@ function loadPersonalData() {
                     alertHtml = `<p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-2 animate-pulse flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>${window.t('cleaning_weekend')}</p>`;
                 }
 
+                // 🔥 ИСПРАВЛЕНИЕ: Перевод типа уборки и группы
+                let typeStr = currentDuty.type;
+                if (typeStr === 'Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
+                if (typeStr === 'Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
+                
+                const groupStr = currentDuty.group === "Все" || currentDuty.group === window.t('all_groups') ? window.t('all_groups') : `${window.t('group_short')} ${currentDuty.group}`;
+
+                // 🔥 ИСПРАВЛЕНИЕ: Динамическая дата без слова "deprecated"
+                const dutyStart = new Date(currentDuty.rawDate); dutyStart.setHours(0,0,0,0);
+                const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6);
+                const startDay = dutyStart.getDate();
+                const endDay = dutyEnd.getDate();
+                const endMonth = dutyEnd.toLocaleDateString(localeFormat, { month: 'long' });
+                let localizedDateRange = `${startDay} - ${endDay} ${endMonth}`;
+                if (dutyStart.getMonth() !== dutyEnd.getMonth()) {
+                    const startMonth = dutyStart.toLocaleDateString(localeFormat, { month: 'short' });
+                    localizedDateRange = `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
+                }
+
                 container.innerHTML = `
                     <div class="flex items-center justify-between mb-1">
-                        <span class="text-sm font-black text-slate-800 truncate pr-2">${currentDuty.type}</span>
-                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border ${badgeClass} shrink-0">${window.t('group_short')} ${currentDuty.group}</span>
+                        <span class="text-sm font-black text-slate-800 truncate pr-2">${typeStr}</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border ${badgeClass} shrink-0">${groupStr}</span>
                     </div>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">${currentDuty.dateRange}</span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">${localizedDateRange}</span>
                     ${alertHtml}
                 `;
             }
