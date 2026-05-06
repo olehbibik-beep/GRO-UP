@@ -351,37 +351,43 @@ window.showToast = (message, type = 'info') => {
 window.setupNotifications = async () => {
     try {
         if (!('Notification' in window)) return alert("❌ " + window.t('alert_no_notifications'));
-        if (Notification.permission === 'denied') return alert("🔒 " + window.t('alert_notifications_blocked'));
-
-        // Меняем иконку на часики, чтобы понимать, что процесс идет
+        
         const pushBtn = document.getElementById('push-btn');
         if (pushBtn) pushBtn.innerHTML = '⏳'; 
 
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
+            alert("Шаг 1: iOS разрешил пуши!"); // Проверка 1
+            
             const registration = await navigator.serviceWorker.ready;
+            alert("Шаг 2: Service Worker найден!"); // Проверка 2
+            
+            alert("Шаг 3: Ждем токен от Firebase (может занять 5-10 сек)..."); // Проверка 3
+            
             const token = await getToken(messaging, { 
                 vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk',
                 serviceWorkerRegistration: registration 
             });
+            
+            alert("Шаг 4: Токен получен!"); // Проверка 4
             
             if (token) {
                 await updateDoc(doc(db, "users", userId), { pushToken: token });
                 window.showToast("✅ " + window.t('toast_notifications_enabled'));
                 if (pushBtn) pushBtn.style.display = 'none';
             } else {
-                alert("⚠️ Ошибка: Firebase не вернул токен для этого устройства.");
-                if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
+                alert("⚠️ Ошибка: Токен пустой.");
+                if (pushBtn) pushBtn.innerHTML = `🔔`;
             }
         } else {
-            if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
+            alert("🔒 Разрешение не получено. Статус: " + permission);
+            if (pushBtn) pushBtn.innerHTML = `🔔`;
         }
     } catch (error) { 
-        // 🔥 ТЕПЕРЬ ОШИБКА ВЫСКОЧИТ НА ЭКРАН ТЕЛЕФОНА!
-        alert("❌ Ошибка iOS: " + error.message); 
+        alert("❌ ОШИБКА: " + error.message); 
         console.error(error); 
         const pushBtn = document.getElementById('push-btn');
-        if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
+        if (pushBtn) pushBtn.innerHTML = `🔔`;
     }
 };
 
