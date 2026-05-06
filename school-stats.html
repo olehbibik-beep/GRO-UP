@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title data-lang="school_stats">Статистика школы - GRO-UP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { 
+            theme: { 
+                extend: { 
+                    colors: { 
+                        ui: { bg: '#f8fafc', adminNav: '#1e1b4b' } 
+                    } 
+                } 
+            } 
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+    </style>
+</head>
+<body class="bg-ui-bg text-slate-800 min-h-screen font-sans">
+
+    <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0">
+        <a href="school.html" data-lang-title="btn_back" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
+            <div class="nav-icon-container text-indigo-300 hover:text-white p-2.5 rounded-full transition-colors flex flex-col items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                <span class="text-[8px] font-black uppercase tracking-widest hidden md:block" data-lang="btn_back">Назад</span>
+            </div>
+        </a>
+    </nav>
+
+    <main class="w-full max-w-3xl mx-auto pt-4 md:pt-6 px-4 pb-24 md:pl-28 md:pr-6">
+        
+        <div class="mb-6 flex justify-between items-center bg-white p-4 md:p-5 rounded-xl border border-slate-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0 border border-indigo-100">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-black text-indigo-600" data-lang="school_stats">Статистика школы</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5" data-lang="student_progress">Успеваемость учеников</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="stats-list" class="space-y-4">
+            <p class="text-slate-500 italic p-6 text-center text-sm" data-lang="loading">Загрузка...</p>
+        </div>
+
+    </main>
+
+    <script type="module" src="school-stats.js?v=1"></script>
+</body>
+</html>
