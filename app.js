@@ -3,7 +3,7 @@ import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, del
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
-// 🔥 ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (ПРЯМО ВНУТРИ APP.JS)
+// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ ДЛЯ ВСЕГО ПРИЛОЖЕНИЯ
 const dict = {
     ru: {
         "loading_data": "Загрузка данных...",
@@ -77,7 +77,51 @@ const dict = {
         "alert_add_text_photo": "Добавьте текст или фото!",
         "alert_publish_error": "Ошибка публикации! Проверьте правила Storage.",
         "confirm_delete_news": "Удалить это объявление?",
-        "confirm_delete_task": "Точно удалить это задание?"
+        "confirm_delete_task": "Точно удалить это задание?",
+        // Админка
+        "admin_title": "Панель Администратора",
+        "back_home": "На главную",
+        "users_title": "Пользователи",
+        "autosave_data": "Автосохранение данных",
+        "cong_name_label": "Название собрания (Увидят все)",
+        "cong_name_placeholder": "Например: Центральное",
+        "requests_title": "Заявки",
+        "active_users": "Активные",
+        "search_placeholder": "Поиск...",
+        "th_name_gender": "Имя и Пол",
+        "th_pin": "ПИН",
+        "th_group": "Группа",
+        "th_school": "Школа",
+        "th_status": "Статус в собрании",
+        "th_responsible": "Ответственный за",
+        "th_manage": "Управление",
+        "error_save": "Ошибка сохранения!",
+        "alert_pin_length": "ПИН-код должен состоять ровно из 6 цифр!",
+        "error_save_pin": "Ошибка при сохранении ПИН-кода!",
+        "error_update_role": "Ошибка при обновлении роли!",
+        "confirm_block": "Заблокировать пользователя?",
+        "confirm_delete_profile": "ВНИМАНИЕ! Удалить профиль?",
+        "error_general": "Ошибка!",
+        "confirm_reject": "Точно отклонить заявку и удалить данные?",
+        "error_delete": "Ошибка удаления",
+        "status_pending": "Ожидает",
+        "btn_approve": "Одобрить",
+        "btn_reject": "Отклонить",
+        "btn_unblock": "Разблокировать",
+        "btn_block": "Заблокировать",
+        "btn_delete": "Удалить",
+        "gender_boy": "Брат",
+        "gender_girl": "Сестра",
+        "role_publisher": "Возвещатель",
+        "role_pioneer": "Пионер",
+        "role_ms": "Помощник собр.",
+        "role_elder": "Старейшина",
+        "role_admin": "Админ",
+        "role_group": "Группа",
+        "role_terr": "Участки",
+        "role_school": "Школа",
+        "no_new_requests": "Нет новых заявок",
+        "no_active_users": "Нет активных пользователей"
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -151,7 +195,51 @@ const dict = {
         "alert_add_text_photo": "Přidejte text nebo fotku!",
         "alert_publish_error": "Chyba publikování! Zkontrolujte pravidla Storage.",
         "confirm_delete_news": "Smazat toto oznámení?",
-        "confirm_delete_task": "Opravdu smazat tento úkol?"
+        "confirm_delete_task": "Opravdu smazat tento úkol?",
+        // Админка
+        "admin_title": "Panel administrátora",
+        "back_home": "Na hlavní stránku",
+        "users_title": "Uživatelé",
+        "autosave_data": "Automatické ukládání dat",
+        "cong_name_label": "Název sboru (Uvidí všichni)",
+        "cong_name_placeholder": "Například: Centrální",
+        "requests_title": "Žádosti",
+        "active_users": "Aktivní",
+        "search_placeholder": "Hledat...",
+        "th_name_gender": "Jméno a Pohlaví",
+        "th_pin": "PIN",
+        "th_group": "Skupina",
+        "th_school": "Škola",
+        "th_status": "Status ve sboru",
+        "th_responsible": "Zodpovědný za",
+        "th_manage": "Správa",
+        "error_save": "Chyba při ukládání!",
+        "alert_pin_length": "PIN kód musí mít přesně 6 číslic!",
+        "error_save_pin": "Chyba při ukládání PIN kódu!",
+        "error_update_role": "Chyba při aktualizaci role!",
+        "confirm_block": "Zablokovat uživatele?",
+        "confirm_delete_profile": "POZOR! Smazat profil?",
+        "error_general": "Chyba!",
+        "confirm_reject": "Opravdu zamítnout žádost a smazat data?",
+        "error_delete": "Chyba při mazání",
+        "status_pending": "Čeká",
+        "btn_approve": "Schválit",
+        "btn_reject": "Zamítnout",
+        "btn_unblock": "Odblokovat",
+        "btn_block": "Zablokovat",
+        "btn_delete": "Smazat",
+        "gender_boy": "Bratr",
+        "gender_girl": "Sestra",
+        "role_publisher": "Zvěstovatel",
+        "role_pioneer": "Průkopník",
+        "role_ms": "Služební pom.",
+        "role_elder": "Starší",
+        "role_admin": "Admin",
+        "role_group": "Skupina",
+        "role_terr": "Obvody",
+        "role_school": "Škola",
+        "no_new_requests": "Žádné nové žádosti",
+        "no_active_users": "Žádní aktivní uživatelé"
     }
 };
 
@@ -169,14 +257,19 @@ window.changeLanguage = (lang) => {
     location.reload(); 
 };
 
-// Принудительно применяем перевод к HTML
+// 🔥 ПРОКАЧАННАЯ ФУНКЦИЯ ПЕРЕВОДА HTML (как в админке)
 const applyTranslations = () => {
     const selector = document.getElementById('lang-selector');
     if (selector) selector.value = currentLang;
 
     document.querySelectorAll('[data-lang]').forEach(el => {
-        const key = el.getAttribute('data-lang');
-        el.innerHTML = window.t(key);
+        el.innerHTML = window.t(el.getAttribute('data-lang'));
+    });
+    document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
+        el.setAttribute('placeholder', window.t(el.getAttribute('data-lang-placeholder')));
+    });
+    document.querySelectorAll('[data-lang-title]').forEach(el => {
+        el.setAttribute('title', window.t(el.getAttribute('data-lang-title')));
     });
 };
 
