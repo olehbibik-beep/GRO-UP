@@ -357,66 +357,57 @@ window.setupNotifications = async () => {
     const pushBtn = document.getElementById('push-btn');
     try {
         if (!('Notification' in window)) return alert("❌ " + window.t('alert_no_notifications'));
-        if (!('serviceWorker' in navigator)) return alert("❌ Service Worker не поддерживается!");
         
         if (pushBtn) pushBtn.innerHTML = '⏳'; 
 
-        // 1. Запрашиваем разрешение
+        // 1. Просим права
         let permission = Notification.permission;
         if (permission !== 'granted') {
             permission = await new Promise((resolve) => {
                 const result = Notification.requestPermission(resolve);
-                if (result && typeof result.then === 'function') {
-                    result.then(resolve);
-                }
+                if (result && typeof result.then === 'function') result.then(resolve);
             });
         }
         if (permission !== 'granted') throw new Error("Нет разрешения на пуши");
 
-        // 2. Ищем или регистрируем Service Worker
-        let registration = await navigator.serviceWorker.getRegistration();
-        if (!registration) {
-            registration = await navigator.serviceWorker.register('/GRO-UP/sw.js');
+        // 2. Регистрируем Service Worker
+        let registration = await navigator.serviceWorker.register('./sw.js');
+        
+        // 3. Ждем пока он активируется (максимум 3 секунды)
+        if (!registration.active) {
+            await new Promise((resolve) => {
+                const worker = registration.installing || registration.waiting;
+                if (!worker) { resolve(); return; }
+                worker.addEventListener('statechange', (e) => {
+                    if (e.target.state === 'activated') resolve();
+                });
+                setTimeout(resolve, 3000); // Не ждем вечно
+            });
         }
 
-        // 3. Агрессивный опрос для iOS: Ждем, пока воркер не станет активен
-        let attempts = 0;
-        while ((!registration || !registration.active || registration.active.state !== 'activated') && attempts < 50) {
-            await new Promise(resolve => setTimeout(resolve, 200)); // Ждем 0.2 сек
-            registration = await navigator.serviceWorker.getRegistration();
-            if (!registration) {
-                registration = await navigator.serviceWorker.register('/GRO-UP/sw.js');
-            }
-            attempts++;
-        }
-
-        if (!registration || !registration.active || registration.active.state !== 'activated') {
-            throw new Error("iOS заблокировал фоновый процесс. Перезапустите приложение полностью.");
-        }
-
-        // 4. Запрашиваем токен
-        const tokenPromise = getToken(messaging, { 
+        // 4. Получаем токен
+        const token = await getToken(messaging, { 
             vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk',
             serviceWorkerRegistration: registration 
         });
 
-        const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error("Firebase не ответил за 10 секунд")), 10000);
-        });
-
-        const token = await Promise.race([tokenPromise, timeoutPromise]);
-        
-        if (!token) throw new Error("Firebase вернул пустой токен");
-
-        // 5. Успех!
-        await updateDoc(doc(db, "users", userId), { pushToken: token });
-        window.showToast("✅ " + window.t('toast_notifications_enabled'));
-        if (pushBtn) pushBtn.style.display = 'none';
-
+        if (token) {
+            await updateDoc(doc(db, "users", userId), { pushToken: token });
+            window.showToast("✅ " + window.t('toast_notifications_enabled'));
+            if (pushBtn) pushBtn.style.display = 'none';
+        } else {
+            throw new Error("Пустой токен");
+        }
     } catch (error) { 
-        alert("❌ ОШИБКА: " + error.message); 
-        console.error(error); 
-        if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
+        // Если iOS все-таки заупрямился про "active service worker"
+        if (error.message.includes('active service worker') || error.message.includes('A service worker must be active')) {
+            alert("⏳ iOS почти настроил уведомления!\n\nПриложение сейчас перезагрузится. После этого нажмите на колокольчик еще раз!");
+            window.location.reload();
+        } else {
+            alert("❌ ОШИБКА: " + error.message); 
+            console.error(error); 
+            if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
+        }
     }
 };
 
