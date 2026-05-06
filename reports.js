@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, query, doc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (добавлены ключи для удаления)
+// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ
 const dict = {
     ru: {
         "loading_data": "Загрузка данных...",
@@ -498,7 +498,7 @@ function renderTable() {
         totalHours += Number(r.hours || 0);
 
         const checkIcon = r.participated || r.hours > 0 
-            ? `<span class="text-emerald-500 font-bold text-lg">✅</span>` 
+            ? `<div class="mx-auto w-5 h-5 bg-emerald-100 text-emerald-600 rounded flex items-center justify-center border border-emerald-200"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg></div>` 
             : `<span class="text-slate-300">-</span>`;
 
         // Получаем дату отправки
@@ -506,14 +506,14 @@ function renderTable() {
 
         // Кнопка удаления показывается только админу
         const deleteBtn = hasFullAccess 
-            ? `<button onclick="deleteReport('${r.id}')" class="text-slate-300 hover:text-red-500 bg-slate-50 hover:bg-red-50 transition-colors p-2 rounded-lg text-lg outline-none border border-slate-100" title="${window.t('delete')}">🗑️</button>` 
+            ? `<button onclick="deleteReport('${r.id}')" class="text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-red-50 transition-colors p-2 rounded-lg outline-none border border-slate-100" title="${window.t('delete')}"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` 
             : '';
 
         html += `
             <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
                 <td class="py-3 px-4">
                     <p class="font-black text-slate-800 truncate">${r.userName}</p>
-                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">📅 ${subDate}</p>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">${subDate}</p>
                 </td>
                 <td class="py-3 px-4 text-center">
                     <span class="bg-slate-50 border border-slate-200 text-slate-600 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest">${r.group}</span>
