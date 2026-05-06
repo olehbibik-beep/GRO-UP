@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (С ФРАЗАМИ ДЛЯ ШКОЛЫ)
+// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (добавлены бланки для печати)
 const dict = {
     ru: {
         "loading_data": "Загрузка данных...",
@@ -76,9 +76,9 @@ const dict = {
         "alert_publish_error": "Ошибка публикации! Проверьте правила Storage.",
         "confirm_delete_news": "Удалить это объявление?",
         "confirm_delete_task": "Точно удалить это задание?",
-        // Админка
         "admin_title": "Панель Администратора",
         "back_home": "На главную",
+        "btn_back": "Назад",
         "users_title": "Пользователи",
         "autosave_data": "Автосохранение данных",
         "cong_name_label": "Название собрания (Увидят все)",
@@ -120,56 +120,6 @@ const dict = {
         "role_school": "Школа",
         "no_new_requests": "Нет новых заявок",
         "no_active_users": "Нет активных пользователей",
-        // Календарь
-        "calendar_title": "Календарь Событий - GRO-UP",
-        "calendar_h1": "Календарь",
-        "calendar_subtitle": "График событий собрания",
-        "create_meeting": "Создать встречу",
-        "event_type": "Тип события",
-        "opt_regular": "🔵 Обычная встреча",
-        "opt_special": "🔴 Особое событие (важно)",
-        "event_name": "Название",
-        "ph_meeting": "Встреча для проповеди",
-        "event_date": "Дата",
-        "event_time": "Время",
-        "event_group_label": "Группа (пусто = для всех)",
-        "ph_group": "Например: 5",
-        "leaders_queue": "Ведущие (авто-очередь)",
-        "loading_brothers": "Загрузка братьев...",
-        "repeat_weekly": "Повторять еженедельно",
-        "how_many_weeks": "На сколько недель?",
-        "publish_btn": "Опубликовать",
-        "meeting_schedule": "График встреч",
-        "show_other_groups": "Показать другие группы",
-        "alert_fill_name_date": "Заполните название и дату!",
-        "generating": "Генерация...",
-        "success_with_tick": "Успешно! ✔️",
-        "general_group": "Общее",
-        "leader_label": "Ведущий:",
-        "title_special_event": "Особое событие",
-        "foreign_event": "Чужое",
-        "no_events_group": "Событий для вашей группы не найдено.",
-        "no_brothers_found": "Братья не найдены",
-        "confirm_delete_event": "Удалить встречу из календаря?",
-        // Отчеты
-        "reports_title": "Отчеты - GRO-UP",
-        "reports_summary": "Сводка отчетов",
-        "loading_access": "Загрузка доступа...",
-        "users_link": "Пользователи",
-        "submitted_reports": "Сдали отчеты",
-        "total_hours": "Итого часов",
-        "all_months": "Все месяцы",
-        "print_btn": "Распечатать",
-        "th_publisher": "Возвещатель",
-        "th_participated": "Служил",
-        "th_hours": "Часы",
-        "th_studies": "Изучения",
-        "th_credit": "Кредит",
-        "th_month": "Месяц",
-        "all_groups_full_access": "Все группы (Полный доступ)",
-        "overseer_access": "Доступ надзирателя",
-        "no_reports_found": "Отчеты не найдены.",
-        // Школа
         "school_title": "Управление Школой - GRO-UP",
         "school_h1": "Школа",
         "manage_tasks": "Управление заданиями",
@@ -200,7 +150,14 @@ const dict = {
         "alert_fill_all": "Пожалуйста, заполните все обязательные поля!",
         "success_assigned": "Успешно назначено! ✔️",
         "no_assigned_tasks": "Нет назначенных заданий.",
-        "num_symbol": "№"
+        "num_symbol": "№",
+        // Слипы (Бланки для печати)
+        "slip_header": "ЗАДАНИЕ НА ХРИСТИАНСКУЮ ЖИЗНЬ И СЛУЖЕНИЕ",
+        "slip_name": "Имя:",
+        "slip_partner": "Помощник:",
+        "slip_date": "Дата:",
+        "slip_lesson": "Урок в тетради:",
+        "slip_notes": "Примечания для учащегося: Материал для задания и номер урока находятся в рабочей тетради."
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -275,9 +232,9 @@ const dict = {
         "alert_publish_error": "Chyba publikování! Zkontrolujte pravidla Storage.",
         "confirm_delete_news": "Smazat toto oznámení?",
         "confirm_delete_task": "Opravdu smazat tento úkol?",
-        // Админка
         "admin_title": "Panel administrátora",
         "back_home": "Na hlavní stránku",
+        "btn_back": "Zpět",
         "users_title": "Uživatelé",
         "autosave_data": "Automatické ukládání dat",
         "cong_name_label": "Název sboru (Uvidí všichni)",
@@ -319,56 +276,6 @@ const dict = {
         "role_school": "Škola",
         "no_new_requests": "Žádné nové žádosti",
         "no_active_users": "Žádní aktivní uživatelé",
-        // Календарь
-        "calendar_title": "Kalendář událostí - GRO-UP",
-        "calendar_h1": "Kalendář",
-        "calendar_subtitle": "Rozvrh událostí sboru",
-        "create_meeting": "Vytvořit schůzku",
-        "event_type": "Typ události",
-        "opt_regular": "🔵 Běžná schůzka",
-        "opt_special": "🔴 Zvláštní událost (důležité)",
-        "event_name": "Název",
-        "ph_meeting": "Schůzka před službou",
-        "event_date": "Datum",
-        "event_time": "Čas",
-        "event_group_label": "Skupina (prázdné = pro všechny)",
-        "ph_group": "Například: 5",
-        "leaders_queue": "Vedoucí (auto-fronta)",
-        "loading_brothers": "Načítání bratrů...",
-        "repeat_weekly": "Opakovat týdně",
-        "how_many_weeks": "Na kolik týdnů?",
-        "publish_btn": "Publikovat",
-        "meeting_schedule": "Rozvrh schůzek",
-        "show_other_groups": "Zobrazit ostatní skupiny",
-        "alert_fill_name_date": "Vyplňte název a datum!",
-        "generating": "Generování...",
-        "success_with_tick": "Úspěšně! ✔️",
-        "general_group": "Společné",
-        "leader_label": "Vedoucí:",
-        "title_special_event": "Zvláštní událost",
-        "foreign_event": "Cizí",
-        "no_events_group": "Pro vaši skupinu nebyly nalezeny žádné události.",
-        "no_brothers_found": "Bratři nebyli nalezeni",
-        "confirm_delete_event": "Smazat schůzku z kalendáře?",
-        // Отчеты
-        "reports_title": "Zprávy - GRO-UP",
-        "reports_summary": "Souhrn zpráv",
-        "loading_access": "Načítání přístupu...",
-        "users_link": "Uživatelé",
-        "submitted_reports": "Odevzdali zprávy",
-        "total_hours": "Celkem hodin",
-        "all_months": "Všechny měsíce",
-        "print_btn": "Vytisknout",
-        "th_publisher": "Zvěstovatel",
-        "th_participated": "Služba",
-        "th_hours": "Hodiny",
-        "th_studies": "Studia",
-        "th_credit": "Kredit",
-        "th_month": "Měsíc",
-        "all_groups_full_access": "Všechny skupiny (Plný přístup)",
-        "overseer_access": "Přístup dozorce",
-        "no_reports_found": "Nebyly nalezeny žádné zprávy.",
-        // Школа
         "school_title": "Správa školy - GRO-UP",
         "school_h1": "Škola",
         "manage_tasks": "Správa úkolů",
@@ -399,7 +306,14 @@ const dict = {
         "alert_fill_all": "Prosím, vyplňte všechna povinná pole!",
         "success_assigned": "Úspěšně přiřazeno! ✔️",
         "no_assigned_tasks": "Žádné přiřazené úkoly.",
-        "num_symbol": "č."
+        "num_symbol": "č.",
+        // Слипы (Бланки для печати)
+        "slip_header": "ÚKOL NA SHROMÁŽDĚNÍ NÁŠ KŘESŤANSKÝ ŽIVOT A SLUŽBA",
+        "slip_name": "Jméno:",
+        "slip_partner": "Partner:",
+        "slip_date": "Datum:",
+        "slip_lesson": "Bod v pracovním sešitě:",
+        "slip_notes": "Poznámky pro studenta: Podklady pro svůj úkol a číslo studijní lekce najdeš v Pracovním sešitě."
     }
 };
 
@@ -447,22 +361,15 @@ const currentUserId = localStorage.getItem('userId');
 
 if (!currentUserId) window.location.href = 'login.html';
 
-// 1. ПРОВЕРКА ПРАВ И УМНОЕ МЕНЮ
-const uid = typeof currentUserId !== 'undefined' ? currentUserId : userId;
-getDoc(doc(db, "users", uid)).then(docSnap => {
+// 1. ПРОВЕРКА ПРАВ
+getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     
     const roles = docSnap.data().roles || [];
     const isFullAdmin = roles.includes("Владелец") || roles.includes("Админ");
     const isSchool = isFullAdmin || roles.includes("Ответственный за школу");
-    const isTerr = isFullAdmin || roles.includes("Ответственный за участки");
-    const isOverseer = isFullAdmin || roles.includes("Надзиратель группы");
 
-    const path = window.location.pathname;
-    if (path.includes('admin.html') && !isFullAdmin) window.location.href = 'index.html';
-    if (path.includes('school.html') && !isSchool) window.location.href = 'index.html';
-    if (path.includes('territories.html') && !isTerr) window.location.href = 'index.html';
-    if ((path.includes('calendar.html') || path.includes('duties.html')) && !isOverseer) window.location.href = 'index.html';
+    if (!isSchool) window.location.href = 'index.html';
 });
 
 // ГЕНЕРАЦИЯ ЦИФР
@@ -499,7 +406,7 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     select.innerHTML = html || `<option value="" disabled>${window.t('no_students_found')}</option>`;
 });
 
-// 3. УМНАЯ ЛОГИКА: ФИЛЬТР ПОЛА + ПОИСК ИСТОРИИ
+// 3. УМНАЯ ЛОГИКА
 const studentSelectEl = document.getElementById('student-select');
 if (studentSelectEl) {
     studentSelectEl.addEventListener('change', (e) => {
@@ -542,7 +449,6 @@ if (studentSelectEl) {
             const lastTask = userTasks[0];
             const lastDate = new Date(lastTask.date).toLocaleDateString(localeFormat, { day: 'numeric', month: 'long' });
             
-            // Пытаемся найти перевод категории, если он есть (через data-lang в HTML)
             let catStr = lastTask.category;
             if (catStr === 'ЧТЕНИЕ БИБЛИИ') catStr = window.t('cat_reading_db').replace('📖 ','');
             if (catStr === 'НАЧИНАЙТЕ РАЗГОВОР') catStr = window.t('cat_conversation').replace('🗣️ ','');
@@ -615,18 +521,21 @@ if (assignBtn) {
     });
 }
 
-// 5. ОТРИСОВКА ВЫДАННЫХ ЗАДАНИЙ
+// 5. ОТРИСОВКА ВЫДАННЫХ ЗАДАНИЙ И БЛАНКОВ ДЛЯ ПЕЧАТИ
 const q = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
 onSnapshot(q, (snapshot) => {
     const list = document.getElementById('tasks-list');
+    const printArea = document.getElementById('print-area');
     allTasksCache = []; 
     
     if (snapshot.empty) {
-        if(list) list.innerHTML = `<p class="text-slate-400 italic p-6 text-center text-sm bg-white rounded-2xl border border-slate-200">${window.t('no_assigned_tasks')}</p>`;
+        if(list) list.innerHTML = `<p class="text-slate-400 italic p-6 text-center text-sm bg-white rounded-xl border border-slate-200">${window.t('no_assigned_tasks')}</p>`;
+        if(printArea) printArea.innerHTML = '';
         return;
     }
 
     let html = '';
+    let printHtml = ''; // Строка для бланков принтера
     const today = new Date(); today.setHours(0,0,0,0);
 
     snapshot.forEach(docSnap => {
@@ -635,11 +544,10 @@ onSnapshot(q, (snapshot) => {
         
         const tDate = new Date(t.date);
         const isPast = tDate < today;
-        const opacityClass = isPast ? "opacity-60 grayscale bg-slate-50 border-slate-200" : "bg-white border-slate-200 shadow-sm";
+        const opacityClass = isPast ? "opacity-60 grayscale bg-slate-50 border-slate-200" : "bg-white border-slate-200";
 
-        const astHtml = t.assistant ? `<span class="text-[11px] md:text-xs text-slate-500 font-bold block mt-0.5">${window.t('assistant_short')} <span class="text-sky-600">${t.assistant}</span></span>` : '';
+        const astHtml = t.assistant && t.assistant !== "Без помощника" ? `<span class="text-[11px] md:text-xs text-slate-500 font-bold block mt-0.5">${window.t('assistant_short')} <span class="text-sky-600">${t.assistant}</span></span>` : '';
 
-        // Переводим категорию для отображения
         let catStr = t.category;
         if (catStr === 'ЧТЕНИЕ БИБЛИИ') catStr = window.t('cat_reading_db').replace('📖 ','');
         if (catStr === 'НАЧИНАЙТЕ РАЗГОВОР') catStr = window.t('cat_conversation').replace('🗣️ ','');
@@ -649,12 +557,12 @@ onSnapshot(q, (snapshot) => {
         if (catStr === 'РЕЧЬ') catStr = window.t('cat_talk_db').replace('🎙️ ','');
 
         html += `
-            <div class="p-4 md:p-5 rounded-3xl border relative overflow-hidden transition-all ${opacityClass}">
-                <button onclick="deleteTask('${docSnap.id}')" class="absolute top-3 right-3 p-2 text-slate-300 hover:text-red-500 bg-white border border-slate-100 shadow-sm rounded-full transition-colors z-10 outline-none" title="${window.t('delete')}">🗑️</button>
+            <div class="p-4 md:p-5 rounded-xl border relative overflow-hidden transition-all ${opacityClass}">
+                <button onclick="deleteTask('${docSnap.id}')" class="absolute top-3 right-3 p-2 text-slate-300 hover:text-red-500 bg-slate-50 hover:bg-red-50 border border-slate-100 rounded-lg transition-colors z-10 outline-none" title="${window.t('delete')}">🗑️</button>
                 
                 <div class="flex items-start mb-4 pr-10">
                     <div class="flex gap-3 md:gap-4 items-center">
-                        <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 ${isPast ? 'bg-slate-100' : 'bg-sky-50'} rounded-2xl border ${isPast ? 'border-slate-200' : 'border-sky-100'} shadow-inner shrink-0">
+                        <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 ${isPast ? 'bg-slate-100' : 'bg-sky-50'} rounded-lg border ${isPast ? 'border-slate-200' : 'border-sky-100'} shrink-0">
                             <span class="text-[8px] md:text-[9px] uppercase ${isPast ? 'text-slate-400' : 'text-sky-500'} font-bold leading-none mb-1 tracking-widest">${tDate.toLocaleDateString(localeFormat, { month: 'short' }).replace('.', '')}</span>
                             <span class="text-xl md:text-2xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${tDate.getDate()}</span>
                         </div>
@@ -665,21 +573,56 @@ onSnapshot(q, (snapshot) => {
                     </div>
                 </div>
                 
-                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between gap-2">
+                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2 flex-grow min-w-0">
-                        <span class="bg-slate-800 text-white px-2 py-1 rounded-lg shadow-sm flex items-center shrink-0">
+                        <span class="bg-slate-800 text-white px-2 py-1 rounded shadow-sm flex items-center shrink-0">
                             <span class="text-[8px] uppercase tracking-widest font-bold text-slate-400 mr-1">${window.t('num_symbol')}</span>
                             <span class="text-sm font-black leading-none">${t.taskNumber}</span>
                         </span>
                         <span class="font-black text-sky-700 text-[9px] md:text-[10px] uppercase tracking-wide leading-tight whitespace-normal break-words">${catStr}</span>
                     </div>
-                    <span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-lg shrink-0 whitespace-nowrap">${window.t('lesson')} ${t.lesson}</span>
+                    <span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-1 rounded shrink-0 whitespace-nowrap">${window.t('lesson')} ${t.lesson}</span>
                 </div>
             </div>
         `;
+
+        // Генерируем HTML для БЛАНКА (только если задание в будущем)
+        if (!isPast) {
+            const formattedDate = `${tDate.getDate()}.${tDate.getMonth() + 1}.${tDate.getFullYear()}`;
+            printHtml += `
+                <div style="border: 2px solid black; break-inside: avoid; font-family: sans-serif; margin-bottom: 20px;">
+                    <div style="background-color: #d1d5db; text-align: center; font-weight: bold; font-size: 11px; padding: 8px; text-transform: uppercase; border-bottom: 2px solid black;">
+                        ${window.t('slip_header')}
+                    </div>
+                    <div style="display: flex; border-bottom: 1px solid #9ca3af;">
+                        <div style="width: 50%; padding: 4px 8px; font-weight: bold; font-size: 13px; border-right: 1px solid #9ca3af;">${window.t('slip_name')}</div>
+                        <div style="width: 50%; padding: 4px 8px; font-size: 13px; text-align: center;">${t.userName}</div>
+                    </div>
+                    <div style="display: flex; border-bottom: 1px solid #9ca3af;">
+                        <div style="width: 50%; padding: 4px 8px; font-weight: bold; font-size: 13px; border-right: 1px solid #9ca3af;">${window.t('slip_partner')}</div>
+                        <div style="width: 50%; padding: 4px 8px; font-size: 13px; text-align: center;">${t.assistant && t.assistant !== "Без помощника" ? t.assistant : ''}</div>
+                    </div>
+                    <div style="display: flex; border-bottom: 1px solid #9ca3af;">
+                        <div style="width: 50%; padding: 4px 8px; font-weight: bold; font-size: 13px; border-right: 1px solid #9ca3af;">${window.t('slip_date')}</div>
+                        <div style="width: 50%; padding: 4px 8px; font-weight: bold; font-size: 13px; text-align: center;">${formattedDate}</div>
+                    </div>
+                    <div style="display: flex; border-bottom: 2px solid black;">
+                        <div style="width: 75%; padding: 4px 8px; font-weight: bold; font-size: 13px; border-right: 1px solid #9ca3af;">${window.t('slip_lesson')}</div>
+                        <div style="width: 25%; padding: 4px 8px; font-weight: bold; font-size: 13px; text-align: center;">${t.lesson}</div>
+                    </div>
+                    <div style="padding: 8px; text-align: center; font-weight: bold; font-size: 14px; border-bottom: 2px solid black;">
+                        ${catStr}
+                    </div>
+                    <div style="padding: 8px; font-size: 10px; line-height: 1.2;">
+                        <b>${window.t('slip_notes')}</b>
+                    </div>
+                </div>
+            `;
+        }
     });
 
     if(list) list.innerHTML = html;
+    if(printArea) printArea.innerHTML = printHtml;
 });
 
 // 6. УДАЛЕНИЕ ЗАДАНИЯ
