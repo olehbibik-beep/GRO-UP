@@ -379,7 +379,8 @@ const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`;
 
 const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU';
 const currentMonthStr = d.toLocaleString(localeFormat, { month: 'long', year: 'numeric' });
-document.getElementById('current-month-label')?.setAttribute('innerText', currentMonthStr);
+const monthLabel = document.getElementById('current-month-label');
+if (monthLabel) monthLabel.innerText = currentMonthStr;
 
 window.switchTab = (tabId, btnElement) => {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
