@@ -43,16 +43,16 @@
     <div id="global-loader" class="fixed inset-0 bg-ui-bg z-[200] flex flex-col items-center justify-center transition-opacity duration-500">
         <img src="icon-512.png" alt="GRO-UP" class="w-24 h-24 mb-8 rounded-2xl drop-shadow-sm object-contain">
         <div class="animate-spin rounded-full h-10 w-10 border-4 border-slate-300 border-t-slate-800 mb-4"></div>
-        <p class="text-[10px] font-bold text-slate-400 tracking-widest uppercase animate-pulse">Загрузка данных...</p>
+        <p class="text-[10px] font-bold text-slate-400 tracking-widest uppercase animate-pulse" data-lang="loading_data">Загрузка данных...</p>
     </div>
 
     <div id="pending-screen" class="fixed inset-0 bg-white z-[100] hidden flex-col items-center justify-center text-center p-6">
         <svg class="w-16 h-16 text-indigo-500 mb-6 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <h2 class="text-2xl font-black text-slate-800 mb-2">Заявка на рассмотрении</h2>
-        <p class="text-sm text-slate-500 mb-6 max-w-xs">Ожидайте подтверждения администратора.</p>
-        <button onclick="logout()" class="text-indigo-500 text-sm font-bold hover:underline outline-none">Выйти</button>
+        <h2 class="text-2xl font-black text-slate-800 mb-2" data-lang="pending_title">Заявка на рассмотрении</h2>
+        <p class="text-sm text-slate-500 mb-6 max-w-xs" data-lang="pending_desc">Ожидайте подтверждения администратора.</p>
+        <button onclick="logout()" class="text-indigo-500 text-sm font-bold hover:underline outline-none" data-lang="logout_btn">Выйти</button>
     </div>
 
     <nav class="shrink-0 w-full bg-ui-nav flex flex-row items-center justify-between z-40 pb-safe md:h-[100dvh] md:w-20 md:flex-col md:justify-start md:py-6 md:border-t-0">
@@ -86,13 +86,13 @@
                     
                     <div class="flex bg-white md:rounded-lg md:border border-b border-slate-200 overflow-hidden shadow-sm min-h-[72px] w-full">
                         <div id="calendar-events" class="w-4/5 flex flex-col justify-center border-r border-slate-200 bg-transparent">
-                            <p class="p-4 text-xs text-slate-500 italic text-center">Загрузка встреч...</p>
+                            <p class="p-4 text-xs text-slate-500 italic text-center" data-lang="loading_events">Загрузка встреч...</p>
                         </div>
                         <button onclick="window.location.href='full-calendar.html'" class="w-1/5 shrink-0 bg-slate-50 hover:bg-slate-100 flex flex-col items-center justify-center transition-colors outline-none p-2 group">
                             <svg class="w-6 h-6 text-rose-500 mb-1 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <span class="text-[7px] font-black uppercase tracking-widest text-slate-500 text-center leading-tight">Весь<br>год</span>
+                            <span class="text-[7px] font-black uppercase tracking-widest text-slate-500 text-center leading-tight" data-lang="all_year">Весь<br>год</span>
                         </button>
                     </div>
 
@@ -102,7 +102,7 @@
                         </button>
 
                         <div id="content-news" class="flex flex-nowrap overflow-x-auto gap-3 pb-2 px-4 md:px-0 snap-x snap-mandatory custom-scrollbar items-stretch scroll-smooth w-full">
-                            <p class="italic text-slate-500 w-full text-center py-4 text-sm">Загрузка ленты...</p>
+                            <p class="italic text-slate-500 w-full text-center py-4 text-sm" data-lang="loading_feed">Загрузка ленты...</p>
                         </div>
 
                         <button onclick="scrollNews(240)" class="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-slate-700 border border-slate-200 rounded-lg w-8 h-10 items-center justify-center outline-none opacity-80 hover:opacity-100 transition-opacity">
@@ -116,28 +116,28 @@
                             <div class="flex items-center justify-between mb-4">
                                 <h3 class="text-base md:text-xl font-black text-slate-800 flex items-center gap-2">
                                     <svg class="w-6 h-6 text-ui-report" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                    Мой отчет
+                                    <span data-lang="my_report">Мой отчет</span>
                                 </h3>
                             </div>
                             <fieldset id="report-fieldset" disabled class="flex-grow flex flex-col gap-2 transition-opacity duration-200 opacity-50 grayscale-[50%]">
                                 <div class="flex items-center justify-between">
                                     <label class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200 cursor-pointer">
                                         <input type="checkbox" id="rep-participated" class="w-4 h-4 md:w-5 md:h-5 accent-ui-report rounded cursor-pointer shrink-0">
-                                        <span class="font-bold text-slate-700 text-xs md:text-sm leading-none mt-0.5">Служил(а)</span>
+                                        <span class="font-bold text-slate-700 text-xs md:text-sm leading-none mt-0.5" data-lang="participated">Служил(а)</span>
                                     </label>
                                     <span class="text-[8px] font-black text-ui-report uppercase bg-slate-100 px-2 py-0.5 rounded border border-slate-200" id="current-month-label">Месяц</span>
                                 </div>
                                 <div class="flex gap-2 mt-2">
                                     <div class="w-full">
-                                        <label class="text-[8px] uppercase font-bold text-slate-400 block mb-1 text-center tracking-widest leading-tight">Часы<br>&nbsp;</label>
+                                        <label class="text-[8px] uppercase font-bold text-slate-400 block mb-1 text-center tracking-widest leading-tight" data-lang="hours_label">Часы<br>&nbsp;</label>
                                         <input type="number" id="rep-hours" class="w-full p-2 rounded-lg text-center font-black text-base md:text-xl text-slate-800 outline-none border border-slate-200 focus:border-ui-report bg-slate-50">
                                     </div>
                                     <div class="w-full">
-                                        <label class="text-[8px] uppercase font-bold text-slate-400 block mb-1 text-center tracking-widest leading-tight">Изучения<br>Библии</label>
+                                        <label class="text-[8px] uppercase font-bold text-slate-400 block mb-1 text-center tracking-widest leading-tight" data-lang="studies_label">Изучения<br>Библии</label>
                                         <input type="number" id="rep-studies" class="w-full p-2 rounded-lg text-center font-bold text-base md:text-xl text-slate-800 outline-none border border-slate-200 focus:border-ui-report bg-slate-50">
                                     </div>
                                     <div class="w-full">
-                                        <label class="text-[8px] uppercase font-bold text-slate-400 block mb-1 text-center tracking-widest leading-tight">Кредит<br>&nbsp;</label>
+                                        <label class="text-[8px] uppercase font-bold text-slate-400 block mb-1 text-center tracking-widest leading-tight" data-lang="credit_label">Кредит<br>&nbsp;</label>
                                         <input type="number" id="rep-credit" class="w-full p-2 rounded-lg text-center font-bold text-base md:text-xl text-slate-800 outline-none border border-slate-200 focus:border-ui-report bg-slate-50">
                                     </div>
                                 </div>
@@ -146,9 +146,9 @@
                             <div class="mt-3 flex gap-2 w-full h-12">
                                 <button onclick="submitReport()" id="submit-report-btn" class="w-4/5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors duration-200 text-sm active:bg-slate-700 outline-none flex items-center justify-center gap-1.5">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                    Заполнить
+                                    <span data-lang="fill_btn">Заполнить</span>
                                 </button>
-                                <button onclick="openReportHistory()" class="w-1/5 bg-purple-50 hover:bg-purple-100 text-purple-600 font-bold rounded-lg transition-colors duration-200 outline-none flex items-center justify-center border border-purple-200" title="Архив отчетов">
+                                <button onclick="openReportHistory()" class="w-1/5 bg-purple-50 hover:bg-purple-100 text-purple-600 font-bold rounded-lg transition-colors duration-200 outline-none flex items-center justify-center border border-purple-200">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                 </button>
                             </div>
@@ -157,10 +157,10 @@
                         <div class="bg-white p-4 md:p-5 rounded-lg border border-slate-200 flex flex-col">
                             <h3 class="text-base md:text-xl font-black text-slate-800 flex items-center gap-2 mb-2">
                                 <svg class="w-6 h-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
-                                На этой неделе
+                                <span data-lang="this_week">На этой неделе</span>
                             </h3>
                             <div id="dashboard-duties" class="flex-grow flex flex-col justify-center">
-                                <p class="text-xs text-slate-400 italic text-center">Загрузка...</p>
+                                <p class="text-xs text-slate-400 italic text-center" data-lang="loading_duties">Загрузка...</p>
                             </div>
                         </div>
                     </div>
@@ -171,11 +171,11 @@
                 <div class="bg-white p-5 rounded-lg border border-slate-200">
                     <h3 class="font-black text-slate-800 flex items-center gap-2 mb-6 text-xl">
                         <svg class="w-6 h-6 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                        Активные задания
+                        <span data-lang="active_tasks">Активные задания</span>
                     </h3>
-                    <div id="upcoming-tasks-list" class="space-y-3 mb-8"><p class="text-slate-400 text-sm italic">Нет активных заданий</p></div>
-                    <h3 class="font-bold text-slate-400 text-xs uppercase tracking-widest mb-4 border-t border-slate-100 pt-4">Архив</h3>
-                    <div id="past-tasks-list" class="space-y-3"><p class="text-slate-400 text-sm italic">История пуста</p></div>
+                    <div id="upcoming-tasks-list" class="space-y-3 mb-8"><p class="text-slate-400 text-sm italic" data-lang="no_active_tasks">Нет активных заданий</p></div>
+                    <h3 class="font-bold text-slate-400 text-xs uppercase tracking-widest mb-4 border-t border-slate-100 pt-4" data-lang="archive_title">Архив</h3>
+                    <div id="past-tasks-list" class="space-y-3"><p class="text-slate-400 text-sm italic" data-lang="history_empty">История пуста</p></div>
                 </div>
             </div>
 
@@ -184,11 +184,11 @@
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="font-black text-slate-800 flex items-center gap-2 text-xl">
                             <svg class="w-6 h-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
-                            Мои участки
+                            <span data-lang="my_territories">Мои участки</span>
                         </h3>
-                        <button onclick="requestTerritory(this)" class="bg-slate-100 border border-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg text-xs hover:bg-slate-200 outline-none transition-colors">Попросить</button>
+                        <button onclick="requestTerritory(this)" class="bg-slate-100 border border-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg text-xs hover:bg-slate-200 outline-none transition-colors" data-lang="request_btn">Попросить</button>
                     </div>
-                    <div id="territories-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"><p class="text-slate-400 text-sm italic">У вас пока нет участков</p></div>
+                    <div id="territories-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"><p class="text-slate-400 text-sm italic" data-lang="no_territories">У вас пока нет участков</p></div>
                 </div>
             </div>
         </div>
@@ -263,10 +263,10 @@
             </button>
             <h2 class="text-xl font-black text-slate-800 mb-6 flex items-center justify-center gap-2">
                 <svg class="w-6 h-6 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                Мой архив
+                <span data-lang="my_archive">Мой архив</span>
             </h2>
             <div id="report-history-list" class="overflow-y-auto flex-grow space-y-3 pr-2 custom-scrollbar pb-2">
-                <p class="text-slate-400 text-sm italic">Загрузка...</p>
+                <p class="text-slate-400 text-sm italic" data-lang="loading_archive">Загрузка...</p>
             </div>
         </div>
     </div>
