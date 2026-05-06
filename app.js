@@ -356,9 +356,7 @@ window.setupNotifications = async () => {
         
         if (pushBtn) pushBtn.innerHTML = '⏳'; 
 
-        // Оборачиваем ВЕСЬ процесс получения токена в отдельную функцию
         const setupProcess = async () => {
-            // 1. Запрос разрешения (с поддержкой капризов старых версий iOS)
             let permission = Notification.permission;
             if (permission !== 'granted') {
                 permission = await new Promise((resolve) => {
@@ -370,31 +368,54 @@ window.setupNotifications = async () => {
             }
             if (permission !== 'granted') throw new Error("Нет разрешения на пуши");
 
-            // 2. Регистрируем Service Worker (ЖЕСТКО без ожидания .ready)
             const registration = await navigator.serviceWorker.register('/GRO-UP/sw.js');
             
-            // 3. Сразу отправляем запрос в Firebase
-            const token = await getToken(messaging, { 
-                vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk',
-                serviceWorkerRegistration: registration 
-            });
+            // Ждем пару секунд на случай, если воркер соизволит активироваться сам
+            if (registration.installing || registration.waiting) {
+                const worker = registration.installing || registration.waiting;
+                await new Promise((resolve) => {
+                    worker.addEventListener('statechange', (e) => {
+                        if (e.target.state === 'activated') resolve();
+                    });
+                    setTimeout(resolve, 2000);
+                });
+            }
 
-            if (!token) throw new Error("Firebase вернул пустой токен");
-            return token;
+            try {
+                // Пытаемся получить токен
+                const token = await getToken(messaging, { 
+                    vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk',
+                    serviceWorkerRegistration: registration 
+                });
+                if (!token) throw new Error("Firebase вернул пустой токен");
+                return token;
+            } catch (err) {
+                // 🔥 ЕСЛИ IOS РУГАЕТСЯ НА "ACTIVE SERVICE WORKER" — ТРЕБУЕМ ПЕРЕЗАГРУЗКУ
+                if (err.message.includes("active service worker")) {
+                    throw new Error("RELOAD_REQUIRED");
+                }
+                throw err;
+            }
         };
 
-        // Ставим таймер на 15 секунд на ВЕСЬ ПРОЦЕСС целиком
         const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error("Таймаут! iOS заблокировал процесс ожидания.")), 15000);
+            setTimeout(() => reject(new Error("Таймаут ожидания!")), 15000);
         });
 
-        // Запускаем наперегонки: либо код успеет, либо таймер выдаст ошибку
-        const token = await Promise.race([setupProcess(), timeoutPromise]);
-        
-        // Если дошли сюда — токен точно есть!
-        await updateDoc(doc(db, "users", userId), { pushToken: token });
-        window.showToast("✅ " + window.t('toast_notifications_enabled'));
-        if (pushBtn) pushBtn.style.display = 'none';
+        try {
+            const token = await Promise.race([setupProcess(), timeoutPromise]);
+            await updateDoc(doc(db, "users", userId), { pushToken: token });
+            window.showToast("✅ " + window.t('toast_notifications_enabled'));
+            if (pushBtn) pushBtn.style.display = 'none';
+        } catch (err) {
+            if (err.message === "RELOAD_REQUIRED") {
+                // Спасательный круг для айфона
+                alert("⏳ iOS почти настроил уведомления! Приложение сейчас перезагрузится.\n\n👉 После загрузки просто НАЖМИТЕ НА КОЛОКОЛЬЧИК ЕЩЕ РАЗ!");
+                window.location.reload();
+            } else {
+                throw err;
+            }
+        }
 
     } catch (error) { 
         alert("❌ ОШИБКА: " + error.message); 
