@@ -121,7 +121,14 @@ const dict = {
         "role_terr": "Участки",
         "role_school": "Школа",
         "no_new_requests": "Нет новых заявок",
-        "no_active_users": "Нет активных пользователей"
+        "no_active_users": "Нет активных пользователей",
+        // Для перевода заданий на главном экране
+        "cat_reading_db": "📖 Чтение Библии",
+        "cat_conversation": "🗣️ Разговор",
+        "cat_interest": "🌱 Интерес",
+        "cat_disciples": "👥 Подготавливайте",
+        "cat_beliefs": "💡 Взгляды",
+        "cat_talk_db": "🎙️ Речь"
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -239,7 +246,14 @@ const dict = {
         "role_terr": "Obvody",
         "role_school": "Škola",
         "no_new_requests": "Žádné nové žádosti",
-        "no_active_users": "Žádní aktivní uživatelé"
+        "no_active_users": "Žádní aktivní uživatelé",
+        // Для перевода заданий на главном экране
+        "cat_reading_db": "📖 Čtení Bible",
+        "cat_conversation": "🗣️ Rozhovor",
+        "cat_interest": "🌱 Zájem",
+        "cat_disciples": "👥 Čiňte učedníky",
+        "cat_beliefs": "💡 Přesvědčení",
+        "cat_talk_db": "🎙️ Proslov"
     }
 };
 
@@ -257,19 +271,14 @@ window.changeLanguage = (lang) => {
     location.reload(); 
 };
 
-// 🔥 ПРОКАЧАННАЯ ФУНКЦИЯ ПЕРЕВОДА HTML (как в админке)
+// Принудительно применяем перевод к HTML
 const applyTranslations = () => {
     const selector = document.getElementById('lang-selector');
     if (selector) selector.value = currentLang;
 
     document.querySelectorAll('[data-lang]').forEach(el => {
-        el.innerHTML = window.t(el.getAttribute('data-lang'));
-    });
-    document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
-        el.setAttribute('placeholder', window.t(el.getAttribute('data-lang-placeholder')));
-    });
-    document.querySelectorAll('[data-lang-title]').forEach(el => {
-        el.setAttribute('title', window.t(el.getAttribute('data-lang-title')));
+        const key = el.getAttribute('data-lang');
+        el.innerHTML = window.t(key);
     });
 };
 
@@ -649,6 +658,15 @@ function loadPersonalData() {
                         ? `${window.t('assistant_for')} <span class="text-sky-600 ml-1 truncate">${task.userName}</span>` 
                         : `${window.t('speech')} ${task.assistant ? `<span class="text-slate-500 text-[10px] md:text-xs block mt-0.5 truncate">${window.t('assistant_short')} <span class="text-sky-600">${task.assistant}</span></span>` : ''}`;
 
+                    // 🔥 ПЕРЕВОД КАТЕГОРИИ НА ГЛАВНОМ ЭКРАНЕ
+                    let catStr = task.category || task.title || "";
+                    if (catStr === 'ЧТЕНИЕ БИБЛИИ') catStr = window.t('cat_reading_db').replace('📖 ','');
+                    if (catStr === 'НАЧИНАЙТЕ РАЗГОВОР') catStr = window.t('cat_conversation').replace('🗣️ ','');
+                    if (catStr === 'РАЗВИВАЙТЕ ИНТЕРЕС') catStr = window.t('cat_interest').replace('🌱 ','');
+                    if (catStr === 'ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ') catStr = window.t('cat_disciples').replace('👥 ','');
+                    if (catStr === 'ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ') catStr = window.t('cat_beliefs').replace('💡 ','');
+                    if (catStr === 'РЕЧЬ') catStr = window.t('cat_talk_db').replace('🎙️ ','');
+
                     const cardHtml = `
                         <div class="p-4 rounded-lg border ${opacityClass} mb-3 relative overflow-hidden transition-all">
                             <div class="flex items-center gap-3">
@@ -660,7 +678,7 @@ function loadPersonalData() {
                                     <h3 class="font-black text-slate-800 text-sm leading-tight">${roleText}</h3>
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-1.5 min-w-0">
-                                            <span class="font-black ${isPast ? 'text-slate-500' : 'text-sky-700'} text-[9px] uppercase tracking-wide leading-tight truncate">${task.category || task.title}</span>
+                                            <span class="font-black ${isPast ? 'text-slate-500' : 'text-sky-700'} text-[9px] uppercase tracking-wide leading-tight truncate">${catStr}</span>
                                         </div>
                                         ${task.lesson ? `<span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-lg shrink-0">${window.t('lesson')} ${task.lesson}</span>` : ''}
                                     </div>
