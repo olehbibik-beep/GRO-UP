@@ -349,54 +349,48 @@ window.showToast = (message, type = 'info') => {
 };
 
 window.setupNotifications = async () => {
+    const pushBtn = document.getElementById('push-btn');
     try {
         if (!('Notification' in window)) return alert("❌ " + window.t('alert_no_notifications'));
         
-        const pushBtn = document.getElementById('push-btn');
         if (pushBtn) pushBtn.innerHTML = '⏳'; 
 
         const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            
-            // 1. Принудительно регистрируем Service Worker
-            let registration = await navigator.serviceWorker.register('/GRO-UP/sw.js');
-
-            // 2. Если он еще "устанавливается" или "ждет", ждем пока он станет "Активным"
-            if (!registration.active) {
-                const worker = registration.installing || registration.waiting;
-                if (worker) {
-                    await new Promise((resolve) => {
-                        worker.addEventListener('statechange', (e) => {
-                            if (e.target.state === 'activated') {
-                                resolve();
-                            }
-                        });
-                    });
-                }
-            }
-
-            // 3. Теперь он ТОЧНО активен. Запрашиваем токен!
-            const token = await getToken(messaging, { 
-                vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk',
-                serviceWorkerRegistration: registration 
-            });
-            
-            if (token) {
-                await updateDoc(doc(db, "users", userId), { pushToken: token });
-                window.showToast("✅ " + window.t('toast_notifications_enabled'));
-                if (pushBtn) pushBtn.style.display = 'none';
-            } else {
-                alert("⚠️ Ошибка: Firebase не сгенерировал токен.");
-                if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
-            }
-        } else {
+        if (permission !== 'granted') {
             alert("🔒 " + window.t('alert_notifications_blocked'));
             if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
+            return;
         }
+
+        // 1. Регистрируем и ждем готовности Service Worker
+        let registration = await navigator.serviceWorker.register('/GRO-UP/sw.js');
+        await navigator.serviceWorker.ready; 
+
+        // 2. Создаем запрос к Firebase
+        const tokenPromise = getToken(messaging, { 
+            vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk',
+            serviceWorkerRegistration: registration 
+        });
+
+        // 3. Создаем жесткий таймер на 10 секунд (Защита от бесконечных часиков)
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("Таймаут! Firebase не ответил за 10 секунд.")), 10000);
+        });
+
+        // 4. Кто первый сработает: Firebase даст токен ИЛИ выйдет время
+        const token = await Promise.race([tokenPromise, timeoutPromise]);
+        
+        if (token) {
+            await updateDoc(doc(db, "users", userId), { pushToken: token });
+            window.showToast("✅ " + window.t('toast_notifications_enabled'));
+            if (pushBtn) pushBtn.style.display = 'none';
+        } else {
+            throw new Error("Firebase вернул пустой токен");
+        }
+
     } catch (error) { 
-        alert("❌ Ошибка при получении токена: " + error.message); 
+        alert("❌ ОШИБКА: " + error.message); 
         console.error(error); 
-        const pushBtn = document.getElementById('push-btn');
         if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
     }
 };
