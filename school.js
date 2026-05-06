@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (добавлены бланки для печати)
+// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ
 const dict = {
     ru: {
         "loading_data": "Загрузка данных...",
@@ -152,7 +152,7 @@ const dict = {
         "no_assigned_tasks": "Нет назначенных заданий.",
         "num_symbol": "№",
         // Слипы (Бланки для печати)
-        "slip_header": "ЗАДАНИЕ НА ХРИСТИАНСКУЮ ЖИЗНЬ И СЛУЖЕНИЕ",
+        "slip_header": "НАША ХРИСТИАНСКАЯ ЖИЗНЬ И СЛУЖЕНИЕ",
         "slip_name": "Имя:",
         "slip_partner": "Помощник:",
         "slip_date": "Дата:",
@@ -308,7 +308,7 @@ const dict = {
         "no_assigned_tasks": "Žádné přiřazené úkoly.",
         "num_symbol": "č.",
         // Слипы (Бланки для печати)
-        "slip_header": "ÚKOL NA SHROMÁŽDĚNÍ NÁŠ KŘESŤANSKÝ ŽIVOT A SLUŽBA",
+        "slip_header": "NÁŠ KŘESŤANSKÝ ŽIVOT A SLUŽBA",
         "slip_name": "Jméno:",
         "slip_partner": "Partner:",
         "slip_date": "Datum:",
@@ -521,7 +521,7 @@ if (assignBtn) {
     });
 }
 
-// 5. ОТРИСОВКА ВЫДАННЫХ ЗАДАНИЙ И БЛАНКОВ ДЛЯ ПЕЧАТИ
+// 5. ОТРИСОВКА ВЫДАННЫХ ЗАДАНИЙ И СОВРЕМЕННЫХ КАРТОЧЕК ДЛЯ ПЕЧАТИ
 const q = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
 onSnapshot(q, (snapshot) => {
     const list = document.getElementById('tasks-list');
@@ -535,7 +535,7 @@ onSnapshot(q, (snapshot) => {
     }
 
     let html = '';
-    let printHtml = ''; // Строка для бланков принтера
+    let printHtml = ''; 
     const today = new Date(); today.setHours(0,0,0,0);
 
     snapshot.forEach(docSnap => {
@@ -544,7 +544,7 @@ onSnapshot(q, (snapshot) => {
         
         const tDate = new Date(t.date);
         const isPast = tDate < today;
-        const opacityClass = isPast ? "opacity-60 grayscale bg-slate-50 border-slate-200" : "bg-white border-slate-200";
+        const opacityClass = isPast ? "opacity-60 grayscale bg-slate-50 border-slate-200" : "bg-white border-slate-200 shadow-sm";
 
         const astHtml = t.assistant && t.assistant !== "Без помощника" ? `<span class="text-[11px] md:text-xs text-slate-500 font-bold block mt-0.5">${window.t('assistant_short')} <span class="text-sky-600">${t.assistant}</span></span>` : '';
 
@@ -586,34 +586,34 @@ onSnapshot(q, (snapshot) => {
             </div>
         `;
 
-        // Генерируем HTML для БЛАНКА (только если задание в будущем)
+        // 🔥 КРАСИВЫЕ КАРТОЧКИ ДЛЯ ПЕЧАТИ (как в мобильном приложении)
         if (!isPast) {
             const formattedDate = `${tDate.getDate()}.${tDate.getMonth() + 1}.${tDate.getFullYear()}`;
             printHtml += `
-                <div style="border: 2px solid black; break-inside: avoid; font-family: sans-serif; margin-bottom: 20px;">
-                    <div style="background-color: #d1d5db; text-align: center; font-weight: bold; font-size: 11px; padding: 8px; text-transform: uppercase; border-bottom: 2px solid black;">
-                        ${window.t('slip_header')}
+                <div style="break-inside: avoid; border: 2px solid #e2e8f0; border-radius: 16px; padding: 20px; font-family: sans-serif; background-color: #f8fafc; position: relative; margin-bottom: 10px;">
+                    <div style="position: absolute; top: 20px; right: 20px; background-color: #e0f2fe; color: #0284c7; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: bold;">
+                        ${window.t('lesson')} ${t.lesson}
                     </div>
-                    <div style="display: flex; border-bottom: 1px solid #9ca3af;">
-                        <div style="width: 50%; padding: 4px 8px; font-weight: bold; font-size: 13px; border-right: 1px solid #9ca3af;">${window.t('slip_name')}</div>
-                        <div style="width: 50%; padding: 4px 8px; font-size: 13px; text-align: center;">${t.userName}</div>
-                    </div>
-                    <div style="display: flex; border-bottom: 1px solid #9ca3af;">
-                        <div style="width: 50%; padding: 4px 8px; font-weight: bold; font-size: 13px; border-right: 1px solid #9ca3af;">${window.t('slip_partner')}</div>
-                        <div style="width: 50%; padding: 4px 8px; font-size: 13px; text-align: center;">${t.assistant && t.assistant !== "Без помощника" ? t.assistant : ''}</div>
-                    </div>
-                    <div style="display: flex; border-bottom: 1px solid #9ca3af;">
-                        <div style="width: 50%; padding: 4px 8px; font-weight: bold; font-size: 13px; border-right: 1px solid #9ca3af;">${window.t('slip_date')}</div>
-                        <div style="width: 50%; padding: 4px 8px; font-weight: bold; font-size: 13px; text-align: center;">${formattedDate}</div>
-                    </div>
-                    <div style="display: flex; border-bottom: 2px solid black;">
-                        <div style="width: 75%; padding: 4px 8px; font-weight: bold; font-size: 13px; border-right: 1px solid #9ca3af;">${window.t('slip_lesson')}</div>
-                        <div style="width: 25%; padding: 4px 8px; font-weight: bold; font-size: 13px; text-align: center;">${t.lesson}</div>
-                    </div>
-                    <div style="padding: 8px; text-align: center; font-weight: bold; font-size: 14px; border-bottom: 2px solid black;">
+                    
+                    <h3 style="margin: 0 0 4px 0; font-size: 18px; color: #0ea5e9; font-weight: 900; text-transform: uppercase;">
                         ${catStr}
+                    </h3>
+                    <p style="margin: 0 0 16px 0; font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+                        ÚKOL NA SHROMÁŽDĚNÍ<br>${window.t('slip_header')}
+                    </p>
+
+                    <div style="display: grid; grid-template-columns: 100px 1fr; gap: 8px; font-size: 14px; margin-bottom: 16px;">
+                        <div style="color: #64748b; font-weight: bold;">${window.t('slip_name')}</div>
+                        <div style="font-weight: 900; color: #1e293b;">${t.userName}</div>
+                        
+                        <div style="color: #64748b; font-weight: bold;">${window.t('slip_partner')}</div>
+                        <div style="font-weight: 900; color: #1e293b;">${t.assistant && t.assistant !== "Без помощника" ? t.assistant : '-'}</div>
+                        
+                        <div style="color: #64748b; font-weight: bold;">${window.t('slip_date')}</div>
+                        <div style="font-weight: 900; color: #1e293b;">${formattedDate}</div>
                     </div>
-                    <div style="padding: 8px; font-size: 10px; line-height: 1.2;">
+
+                    <div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; font-size: 11px; color: #475569; line-height: 1.4;">
                         <b>${window.t('slip_notes')}</b>
                     </div>
                 </div>
