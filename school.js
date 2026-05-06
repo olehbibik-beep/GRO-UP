@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ
+// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (добавлены слова для статистики)
 const dict = {
     ru: {
         "loading_data": "Загрузка данных...",
@@ -151,13 +151,18 @@ const dict = {
         "success_assigned": "Успешно назначено! ✔️",
         "no_assigned_tasks": "Нет назначенных заданий.",
         "num_symbol": "№",
-        // Слипы (Бланки для печати)
         "slip_header": "НАША ХРИСТИАНСКАЯ ЖИЗНЬ И СЛУЖЕНИЕ",
         "slip_name": "Имя:",
         "slip_partner": "Помощник:",
         "slip_date": "Дата:",
         "slip_lesson": "Урок в тетради:",
-        "slip_notes": "Примечания для учащегося: Материал для задания и номер урока находятся в рабочей тетради."
+        "slip_notes": "Примечания для учащегося: Материал для задания и номер урока находятся в рабочей тетради.",
+        "btn_stats": "Статистика",
+        "school_stats": "Статистика школы",
+        "student_progress": "Успеваемость учеников",
+        "total_performances": "Всего заданий:",
+        "no_performances": "Еще не выступал",
+        "last_perf": "Последнее:"
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -307,13 +312,18 @@ const dict = {
         "success_assigned": "Úspěšně přiřazeno! ✔️",
         "no_assigned_tasks": "Žádné přiřazené úkoly.",
         "num_symbol": "č.",
-        // Слипы (Бланки для печати)
-        "slip_header": "NÁŠ KŘESŤANSKÝ ŽIVOT A SLUŽBA",
+        "slip_header": "ÚKOL NA SHROMÁŽDĚNÍ NÁŠ KŘESŤANSKÝ ŽIVOT A SLUŽBA",
         "slip_name": "Jméno:",
         "slip_partner": "Partner:",
         "slip_date": "Datum:",
         "slip_lesson": "Bod v pracovním sešitě:",
-        "slip_notes": "Poznámky pro studenta: Podklady pro svůj úkol a číslo studijní lekce najdeš v Pracovním sešitě."
+        "slip_notes": "Poznámky pro studenta: Podklady pro svůj úkol a číslo studijní lekce najdeš v Pracovním sešitě.",
+        "btn_stats": "Statistika",
+        "school_stats": "Statistika školy",
+        "student_progress": "Pokrok studentů",
+        "total_performances": "Celkem úkolů:",
+        "no_performances": "Zatím nevystupoval",
+        "last_perf": "Poslední:"
     }
 };
 
@@ -344,7 +354,6 @@ if (document.readyState === 'loading') {
 } else {
     applyTranslations();
 }
-// ============================================
 
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
@@ -361,18 +370,14 @@ const currentUserId = localStorage.getItem('userId');
 
 if (!currentUserId) window.location.href = 'login.html';
 
-// 1. ПРОВЕРКА ПРАВ
 getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
-    
     const roles = docSnap.data().roles || [];
     const isFullAdmin = roles.includes("Владелец") || roles.includes("Админ");
     const isSchool = isFullAdmin || roles.includes("Ответственный за школу");
-
     if (!isSchool) window.location.href = 'index.html';
 });
 
-// ГЕНЕРАЦИЯ ЦИФР
 const taskNumSelect = document.getElementById('task-number');
 if (taskNumSelect) {
     for (let i = 1; i <= 20; i++) taskNumSelect.innerHTML += `<option value="${i}">${i}</option>`;
@@ -385,7 +390,6 @@ if (taskLessonSelect) {
 let allSchoolStudents = [];
 let allTasksCache = []; 
 
-// 2. ЗАГРУЗКА БАЗЫ "УЧАСТНИКОВ ШКОЛЫ"
 onSnapshot(collection(db, "users"), (snapshot) => {
     allSchoolStudents = [];
     snapshot.forEach(d => {
@@ -406,7 +410,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     select.innerHTML = html || `<option value="" disabled>${window.t('no_students_found')}</option>`;
 });
 
-// 3. УМНАЯ ЛОГИКА
 const studentSelectEl = document.getElementById('student-select');
 if (studentSelectEl) {
     studentSelectEl.addEventListener('change', (e) => {
@@ -462,7 +465,6 @@ if (studentSelectEl) {
     });
 }
 
-// 4. НАЗНАЧИТЬ ЗАДАНИЕ
 const assignBtn = document.getElementById('assign-btn');
 if (assignBtn) {
     assignBtn.addEventListener('click', async (e) => {
@@ -489,7 +491,7 @@ if (assignBtn) {
                 userName: userName,
                 assistant: assistantName === "Без помощника" ? "" : assistantName,
                 taskNumber: tNum,
-                category: tCat, // В базе оставляем русский ключ
+                category: tCat,
                 lesson: tLes,
                 date: tDate,
                 notificationIcon: iconUrl,
@@ -521,7 +523,6 @@ if (assignBtn) {
     });
 }
 
-// 5. ОТРИСОВКА ВЫДАННЫХ ЗАДАНИЙ И СОВРЕМЕННЫХ КАРТОЧЕК ДЛЯ ПЕЧАТИ
 const q = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
 onSnapshot(q, (snapshot) => {
     const list = document.getElementById('tasks-list');
@@ -558,12 +559,14 @@ onSnapshot(q, (snapshot) => {
 
         html += `
             <div class="p-4 md:p-5 rounded-xl border relative overflow-hidden transition-all ${opacityClass}">
-                <button onclick="deleteTask('${docSnap.id}')" class="absolute top-3 right-3 p-2 text-slate-300 hover:text-red-500 bg-slate-50 hover:bg-red-50 border border-slate-100 rounded-lg transition-colors z-10 outline-none" title="${window.t('delete')}">🗑️</button>
+                <button onclick="deleteTask('${docSnap.id}')" class="absolute top-3 right-3 p-2 text-slate-300 hover:text-red-500 bg-slate-50 hover:bg-red-50 border border-slate-100 rounded-lg transition-colors z-10 outline-none" title="${window.t('delete')}">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
                 
                 <div class="flex items-start mb-4 pr-10">
                     <div class="flex gap-3 md:gap-4 items-center">
-                        <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 ${isPast ? 'bg-slate-100' : 'bg-sky-50'} rounded-lg border ${isPast ? 'border-slate-200' : 'border-sky-100'} shrink-0">
-                            <span class="text-[8px] md:text-[9px] uppercase ${isPast ? 'text-slate-400' : 'text-sky-500'} font-bold leading-none mb-1 tracking-widest">${tDate.toLocaleDateString(localeFormat, { month: 'short' }).replace('.', '')}</span>
+                        <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 ${isPast ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-sky-50 border-sky-100 text-sky-500'} rounded-lg border shrink-0">
+                            <span class="text-[8px] md:text-[9px] uppercase font-bold leading-none mb-1 tracking-widest">${tDate.toLocaleDateString(localeFormat, { month: 'short' }).replace('.', '')}</span>
                             <span class="text-xl md:text-2xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${tDate.getDate()}</span>
                         </div>
                         <div class="min-w-0">
@@ -595,7 +598,7 @@ onSnapshot(q, (snapshot) => {
                         ${window.t('lesson')} ${t.lesson}
                     </div>
                     
-                    <h3 style="margin: 0 0 4px 0; font-size: 18px; color: #0ea5e9; font-weight: 900; text-transform: uppercase;">
+                    <h3 style="margin: 0 0 4px 0; font-size: 18px; color: #1e1b4b; font-weight: 900; text-transform: uppercase;">
                         ${catStr}
                     </h3>
                     <p style="margin: 0 0 16px 0; font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
@@ -625,7 +628,6 @@ onSnapshot(q, (snapshot) => {
     if(printArea) printArea.innerHTML = printHtml;
 });
 
-// 6. УДАЛЕНИЕ ЗАДАНИЯ
 window.deleteTask = (id) => {
     if (confirm(window.t('confirm_delete_task'))) {
         deleteDoc(doc(db, "personal_tasks", id));
