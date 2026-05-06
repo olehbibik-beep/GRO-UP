@@ -357,46 +357,45 @@ window.setupNotifications = async () => {
 
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
-            alert("Шаг 1: iOS разрешил пуши!"); // Проверка 1
             
-            const registration = await navigator.serviceWorker.ready;
-            alert("Шаг 2: Service Worker найден!"); // Проверка 2
-            
-            alert("Шаг 3: Ждем токен от Firebase (может занять 5-10 сек)..."); // Проверка 3
-            
+            // 🔥 ОБХОДИМ БАГ iOS: Не ждем .ready, а берем напрямую
+            let registration = await navigator.serviceWorker.getRegistration();
+            if (!registration) {
+                // Если почему-то не найден, регистрируем принудительно
+                registration = await navigator.serviceWorker.register('/GRO-UP/sw.js');
+            }
+
+            if (!registration) {
+                alert("❌ Ошибка: Service Worker так и не запустился на iOS.");
+                if (pushBtn) pushBtn.innerHTML = `🔔`;
+                return;
+            }
+
+            // Получаем токен
             const token = await getToken(messaging, { 
                 vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk',
                 serviceWorkerRegistration: registration 
             });
-            
-            alert("Шаг 4: Токен получен!"); // Проверка 4
             
             if (token) {
                 await updateDoc(doc(db, "users", userId), { pushToken: token });
                 window.showToast("✅ " + window.t('toast_notifications_enabled'));
                 if (pushBtn) pushBtn.style.display = 'none';
             } else {
-                alert("⚠️ Ошибка: Токен пустой.");
-                if (pushBtn) pushBtn.innerHTML = `🔔`;
+                alert("⚠️ Ошибка: Firebase не смог сгенерировать токен.");
+                if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
             }
         } else {
-            alert("🔒 Разрешение не получено. Статус: " + permission);
-            if (pushBtn) pushBtn.innerHTML = `🔔`;
+            alert("🔒 " + window.t('alert_notifications_blocked'));
+            if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
         }
     } catch (error) { 
-        alert("❌ ОШИБКА: " + error.message); 
+        alert("❌ Ошибка при получении токена: " + error.message); 
         console.error(error); 
         const pushBtn = document.getElementById('push-btn');
-        if (pushBtn) pushBtn.innerHTML = `🔔`;
+        if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
     }
 };
-
-onMessage(messaging, (payload) => {
-    console.log('Пришло уведомление:', payload);
-    if (payload && payload.notification) {
-        window.showToast(`🔔 ${payload.notification.title}`, 'info');
-    }
-});
 
 const TOP_ROLES = ["Владелец", "Админ"]; 
 const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
