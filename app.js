@@ -315,6 +315,7 @@ enableIndexedDbPersistence(db).catch(() => {});
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
+// 🔥 ЭТОТ КОД ПРЯЧЕТ СПИННЕР
 let isLoaderHidden = false;
 window.hideGlobalLoader = () => {
     if (isLoaderHidden) return;
@@ -326,6 +327,7 @@ window.hideGlobalLoader = () => {
     }
 };
 
+// Если база зависла, спиннер в любом случае скроется через 2.5 секунды
 setTimeout(window.hideGlobalLoader, 2500);
 
 window.scrollNews = (offset) => {
@@ -348,6 +350,9 @@ window.showToast = (message, type = 'info') => {
     }, 5000);
 };
 
+// ============================================
+// 🔥 БРОНЕБОЙНАЯ ФУНКЦИЯ УВЕДОМЛЕНИЙ ДЛЯ IOS
+// ============================================
 window.setupNotifications = async () => {
     const pushBtn = document.getElementById('push-btn');
     try {
@@ -368,29 +373,28 @@ window.setupNotifications = async () => {
         }
         if (permission !== 'granted') throw new Error("Нет разрешения на пуши");
 
-        // 2. Ищем или регистрируем Service Worker (используем относительный путь ./)
+        // 2. Ищем или регистрируем Service Worker
         let registration = await navigator.serviceWorker.getRegistration();
         if (!registration) {
-            registration = await navigator.serviceWorker.register('./sw.js');
+            registration = await navigator.serviceWorker.register('/GRO-UP/sw.js');
         }
 
-        // 🔥 3. АГРЕССИВНЫЙ ОПРОС ДЛЯ iOS: Ждем, пока воркер не станет полностью активен
+        // 3. Агрессивный опрос для iOS: Ждем, пока воркер не станет активен
         let attempts = 0;
         while ((!registration || !registration.active || registration.active.state !== 'activated') && attempts < 50) {
-            await new Promise(resolve => setTimeout(resolve, 200)); // Ждем 0.2 секунды
+            await new Promise(resolve => setTimeout(resolve, 200)); // Ждем 0.2 сек
             registration = await navigator.serviceWorker.getRegistration();
             if (!registration) {
-                registration = await navigator.serviceWorker.register('./sw.js');
+                registration = await navigator.serviceWorker.register('/GRO-UP/sw.js');
             }
             attempts++;
         }
 
-        // Если за 10 секунд он так и не проснулся — сдаемся
         if (!registration || !registration.active || registration.active.state !== 'activated') {
-            throw new Error("iOS заблокировал фоновый процесс. Перезапустите приложение полностью (смахните из недавних).");
+            throw new Error("iOS заблокировал фоновый процесс. Перезапустите приложение полностью.");
         }
 
-        // 4. Теперь воркер 100% активен! Просим токен у Firebase с таймаутом в 10 сек
+        // 4. Запрашиваем токен
         const tokenPromise = getToken(messaging, { 
             vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk',
             serviceWorkerRegistration: registration 
@@ -410,45 +414,18 @@ window.setupNotifications = async () => {
         if (pushBtn) pushBtn.style.display = 'none';
 
     } catch (error) { 
-        // Очищаем хвосты, если что-то пошло не так
         alert("❌ ОШИБКА: " + error.message); 
         console.error(error); 
         if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
     }
 };
 
-        const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error("Таймаут ожидания! iOS завис.")), 15000);
-        });
-
-        try {
-            const token = await Promise.race([setupProcess(), timeoutPromise]);
-            await updateDoc(doc(db, "users", userId), { pushToken: token });
-            window.showToast("✅ " + window.t('toast_notifications_enabled'));
-            if (pushBtn) pushBtn.style.display = 'none';
-        } catch (err) {
-            if (err.message.startsWith("RELOAD_REQUIRED")) {
-                // Спасательный круг для айфона (с защитой от бесконечного цикла)
-                if (!sessionStorage.getItem('sw_reload_attempted')) {
-                    sessionStorage.setItem('sw_reload_attempted', 'true');
-                    alert("⏳ iOS почти настроил уведомления! Приложение сейчас перезагрузится.\n\n👉 После загрузки НАЖМИТЕ НА КОЛОКОЛЬЧИК ЕЩЕ РАЗ!");
-                    window.location.reload();
-                } else {
-                    alert("❌ iOS всё ещё блокирует Service Worker. Ошибка: " + err.message.split(':')[1]);
-                    sessionStorage.removeItem('sw_reload_attempted');
-                    if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
-                }
-            } else {
-                throw err;
-            }
-        }
-
-    } catch (error) { 
-        alert("❌ ОШИБКА: " + error.message); 
-        console.error(error); 
-        if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
+onMessage(messaging, (payload) => {
+    console.log('Пришло уведомление:', payload);
+    if (payload && payload.notification) {
+        window.showToast(`🔔 ${payload.notification.title}`, 'info');
     }
-};
+});
 
 const TOP_ROLES = ["Владелец", "Админ"]; 
 const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
@@ -458,9 +435,18 @@ let hasFullAccess = false;
 const d = new Date();
 const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
 
+const dbMonthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+
 const currentMonthStr = d.toLocaleDateString(localeFormat, { month: 'long', year: 'numeric' });
 const monthLabel = document.getElementById('current-month-label');
 if (monthLabel) monthLabel.innerText = currentMonthStr;
+
+const formatMonthKey = (mKey) => {
+    if (!mKey || !mKey.includes('-')) return mKey; 
+    const [y, m] = mKey.split('-');
+    const dateObj = new Date(y, parseInt(m) - 1, 1);
+    return dateObj.toLocaleDateString(localeFormat, { month: 'long', year: 'numeric' });
+};
 
 window.switchTab = (tabId, btnElement) => {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -501,7 +487,7 @@ window.submitReport = async () => {
 
         try {
             await setDoc(doc(db, "reports", `${userId}_${strictMonthId}`), {
-                userId, userName: currentUserData.name, group: currentUserData.group || window.t('no_group'), month: currentMonthStr,
+                userId, userName: currentUserData.name, group: currentUserData.group || window.t('no_group'), month: dbMonthKey,
                 participated, hours: Number(hours), studies: Number(studies), credit: Number(credit), submittedAt: new Date().toISOString()
             });
             const log = document.getElementById('last-report-log');
@@ -693,7 +679,6 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // 🔥 ВОТ ТОТ САМЫЙ КУСОК ДЛЯ УЧАСТКОВ С БАЗОЙ КАРТ
     try {
         let allMapsCache = {};
         onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
