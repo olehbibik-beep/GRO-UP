@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ
+// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (Добавлен btn_back)
 const dict = {
     ru: {
         "loading_data": "Загрузка данных...",
@@ -79,6 +79,7 @@ const dict = {
         // Админка
         "admin_title": "Панель Администратора",
         "back_home": "На главную",
+        "btn_back": "Назад",
         "users_title": "Пользователи",
         "autosave_data": "Автосохранение данных",
         "cong_name_label": "Название собрания (Увидят все)",
@@ -218,6 +219,7 @@ const dict = {
         // Админка
         "admin_title": "Panel administrátora",
         "back_home": "Na hlavní stránku",
+        "btn_back": "Zpět",
         "users_title": "Uživatelé",
         "autosave_data": "Automatické ukládání dat",
         "cong_name_label": "Název sboru (Uvidí všichni)",
@@ -293,15 +295,7 @@ window.t = (key) => {
     return key; 
 };
 
-window.changeLanguage = (lang) => {
-    localStorage.setItem('app_lang', lang);
-    location.reload(); 
-};
-
 const applyTranslations = () => {
-    const selector = document.getElementById('lang-selector');
-    if (selector) selector.value = currentLang;
-
     document.querySelectorAll('[data-lang]').forEach(el => {
         el.innerHTML = window.t(el.getAttribute('data-lang'));
     });
@@ -351,8 +345,8 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
 
 // 2. СОХРАНЕНИЕ
 document.getElementById('save-duty-btn').addEventListener('click', async (e) => {
-    const type = document.getElementById('duty-type').value; // Всегда пишем в базу русские значения!
-    const groupVal = document.getElementById('duty-group').value.trim() || "Все"; // Всегда пишем в базу "Все"
+    const type = document.getElementById('duty-type').value; 
+    const groupVal = document.getElementById('duty-group').value.trim() || "Все"; 
     const dateStr = document.getElementById('duty-date').value;
     
     const isRecurring = document.getElementById('duty-recurring').checked;
@@ -380,11 +374,10 @@ document.getElementById('save-duty-btn').addEventListener('click', async (e) => 
             
             const assignedGroup = groupQueue[i % groupQueue.length];
 
-            // Сохраняем в базу ТОЛЬКО СЫРЫЕ данные (даты генерируем при отрисовке)
             await addDoc(collection(db, "duties"), {
                 type: type, 
                 group: assignedGroup,
-                dateRange: "deprecated", // Оставил для старых версий, больше не используется
+                dateRange: "deprecated", 
                 rawDate: startDate.toISOString().split('T')[0],
                 createdAt: new Date().toISOString()
             });
@@ -424,7 +417,7 @@ onSnapshot(q, (snapshot) => {
 
         renderedCount++;
         
-        // ДИНАМИЧЕСКИ ГЕНЕРИРУЕМ ДАТУ НА ТЕКУЩЕМ ЯЗЫКЕ ПОЛЬЗОВАТЕЛЯ!
+        // ДИНАМИЧЕСКИ ГЕНЕРИРУЕМ ДАТУ
         const startDay = dutyStart.getDate();
         const endDay = dutyEnd.getDate();
         const endMonth = dutyEnd.toLocaleDateString(localeFormat, { month: 'long' });
@@ -435,13 +428,13 @@ onSnapshot(q, (snapshot) => {
             localizedDateRange = `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
         }
 
-        // Перевод типа дежурства и группы
         let typeStr = d.type;
         if (typeStr === 'Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
         if (typeStr === 'Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
         
         const groupStr = d.group === "Все" ? window.t('all_groups') : `${window.t('group_short')} ${d.group}`;
 
+        // Заменена кнопка удаления на SVG-иконку
         html += `
             <div class="flex items-center justify-between p-4 border-b border-slate-100 transition-colors bg-white hover:bg-slate-50">
                 <div class="flex items-center w-full min-w-0 pr-4">
@@ -455,7 +448,9 @@ onSnapshot(q, (snapshot) => {
                         </div>
                     </div>
                 </div>
-                <button onclick="deleteDuty('${docSnap.id}')" class="text-slate-300 hover:text-red-500 bg-slate-50 hover:bg-red-50 transition-colors p-2 rounded-lg text-lg outline-none border border-slate-100" title="${window.t('delete')}">🗑️</button>
+                <button onclick="deleteDuty('${docSnap.id}')" class="text-slate-300 hover:text-red-500 bg-slate-50 hover:bg-red-50 transition-colors p-2 rounded-lg outline-none border border-slate-100" title="${window.t('delete')}">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
             </div>
         `;
     });
