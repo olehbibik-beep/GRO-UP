@@ -3,7 +3,6 @@ import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, del
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
-// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ ДЛЯ ВСЕГО ПРИЛОЖЕНИЯ
 const dict = {
     ru: {
         "loading_data": "Загрузка данных...",
@@ -78,51 +77,6 @@ const dict = {
         "alert_publish_error": "Ошибка публикации! Проверьте правила Storage.",
         "confirm_delete_news": "Удалить это объявление?",
         "confirm_delete_task": "Точно удалить это задание?",
-        // Админка
-        "admin_title": "Панель Администратора",
-        "back_home": "На главную",
-        "users_title": "Пользователи",
-        "autosave_data": "Автосохранение данных",
-        "cong_name_label": "Название собрания (Увидят все)",
-        "cong_name_placeholder": "Например: Центральное",
-        "requests_title": "Заявки",
-        "active_users": "Активные",
-        "search_placeholder": "Поиск...",
-        "th_name_gender": "Имя и Пол",
-        "th_pin": "ПИН",
-        "th_group": "Группа",
-        "th_school": "Школа",
-        "th_status": "Статус в собрании",
-        "th_responsible": "Ответственный за",
-        "th_manage": "Управление",
-        "error_save": "Ошибка сохранения!",
-        "alert_pin_length": "ПИН-код должен состоять ровно из 6 цифр!",
-        "error_save_pin": "Ошибка при сохранении ПИН-кода!",
-        "error_update_role": "Ошибка при обновлении роли!",
-        "confirm_block": "Заблокировать пользователя?",
-        "confirm_delete_profile": "ВНИМАНИЕ! Удалить профиль?",
-        "error_general": "Ошибка!",
-        "confirm_reject": "Точно отклонить заявку и удалить данные?",
-        "error_delete": "Ошибка удаления",
-        "status_pending": "Ожидает",
-        "btn_approve": "Одобрить",
-        "btn_reject": "Отклонить",
-        "btn_unblock": "Разблокировать",
-        "btn_block": "Заблокировать",
-        "btn_delete": "Удалить",
-        "gender_boy": "Брат",
-        "gender_girl": "Сестра",
-        "role_publisher": "Возвещатель",
-        "role_pioneer": "Пионер",
-        "role_ms": "Помощник собр.",
-        "role_elder": "Старейшина",
-        "role_admin": "Админ",
-        "role_group": "Группа",
-        "role_terr": "Участки",
-        "role_school": "Школа",
-        "no_new_requests": "Нет новых заявок",
-        "no_active_users": "Нет активных пользователей",
-        // Для перевода заданий на главном экране
         "cat_reading_db": "📖 Чтение Библии",
         "cat_conversation": "🗣️ Разговор",
         "cat_interest": "🌱 Интерес",
@@ -203,51 +157,6 @@ const dict = {
         "alert_publish_error": "Chyba publikování! Zkontrolujte pravidla Storage.",
         "confirm_delete_news": "Smazat toto oznámení?",
         "confirm_delete_task": "Opravdu smazat tento úkol?",
-        // Админка
-        "admin_title": "Panel administrátora",
-        "back_home": "Na hlavní stránku",
-        "users_title": "Uživatelé",
-        "autosave_data": "Automatické ukládání dat",
-        "cong_name_label": "Název sboru (Uvidí všichni)",
-        "cong_name_placeholder": "Například: Centrální",
-        "requests_title": "Žádosti",
-        "active_users": "Aktivní",
-        "search_placeholder": "Hledat...",
-        "th_name_gender": "Jméno a Pohlaví",
-        "th_pin": "PIN",
-        "th_group": "Skupina",
-        "th_school": "Škola",
-        "th_status": "Status ve sboru",
-        "th_responsible": "Zodpovědný za",
-        "th_manage": "Správa",
-        "error_save": "Chyba při ukládání!",
-        "alert_pin_length": "PIN kód musí mít přesně 6 číslic!",
-        "error_save_pin": "Chyba při ukládání PIN kódu!",
-        "error_update_role": "Chyba při aktualizaci role!",
-        "confirm_block": "Zablokovat uživatele?",
-        "confirm_delete_profile": "POZOR! Smazat profil?",
-        "error_general": "Chyba!",
-        "confirm_reject": "Opravdu zamítnout žádost a smazat data?",
-        "error_delete": "Chyba při mazání",
-        "status_pending": "Čeká",
-        "btn_approve": "Schválit",
-        "btn_reject": "Zamítnout",
-        "btn_unblock": "Odblokovat",
-        "btn_block": "Zablokovat",
-        "btn_delete": "Smazat",
-        "gender_boy": "Bratr",
-        "gender_girl": "Sestra",
-        "role_publisher": "Zvěstovatel",
-        "role_pioneer": "Průkopník",
-        "role_ms": "Služební pom.",
-        "role_elder": "Starší",
-        "role_admin": "Admin",
-        "role_group": "Skupina",
-        "role_terr": "Obvody",
-        "role_school": "Škola",
-        "no_new_requests": "Žádné nové žádosti",
-        "no_active_users": "Žádní aktivní uživatelé",
-        // Для перевода заданий на главном экране
         "cat_reading_db": "📖 Čtení Bible",
         "cat_conversation": "🗣️ Rozhovor",
         "cat_interest": "🌱 Zájem",
@@ -258,6 +167,7 @@ const dict = {
 };
 
 const currentLang = localStorage.getItem('app_lang') || 'ru';
+const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU';
 
 window.t = (key) => {
     if (dict[currentLang] && dict[currentLang][key]) {
@@ -271,14 +181,12 @@ window.changeLanguage = (lang) => {
     location.reload(); 
 };
 
-// Принудительно применяем перевод к HTML
 const applyTranslations = () => {
     const selector = document.getElementById('lang-selector');
     if (selector) selector.value = currentLang;
 
     document.querySelectorAll('[data-lang]').forEach(el => {
-        const key = el.getAttribute('data-lang');
-        el.innerHTML = window.t(key);
+        el.innerHTML = window.t(el.getAttribute('data-lang'));
     });
 };
 
@@ -287,7 +195,6 @@ if (document.readyState === 'loading') {
 } else {
     applyTranslations();
 }
-// ============================================
 
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
@@ -377,10 +284,21 @@ let hasFullAccess = false;
 const d = new Date();
 const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
 
-const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU';
-const currentMonthStr = d.toLocaleString(localeFormat, { month: 'long', year: 'numeric' });
+// 🔥 СОХРАНЯЕМ В БАЗУ УНИВЕРСАЛЬНЫЙ КОД МЕСЯЦА (Например: "2026-05")
+const dbMonthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+// Переводим месяц для бейджика на главном экране
+const currentMonthStr = d.toLocaleDateString(localeFormat, { month: 'long', year: 'numeric' });
 const monthLabel = document.getElementById('current-month-label');
 if (monthLabel) monthLabel.innerText = currentMonthStr;
+
+// Функция для красивого вывода месяца из универсального ключа
+const formatMonthKey = (mKey) => {
+    if (!mKey || !mKey.includes('-')) return mKey; // Если старый формат (Май 2026), отдаем как есть
+    const [y, m] = mKey.split('-');
+    const dateObj = new Date(y, parseInt(m) - 1, 1);
+    return dateObj.toLocaleDateString(localeFormat, { month: 'long', year: 'numeric' });
+};
 
 window.switchTab = (tabId, btnElement) => {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -421,8 +339,15 @@ window.submitReport = async () => {
 
         try {
             await setDoc(doc(db, "reports", `${userId}_${strictMonthId}`), {
-                userId, userName: currentUserData.name, group: currentUserData.group || window.t('no_group'), month: currentMonthStr,
-                participated, hours: Number(hours), studies: Number(studies), credit: Number(credit), submittedAt: new Date().toISOString()
+                userId, 
+                userName: currentUserData.name, 
+                group: currentUserData.group || window.t('no_group'), 
+                month: dbMonthKey, // 🔥 УНИВЕРСАЛЬНЫЙ КЛЮЧ
+                participated, 
+                hours: Number(hours), 
+                studies: Number(studies), 
+                credit: Number(credit), 
+                submittedAt: new Date().toISOString()
             });
             const log = document.getElementById('last-report-log');
             if(log) log.innerText = `${window.t('saved')} ${new Date().toLocaleString(localeFormat)}`;
@@ -614,23 +539,40 @@ function loadPersonalData() {
     } catch(e) {}
 
     try {
+        let allMapsCache = {};
+        onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
+            allMapsCache = {};
+            mapSnap.forEach(d => allMapsCache[d.id] = d.data().url);
+        });
+
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
         onSnapshot(terrQuery, (snapshot) => {
             const container = document.getElementById('territories-container');
             if(!container) return;
-            if (snapshot.empty) return container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-lg">${window.t('no_active_territories')}</p>`;
+            if (snapshot.empty) return container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-xl">${window.t('no_active_territories')}</p>`;
+            
             container.innerHTML = '';
             snapshot.forEach(docSnap => {
                 const terr = docSnap.data();
+                const mapUrl = allMapsCache[String(terr.number)];
+                
+                const mapArea = mapUrl 
+                    ? `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative cursor-pointer hover:bg-slate-100 transition-colors" onclick="window.open('${mapUrl}', '_blank')">
+                            <svg class="w-8 h-8 text-emerald-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                            <span class="absolute bottom-3 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Открыть карту / Otevřít mapu</span>
+                       </div>`
+                    : `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative">
+                            <svg class="w-8 h-8 text-slate-300 absolute opacity-50 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                            <span class="absolute bottom-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Нет карты / Bez mapy</span>
+                       </div>`;
+
                 container.innerHTML += `
-                    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden flex flex-col">
-                        <div class="p-4 flex justify-between items-center bg-emerald-50 border-b border-slate-100">
+                    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col shadow-sm">
+                        <div class="p-3 flex justify-between items-center bg-white border-b border-slate-100">
                             <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num')} ${terr.number}</h3>
-                            <span class="text-[9px] font-bold text-emerald-600 bg-white px-2 py-1 rounded-md shadow-sm uppercase border border-emerald-100">${window.t('active')}</span>
+                            <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md uppercase border border-emerald-100">${window.t('active')}</span>
                         </div>
-                        <div class="w-full h-24 bg-slate-50 flex items-center justify-center relative">
-                            <svg class="w-12 h-12 text-slate-300 absolute opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
-                        </div>
+                        ${mapArea}
                     </div>
                 `;
             });
@@ -659,7 +601,6 @@ function loadPersonalData() {
                         ? `${window.t('assistant_for')} <span class="text-sky-600 ml-1 truncate">${task.userName}</span>` 
                         : `${window.t('speech')} ${task.assistant ? `<span class="text-slate-500 text-[10px] md:text-xs block mt-0.5 truncate">${window.t('assistant_short')} <span class="text-sky-600">${task.assistant}</span></span>` : ''}`;
 
-                    // 🔥 ПЕРЕВОД КАТЕГОРИИ НА ГЛАВНОМ ЭКРАНЕ
                     let catStr = task.category || task.title || "";
                     if (catStr === 'ЧТЕНИЕ БИБЛИИ') catStr = window.t('cat_reading_db').replace('📖 ','');
                     if (catStr === 'НАЧИНАЙТЕ РАЗГОВОР') catStr = window.t('cat_conversation').replace('🗣️ ','');
@@ -894,10 +835,13 @@ window.openReportHistory = () => {
         let html = '';
         reports.forEach(r => {
             const checkIcon = r.participated || r.hours > 0 ? `<svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>` : `-`;
+            
+            const displayMonth = r.month ? formatMonthKey(r.month) : window.t('unknown');
+            
             html += `
                 <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-left">
                     <div class="flex justify-between items-center mb-2 border-b border-slate-200 pb-2">
-                        <span class="font-black text-purple-700 text-sm">${r.month || window.t('unknown')}</span>
+                        <span class="font-black text-purple-700 text-sm">${displayMonth}</span>
                         <span class="text-[10px] text-slate-400 font-bold">${r.submittedAt ? new Date(r.submittedAt).toLocaleDateString(localeFormat) : ''}</span>
                     </div>
                     <div class="flex justify-between items-center text-xs font-bold text-slate-600">
