@@ -75,7 +75,13 @@ window.setupNotifications = async () => {
         }
     } catch (error) { console.error(error); }
 };
-onMessage(messaging, (payload) => console.log('Пришло уведомление:', payload.data));
+// Ловим пуш, если приложение открыто, и показываем красивую шторку!
+onMessage(messaging, (payload) => {
+    console.log('Пришло уведомление:', payload);
+    if (payload && payload.notification) {
+        window.showToast(`🔔 ${payload.notification.title}`, 'info');
+    }
+});
 
 const TOP_ROLES = ["Владелец", "Админ"]; 
 const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
