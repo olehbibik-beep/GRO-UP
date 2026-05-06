@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Полный Календарь - GRO-UP</title>
+    <title data-lang="full_calendar_title">Полный Календарь - GRO-UP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { 
@@ -11,7 +11,7 @@
                 extend: { 
                     colors: { 
                         ui: { bg: '#cbd5e1', nav: '#0f172a' },
-                        brand: { green: '#68c086', dark: '#141724' } /* Цвета из твоего логотипа */
+                        brand: { green: '#68c086', dark: '#141724' }
                     } 
                 } 
             } 
@@ -30,7 +30,7 @@
     <main class="flex-1 flex flex-col w-full max-w-2xl mx-auto pt-4 md:pt-6 px-4 md:pl-24 md:pr-6 pb-20 md:pb-6 min-h-0 gap-3">
         
         <div class="flex items-center justify-between shrink-0 bg-white rounded-xl p-2 px-4 shadow-sm border border-slate-200">
-            <h1 class="text-xl md:text-2xl font-black text-slate-800 leading-none">Архив</h1>
+            <h1 class="text-xl md:text-2xl font-black text-slate-800 leading-none" data-lang="archive_title">Архив</h1>
             <div class="flex items-center gap-4">
                 <button onclick="changeYear(-1)" class="text-slate-400 hover:text-brand-green text-2xl font-black transition-colors outline-none">‹</button>
                 <div id="display-year" class="text-xl font-black text-slate-800 w-12 text-center">2026</div>
@@ -40,7 +40,7 @@
 
         <div class="shrink-0 h-[25vh] md:h-[200px]">
             <div id="months-grid" class="grid grid-cols-4 grid-rows-3 gap-2 h-full">
-                </div>
+            </div>
         </div>
 
         <div class="flex-1 min-h-0 bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
@@ -48,20 +48,20 @@
                 <h2 id="month-title" class="text-center font-black text-slate-800 uppercase tracking-widest text-sm mb-2 shrink-0">МЕСЯЦ</h2>
                 
                 <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1 shrink-0">
-                    <span>ПН</span><span>ВТ</span><span>СР</span><span>ЧТ</span><span>ПТ</span><span>СБ</span><span>ВС</span>
+                    <span data-lang="dow_1">ПН</span><span data-lang="dow_2">ВТ</span><span data-lang="dow_3">СР</span><span data-lang="dow_4">ЧТ</span><span data-lang="dow_5">ПТ</span><span data-lang="dow_6">СБ</span><span data-lang="dow_7">ВС</span>
                 </div>
                 
                 <div id="days-grid" class="grid grid-cols-7 gap-1 flex-1 auto-rows-fr content-start">
-                    </div>
+                </div>
             </div>
         </div>
     </main>
 
     <nav class="fixed bottom-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-between z-40 pb-safe md:h-[100dvh] md:w-20 md:flex-col md:justify-start md:py-6 md:border-t-0">
-        <a href="index.html" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
+        <a href="index.html" data-lang-title="back_home" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
             <div class="nav-icon-container text-slate-500 hover:text-white p-2.5 rounded-full transition-colors flex flex-col items-center gap-1">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                <span class="text-[8px] font-black uppercase tracking-widest hidden md:block">Назад</span>
+                <span class="text-[8px] font-black uppercase tracking-widest hidden md:block" data-lang="btn_back">Назад</span>
             </div>
         </a>
     </nav>
@@ -74,15 +74,71 @@
             <h3 id="modal-title" class="text-brand-green font-black text-left mb-4 uppercase tracking-widest text-sm pr-8 border-b border-slate-800 pb-4"></h3>
             
             <div id="modal-list" class="max-h-[60vh] overflow-y-auto custom-scrollbar flex flex-col">
-                </div>
+            </div>
         </div>
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // Подключаемся к основной базе GRO-UP
+        // 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ
+        const dict = {
+            ru: {
+                // Основное
+                "archive_title": "Архив",
+                "back_home": "На главную",
+                "btn_back": "Назад",
+                "group_short": "Гр.",
+                "leader_short": "Вед:",
+                "full_calendar_title": "Полный Календарь - GRO-UP",
+                "no_events_this_day": "В этот день событий нет",
+                // Дни недели
+                "dow_1": "ПН", "dow_2": "ВТ", "dow_3": "СР", "dow_4": "ЧТ", "dow_5": "ПТ", "dow_6": "СБ", "dow_7": "ВС",
+                // Месяцы
+                "months": ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
+            },
+            cs: {
+                // Основное
+                "archive_title": "Archiv",
+                "back_home": "Na hlavní stránku",
+                "btn_back": "Zpět",
+                "group_short": "Sk.",
+                "leader_short": "Ved:",
+                "full_calendar_title": "Plný kalendář - GRO-UP",
+                "no_events_this_day": "V tento den nejsou žádné události",
+                // Дни недели
+                "dow_1": "PO", "dow_2": "ÚT", "dow_3": "ST", "dow_4": "ČT", "dow_5": "PÁ", "dow_6": "SO", "dow_7": "NE",
+                // Месяцы
+                "months": ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"]
+            }
+        };
+
+        const currentLang = localStorage.getItem('app_lang') || 'ru';
+
+        window.t = (key) => {
+            if (dict[currentLang] && dict[currentLang][key]) {
+                return dict[currentLang][key];
+            }
+            return key; 
+        };
+
+        const applyTranslations = () => {
+            document.querySelectorAll('[data-lang]').forEach(el => {
+                el.innerHTML = window.t(el.getAttribute('data-lang'));
+            });
+            document.querySelectorAll('[data-lang-title]').forEach(el => {
+                el.setAttribute('title', window.t(el.getAttribute('data-lang-title')));
+            });
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', applyTranslations);
+        } else {
+            applyTranslations();
+        }
+        // =========================================================
+
         const firebaseConfig = {
             apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
             authDomain: "gro-uping.firebaseapp.com",
@@ -97,7 +153,7 @@
         const userId = localStorage.getItem('userId');
         if (!userId) window.location.href = 'index.html';
 
-        const monthsNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+        const monthsNames = dict[currentLang].months; // Берем месяцы из словаря!
         let currentYear = new Date().getFullYear();
         let currentMonth = new Date().getMonth(); 
         
@@ -181,7 +237,7 @@
                 const dotColor = isSpecial ? 'bg-rose-500' : 'bg-sky-500';
 
                 const timeHtml = ev.time ? `<span class="text-xs text-slate-500 font-mono font-bold mr-3">${ev.time}</span>` : '';
-                const groupHtml = ev.group !== "Все" ? `<span class="text-[9px] font-bold text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded ml-2 uppercase">Гр. ${ev.group}</span>` : '';
+                const groupHtml = ev.group !== "Все" ? `<span class="text-[9px] font-bold text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded ml-2 uppercase">${window.t('group_short')} ${ev.group}</span>` : '';
 
                 return `
                     <div class="flex flex-col py-3 border-b border-slate-800/50 last:border-0">
@@ -193,12 +249,12 @@
                                     <span class="text-sm font-bold leading-tight ${colorTitle}">${ev.title}</span>
                                     ${groupHtml}
                                 </div>
-                                ${ev.leader ? `<div class="text-[10px] uppercase font-bold text-brand-green mt-1.5 tracking-wider opacity-90">Вед: ${ev.leader}</div>` : ''}
+                                ${ev.leader ? `<div class="text-[10px] uppercase font-bold text-brand-green mt-1.5 tracking-wider opacity-90">${window.t('leader_short')} ${ev.leader}</div>` : ''}
                             </div>
                         </div>
                     </div>
                 `;
-            }).join('') || '<p class="text-xs text-slate-500 text-center italic py-6">В этот день событий нет</p>';
+            }).join('') || `<p class="text-xs text-slate-500 text-center italic py-6">${window.t('no_events_this_day')}</p>`;
             
             document.getElementById('modal').style.display = 'flex';
         };
