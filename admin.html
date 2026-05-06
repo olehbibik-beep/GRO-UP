@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Панель Администратора</title>
+    <title data-lang="admin_title">Панель Администратора</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f1f5f9', adminNav: '#0f172a' } } } } }
@@ -17,7 +17,7 @@
 <body class="bg-ui-bg text-slate-800 min-h-screen font-sans">
 
     <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0">
-        <a href="index.html" title="На главную" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white">
+        <a href="index.html" data-lang-title="back_home" title="На главную" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
         </a>
     </nav>
@@ -26,20 +26,20 @@
         
         <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200 gap-4">
             <div>
-                <h1 class="text-2xl font-black text-indigo-600">Пользователи</h1>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Автосохранение данных</p>
+                <h1 class="text-2xl font-black text-indigo-600" data-lang="users_title">Пользователи</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1" data-lang="autosave_data">Автосохранение данных</p>
             </div>
             
             <div class="w-full md:w-auto flex flex-col items-start md:items-end">
-                <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 pl-1 md:pl-0">Название собрания (Увидят все)</label>
-                <input type="text" id="congregation-name" onchange="updateCongregation(this.value)" placeholder="МАРИАНСКИЕ ЛАЗНЕ" class="w-full md:w-64 text-sm font-black text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 outline-none focus:border-indigo-400 md:text-right shadow-sm transition-colors">
+                <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 pl-1 md:pl-0" data-lang="cong_name_label">Название собрания (Увидят все)</label>
+                <input type="text" id="congregation-name" data-lang-placeholder="cong_name_placeholder" onchange="updateCongregation(this.value)" placeholder="МАРИАНСКИЕ ЛАЗНЕ" class="w-full md:w-64 text-sm font-black text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 outline-none focus:border-indigo-400 md:text-right shadow-sm transition-colors">
             </div>
         </div>
 
         <section class="mb-8">
             <h2 class="text-sm font-bold flex items-center gap-2 mb-3 uppercase tracking-widest text-slate-500">
                 <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                Заявки (<span id="pending-count">0</span>)
+                <span data-lang="requests_title">Заявки</span> (<span id="pending-count">0</span>)
             </h2>
             <div class="bg-white rounded-xl shadow-sm border border-amber-100 overflow-hidden">
                 <div id="pending-list" class="divide-y divide-slate-50"></div>
@@ -48,8 +48,8 @@
 
         <section>
             <div class="flex justify-between items-end mb-3">
-                <h2 class="text-sm font-bold uppercase tracking-widest text-slate-500">Активные (<span id="active-count">0</span>)</h2>
-                <input type="text" id="search-user" placeholder="Поиск..." class="p-2 px-4 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 w-64 text-sm font-medium bg-white shadow-sm">
+                <h2 class="text-sm font-bold uppercase tracking-widest text-slate-500"><span data-lang="active_users">Активные</span> (<span id="active-count">0</span>)</h2>
+                <input type="text" id="search-user" data-lang-placeholder="search_placeholder" placeholder="Поиск..." class="p-2 px-4 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 w-64 text-sm font-medium bg-white shadow-sm">
             </div>
             
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -57,13 +57,13 @@
                     <table class="w-full text-left border-collapse min-w-[1200px]">
                         <thead>
                             <tr class="bg-slate-50 border-b border-slate-200 text-[10px] text-slate-400 uppercase tracking-widest">
-                                <th class="py-3 px-4 font-bold w-1/6">Имя и Пол</th>
-                                <th class="py-3 px-2 font-bold text-center w-20">ПИН</th>
-                                <th class="py-3 px-2 font-bold text-center w-16">Группа</th>
-                                <th class="py-3 px-2 font-bold text-center text-sky-600 w-16">Школа</th>
-                                <th class="py-3 px-4 font-bold w-64">Статус в собрании</th>
-                                <th class="py-3 px-4 font-bold w-48">Ответственный за</th>
-                                <th class="py-3 px-4 font-bold text-right w-24">Управление</th>
+                                <th class="py-3 px-4 font-bold w-1/6" data-lang="th_name_gender">Имя и Пол</th>
+                                <th class="py-3 px-2 font-bold text-center w-20" data-lang="th_pin">ПИН</th>
+                                <th class="py-3 px-2 font-bold text-center w-16" data-lang="th_group">Группа</th>
+                                <th class="py-3 px-2 font-bold text-center text-sky-600 w-16" data-lang="th_school">Школа</th>
+                                <th class="py-3 px-4 font-bold w-64" data-lang="th_status">Статус в собрании</th>
+                                <th class="py-3 px-4 font-bold w-48" data-lang="th_responsible">Ответственный за</th>
+                                <th class="py-3 px-4 font-bold text-right w-24" data-lang="th_manage">Управление</th>
                             </tr>
                         </thead>
                         <tbody id="active-list" class="divide-y divide-slate-100 text-sm font-medium"></tbody>
