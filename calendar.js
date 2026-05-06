@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (С НОВЫМИ СЛОВАМИ ИЗ КАЛЕНДАРЯ)
 const dict = {
     ru: {
         "loading_data": "Загрузка данных...",
@@ -76,9 +75,9 @@ const dict = {
         "alert_publish_error": "Ошибка публикации! Проверьте правила Storage.",
         "confirm_delete_news": "Удалить это объявление?",
         "confirm_delete_task": "Точно удалить это задание?",
-        // Админка
         "admin_title": "Панель Администратора",
         "back_home": "На главную",
+        "btn_back": "Назад",
         "users_title": "Пользователи",
         "autosave_data": "Автосохранение данных",
         "cong_name_label": "Название собрания (Увидят все)",
@@ -120,14 +119,13 @@ const dict = {
         "role_school": "Школа",
         "no_new_requests": "Нет новых заявок",
         "no_active_users": "Нет активных пользователей",
-        // Календарь
         "calendar_title": "Календарь Событий - GRO-UP",
         "calendar_h1": "Календарь",
         "calendar_subtitle": "График событий собрания",
         "create_meeting": "Создать встречу",
         "event_type": "Тип события",
-        "opt_regular": "🔵 Обычная встреча",
-        "opt_special": "🔴 Особое событие (важно)",
+        "opt_regular": "Обычная встреча",
+        "opt_special": "Особое событие (важно)",
         "event_name": "Название",
         "ph_meeting": "Встреча для проповеди",
         "event_date": "Дата",
@@ -225,9 +223,9 @@ const dict = {
         "alert_publish_error": "Chyba publikování! Zkontrolujte pravidla Storage.",
         "confirm_delete_news": "Smazat toto oznámení?",
         "confirm_delete_task": "Opravdu smazat tento úkol?",
-        // Админка
         "admin_title": "Panel administrátora",
         "back_home": "Na hlavní stránku",
+        "btn_back": "Zpět",
         "users_title": "Uživatelé",
         "autosave_data": "Automatické ukládání dat",
         "cong_name_label": "Název sboru (Uvidí všichni)",
@@ -269,14 +267,13 @@ const dict = {
         "role_school": "Škola",
         "no_new_requests": "Žádné nové žádosti",
         "no_active_users": "Žádní aktivní uživatelé",
-        // Календарь
         "calendar_title": "Kalendář událostí - GRO-UP",
         "calendar_h1": "Kalendář",
         "calendar_subtitle": "Rozvrh událostí sboru",
         "create_meeting": "Vytvořit schůzku",
         "event_type": "Typ události",
-        "opt_regular": "🔵 Běžná schůzka",
-        "opt_special": "🔴 Zvláštní událost (důležité)",
+        "opt_regular": "Běžná schůzka",
+        "opt_special": "Zvláštní událost (důležité)",
         "event_name": "Název",
         "ph_meeting": "Schůzka před službou",
         "event_date": "Datum",
@@ -304,7 +301,7 @@ const dict = {
 };
 
 const currentLang = localStorage.getItem('app_lang') || 'ru';
-const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU'; // Для форматирования дат
+const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU';
 
 window.t = (key) => {
     if (dict[currentLang] && dict[currentLang][key]) {
@@ -501,13 +498,16 @@ window.renderEvents = () => {
             const timeHtml = ev.time ? `<span class="text-xs font-mono font-black text-slate-400 mr-3 shrink-0">${ev.time}</span>` : '';
             const leaderHtml = ev.leader ? `<div class="text-[10px] uppercase font-bold text-slate-400 mt-1 truncate">${window.t('leader_label')} <span class="text-rose-500 font-black">${ev.leader}</span></div>` : '';
             
-            // Звездочка для особых событий
-            const specialBadge = ev.category === 'special' ? `<span class="text-rose-500 text-xs ml-1" title="${window.t('title_special_event')}">⭐</span>` : '';
+            // Замена эмодзи "⭐" на SVG-звездочку
+            const specialBadge = ev.category === 'special' 
+                ? `<svg class="w-3.5 h-3.5 text-rose-500 ml-1.5 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" title="${window.t('title_special_event')}"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>` 
+                : '';
 
             const canDelete = isFullAdmin || isMyGroupOrAll;
 
+            // Замена эмодзи "🗑️" на SVG-корзину
             const deleteBtn = canDelete 
-                ? `<button onclick="deleteEvent('${docSnap.id}')" class="text-slate-300 hover:text-red-500 bg-slate-50 hover:bg-red-50 rounded-lg transition-colors p-2 text-lg outline-none border border-slate-100" title="${window.t('delete')}">🗑️</button>` 
+                ? `<button onclick="deleteEvent('${docSnap.id}')" class="text-slate-300 hover:text-red-500 bg-slate-50 hover:bg-red-50 border border-slate-100 rounded-lg transition-colors p-2 outline-none" title="${window.t('delete')}"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` 
                 : `<span class="text-[10px] text-slate-400 font-bold uppercase p-2">${window.t('foreign_event')}</span>`;
 
             html += `
