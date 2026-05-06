@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (эмодзи удалены)
 const dict = {
     ru: {
         "terr_title": "Управление Участками - GRO-UP",
@@ -33,7 +32,16 @@ const dict = {
         "error_general": "Ошибка!",
         "title_issue_terr": "Выдать участок",
         "delete": "Удалить",
-        "btn_back": "Назад"
+        "btn_back": "Назад",
+        // База карт
+        "btn_map_db": "База карт",
+        "map_db_title": "База карт участков",
+        "map_instruction": "Создайте карту участка в Google My Maps, нажмите «Поделиться», скопируйте ссылку и привяжите к номеру участка. Возвещатели увидят кнопку «Открыть карту».",
+        "map_url_ph": "Ссылка https://...",
+        "btn_save_map": "Добавить карту",
+        "saved_maps": "Сохраненные карты",
+        "history_empty": "История пуста",
+        "alert_fill_all": "Заполните все поля!"
     },
     cs: {
         "terr_title": "Správa obvodů - GRO-UP",
@@ -65,7 +73,16 @@ const dict = {
         "error_general": "Chyba!",
         "title_issue_terr": "Vydat obvod",
         "delete": "Smazat",
-        "btn_back": "Zpět"
+        "btn_back": "Zpět",
+        // База карт
+        "btn_map_db": "Databáze map",
+        "map_db_title": "Databáze map obvodů",
+        "map_instruction": "Vytvořte mapu obvodu v Google My Maps, klikněte na «Sdílet», zkopírujte odkaz a připojte k číslu. Zvěstovatelé uvidí tlačítko «Otevřít mapu».",
+        "map_url_ph": "Odkaz https://...",
+        "btn_save_map": "Přidat mapu",
+        "saved_maps": "Uložené mapy",
+        "history_empty": "Historie je prázdná",
+        "alert_fill_all": "Vyplňte všechna pole!"
     }
 };
 
@@ -146,16 +163,16 @@ onSnapshot(query(collection(db, "requests"), orderBy("createdAt", "desc")), (sna
             count++;
             const date = new Date(req.createdAt).toLocaleDateString(localeFormat, {day: 'numeric', month: 'short'});
             html += `
-                <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-xl hover:border-emerald-200 transition-colors">
+                <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-lg hover:border-emerald-200 transition-colors">
                     <div>
                         <p class="text-xs font-bold text-slate-800">${req.userName}</p>
                         <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">${date}</p>
                     </div>
                     <div class="flex gap-1.5">
-                        <button onclick="prepareIssue('${req.userId}', '${req.userName}', '${docSnap.id}')" title="${window.t('title_issue_terr')}" class="w-7 h-7 flex items-center justify-center bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors outline-none text-xs">
+                        <button onclick="prepareIssue('${req.userId}', '${req.userName}', '${docSnap.id}')" title="${window.t('title_issue_terr')}" class="w-7 h-7 flex items-center justify-center bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded transition-colors outline-none text-xs">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
                         </button>
-                        <button onclick="deleteRequest('${docSnap.id}')" title="${window.t('delete')}" class="w-7 h-7 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors outline-none text-xs">
+                        <button onclick="deleteRequest('${docSnap.id}')" title="${window.t('delete')}" class="w-7 h-7 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-500 hover:bg-red-50 rounded transition-colors outline-none text-xs">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     </div>
@@ -164,7 +181,7 @@ onSnapshot(query(collection(db, "requests"), orderBy("createdAt", "desc")), (sna
         }
     });
     document.getElementById('requests-count').innerText = count;
-    if(list) list.innerHTML = html || `<p class="text-slate-400 italic text-xs text-center py-4 bg-slate-50 rounded-xl">${window.t('no_new_requests_terr')}</p>`;
+    if(list) list.innerHTML = html || `<p class="text-slate-400 italic text-xs text-center py-4 bg-slate-50 rounded-lg">${window.t('no_new_requests_terr')}</p>`;
 });
 
 window.prepareIssue = async (userId, userName, reqId) => {
@@ -196,7 +213,7 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
         document.getElementById('user-select').value = '';
         document.getElementById('territory-number').value = '';
         btn.classList.replace('bg-slate-800', 'bg-emerald-500');
-        btn.innerHTML = `<svg class="w-4 h-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg> ${window.t('success_tick')}`;
+        btn.innerHTML = window.t('success_tick');
         setTimeout(() => { 
             btn.classList.replace('bg-emerald-500', 'bg-slate-800');
             btn.innerText = window.t('btn_assign'); btn.disabled = false; 
@@ -214,7 +231,7 @@ onSnapshot(query(collection(db, "territories"), orderBy("issuedAt", "desc")), (s
         html += `
             <tr class="hover:bg-slate-50 transition-colors user-row" data-search="${terr.number} ${terr.userName.toLowerCase()}">
                 <td class="py-3 px-4 text-center">
-                    <span class="bg-emerald-50 text-emerald-700 font-mono font-black border border-emerald-200 px-3 py-1.5 rounded-lg text-sm">${terr.number}</span>
+                    <span class="bg-emerald-50 text-emerald-700 font-mono font-black border border-emerald-200 px-2.5 py-1 rounded-lg text-sm">${terr.number}</span>
                 </td>
                 <td class="py-3 px-4 font-bold text-slate-800 text-sm truncate">${terr.userName}</td>
                 <td class="py-3 px-4 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">${date}</td>
@@ -247,3 +264,52 @@ if(searchEl) {
         });
     });
 }
+
+// ----------------------------------------------------
+// ЛОГИКА БАЗЫ КАРТ
+// ----------------------------------------------------
+window.openMapsModal = () => document.getElementById('maps-modal').classList.replace('hidden', 'flex');
+window.closeMapsModal = () => document.getElementById('maps-modal').classList.replace('flex', 'hidden');
+
+document.getElementById('save-map-btn').addEventListener('click', async (e) => {
+    const num = document.getElementById('map-num').value.trim();
+    const url = document.getElementById('map-url').value.trim();
+    if (!num || !url) return alert(window.t('alert_fill_all'));
+    
+    const btn = e.target;
+    btn.disabled = true; btn.innerText = "...";
+    try {
+        await setDoc(doc(db, "territory_maps", num), { url: url, updatedAt: new Date().toISOString() });
+        document.getElementById('map-num').value = '';
+        document.getElementById('map-url').value = '';
+        btn.innerText = window.t('btn_save_map');
+        btn.disabled = false;
+    } catch (err) { alert(window.t('error_general')); btn.disabled = false; btn.innerText = window.t('btn_save_map'); }
+});
+
+onSnapshot(collection(db, "territory_maps"), (snapshot) => {
+    const list = document.getElementById('maps-list');
+    if (!list) return;
+    let html = '';
+    let maps = [];
+    snapshot.forEach(d => maps.push({ num: parseInt(d.id), url: d.data().url, id: d.id }));
+    maps.sort((a,b) => a.num - b.num);
+    
+    maps.forEach(m => {
+        html += `
+        <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-2.5 rounded-lg">
+            <div class="flex items-center gap-3 min-w-0">
+                <span class="bg-emerald-100 text-emerald-700 font-black font-mono text-[11px] px-2 py-1 rounded shrink-0">${m.num}</span>
+                <a href="${m.url}" target="_blank" class="text-xs font-medium text-sky-500 hover:text-sky-600 hover:underline truncate">${m.url}</a>
+            </div>
+            <button onclick="deleteMap('${m.id}')" class="text-slate-300 hover:text-red-500 ml-2 p-1 outline-none transition-colors" title="${window.t('delete')}">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            </button>
+        </div>`;
+    });
+    list.innerHTML = html || `<p class="text-xs italic text-slate-400 text-center py-4">${window.t('history_empty')}</p>`;
+});
+
+window.deleteMap = async (id) => {
+    if(confirm(window.t('delete') + "?")) await deleteDoc(doc(db, "territory_maps", id));
+};
