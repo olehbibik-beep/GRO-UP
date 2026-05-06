@@ -1,40 +1,62 @@
 export const dict = {
     ru: {
-        // Главная страница
+        "loading_data": "Загрузка данных...",
+        "pending_title": "Заявка на рассмотрении",
+        "pending_desc": "Ожидайте подтверждения администратора.",
+        "logout_btn": "Выйти",
+        "loading_events": "Загрузка встреч...",
+        "all_year": "Весь<br>год",
+        "loading_feed": "Загрузка ленты...",
         "my_report": "Мой отчет",
         "participated": "Служил(а)",
-        "hours": "Часы",
-        "studies": "Изучения Библии",
-        "credit": "Кредит",
-        "submit_report": "Отправить отчет",
+        "hours_label": "Часы<br>&nbsp;",
+        "studies_label": "Изучения<br>Библии",
+        "credit_label": "Кредит<br>&nbsp;",
+        "fill_btn": "Заполнить",
         "this_week": "На этой неделе",
-        
-        // Меню
-        "nav_home": "Главная",
-        "nav_tasks": "Задания",
-        "nav_terr": "Участки",
-        
-        // Профиль
+        "loading_duties": "Загрузка...",
+        "active_tasks": "Активные задания",
+        "no_active_tasks": "Нет активных заданий",
+        "archive_title": "Архив",
+        "history_empty": "История пуста",
+        "my_territories": "Мои участки",
+        "request_btn": "Попросить",
+        "no_territories": "У вас пока нет участков",
+        "profile_group": "Группа",
+        "profile_overseer": "Ответственный",
+        "language": "Язык / Jazyk",
         "profile_logout": "Выйти из аккаунта",
-        "language": "Язык / Jazyk"
+        "my_archive": "Мой архив",
+        "loading_archive": "Загрузка..."
     },
     cs: {
-        // Главная страница
+        "loading_data": "Načítání dat...",
+        "pending_title": "Žádost se vyřizuje",
+        "pending_desc": "Čekejte na potvrzení administrátorem.",
+        "logout_btn": "Odejít",
+        "loading_events": "Načítání schůzek...",
+        "all_year": "Celý<br>rok",
+        "loading_feed": "Načítání příspěvků...",
         "my_report": "Moje zpráva",
         "participated": "Ve službě",
-        "hours": "Hodiny",
-        "studies": "Biblická studia",
-        "credit": "Kredit",
-        "submit_report": "Odeslat zprávu",
+        "hours_label": "Hodiny<br>&nbsp;",
+        "studies_label": "Biblická<br>studia",
+        "credit_label": "Kredit<br>&nbsp;",
+        "fill_btn": "Vyplnit",
         "this_week": "Tento týden",
-        
-        // Меню
-        "nav_home": "Hlavní",
-        "nav_tasks": "Úkoly",
-        "nav_terr": "Obvody",
-        
-        // Профиль
+        "loading_duties": "Načítání...",
+        "active_tasks": "Aktivní úkoly",
+        "no_active_tasks": "Žádné aktivní úkoly",
+        "archive_title": "Archiv",
+        "history_empty": "Historie je prázdná",
+        "my_territories": "Moje obvody",
+        "request_btn": "Požádat",
+        "no_territories": "Zatím nemáte žádné obvody",
+        "profile_group": "Skupina",
+        "profile_overseer": "Dozorce",
+        "language": "Jazyk / Язык",
         "profile_logout": "Odhlásit se",
-        "language": "Jazyk / Язык"
+        "my_archive": "Můj archiv",
+        "loading_archive": "Načítání..."
     }
 };
