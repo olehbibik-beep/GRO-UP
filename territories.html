@@ -12,7 +12,7 @@
                     colors: { 
                         ui: { 
                             bg: '#f8fafc', 
-                            adminNav: '#A82A56' 
+                            adminNav: '#A82A56' // Глубокий Индиго
                         } 
                     } 
                 } 
@@ -28,17 +28,15 @@
 <body class="bg-ui-bg text-slate-800 min-h-screen font-sans">
 
    <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0">
-        <a href="index.html" data-lang-title="back_home" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
-            <div class="nav-icon-container text-indigo-300 hover:text-white p-2.5 rounded-full transition-colors flex flex-col items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                <span class="text-[8px] font-black uppercase tracking-widest hidden md:block" data-lang="btn_back">Назад</span>
-            </div>
+        <a href="index.html" data-lang-title="back_home" title="На главную" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            <span class="text-[8px] font-black uppercase tracking-widest hidden md:block" data-lang="btn_back">Назад</span>
         </a>
     </nav>
 
     <main class="w-full max-w-5xl mx-auto pt-4 md:pt-6 px-4 pb-24 md:pl-28 md:pr-6">
         
-        <div class="mb-6 flex justify-between items-center bg-white p-4 md:p-5 rounded-xl border border-slate-200">
+        <div class="mb-6 flex justify-between items-center bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
                     <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
@@ -48,23 +46,28 @@
                     <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5" data-lang="manage_terr">Управление территориями</p>
                 </div>
             </div>
+            
+            <button onclick="openMapsModal()" class="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-600 px-3 py-2 rounded-lg border border-slate-200 transition-colors font-bold text-xs outline-none">
+                <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span class="hidden md:inline" data-lang="btn_map_db">База карт</span>
+            </button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             
             <div class="md:col-span-1 space-y-6">
                 
-                <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200">
+                <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm">
                     <h2 class="text-sm font-bold flex items-center gap-2 mb-4 uppercase tracking-widest text-slate-500">
                         <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
                         <span data-lang="requests_title">Запросы</span> (<span id="requests-count">0</span>)
                     </h2>
                     <div id="requests-list" class="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-                        <p class="text-slate-400 italic text-xs text-center py-4 bg-slate-50 rounded-xl" data-lang="no_new_requests_terr">Нет новых запросов</p>
+                        <p class="text-slate-400 italic text-xs text-center py-4 bg-slate-50 rounded-lg" data-lang="no_new_requests_terr">Нет новых запросов</p>
                     </div>
                 </div>
 
-                <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 sticky top-6">
+                <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm sticky top-6">
                     <h2 class="text-lg font-black text-slate-800 mb-5 flex items-center gap-2">
                         <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
                         <span data-lang="issue_terr">Выдать участок</span>
@@ -73,15 +76,15 @@
                     <div class="space-y-4">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="to_whom">Кому выдать</label>
-                            <select id="user-select" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all font-bold text-slate-700 cursor-pointer">
+                            <select id="user-select" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-emerald-400 font-bold text-slate-700 cursor-pointer">
                                 <option value="" disabled selected data-lang="loading">Загрузка...</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="terr_number_label">Номер участка</label>
-                            <input type="number" id="territory-number" data-lang-placeholder="ph_terr_num" placeholder="Например: 105" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all font-black font-mono text-lg text-emerald-700 text-center">
+                            <input type="number" id="territory-number" data-lang-placeholder="ph_terr_num" placeholder="Например: 105" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-emerald-400 font-black font-mono text-lg text-emerald-700 text-center">
                         </div>
-                        <button id="assign-btn" data-lang="btn_assign" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 mt-2 text-sm uppercase tracking-widest outline-none">
+                        <button id="assign-btn" data-lang="btn_assign" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-lg transition-all active:scale-95 mt-2 text-sm uppercase tracking-widest outline-none">
                             Назначить
                         </button>
                     </div>
@@ -92,10 +95,10 @@
             <div class="md:col-span-2">
                 <div class="flex justify-between items-end mb-4">
                     <h2 class="text-xl font-black text-slate-800 flex items-center gap-2" data-lang="in_progress">В работе</h2>
-                    <input type="text" id="search-terr" data-lang-placeholder="ph_search_terr" placeholder="Поиск по имени или №..." class="p-2 px-4 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 w-64 text-sm font-medium bg-white">
+                    <input type="text" id="search-terr" data-lang-placeholder="ph_search_terr" placeholder="Поиск по имени или №..." class="p-2 px-4 border border-slate-200 rounded-lg outline-none focus:border-emerald-500 w-64 text-sm font-medium bg-white shadow-sm">
                 </div>
                 
-                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse min-w-[500px]">
                             <thead>
@@ -116,6 +119,30 @@
         </div>
     </main>
 
-    <script type="module" src="territories.js?v=52"></script>
+    <div id="maps-modal" class="fixed inset-0 bg-slate-900/80 z-[70] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 relative border border-slate-200 max-h-[85vh] flex flex-col">
+            <button onclick="closeMapsModal()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-600 text-2xl font-black outline-none transition-colors">✖</button>
+            <h2 class="text-xl font-black text-slate-800 mb-2 flex items-center gap-2">
+                <svg class="w-6 h-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span data-lang="map_db_title">База карт участков</span>
+            </h2>
+            <p class="text-[11px] text-slate-500 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100" data-lang="map_instruction">Создайте карту участка в Google My Maps, нажмите "Поделиться", скопируйте ссылку и привяжите к номеру участка. Возвещатели увидят кнопку "Открыть карту".</p>
+            
+            <div class="flex gap-2 mb-4 shrink-0">
+                <input type="number" id="map-num" data-lang-placeholder="th_number" placeholder="Номер" class="w-1/3 bg-slate-50 border border-slate-200 rounded-lg p-2.5 outline-none focus:border-emerald-400 font-black text-slate-700 text-sm">
+                <input type="url" id="map-url" data-lang-placeholder="map_url_ph" placeholder="Ссылка https://..." class="w-2/3 bg-slate-50 border border-slate-200 rounded-lg p-2.5 outline-none focus:border-emerald-400 font-medium text-slate-700 text-sm">
+            </div>
+            <button id="save-map-btn" data-lang="btn_save_map" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-lg transition-colors active:scale-95 mb-4 text-xs uppercase tracking-widest outline-none shrink-0">Добавить карту</button>
+            
+            <div class="border-t border-slate-100 pt-4 flex-grow overflow-hidden flex flex-col">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 shrink-0" data-lang="saved_maps">Сохраненные карты</p>
+                <div id="maps-list" class="overflow-y-auto flex-grow space-y-2 pr-1 custom-scrollbar">
+                    <p class="text-xs italic text-slate-400 text-center py-2">Загрузка...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="territories.js?v=55"></script>
 </body>
 </html>
