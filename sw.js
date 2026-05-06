@@ -13,44 +13,27 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// 🔥 ДОБАВЛЕНО ДЛЯ IOS: "Умный" перехватчик
-// Он не сломает Андроид, так как не будет дублировать стандартные пуши
 messaging.onBackgroundMessage((payload) => {
-  console.log('[sw.js] Фоновое сообщение получено:', payload);
-  
-  // Если Firebase УЖЕ содержит блок notification, он нарисует его сам (на Андроиде).
-  // Мы рисуем пуш вручную ТОЛЬКО если это скрытый data-пуш, 
-  // или если iOS жестко требует ручной отрисовки.
   if (!payload.notification) {
      const title = payload.data?.title || 'GRO-UP';
      const options = {
         body: payload.data?.body || 'Новое уведомление',
-        icon: '/GRO-UP/icon-512.png',
-        badge: '/GRO-UP/icon-512.png'
+        icon: './icon-512.png',
+        badge: './icon-512.png'
      };
      self.registration.showNotification(title, options);
   }
 });
 
-// Firebase сам нарисует уведомление. Мы ловим ТОЛЬКО клик!
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-
-  const urlToOpen = self.location.origin + '/';
-
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Ищем открытое приложение
       if (windowClients.length > 0) {
         let client = windowClients[0];
-        if ('focus' in client) {
-          return client.focus();
-        }
+        if ('focus' in client) return client.focus();
       }
-      // Если закрыто - открываем
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
+      if (clients.openWindow) return clients.openWindow('./');
     })
   );
 });
@@ -58,20 +41,30 @@ self.addEventListener('notificationclick', (event) => {
 // ==========================================
 // ЛОГИКА КЭШИРОВАНИЯ И ЗАЩИТА ОТ ДУБЛЕЙ
 // ==========================================
-const CACHE_NAME = 'gro-up-v42'; 
+const CACHE_NAME = 'gro-up-v45'; 
 
 const INITIAL_CACHED_RESOURCES = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/app.js',
-  '/icon-512.png' // Кэшируем иконку для уведомлений
+  './',
+  './index.html',
+  './app.js',
+  './manifest.json',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // 🔥 ЖЕСТКО: Заставляем новый кэш примениться немедленно и убиваем старые воркеры (защита от дублей)
+  self.skipWaiting(); 
+  
+  // 🔥 НЕУБИВАЕМАЯ УСТАНОВКА: Игнорируем ошибки при скачивании файлов
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(INITIAL_CACHED_RESOURCES))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      for (let req of INITIAL_CACHED_RESOURCES) {
+         try { 
+             await cache.add(req); 
+         } catch(e) { 
+             console.log('Файл пропущен при кэшировании: ' + req); 
+         }
+      }
+    })
   );
 });
 
@@ -83,7 +76,7 @@ self.addEventListener('activate', (event) => {
       }));
     })
   );
-  self.clients.claim(); // 🔥 Перехватываем контроль над всеми вкладками
+  self.clients.claim(); 
 });
 
 self.addEventListener('fetch', (event) => {
