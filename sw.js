@@ -13,6 +13,25 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
+// 🔥 ДОБАВЛЕНО ДЛЯ IOS: "Умный" перехватчик
+// Он не сломает Андроид, так как не будет дублировать стандартные пуши
+messaging.onBackgroundMessage((payload) => {
+  console.log('[sw.js] Фоновое сообщение получено:', payload);
+  
+  // Если Firebase УЖЕ содержит блок notification, он нарисует его сам (на Андроиде).
+  // Мы рисуем пуш вручную ТОЛЬКО если это скрытый data-пуш, 
+  // или если iOS жестко требует ручной отрисовки.
+  if (!payload.notification) {
+     const title = payload.data?.title || 'GRO-UP';
+     const options = {
+        body: payload.data?.body || 'Новое уведомление',
+        icon: '/GRO-UP/icon-512.png',
+        badge: '/GRO-UP/icon-512.png'
+     };
+     self.registration.showNotification(title, options);
+  }
+});
+
 // Firebase сам нарисует уведомление. Мы ловим ТОЛЬКО клик!
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
@@ -39,7 +58,7 @@ self.addEventListener('notificationclick', (event) => {
 // ==========================================
 // ЛОГИКА КЭШИРОВАНИЯ И ЗАЩИТА ОТ ДУБЛЕЙ
 // ==========================================
-const CACHE_NAME = 'gro-up-v41'; 
+const CACHE_NAME = 'gro-up-v42'; 
 
 const INITIAL_CACHED_RESOURCES = [
   '/',
