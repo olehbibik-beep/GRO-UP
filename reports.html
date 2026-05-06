@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Отчеты - GRO-UP</title>
+    <title data-lang="reports_title">Отчеты - GRO-UP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { 
@@ -36,7 +36,7 @@
 <body class="bg-ui-bg text-slate-800 min-h-screen font-sans">
 
     <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0 no-print">
-        <a href="index.html" title="На главную" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white">
+        <a href="index.html" data-lang-title="back_home" title="На главную" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
         </a>
     </nav>
@@ -47,33 +47,33 @@
             <div class="flex items-center gap-3">
                 <span class="text-purple-500 text-3xl drop-shadow-sm">📊</span>
                 <div>
-                    <h1 class="text-xl md:text-2xl font-black text-purple-600">Сводка отчетов</h1>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5" id="group-title">Загрузка доступа...</p>
+                    <h1 class="text-xl md:text-2xl font-black text-purple-600" data-lang="reports_summary">Сводка отчетов</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5" id="group-title" data-lang="loading_access">Загрузка доступа...</p>
                 </div>
             </div>
             <div class="hidden md:flex gap-2 text-xs font-bold no-print">
-                <a href="admin.html" class="text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 px-3 py-2 rounded-lg border border-slate-200 transition-colors">Пользователи</a>
+                <a href="admin.html" class="text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 px-3 py-2 rounded-lg border border-slate-200 transition-colors" data-lang="users_link">Пользователи</a>
             </div>
         </div>
 
         <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row gap-4 md:items-center justify-between no-print">
             <div class="flex gap-6 items-center">
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Сдали отчеты</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1" data-lang="submitted_reports">Сдали отчеты</p>
                     <p class="text-2xl font-black text-slate-800" id="total-pubs">0</p>
                 </div>
                 <div class="w-px h-10 bg-slate-200"></div>
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Итого часов</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1" data-lang="total_hours">Итого часов</p>
                     <p class="text-3xl font-black text-purple-600" id="total-hours">0</p>
                 </div>
             </div>
             
             <div class="flex gap-3 items-center w-full md:w-auto">
                 <select id="month-filter" class="flex-grow md:flex-grow-0 bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-purple-500 font-bold text-slate-700 text-sm cursor-pointer shadow-sm">
-                    <option value="all">Все месяцы</option>
+                    <option value="all" data-lang="all_months">Все месяцы</option>
                 </select>
-                <button onclick="window.print()" title="Распечатать" class="bg-slate-800 hover:bg-slate-900 text-white p-3 rounded-xl font-bold transition-colors shadow-md outline-none">🖨️</button>
+                <button onclick="window.print()" data-lang-title="print_btn" title="Распечатать" class="bg-slate-800 hover:bg-slate-900 text-white p-3 rounded-xl font-bold transition-colors shadow-md outline-none">🖨️</button>
             </div>
         </div>
 
@@ -82,17 +82,17 @@
                 <table class="w-full text-left border-collapse min-w-[700px]">
                     <thead>
                         <tr class="bg-slate-50 border-b border-slate-200 text-[10px] text-slate-400 uppercase tracking-widest">
-                            <th class="py-3 px-4 font-bold">Возвещатель</th>
-                            <th class="py-3 px-4 font-bold text-center w-20">Группа</th>
-                            <th class="py-3 px-4 font-bold text-center w-20 text-emerald-600">Служил</th>
-                            <th class="py-3 px-4 font-bold text-center w-20 text-purple-600">Часы</th>
-                            <th class="py-3 px-4 font-bold text-center w-24">Изучения</th>
-                            <th class="py-3 px-4 font-bold text-center w-20">Кредит</th>
-                            <th class="py-3 px-4 font-bold text-right w-32">Месяц</th>
+                            <th class="py-3 px-4 font-bold" data-lang="th_publisher">Возвещатель</th>
+                            <th class="py-3 px-4 font-bold text-center w-20" data-lang="th_group">Группа</th>
+                            <th class="py-3 px-4 font-bold text-center w-20 text-emerald-600" data-lang="th_participated">Служил</th>
+                            <th class="py-3 px-4 font-bold text-center w-20 text-purple-600" data-lang="th_hours">Часы</th>
+                            <th class="py-3 px-4 font-bold text-center w-24" data-lang="th_studies">Изучения</th>
+                            <th class="py-3 px-4 font-bold text-center w-20" data-lang="th_credit">Кредит</th>
+                            <th class="py-3 px-4 font-bold text-right w-32" data-lang="th_month">Месяц</th>
                         </tr>
                     </thead>
                     <tbody id="reports-list" class="divide-y divide-slate-100 text-sm font-medium">
-                        <tr><td colspan="7" class="p-6 text-center text-slate-400 italic">Загрузка данных...</td></tr>
+                        <tr><td colspan="7" class="p-6 text-center text-slate-400 italic" data-lang="loading_data">Загрузка данных...</td></tr>
                     </tbody>
                 </table>
             </div>
