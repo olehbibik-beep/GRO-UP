@@ -1,6 +1,134 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+// 🔥 ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (С ФРАЗАМИ ДЛЯ АДМИНКИ)
+const dict = {
+    ru: {
+        "admin_title": "Панель Администратора",
+        "back_home": "На главную",
+        "users_title": "Пользователи",
+        "autosave_data": "Автосохранение данных",
+        "cong_name_label": "Название собрания (Увидят все)",
+        "cong_name_placeholder": "Например: Центральное",
+        "requests_title": "Заявки",
+        "active_users": "Активные",
+        "search_placeholder": "Поиск...",
+        "th_name_gender": "Имя и Пол",
+        "th_pin": "ПИН",
+        "th_group": "Группа",
+        "th_school": "Школа",
+        "th_status": "Статус в собрании",
+        "th_responsible": "Ответственный за",
+        "th_manage": "Управление",
+        
+        // Фразы из admin.js
+        "error_save": "Ошибка сохранения!",
+        "alert_pin_length": "ПИН-код должен состоять ровно из 6 цифр!",
+        "error_save_pin": "Ошибка при сохранении ПИН-кода!",
+        "error_update_role": "Ошибка при обновлении роли!",
+        "confirm_block": "Заблокировать пользователя?",
+        "confirm_delete_profile": "ВНИМАНИЕ! Удалить профиль?",
+        "error_general": "Ошибка!",
+        "confirm_reject": "Точно отклонить заявку и удалить данные?",
+        "error_delete": "Ошибка удаления",
+        "status_pending": "Ожидает",
+        "btn_approve": "Одобрить",
+        "btn_reject": "Отклонить",
+        "btn_unblock": "Разблокировать",
+        "btn_block": "Заблокировать",
+        "btn_delete": "Удалить",
+        "gender_boy": "Брат",
+        "gender_girl": "Сестра",
+        "role_publisher": "Возвещатель",
+        "role_pioneer": "Пионер",
+        "role_ms": "Помощник собр.",
+        "role_elder": "Старейшина",
+        "role_admin": "Админ",
+        "role_group": "Группа",
+        "role_terr": "Участки",
+        "role_school": "Школа",
+        "no_new_requests": "Нет новых заявок",
+        "no_active_users": "Нет активных пользователей",
+        "no_group": "Без группы"
+    },
+    cs: {
+        "admin_title": "Panel administrátora",
+        "back_home": "Na hlavní stránku",
+        "users_title": "Uživatelé",
+        "autosave_data": "Automatické ukládání dat",
+        "cong_name_label": "Název sboru (Uvidí všichni)",
+        "cong_name_placeholder": "Například: Centrální",
+        "requests_title": "Žádosti",
+        "active_users": "Aktivní",
+        "search_placeholder": "Hledat...",
+        "th_name_gender": "Jméno a Pohlaví",
+        "th_pin": "PIN",
+        "th_group": "Skupina",
+        "th_school": "Škola",
+        "th_status": "Status ve sboru",
+        "th_responsible": "Zodpovědný za",
+        "th_manage": "Správa",
+
+        // Фразы из admin.js
+        "error_save": "Chyba při ukládání!",
+        "alert_pin_length": "PIN kód musí mít přesně 6 číslic!",
+        "error_save_pin": "Chyba při ukládání PIN kódu!",
+        "error_update_role": "Chyba při aktualizaci role!",
+        "confirm_block": "Zablokovat uživatele?",
+        "confirm_delete_profile": "POZOR! Smazat profil?",
+        "error_general": "Chyba!",
+        "confirm_reject": "Opravdu zamítnout žádost a smazat data?",
+        "error_delete": "Chyba při mazání",
+        "status_pending": "Čeká",
+        "btn_approve": "Schválit",
+        "btn_reject": "Zamítnout",
+        "btn_unblock": "Odblokovat",
+        "btn_block": "Zablokovat",
+        "btn_delete": "Smazat",
+        "gender_boy": "Bratr",
+        "gender_girl": "Sestra",
+        "role_publisher": "Zvěstovatel",
+        "role_pioneer": "Průkopník",
+        "role_ms": "Služební pom.",
+        "role_elder": "Starší",
+        "role_admin": "Admin",
+        "role_group": "Skupina",
+        "role_terr": "Obvody",
+        "role_school": "Škola",
+        "no_new_requests": "Žádné nové žádosti",
+        "no_active_users": "Žádní aktivní uživatelé",
+        "no_group": "Bez skupiny"
+    }
+};
+
+const currentLang = localStorage.getItem('app_lang') || 'ru';
+
+window.t = (key) => {
+    if (dict[currentLang] && dict[currentLang][key]) {
+        return dict[currentLang][key];
+    }
+    return key; 
+};
+
+const applyTranslations = () => {
+    document.querySelectorAll('[data-lang]').forEach(el => {
+        el.innerHTML = window.t(el.getAttribute('data-lang'));
+    });
+    document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
+        el.setAttribute('placeholder', window.t(el.getAttribute('data-lang-placeholder')));
+    });
+    document.querySelectorAll('[data-lang-title]').forEach(el => {
+        el.setAttribute('title', window.t(el.getAttribute('data-lang-title')));
+    });
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyTranslations);
+} else {
+    applyTranslations();
+}
+// ============================================
+
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
     authDomain: "gro-uping.firebaseapp.com",
@@ -52,7 +180,7 @@ window.updateCongregation = async (val) => {
         await setDoc(doc(db, "settings", "congregation"), { name: val.trim() || "МАРИАНСКИЕ ЛАЗНЕ" }, { merge: true });
         el.classList.add('bg-emerald-50', 'border-emerald-400', 'text-emerald-700');
         setTimeout(() => el.classList.remove('bg-emerald-50', 'border-emerald-400', 'text-emerald-700'), 1500);
-    } catch(e) { alert("Ошибка сохранения!"); }
+    } catch(e) { alert(window.t('error_save')); }
 };
 
 // ==========================================
@@ -62,15 +190,15 @@ window.updateCongregation = async (val) => {
 window.updateField = async (id, field, value) => {
     try {
         let valToSave = value.trim();
-        if (field === 'group' && !valToSave) valToSave = "Без группы";
+        if (field === 'group' && !valToSave) valToSave = "Без группы"; // В базе оставляем русский ключ
         await updateDoc(doc(db, "users", id), { [field]: valToSave });
-    } catch (e) { alert("Ошибка при сохранении!"); }
+    } catch (e) { alert(window.t('error_save')); }
 };
 
 window.updatePin = async (id, val, inputEl) => {
     const cleanVal = val.replace(/\D/g, ''); 
     if (cleanVal.length !== 6) {
-        alert("ПИН-код должен состоять ровно из 6 цифр!");
+        alert(window.t('alert_pin_length'));
         const docSnap = await getDoc(doc(db, "users", id));
         inputEl.value = docSnap.data().pin || '';
         return;
@@ -80,7 +208,7 @@ window.updatePin = async (id, val, inputEl) => {
         inputEl.value = cleanVal;
         inputEl.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
         setTimeout(() => inputEl.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700'), 1500);
-    } catch (e) { alert("Ошибка при сохранении ПИН-кода!"); }
+    } catch (e) { alert(window.t('error_save_pin')); }
 };
 
 window.toggleRole = async (id, roleName, isChecked) => {
@@ -97,29 +225,29 @@ window.toggleRole = async (id, roleName, isChecked) => {
         
         if (currentRoles.length === 0) currentRoles = ["Возвещатель"];
         await updateDoc(userRef, { roles: currentRoles });
-    } catch (e) { alert("Ошибка при обновлении роли!"); }
+    } catch (e) { alert(window.t('error_update_role')); }
 };
 
 // ==========================================
 // 4. УПРАВЛЕНИЕ: БАН И УДАЛЕНИЕ
 // ==========================================
 window.blockUser = async (id) => {
-    if(confirm("Заблокировать пользователя?")) await updateDoc(doc(db, "users", id), { status: 'blocked' });
+    if(confirm(window.t('confirm_block'))) await updateDoc(doc(db, "users", id), { status: 'blocked' });
 };
 window.unblockUser = async (id) => {
     await updateDoc(doc(db, "users", id), { status: 'active' });
 };
 window.deleteUser = async (id) => {
-    if(confirm("ВНИМАНИЕ! Удалить профиль?")) await deleteDoc(doc(db, "users", id));
+    if(confirm(window.t('confirm_delete_profile'))) await deleteDoc(doc(db, "users", id));
 };
 
 window.approveUser = async (id) => {
     try { await updateDoc(doc(db, "users", id), { status: "active", roles: ["Возвещатель"] }); } 
-    catch (e) { alert("Ошибка!"); }
+    catch (e) { alert(window.t('error_general')); }
 };
 window.rejectUser = async (id) => {
-    if (confirm("Точно отклонить заявку и удалить данные?")) {
-        try { await deleteDoc(doc(db, "users", id)); } catch (e) { alert("Ошибка удаления"); }
+    if (confirm(window.t('confirm_reject'))) {
+        try { await deleteDoc(doc(db, "users", id)); } catch (e) { alert(window.t('error_delete')); }
     }
 };
 
@@ -149,17 +277,17 @@ onSnapshot(collection(db, "users"), (snapshot) => {
                         <span class="text-2xl">${icon}</span>
                         <div>
                             <p class="font-black text-slate-800 text-sm leading-tight">${u.name}</p>
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Ожидает</p>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">${window.t('status_pending')}</p>
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="approveUser('${id}')" title="Одобрить" class="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors shadow-sm outline-none">✔️</button>
-                        <button onclick="rejectUser('${id}')" title="Отклонить" class="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shadow-sm outline-none">✖</button>
+                        <button onclick="approveUser('${id}')" title="${window.t('btn_approve')}" class="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors shadow-sm outline-none">✔️</button>
+                        <button onclick="rejectUser('${id}')" title="${window.t('btn_reject')}" class="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shadow-sm outline-none">✖</button>
                     </div>
                 </div>
             `;
         } else if (u.status === 'active' || u.status === 'blocked') {
-            // АКТИВНЫЕ ПОЛЬЗОВАТЕЛИ (Компактный дизайн)
+            // АКТИВНЫЕ ПОЛЬЗОВАТЕЛИ
             activeCount++;
             let r = u.roles || [];
             
@@ -168,9 +296,9 @@ onSnapshot(collection(db, "users"), (snapshot) => {
             const nameColor = isBlocked ? 'text-red-700' : 'text-slate-800';
 
             const lockBtn = isBlocked 
-                ? `<button onclick="unblockUser('${id}')" title="Разблокировать" class="p-1 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors shadow-sm border border-emerald-100 outline-none">🔓</button>`
-                : `<button onclick="blockUser('${id}')" title="Заблокировать" class="p-1 text-xs bg-slate-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors shadow-sm border border-slate-200 hover:border-amber-300 outline-none">🔒</button>`;
-            const deleteBtn = `<button onclick="deleteUser('${id}')" title="Удалить" class="p-1 text-xs bg-slate-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors shadow-sm border border-slate-200 hover:border-red-300 outline-none">🗑️</button>`;
+                ? `<button onclick="unblockUser('${id}')" title="${window.t('btn_unblock')}" class="p-1 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors shadow-sm border border-emerald-100 outline-none">🔓</button>`
+                : `<button onclick="blockUser('${id}')" title="${window.t('btn_block')}" class="p-1 text-xs bg-slate-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors shadow-sm border border-slate-200 hover:border-amber-300 outline-none">🔒</button>`;
+            const deleteBtn = `<button onclick="deleteUser('${id}')" title="${window.t('btn_delete')}" class="p-1 text-xs bg-slate-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors shadow-sm border border-slate-200 hover:border-red-300 outline-none">🗑️</button>`;
 
             activeHTML += `
                 <tr class="transition-colors border-b border-slate-100 group user-row ${rowClass}" data-name="${u.name.toLowerCase()}">
@@ -178,8 +306,8 @@ onSnapshot(collection(db, "users"), (snapshot) => {
                     <td class="py-1.5 px-3">
                         <p class="font-black ${nameColor} text-[11px] mb-0.5 truncate">${u.name}</p>
                         <select onchange="updateField('${id}', 'gender', this.value)" class="text-[8px] uppercase font-bold p-0.5 rounded border border-slate-200 bg-white outline-none text-slate-600 cursor-pointer" ${isBlocked ? 'disabled' : ''}>
-                            <option value="boy" ${u.gender === 'boy' ? 'selected' : ''}>👨‍💼 Брат</option>
-                            <option value="girl" ${u.gender === 'girl' ? 'selected' : ''}>👩‍💼 Сестра</option>
+                            <option value="boy" ${u.gender === 'boy' ? 'selected' : ''}>👨‍💼 ${window.t('gender_boy')}</option>
+                            <option value="girl" ${u.gender === 'girl' ? 'selected' : ''}>👩‍💼 ${window.t('gender_girl')}</option>
                         </select>
                     </td>
 
@@ -197,19 +325,19 @@ onSnapshot(collection(db, "users"), (snapshot) => {
                     
                     <td class="py-1.5 px-3">
                         <div class="flex flex-wrap gap-1 w-60">
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-slate-600 font-bold uppercase hover:bg-slate-100 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Возвещатель', this.checked)" class="accent-slate-500 w-3 h-3 cursor-pointer" ${r.includes('Возвещатель') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Возвещатель</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-emerald-600 font-bold uppercase hover:bg-emerald-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Пионер', this.checked)" class="accent-emerald-500 w-3 h-3 cursor-pointer" ${r.includes('Пионер') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Пионер</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-sky-600 font-bold uppercase hover:bg-sky-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Помощник собрания', this.checked)" class="accent-sky-500 w-3 h-3 cursor-pointer" ${r.includes('Помощник собрания') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Помощник собр.</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-amber-600 font-bold uppercase hover:bg-amber-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Старейшина', this.checked)" class="accent-amber-500 w-3 h-3 cursor-pointer" ${r.includes('Старейшина') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Старейшина</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-rose-600 font-bold uppercase hover:bg-rose-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Админ', this.checked)" class="accent-rose-500 w-3 h-3 cursor-pointer" ${r.includes('Админ') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Админ</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-slate-600 font-bold uppercase hover:bg-slate-100 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Возвещатель', this.checked)" class="accent-slate-500 w-3 h-3 cursor-pointer" ${r.includes('Возвещатель') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_publisher')}</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-emerald-600 font-bold uppercase hover:bg-emerald-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Пионер', this.checked)" class="accent-emerald-500 w-3 h-3 cursor-pointer" ${r.includes('Пионер') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_pioneer')}</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-sky-600 font-bold uppercase hover:bg-sky-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Помощник собрания', this.checked)" class="accent-sky-500 w-3 h-3 cursor-pointer" ${r.includes('Помощник собрания') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_ms')}</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-amber-600 font-bold uppercase hover:bg-amber-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Старейшина', this.checked)" class="accent-amber-500 w-3 h-3 cursor-pointer" ${r.includes('Старейшина') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_elder')}</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-rose-600 font-bold uppercase hover:bg-rose-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Админ', this.checked)" class="accent-rose-500 w-3 h-3 cursor-pointer" ${r.includes('Админ') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_admin')}</label>
                         </div>
                     </td>
                     
                     <td class="py-1.5 px-3">
                         <div class="flex flex-wrap gap-1 w-48">
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-purple-700 font-bold uppercase hover:bg-purple-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Надзиратель группы', this.checked)" class="accent-purple-500 w-3 h-3 cursor-pointer" ${r.includes('Надзиратель группы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Группа</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-teal-700 font-bold uppercase hover:bg-teal-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за участки', this.checked)" class="accent-teal-500 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за участки') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Участки</label>
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-indigo-700 font-bold uppercase hover:bg-indigo-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за школу', this.checked)" class="accent-indigo-500 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за школу') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Школа</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-purple-700 font-bold uppercase hover:bg-purple-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Надзиратель группы', this.checked)" class="accent-purple-500 w-3 h-3 cursor-pointer" ${r.includes('Надзиратель группы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_group')}</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-teal-700 font-bold uppercase hover:bg-teal-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за участки', this.checked)" class="accent-teal-500 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за участки') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_terr')}</label>
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-indigo-700 font-bold uppercase hover:bg-indigo-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за школу', this.checked)" class="accent-indigo-500 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за школу') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_school')}</label>
                         </div>
                     </td>
                     
@@ -226,8 +354,8 @@ onSnapshot(collection(db, "users"), (snapshot) => {
 
     document.getElementById('pending-count').innerText = pendingCount;
     document.getElementById('active-count').innerText = activeCount;
-    pendingList.innerHTML = pendingHTML || '<p class="text-slate-400 text-xs text-center py-4">Нет новых заявок</p>';
-    activeList.innerHTML = activeHTML || '<tr><td colspan="7" class="text-center py-8 text-slate-400 italic text-sm">Нет активных пользователей</td></tr>';
+    pendingList.innerHTML = pendingHTML || `<p class="text-slate-400 text-xs text-center py-4">${window.t('no_new_requests')}</p>`;
+    activeList.innerHTML = activeHTML || `<tr><td colspan="7" class="text-center py-8 text-slate-400 italic text-sm">${window.t('no_active_users')}</td></tr>`;
 });
 
 // ==========================================
