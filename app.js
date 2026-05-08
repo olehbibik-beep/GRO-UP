@@ -128,7 +128,7 @@ const dict = {
         "cat_disciples": "👥 Подготавливайте",
         "cat_beliefs": "💡 Взгляды",
         "cat_talk_db": "🎙️ Речь",
-        // Для карт и дежурств
+        // Для карт
         "open_map": "Открыть карту",
         "no_map": "Нет карты",
         "opt_cleaning": "🧹 Уборка зала",
@@ -428,13 +428,6 @@ const currentMonthStr = d.toLocaleDateString(localeFormat, { month: 'long', year
 const monthLabel = document.getElementById('current-month-label');
 if (monthLabel) monthLabel.innerText = currentMonthStr;
 
-const formatMonthKey = (mKey) => {
-    if (!mKey || !mKey.includes('-')) return mKey; 
-    const [y, m] = mKey.split('-');
-    const dateObj = new Date(y, parseInt(m) - 1, 1);
-    return dateObj.toLocaleDateString(localeFormat, { month: 'long', year: 'numeric' });
-};
-
 window.switchTab = (tabId, btnElement) => {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tabId}`);
@@ -687,7 +680,9 @@ function loadPersonalData() {
         let allMapsCache = {};
         onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
             allMapsCache = {};
-            mapSnap.forEach(d => allMapsCache[d.id] = d.data().url);
+            mapSnap.forEach(d => {
+                allMapsCache[d.id] = { url: d.data().url, imageUrl: d.data().imageUrl };
+            });
         });
 
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
@@ -700,25 +695,39 @@ function loadPersonalData() {
 
             snapshot.forEach(docSnap => {
                 const terr = docSnap.data();
+                
                 if (terr.status === 'returned') return;
                 
                 activeCount++;
-                const mapUrl = allMapsCache[String(terr.number)];
+                const mapData = allMapsCache[String(terr.number)];
+                const mapUrl = mapData ? mapData.url : null;
+                const mapImg = mapData ? mapData.imageUrl : null;
                 
-                const mapArea = mapUrl 
-                    ? `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative cursor-pointer hover:bg-slate-100 transition-colors" onclick="window.open('${mapUrl}', '_blank')">
+                let mapArea = '';
+                if (mapUrl && mapImg) {
+                    mapArea = `<div class="w-full h-32 bg-slate-50 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open('${mapUrl}', '_blank')">
+                        <img src="${mapImg}" class="absolute inset-0 w-full h-full object-cover" />
+                        <div class="absolute inset-0 bg-slate-900/30 flex flex-col items-center justify-center">
+                            <svg class="w-8 h-8 text-white drop-shadow-md mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                            <span class="text-[10px] font-bold text-white uppercase tracking-widest drop-shadow-md">${window.t('open_map') || 'Открыть карту'}</span>
+                        </div>
+                    </div>`;
+                } else if (mapUrl) {
+                    mapArea = `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative cursor-pointer hover:bg-slate-100 transition-colors" onclick="window.open('${mapUrl}', '_blank')">
                             <svg class="w-8 h-8 text-emerald-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
-                            <span class="absolute bottom-3 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">${window.t('open_map')}</span>
-                       </div>`
-                    : `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative">
-                            <svg class="w-8 h-8 text-slate-300 absolute opacity-50 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
-                            <span class="absolute bottom-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('no_map')}</span>
+                            <span class="absolute bottom-3 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">${window.t('open_map') || 'Открыть карту'}</span>
                        </div>`;
+                } else {
+                    mapArea = `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative">
+                            <svg class="w-8 h-8 text-slate-300 absolute opacity-50 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                            <span class="absolute bottom-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('no_map') || 'Нет карты'}</span>
+                       </div>`;
+                }
 
                 html += `
                     <div class="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col shadow-sm">
                         <div class="p-3 flex justify-between items-center bg-white border-b border-slate-100">
-                            <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num')} ${terr.number}</h3>
+                            <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num') || 'Участок №'} ${terr.number}</h3>
                             <button onclick="markTerritoryReturned('${docSnap.id}')" class="text-[9px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-md uppercase transition-colors outline-none shadow-sm">Сдать</button>
                         </div>
                         ${mapArea}
@@ -727,7 +736,7 @@ function loadPersonalData() {
             });
             
             if (activeCount === 0) {
-                container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-xl w-full">${window.t('no_active_territories')}</p>`;
+                container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-xl w-full">${window.t('no_active_territories') || 'У вас пока нет активных участков'}</p>`;
             } else {
                 container.innerHTML = html;
             }
@@ -735,7 +744,7 @@ function loadPersonalData() {
     } catch(e) {}
 
     window.markTerritoryReturned = async (id) => {
-        if (confirm('Точно сдать этот участок?')) {
+        if (confirm('Точно сдать этот участок?')) { 
             try {
                 await updateDoc(doc(db, "territories", id), {
                     status: 'returned',
