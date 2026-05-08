@@ -128,7 +128,7 @@ const dict = {
         "cat_disciples": "👥 Подготавливайте",
         "cat_beliefs": "💡 Взгляды",
         "cat_talk_db": "🎙️ Речь",
-        // Для карт
+        // Для карт и дежурств
         "open_map": "Открыть карту",
         "no_map": "Нет карты",
         "opt_cleaning": "🧹 Уборка зала",
@@ -136,7 +136,8 @@ const dict = {
         "all_groups": "Все",
         // Профиль
         "congregation_label": "Собрание",
-        "scan_qr": "Отсканируйте код"
+        "scan_qr": "Отсканируйте код",
+        "days_short": "дн."
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -270,7 +271,8 @@ const dict = {
         "all_groups": "Vše",
         // Профиль
         "congregation_label": "Sbor",
-        "scan_qr": "Naskenujte kód"
+        "scan_qr": "Naskenujte kód",
+        "days_short": "dní"
     }
 };
 
@@ -695,10 +697,26 @@ function loadPersonalData() {
 
             snapshot.forEach(docSnap => {
                 const terr = docSnap.data();
-                
                 if (terr.status === 'returned') return;
-                
                 activeCount++;
+                
+                // 🔥 Высчитываем дни для индикатора времени
+                const diffDays = Math.floor((new Date() - new Date(terr.issuedAt)) / (1000 * 60 * 60 * 24));
+                
+                let barColor = "bg-emerald-500";
+                let textColor = "text-emerald-600";
+                let progress = (diffDays / 90) * 100;
+                if (progress > 100) progress = 100;
+                if (progress < 2) progress = 2; // Минимум, чтобы полоска была видна
+
+                if (diffDays >= 90) {
+                    barColor = "bg-red-500";
+                    textColor = "text-red-600";
+                } else if (diffDays >= 30) {
+                    barColor = "bg-amber-500";
+                    textColor = "text-amber-600";
+                }
+
                 const mapData = allMapsCache[String(terr.number)];
                 const mapUrl = mapData ? mapData.url : null;
                 const mapImg = mapData ? mapData.imageUrl : null;
@@ -726,9 +744,17 @@ function loadPersonalData() {
 
                 html += `
                     <div class="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col shadow-sm">
-                        <div class="p-3 flex justify-between items-center bg-white border-b border-slate-100">
-                            <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num') || 'Участок №'} ${terr.number}</h3>
-                            <button onclick="markTerritoryReturned('${docSnap.id}')" class="text-[9px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-md uppercase transition-colors outline-none shadow-sm">Сдать</button>
+                        <div class="p-3 flex flex-col bg-white border-b border-slate-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num') || 'Участок №'} ${terr.number}</h3>
+                                <button onclick="markTerritoryReturned('${docSnap.id}')" class="text-[9px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-md uppercase transition-colors outline-none shadow-sm">Сдать</button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex">
+                                    <div class="${barColor} h-1.5 rounded-full transition-all" style="width: ${progress}%"></div>
+                                </div>
+                                <span class="${textColor} text-[9px] font-black uppercase tracking-widest shrink-0">${diffDays} ${window.t('days_short')}</span>
+                            </div>
                         </div>
                         ${mapArea}
                     </div>
@@ -973,7 +999,7 @@ window.publishNews = async () => {
         removeImage();
         
         if(btn) {
-            btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>${window.t('success')}`;
+            btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success')}`;
             setTimeout(() => { btn.innerText = window.t('publish'); btn.disabled = false; }, 2000);
         }
     } catch (e) { 
