@@ -137,7 +137,8 @@ const dict = {
         // Профиль
         "congregation_label": "Собрание",
         "scan_qr": "Отсканируйте код",
-        "days_short": "дн."
+        "days_short": "дн.",
+        "return_terr_btn": "Сдать"
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -272,7 +273,8 @@ const dict = {
         // Профиль
         "congregation_label": "Sbor",
         "scan_qr": "Naskenujte kód",
-        "days_short": "dní"
+        "days_short": "dní",
+        "return_terr_btn": "Odevzdat"
     }
 };
 
@@ -488,6 +490,20 @@ window.submitReport = async () => {
     }
 };
 
+// 🔥 ФУНКЦИЯ ДЛЯ КНОПКИ "ПОПРОСИТЬ УЧАСТОК" ВЕРНУЛАСЬ!
+window.requestTerritory = async (btn) => {
+    btn.innerText = "..."; btn.disabled = true;
+    try {
+        await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
+        btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success') || 'Успешно'}`;
+        setTimeout(() => { btn.innerText = window.t('request_btn') || 'Попросить'; btn.disabled = false; }, 3000);
+    } catch (e) { 
+        alert(window.t('error_network') || 'Ошибка сети!'); 
+        btn.innerText = window.t('request_btn') || 'Попросить'; 
+        btn.disabled = false; 
+    }
+};
+
 onSnapshot(doc(db, "users", userId), async (docSnap) => {
     if (!docSnap.exists()) { if (navigator.onLine) window.logout(); return; }
     currentUserData = docSnap.data();
@@ -687,6 +703,7 @@ function loadPersonalData() {
             });
         });
 
+        // 🔥 КАРТОЧКИ УЧАСТКОВ И ТАЙМЛАЙН
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
         onSnapshot(terrQuery, (snapshot) => {
             const container = document.getElementById('territories-container');
@@ -697,11 +714,17 @@ function loadPersonalData() {
 
             snapshot.forEach(docSnap => {
                 const terr = docSnap.data();
+                
+                // Пропускаем участки со статусом returned
                 if (terr.status === 'returned') return;
+                
                 activeCount++;
                 
-                // 🔥 Высчитываем дни для индикатора времени
-                const diffDays = Math.floor((new Date() - new Date(terr.issuedAt)) / (1000 * 60 * 60 * 24));
+                // Высчитываем дни для таймлайна
+                let diffDays = 0;
+                if (terr.issuedAt) {
+                    diffDays = Math.floor((new Date() - new Date(terr.issuedAt)) / (1000 * 60 * 60 * 24));
+                }
                 
                 let barColor = "bg-emerald-500";
                 let textColor = "text-emerald-600";
@@ -747,13 +770,13 @@ function loadPersonalData() {
                         <div class="p-3 flex flex-col bg-white border-b border-slate-100">
                             <div class="flex justify-between items-center mb-2">
                                 <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num') || 'Участок №'} ${terr.number}</h3>
-                                <button onclick="markTerritoryReturned('${docSnap.id}')" class="text-[9px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-md uppercase transition-colors outline-none shadow-sm">Сдать</button>
+                                <button onclick="markTerritoryReturned('${docSnap.id}')" class="text-[9px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-md uppercase transition-colors outline-none shadow-sm">${window.t('return_terr_btn') || 'Сдать'}</button>
                             </div>
                             <div class="flex items-center gap-2">
                                 <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex">
                                     <div class="${barColor} h-1.5 rounded-full transition-all" style="width: ${progress}%"></div>
                                 </div>
-                                <span class="${textColor} text-[9px] font-black uppercase tracking-widest shrink-0">${diffDays} ${window.t('days_short')}</span>
+                                <span class="${textColor} text-[9px] font-black uppercase tracking-widest shrink-0">${diffDays} ${window.t('days_short') || 'дн.'}</span>
                             </div>
                         </div>
                         ${mapArea}
@@ -769,6 +792,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
+    // ФУНКЦИЯ ВОЗВРАТА УЧАСТКА ДЛЯ ПОЛЬЗОВАТЕЛЯ
     window.markTerritoryReturned = async (id) => {
         if (confirm('Точно сдать этот участок?')) { 
             try {
