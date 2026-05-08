@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
+    <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon-512.png" type="image/png">
     <link rel="apple-touch-icon" href="icon-512.png">
     <meta name="theme-color" content="#0f172a">
@@ -193,24 +192,28 @@
     </main>
 
     <div id="profile-modal" class="fixed inset-0 bg-slate-900/80 z-[70] hidden items-center justify-center p-4">
-        <div class="bg-white w-full max-w-xs md:max-w-sm rounded-lg p-6 text-center relative border border-slate-200">
-            <button onclick="closeModals()" class="absolute top-4 right-5 text-slate-300 hover:text-slate-600 text-2xl font-black outline-none transition-colors">
+        <div class="bg-white w-full max-w-xs md:max-w-sm rounded-lg p-5 text-center relative border border-slate-200">
+            <button onclick="closeModals()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-600 text-2xl font-black outline-none transition-colors">
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             <button id="push-btn" onclick="setupNotifications()" style="display: none;" class="absolute top-4 left-5 bg-indigo-50 border border-indigo-100 text-indigo-600 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-indigo-100 transition-colors z-50 outline-none">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
             </button>
 
-            <div id="profile-avatar" class="w-16 h-16 bg-slate-50 text-slate-400 rounded-full mx-auto flex items-center justify-center mb-3 border border-slate-200 shadow-sm">
-                <div class="animate-pulse w-8 h-8 bg-slate-200 rounded-full"></div>
+            <h2 id="profile-name" class="text-xl font-black text-slate-800 mt-2 mb-1">Имя</h2>
+            <div id="profile-roles-container" class="flex flex-wrap justify-center gap-1 mb-3"></div>
+
+            <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg p-3 mb-3">
+                <div class="flex flex-col text-left truncate pr-2">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest" data-lang="congregation_label">Собрание</span>
+                    <span id="profile-congregation" class="font-black text-indigo-600 text-sm truncate">Загрузка...</span>
+                </div>
+                <button onclick="openQrModal()" class="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-slate-500 hover:text-indigo-500 hover:border-indigo-300 transition-colors shadow-sm outline-none shrink-0">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                </button>
             </div>
             
-            <p id="profile-congregation" class="text-[9px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Загрузка...</p>
-            <h2 id="profile-name" class="text-xl font-black text-slate-800 mb-2">Имя</h2>
-            
-            <div id="profile-roles-container" class="flex flex-wrap justify-center gap-1 mb-4"></div>
-            
-            <div class="bg-slate-50 rounded-lg border border-slate-200 p-3 mb-5 text-left text-xs">
+            <div class="bg-slate-50 rounded-lg border border-slate-200 p-3 mb-4 text-left text-xs">
                 <div class="flex justify-between border-b border-slate-200 pb-1.5 mb-1.5">
                     <span class="font-bold text-slate-400 uppercase text-[10px]" data-lang="profile_group">Группа</span>
                     <span id="profile-group" class="font-black text-slate-700">№ -</span>
@@ -221,7 +224,7 @@
                 </div>
             </div>
 
-            <div id="profile-admin-links" class="hidden grid-cols-3 gap-3 mb-5">
+            <div id="profile-admin-links" class="hidden grid-cols-3 gap-3 mb-4">
                 <a href="admin.html" id="profile-admin-btn" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-800 p-3.5 rounded-lg transition-colors" title="Админ-панель">
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </a>
@@ -242,7 +245,7 @@
                 </a>
             </div>
             
-            <div class="bg-slate-50 rounded-lg border border-slate-200 p-3 mb-5 text-left flex justify-between items-center">
+            <div class="bg-slate-50 rounded-lg border border-slate-200 p-3 mb-4 text-left flex justify-between items-center">
                 <span class="font-bold text-slate-500 text-[10px] uppercase" data-lang="language">Язык / Jazyk</span>
                 <select id="lang-selector" onchange="changeLanguage(this.value)" class="bg-white border border-slate-300 text-slate-700 text-xs font-black rounded-lg p-1.5 outline-none focus:border-indigo-500 cursor-pointer">
                     <option value="ru">RU</option>
@@ -269,6 +272,14 @@
         </div>
     </div>
 
+    <div id="qr-modal" class="fixed inset-0 bg-slate-900/90 z-[80] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeQrModal()">
+        <div class="bg-white p-4 rounded-2xl relative max-w-xs w-full" onclick="event.stopPropagation()">
+            <button onclick="closeQrModal()" class="absolute -top-10 right-0 text-white text-3xl font-black outline-none">&times;</button>
+            <img src="qr.png" alt="QR Code" class="w-full h-auto rounded-xl border border-slate-200">
+            <p class="text-center text-sm font-bold text-slate-500 mt-4 uppercase tracking-widest" data-lang="scan_qr">Отсканируйте код</p>
+        </div>
+    </div>
+
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -278,7 +289,7 @@
         });
       }
     </script>
-    <script type="module" src="app.js?v=276"></script>
+    <script type="module" src="app.js?v=286"></script>
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
 </body>
 </html>
