@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
 const dict = {
     ru: {
@@ -40,12 +41,13 @@ const dict = {
         "btn_back": "Назад",
         "btn_map_db": "База карт",
         "map_db_title": "База карт участков",
-        "map_instruction": "Создайте карту участка в Google My Maps, нажмите «Поделиться», скопируйте ссылку и привяжите к номеру участка. Возвещатели увидят кнопку «Открыть карту».",
+        "map_instruction": "Добавьте ссылку на Google My Maps и скриншот участка. Возвещатели увидят этот скриншот на главной странице.",
         "map_url_ph": "Ссылка https://...",
-        "btn_save_map": "Добавить карту",
+        "btn_save_map": "Добавить базу",
         "saved_maps": "Сохраненные карты",
         "history_empty": "История пуста",
-        "alert_fill_all": "Заполните все поля!"
+        "alert_fill_all": "Укажите номер и ссылку!",
+        "add_photo": "Добавить фото карты"
     },
     cs: {
         "terr_title": "Správa obvodů - GRO-UP",
@@ -85,12 +87,13 @@ const dict = {
         "btn_back": "Zpět",
         "btn_map_db": "Databáze map",
         "map_db_title": "Databáze map obvodů",
-        "map_instruction": "Vytvořte mapu obvodu v Google My Maps, klikněte na «Sdílet», zkopírujte odkaz a připojte k číslu. Zvěstovatelé uvidí tlačítko «Otevřít mapu».",
+        "map_instruction": "Přidejte odkaz na Google My Maps a screenshot obvodu. Zvěstovatelé uvidí tento screenshot na hlavní stránce.",
         "map_url_ph": "Odkaz https://...",
-        "btn_save_map": "Přidat mapu",
+        "btn_save_map": "Přidat do databáze",
         "saved_maps": "Uložené mapy",
         "history_empty": "Historie je prázdná",
-        "alert_fill_all": "Vyplňte všechna pole!"
+        "alert_fill_all": "Zadejte číslo a odkaz!",
+        "add_photo": "Přidat fotku mapy"
     }
 };
 
@@ -98,9 +101,7 @@ const currentLang = localStorage.getItem('app_lang') || 'ru';
 const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU';
 
 window.t = (key) => {
-    if (dict[currentLang] && dict[currentLang][key]) {
-        return dict[currentLang][key];
-    }
+    if (dict[currentLang] && dict[currentLang][key]) return dict[currentLang][key];
     return key; 
 };
 
@@ -133,6 +134,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app); 
 const currentUserId = localStorage.getItem('userId');
 
 if (!currentUserId) window.location.href = 'login.html';
@@ -216,7 +218,7 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
             number: Number(terrNum),
             userId: userId,
             userName: userName,
-            status: "active", // Добавлен статус
+            status: "active",
             issuedAt: new Date().toISOString()
         });
         document.getElementById('user-select').value = '';
@@ -230,19 +232,16 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
     } catch (err) { alert(window.t('error_general')); btn.disabled = false; btn.innerText = window.t('btn_assign'); }
 });
 
-// 5. ДВЕ ТАБЛИЦЫ (В работе и Сданные)
+// 5. ДВЕ ТАБЛИЦЫ
 onSnapshot(query(collection(db, "territories"), orderBy("issuedAt", "desc")), (snapshot) => {
     const activeList = document.getElementById('territories-list');
     const returnedList = document.getElementById('returned-territories-list');
-    
-    let activeHtml = '';
-    let returnedHtml = '';
+    let activeHtml = '', returnedHtml = '';
 
     snapshot.forEach(docSnap => {
         const terr = docSnap.data();
         const issueDate = new Date(terr.issuedAt).toLocaleDateString(localeFormat, {day: 'numeric', month: 'short', year: 'numeric'});
         
-        // В работе (active или старые без статуса)
         if (!terr.status || terr.status === 'active') {
             activeHtml += `
                 <tr class="hover:bg-slate-50 transition-colors user-row" data-search="${terr.number} ${terr.userName.toLowerCase()}">
@@ -258,9 +257,7 @@ onSnapshot(query(collection(db, "territories"), orderBy("issuedAt", "desc")), (s
                     </td>
                 </tr>
             `;
-        } 
-        // Сданные (returned)
-        else if (terr.status === 'returned') {
+        } else if (terr.status === 'returned') {
             const returnDate = terr.returnedAt ? new Date(terr.returnedAt).toLocaleDateString(localeFormat, {day: 'numeric', month: 'short'}) : '?';
             returnedHtml += `
                 <tr class="hover:bg-rose-50 transition-colors">
@@ -283,18 +280,12 @@ onSnapshot(query(collection(db, "territories"), orderBy("issuedAt", "desc")), (s
     if(returnedList) returnedList.innerHTML = returnedHtml || `<tr><td colspan="4" class="text-rose-400 italic text-sm text-center py-6">${window.t('no_returned_terr')}</td></tr>`;
 });
 
-// ПРИНУДИТЕЛЬНО ОТОЗВАТЬ УЧАСТОК В АДМИНКЕ (удаляем сразу)
 window.forceReturnTerritory = async (id) => {
-    if (confirm(window.t('confirm_return'))) {
-        await deleteDoc(doc(db, "territories", id));
-    }
+    if (confirm(window.t('confirm_return'))) await deleteDoc(doc(db, "territories", id));
 };
 
-// ОЧИСТИТЬ УЧАСТОК ИЗ СДАННЫХ (удаляем окончательно)
 window.deleteTerritory = async (id) => {
-    if (confirm(window.t('confirm_delete_returned'))) {
-        await deleteDoc(doc(db, "territories", id));
-    }
+    if (confirm(window.t('confirm_delete_returned'))) await deleteDoc(doc(db, "territories", id));
 };
 
 const searchEl = document.getElementById('search-terr');
@@ -310,25 +301,73 @@ if(searchEl) {
 }
 
 // ----------------------------------------------------
-// ЛОГИКА БАЗЫ КАРТ
+// ЛОГИКА БАЗЫ КАРТ С КАРТИНКАМИ
 // ----------------------------------------------------
+let selectedMapImageFile = null;
+
 window.openMapsModal = () => document.getElementById('maps-modal').classList.replace('hidden', 'flex');
-window.closeMapsModal = () => document.getElementById('maps-modal').classList.replace('flex', 'hidden');
+window.closeMapsModal = () => {
+    document.getElementById('maps-modal').classList.replace('flex', 'hidden');
+    removeMapImage();
+};
+
+window.previewMapImage = (input) => {
+    if (input.files && input.files[0]) {
+        selectedMapImageFile = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('map-preview').src = e.target.result;
+            document.getElementById('map-preview-container').classList.remove('hidden');
+        };
+        reader.readAsDataURL(selectedMapImageFile);
+    }
+};
+
+window.removeMapImage = () => {
+    selectedMapImageFile = null;
+    document.getElementById('map-image').value = '';
+    document.getElementById('map-preview-container').classList.add('hidden');
+};
 
 document.getElementById('save-map-btn').addEventListener('click', async (e) => {
     const num = document.getElementById('map-num').value.trim();
     const url = document.getElementById('map-url').value.trim();
+    
+    // Номер и ссылка обязательны, картинка - по желанию
     if (!num || !url) return alert(window.t('alert_fill_all'));
     
     const btn = e.target;
-    btn.disabled = true; btn.innerText = "...";
+    btn.disabled = true; btn.innerText = window.t('saving');
+    
     try {
-        await setDoc(doc(db, "territory_maps", num), { url: url, updatedAt: new Date().toISOString() });
+        let imageUrl = null;
+        if (selectedMapImageFile) {
+            const fileName = `map_${num}_${Date.now()}`;
+            const storageRef = ref(storage, `maps/${fileName}`);
+            await uploadBytes(storageRef, selectedMapImageFile);
+            imageUrl = await getDownloadURL(storageRef);
+        }
+
+        const mapData = { 
+            url: url, 
+            updatedAt: new Date().toISOString() 
+        };
+        if (imageUrl) mapData.imageUrl = imageUrl;
+
+        await setDoc(doc(db, "territory_maps", num), mapData);
+        
         document.getElementById('map-num').value = '';
         document.getElementById('map-url').value = '';
+        removeMapImage();
+        
         btn.innerText = window.t('btn_save_map');
         btn.disabled = false;
-    } catch (err) { alert(window.t('error_general')); btn.disabled = false; btn.innerText = window.t('btn_save_map'); }
+    } catch (err) { 
+        console.error(err);
+        alert(window.t('error_general')); 
+        btn.disabled = false; 
+        btn.innerText = window.t('btn_save_map'); 
+    }
 });
 
 onSnapshot(collection(db, "territory_maps"), (snapshot) => {
@@ -336,14 +375,16 @@ onSnapshot(collection(db, "territory_maps"), (snapshot) => {
     if (!list) return;
     let html = '';
     let maps = [];
-    snapshot.forEach(d => maps.push({ num: parseInt(d.id), url: d.data().url, id: d.id }));
+    snapshot.forEach(d => maps.push({ num: parseInt(d.id), url: d.data().url, img: d.data().imageUrl, id: d.id }));
     maps.sort((a,b) => a.num - b.num);
     
     maps.forEach(m => {
+        const photoBadge = m.img ? `<span class="bg-emerald-100 text-emerald-700 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0">ФОТО</span>` : '';
         html += `
         <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-2.5 rounded-lg">
-            <div class="flex items-center gap-3 min-w-0">
-                <span class="bg-emerald-100 text-emerald-700 font-black font-mono text-[11px] px-2 py-1 rounded shrink-0">${m.num}</span>
+            <div class="flex items-center gap-2 min-w-0">
+                <span class="bg-slate-200 text-slate-700 font-black font-mono text-[11px] px-2 py-1 rounded shrink-0">${m.num}</span>
+                ${photoBadge}
                 <a href="${m.url}" target="_blank" class="text-xs font-medium text-sky-500 hover:text-sky-600 hover:underline truncate">${m.url}</a>
             </div>
             <button onclick="deleteMap('${m.id}')" class="text-slate-300 hover:text-red-500 ml-2 p-1 outline-none transition-colors" title="${window.t('delete')}">
