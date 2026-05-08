@@ -32,6 +32,7 @@ const dict = {
         "all_terr_free": "Все участки свободны.",
         "no_returned_terr": "Нет сданных участков.",
         "alert_select_user_num": "Выберите пользователя и введите номер!",
+        "alert_terr_already_issued": "❌ Этот участок уже выдан и находится в работе!",
         "confirm_return": "Принудительно отозвать участок у возвещателя?",
         "confirm_delete_returned": "Очистить этот участок из списка сданных?",
         "confirm_delete_request": "Удалить этот запрос?",
@@ -47,7 +48,8 @@ const dict = {
         "saved_maps": "Сохраненные карты",
         "history_empty": "История пуста",
         "alert_fill_all": "Укажите номер и ссылку!",
-        "add_photo": "Добавить фото карты"
+        "add_photo": "Добавить фото карты",
+        "days_short": "дн."
     },
     cs: {
         "terr_title": "Správa obvodů - GRO-UP",
@@ -78,6 +80,7 @@ const dict = {
         "all_terr_free": "Všechny obvody jsou volné.",
         "no_returned_terr": "Žádné vrácené obvody.",
         "alert_select_user_num": "Vyberte uživatele a zadejte číslo!",
+        "alert_terr_already_issued": "❌ Tento obvod je již vydán a zpracovává se!",
         "confirm_return": "Nuceně odebrat obvod zvěstovateli?",
         "confirm_delete_returned": "Vymazat tento obvod ze seznamu vrácených?",
         "confirm_delete_request": "Smazat tuto žádost?",
@@ -93,7 +96,8 @@ const dict = {
         "saved_maps": "Uložené mapy",
         "history_empty": "Historie je prázdná",
         "alert_fill_all": "Zadejte číslo a odkaz!",
-        "add_photo": "Přidat fotku mapy"
+        "add_photo": "Přidat fotku mapy",
+        "days_short": "dní"
     }
 };
 
@@ -139,7 +143,6 @@ const currentUserId = localStorage.getItem('userId');
 
 if (!currentUserId) window.location.href = 'login.html';
 
-// 1. ПРОВЕРКА ПРАВ
 getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     const roles = docSnap.data().roles || [];
@@ -148,7 +151,6 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!isTerr) window.location.href = 'index.html';
 });
 
-// 2. СПИСОК ПОЛЬЗОВАТЕЛЕЙ
 onSnapshot(collection(db, "users"), (snapshot) => {
     const select = document.getElementById('user-select');
     if (!select) return;
@@ -162,7 +164,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     select.innerHTML = html;
 });
 
-// 3. ЗАПРОСЫ
 onSnapshot(query(collection(db, "requests"), orderBy("createdAt", "desc")), (snapshot) => {
     const list = document.getElementById('requests-list');
     let html = '';
@@ -205,51 +206,43 @@ window.deleteRequest = async (id) => {
     if (confirm(window.t('confirm_delete_request'))) await deleteDoc(doc(db, "requests", id));
 };
 
-// 4. НАЗНАЧЕНИЕ
-document.getElementById('assign-btn').addEventListener('click', async (e) => {
-    const userData = document.getElementById('user-select').value;
-    const terrNum = document.getElementById('territory-number').value.trim();
-    if (!userData || !terrNum) return alert(window.t('alert_select_user_num'));
-    const btn = e.target;
-    btn.innerText = window.t('saving'); btn.disabled = true;
-    const [userId, userName] = userData.split('|');
-    try {
-        await addDoc(collection(db, "territories"), {
-            number: Number(terrNum),
-            userId: userId,
-            userName: userName,
-            status: "active",
-            issuedAt: new Date().toISOString()
-        });
-        document.getElementById('user-select').value = '';
-        document.getElementById('territory-number').value = '';
-        btn.classList.replace('bg-slate-800', 'bg-emerald-500');
-        btn.innerHTML = window.t('success_tick');
-        setTimeout(() => { 
-            btn.classList.replace('bg-emerald-500', 'bg-slate-800');
-            btn.innerText = window.t('btn_assign'); btn.disabled = false; 
-        }, 2000);
-    } catch (err) { alert(window.t('error_general')); btn.disabled = false; btn.innerText = window.t('btn_assign'); }
-});
 
-// 5. ДВЕ ТАБЛИЦЫ
+// 🔥 ГЛОБАЛЬНЫЙ СПИСОК АКТИВНЫХ УЧАСТКОВ (для защиты от дублей)
+let activeTerritoryNumbers = [];
+
 onSnapshot(query(collection(db, "territories"), orderBy("issuedAt", "desc")), (snapshot) => {
     const activeList = document.getElementById('territories-list');
     const returnedList = document.getElementById('returned-territories-list');
-    let activeHtml = '', returnedHtml = '';
+    
+    let activeHtml = '';
+    let returnedHtml = '';
+    
+    activeTerritoryNumbers = []; // Очищаем перед обновлением
 
     snapshot.forEach(docSnap => {
         const terr = docSnap.data();
-        const issueDate = new Date(terr.issuedAt).toLocaleDateString(localeFormat, {day: 'numeric', month: 'short', year: 'numeric'});
         
         if (!terr.status || terr.status === 'active') {
+            activeTerritoryNumbers.push(Number(terr.number)); // Сохраняем занятый номер
+            
+            const issueDate = new Date(terr.issuedAt).toLocaleDateString(localeFormat, {day: 'numeric', month: 'short', year: 'numeric'});
+            
+            // Высчитываем дни для индикатора
+            const diffDays = Math.floor((new Date() - new Date(terr.issuedAt)) / (1000 * 60 * 60 * 24));
+            let timeColorClass = "bg-emerald-50 text-emerald-600 border-emerald-200";
+            if (diffDays >= 90) timeColorClass = "bg-red-50 text-red-600 border-red-200 animate-pulse";
+            else if (diffDays >= 30) timeColorClass = "bg-amber-50 text-amber-600 border-amber-200";
+
             activeHtml += `
                 <tr class="hover:bg-slate-50 transition-colors user-row" data-search="${terr.number} ${terr.userName.toLowerCase()}">
                     <td class="py-3 px-4 text-center">
                         <span class="bg-emerald-50 text-emerald-700 font-mono font-black border border-emerald-200 px-2.5 py-1 rounded-lg text-sm">${terr.number}</span>
                     </td>
                     <td class="py-3 px-4 font-bold text-slate-800 text-sm truncate">${terr.userName}</td>
-                    <td class="py-3 px-4 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">${issueDate}</td>
+                    <td class="py-3 px-4 text-center">
+                        <div class="text-xs font-bold text-slate-500 mb-0.5 whitespace-nowrap">${issueDate}</div>
+                        <span class="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border ${timeColorClass} inline-block">${diffDays} ${window.t('days_short')}</span>
+                    </td>
                     <td class="py-3 px-4 text-right">
                         <button onclick="forceReturnTerritory('${docSnap.id}')" class="bg-slate-50 border border-slate-200 text-slate-500 hover:text-red-500 hover:bg-red-50 hover:border-red-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ml-auto outline-none" title="${window.t('btn_force_return')}">
                             ${window.t('btn_force_return')}
@@ -280,6 +273,41 @@ onSnapshot(query(collection(db, "territories"), orderBy("issuedAt", "desc")), (s
     if(returnedList) returnedList.innerHTML = returnedHtml || `<tr><td colspan="4" class="text-rose-400 italic text-sm text-center py-6">${window.t('no_returned_terr')}</td></tr>`;
 });
 
+// 🔥 БЛОКИРОВКА ПРИ НАЗНАЧЕНИИ
+document.getElementById('assign-btn').addEventListener('click', async (e) => {
+    const userData = document.getElementById('user-select').value;
+    const terrNumStr = document.getElementById('territory-number').value.trim();
+    if (!userData || !terrNumStr) return alert(window.t('alert_select_user_num'));
+    
+    const terrNum = Number(terrNumStr);
+    
+    // Проверяем, не выдан ли уже этот участок
+    if (activeTerritoryNumbers.includes(terrNum)) {
+        return alert(window.t('alert_terr_already_issued'));
+    }
+
+    const btn = e.target;
+    btn.innerText = window.t('saving'); btn.disabled = true;
+    const [userId, userName] = userData.split('|');
+    try {
+        await addDoc(collection(db, "territories"), {
+            number: terrNum,
+            userId: userId,
+            userName: userName,
+            status: "active",
+            issuedAt: new Date().toISOString()
+        });
+        document.getElementById('user-select').value = '';
+        document.getElementById('territory-number').value = '';
+        btn.classList.replace('bg-slate-800', 'bg-emerald-500');
+        btn.innerHTML = window.t('success_tick');
+        setTimeout(() => { 
+            btn.classList.replace('bg-emerald-500', 'bg-slate-800');
+            btn.innerText = window.t('btn_assign'); btn.disabled = false; 
+        }, 2000);
+    } catch (err) { alert(window.t('error_general')); btn.disabled = false; btn.innerText = window.t('btn_assign'); }
+});
+
 window.forceReturnTerritory = async (id) => {
     if (confirm(window.t('confirm_return'))) await deleteDoc(doc(db, "territories", id));
 };
@@ -300,9 +328,7 @@ if(searchEl) {
     });
 }
 
-// ----------------------------------------------------
-// ЛОГИКА БАЗЫ КАРТ С КАРТИНКАМИ
-// ----------------------------------------------------
+// БАЗА КАРТ
 let selectedMapImageFile = null;
 
 window.openMapsModal = () => document.getElementById('maps-modal').classList.replace('hidden', 'flex');
@@ -333,7 +359,6 @@ document.getElementById('save-map-btn').addEventListener('click', async (e) => {
     const num = document.getElementById('map-num').value.trim();
     const url = document.getElementById('map-url').value.trim();
     
-    // Номер и ссылка обязательны, картинка - по желанию
     if (!num || !url) return alert(window.t('alert_fill_all'));
     
     const btn = e.target;
