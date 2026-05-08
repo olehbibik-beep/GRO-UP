@@ -713,35 +713,62 @@ function loadPersonalData() {
         onSnapshot(terrQuery, (snapshot) => {
             const container = document.getElementById('territories-container');
             if(!container) return;
-            if (snapshot.empty) return container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-xl">${window.t('no_active_territories')}</p>`;
             
-            container.innerHTML = '';
+            let html = '';
+            let activeCount = 0;
+
             snapshot.forEach(docSnap => {
                 const terr = docSnap.data();
+                
+                // ПРОПУСКАЕМ СДАННЫЕ УЧАСТКИ
+                if (terr.status === 'returned') return;
+                
+                activeCount++;
                 const mapUrl = allMapsCache[String(terr.number)];
                 
                 const mapArea = mapUrl 
                     ? `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative cursor-pointer hover:bg-slate-100 transition-colors" onclick="window.open('${mapUrl}', '_blank')">
                             <svg class="w-8 h-8 text-emerald-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
-                            <span class="absolute bottom-3 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">${window.t('open_map')}</span>
+                            <span class="absolute bottom-3 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">${window.t('open_map') || 'Открыть карту'}</span>
                        </div>`
                     : `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative">
                             <svg class="w-8 h-8 text-slate-300 absolute opacity-50 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
-                            <span class="absolute bottom-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('no_map')}</span>
+                            <span class="absolute bottom-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('no_map') || 'Нет карты'}</span>
                        </div>`;
 
-                container.innerHTML += `
+                html += `
                     <div class="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col shadow-sm">
                         <div class="p-3 flex justify-between items-center bg-white border-b border-slate-100">
-                            <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num')} ${terr.number}</h3>
-                            <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md uppercase border border-emerald-100">${window.t('active')}</span>
+                            <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num') || 'Участок №'} ${terr.number}</h3>
+                            <button onclick="markTerritoryReturned('${docSnap.id}')" class="text-[9px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-md uppercase transition-colors outline-none shadow-sm">Сдать</button>
                         </div>
                         ${mapArea}
                     </div>
                 `;
             });
+            
+            if (activeCount === 0) {
+                container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-xl w-full">${window.t('no_active_territories') || 'У вас пока нет активных участков'}</p>`;
+            } else {
+                container.innerHTML = html;
+            }
         });
     } catch(e) {}
+
+    // Функция для возвещателя: отметить участок как сданный
+    window.markTerritoryReturned = async (id) => {
+        if (confirm('Точно сдать этот участок?')) { // Позже можно добавить переводы в словарь
+            try {
+                await updateDoc(doc(db, "territories", id), {
+                    status: 'returned',
+                    returnedAt: new Date().toISOString()
+                });
+                window.showToast("Участок сдан! ✅");
+            } catch (e) {
+                alert("Ошибка сети!");
+            }
+        }
+    };
 
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
