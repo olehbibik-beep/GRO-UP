@@ -16,24 +16,28 @@ const dict = {
         "ph_terr_num": "Например: 105",
         "btn_assign": "Назначить",
         "in_progress": "В работе",
+        "returned_territories": "Сданные участки (Готово)",
         "ph_search_terr": "Поиск по имени или №...",
         "th_number": "Номер",
         "th_publisher": "Возвещатель",
         "th_taken": "Взят",
+        "th_returned_date": "Дата сдачи",
         "th_action": "Действие",
         "back_home": "На главную",
         "saving": "Сохранение...",
         "success_tick": "Успешно!",
-        "btn_returned": "Сдан",
+        "btn_force_return": "Отозвать",
+        "btn_delete_returned": "В архив (удалить)",
         "all_terr_free": "Все участки свободны.",
+        "no_returned_terr": "Нет сданных участков.",
         "alert_select_user_num": "Выберите пользователя и введите номер!",
-        "confirm_return": "Отметить участок как сданный?",
+        "confirm_return": "Принудительно отозвать участок у возвещателя?",
+        "confirm_delete_returned": "Очистить этот участок из списка сданных?",
         "confirm_delete_request": "Удалить этот запрос?",
         "error_general": "Ошибка!",
         "title_issue_terr": "Выдать участок",
         "delete": "Удалить",
         "btn_back": "Назад",
-        // База карт
         "btn_map_db": "База карт",
         "map_db_title": "База карт участков",
         "map_instruction": "Создайте карту участка в Google My Maps, нажмите «Поделиться», скопируйте ссылку и привяжите к номеру участка. Возвещатели увидят кнопку «Открыть карту».",
@@ -57,24 +61,28 @@ const dict = {
         "ph_terr_num": "Například: 105",
         "btn_assign": "Přiřadit",
         "in_progress": "V práci",
+        "returned_territories": "Vrácené obvody (Hotovo)",
         "ph_search_terr": "Hledat podle jména nebo č...",
         "th_number": "Číslo",
         "th_publisher": "Zvěstovatel",
         "th_taken": "Vydáno",
+        "th_returned_date": "Datum vrácení",
         "th_action": "Akce",
         "back_home": "Na hlavní stránku",
         "saving": "Ukládání...",
         "success_tick": "Úspěšně!",
-        "btn_returned": "Vrácen",
+        "btn_force_return": "Odebrat",
+        "btn_delete_returned": "Do archivu (smazat)",
         "all_terr_free": "Všechny obvody jsou volné.",
+        "no_returned_terr": "Žádné vrácené obvody.",
         "alert_select_user_num": "Vyberte uživatele a zadejte číslo!",
-        "confirm_return": "Označit obvod jako vrácený?",
+        "confirm_return": "Nuceně odebrat obvod zvěstovateli?",
+        "confirm_delete_returned": "Vymazat tento obvod ze seznamu vrácených?",
         "confirm_delete_request": "Smazat tuto žádost?",
         "error_general": "Chyba!",
         "title_issue_terr": "Vydat obvod",
         "delete": "Smazat",
         "btn_back": "Zpět",
-        // База карт
         "btn_map_db": "Databáze map",
         "map_db_title": "Databáze map obvodů",
         "map_instruction": "Vytvořte mapu obvodu v Google My Maps, klikněte na «Sdílet», zkopírujte odkaz a připojte k číslu. Zvěstovatelé uvidí tlačítko «Otevřít mapu».",
@@ -208,6 +216,7 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
             number: Number(terrNum),
             userId: userId,
             userName: userName,
+            status: "active", // Добавлен статус
             issuedAt: new Date().toISOString()
         });
         document.getElementById('user-select').value = '';
@@ -221,34 +230,69 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
     } catch (err) { alert(window.t('error_general')); btn.disabled = false; btn.innerText = window.t('btn_assign'); }
 });
 
-// 5. ТАБЛИЦА
+// 5. ДВЕ ТАБЛИЦЫ (В работе и Сданные)
 onSnapshot(query(collection(db, "territories"), orderBy("issuedAt", "desc")), (snapshot) => {
-    const list = document.getElementById('territories-list');
-    let html = '';
+    const activeList = document.getElementById('territories-list');
+    const returnedList = document.getElementById('returned-territories-list');
+    
+    let activeHtml = '';
+    let returnedHtml = '';
+
     snapshot.forEach(docSnap => {
         const terr = docSnap.data();
-        const date = new Date(terr.issuedAt).toLocaleDateString(localeFormat, {day: 'numeric', month: 'short', year: 'numeric'});
-        html += `
-            <tr class="hover:bg-slate-50 transition-colors user-row" data-search="${terr.number} ${terr.userName.toLowerCase()}">
-                <td class="py-3 px-4 text-center">
-                    <span class="bg-emerald-50 text-emerald-700 font-mono font-black border border-emerald-200 px-2.5 py-1 rounded-lg text-sm">${terr.number}</span>
-                </td>
-                <td class="py-3 px-4 font-bold text-slate-800 text-sm truncate">${terr.userName}</td>
-                <td class="py-3 px-4 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">${date}</td>
-                <td class="py-3 px-4 text-right">
-                    <button onclick="returnTerritory('${docSnap.id}')" class="bg-slate-50 border border-slate-200 text-slate-500 hover:text-red-500 hover:bg-red-50 hover:border-red-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 ml-auto outline-none">
-                        ${window.t('btn_returned')}
-                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </td>
-            </tr>
-        `;
+        const issueDate = new Date(terr.issuedAt).toLocaleDateString(localeFormat, {day: 'numeric', month: 'short', year: 'numeric'});
+        
+        // В работе (active или старые без статуса)
+        if (!terr.status || terr.status === 'active') {
+            activeHtml += `
+                <tr class="hover:bg-slate-50 transition-colors user-row" data-search="${terr.number} ${terr.userName.toLowerCase()}">
+                    <td class="py-3 px-4 text-center">
+                        <span class="bg-emerald-50 text-emerald-700 font-mono font-black border border-emerald-200 px-2.5 py-1 rounded-lg text-sm">${terr.number}</span>
+                    </td>
+                    <td class="py-3 px-4 font-bold text-slate-800 text-sm truncate">${terr.userName}</td>
+                    <td class="py-3 px-4 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">${issueDate}</td>
+                    <td class="py-3 px-4 text-right">
+                        <button onclick="forceReturnTerritory('${docSnap.id}')" class="bg-slate-50 border border-slate-200 text-slate-500 hover:text-red-500 hover:bg-red-50 hover:border-red-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ml-auto outline-none" title="${window.t('btn_force_return')}">
+                            ${window.t('btn_force_return')}
+                        </button>
+                    </td>
+                </tr>
+            `;
+        } 
+        // Сданные (returned)
+        else if (terr.status === 'returned') {
+            const returnDate = terr.returnedAt ? new Date(terr.returnedAt).toLocaleDateString(localeFormat, {day: 'numeric', month: 'short'}) : '?';
+            returnedHtml += `
+                <tr class="hover:bg-rose-50 transition-colors">
+                    <td class="py-3 px-4 text-center">
+                        <span class="bg-rose-100 text-rose-700 font-mono font-black border border-rose-200 px-2.5 py-1 rounded-lg text-sm">${terr.number}</span>
+                    </td>
+                    <td class="py-3 px-4 font-bold text-rose-900 text-sm truncate">${terr.userName}</td>
+                    <td class="py-3 px-4 text-center text-xs font-black text-rose-500 uppercase tracking-widest">${returnDate}</td>
+                    <td class="py-3 px-4 text-right">
+                        <button onclick="deleteTerritory('${docSnap.id}')" class="bg-white border border-rose-200 text-rose-500 hover:text-white hover:bg-rose-500 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 ml-auto outline-none shadow-sm" title="${window.t('btn_delete_returned')}">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
     });
-    if(list) list.innerHTML = html || `<tr><td colspan="4" class="text-slate-400 italic text-sm text-center py-8">${window.t('all_terr_free')}</td></tr>`;
+
+    if(activeList) activeList.innerHTML = activeHtml || `<tr><td colspan="4" class="text-slate-400 italic text-sm text-center py-8">${window.t('all_terr_free')}</td></tr>`;
+    if(returnedList) returnedList.innerHTML = returnedHtml || `<tr><td colspan="4" class="text-rose-400 italic text-sm text-center py-6">${window.t('no_returned_terr')}</td></tr>`;
 });
 
-window.returnTerritory = async (id) => {
+// ПРИНУДИТЕЛЬНО ОТОЗВАТЬ УЧАСТОК В АДМИНКЕ (удаляем сразу)
+window.forceReturnTerritory = async (id) => {
     if (confirm(window.t('confirm_return'))) {
+        await deleteDoc(doc(db, "territories", id));
+    }
+};
+
+// ОЧИСТИТЬ УЧАСТОК ИЗ СДАННЫХ (удаляем окончательно)
+window.deleteTerritory = async (id) => {
+    if (confirm(window.t('confirm_delete_returned'))) {
         await deleteDoc(doc(db, "territories", id));
     }
 };
