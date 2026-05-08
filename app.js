@@ -3,7 +3,6 @@ import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, del
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
-// 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (добавлены переводы для виджета дежурств)
 const dict = {
     ru: {
         "loading_data": "Загрузка данных...",
@@ -134,7 +133,10 @@ const dict = {
         "no_map": "Нет карты",
         "opt_cleaning": "🧹 Уборка зала",
         "opt_special_event": "⭐ Специальное событие",
-        "all_groups": "Все"
+        "all_groups": "Все",
+        // Профиль
+        "congregation_label": "Собрание",
+        "scan_qr": "Отсканируйте код"
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -265,7 +267,10 @@ const dict = {
         "no_map": "Bez mapy",
         "opt_cleaning": "🧹 Úklid sálu",
         "opt_special_event": "⭐ Zvláštní událost",
-        "all_groups": "Vše"
+        "all_groups": "Vše",
+        // Профиль
+        "congregation_label": "Sbor",
+        "scan_qr": "Naskenujte kód"
     }
 };
 
@@ -284,7 +289,6 @@ window.changeLanguage = (lang) => {
     location.reload(); 
 };
 
-// Принудительно применяем перевод к HTML
 const applyTranslations = () => {
     const selector = document.getElementById('lang-selector');
     if (selector) selector.value = currentLang;
@@ -300,7 +304,6 @@ if (document.readyState === 'loading') {
 } else {
     applyTranslations();
 }
-// ============================================
 
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
@@ -321,7 +324,6 @@ enableIndexedDbPersistence(db).catch(() => {});
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
-// 🔥 ЭТОТ КОД ПРЯЧЕТ СПИННЕР
 let isLoaderHidden = false;
 window.hideGlobalLoader = () => {
     if (isLoaderHidden) return;
@@ -332,8 +334,6 @@ window.hideGlobalLoader = () => {
         setTimeout(() => loader.style.display = 'none', 500);
     }
 };
-
-// Если база зависла, спиннер в любом случае скроется через 2.5 секунды
 setTimeout(window.hideGlobalLoader, 2500);
 
 window.scrollNews = (offset) => {
@@ -356,9 +356,6 @@ window.showToast = (message, type = 'info') => {
     }, 5000);
 };
 
-// ============================================
-// 🔥 БРОНЕБОЙНАЯ ФУНКЦИЯ УВЕДОМЛЕНИЙ ДЛЯ IOS
-// ============================================
 window.setupNotifications = async () => {
     const pushBtn = document.getElementById('push-btn');
     try {
@@ -413,7 +410,6 @@ window.setupNotifications = async () => {
 };
 
 onMessage(messaging, (payload) => {
-    console.log('Пришло уведомление:', payload);
     if (payload && payload.notification) {
         window.showToast(`🔔 ${payload.notification.title}`, 'info');
     }
@@ -426,7 +422,6 @@ let hasFullAccess = false;
 
 const d = new Date();
 const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
-
 const dbMonthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 
 const currentMonthStr = d.toLocaleDateString(localeFormat, { month: 'long', year: 'numeric' });
@@ -560,20 +555,8 @@ async function loadProfileData() {
     const pName = document.getElementById('profile-name');
     const pGroup = document.getElementById('profile-group');
     const pOverseer = document.getElementById('profile-overseer');
-    const avatar = document.getElementById('profile-avatar');
 
     if(pName) pName.innerText = currentUserData.name || "Имя";
-    
-    // 🔥 ГЕНДЕРНАЯ ИКОНКА (Марс / Венера)
-    if (avatar) {
-        if (currentUserData.gender === 'girl') {
-            avatar.className = "w-16 h-16 bg-rose-50 text-rose-500 border border-rose-200 rounded-full mx-auto flex items-center justify-center mb-3 shadow-sm";
-            avatar.innerHTML = `<svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v6m-3-3h6M12 15a6 6 0 100-12 6 6 0 000 12z" /></svg>`;
-        } else {
-            avatar.className = "w-16 h-16 bg-sky-50 text-sky-500 border border-sky-200 rounded-full mx-auto flex items-center justify-center mb-3 shadow-sm";
-            avatar.innerHTML = `<svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 4.5M21 4.5V12M21 4.5L14.7 10.8M15 15a6 6 0 11-12 0 6 6 0 0112 0z" /></svg>`;
-        }
-    }
     
     let roles = currentUserData.roles || ["Возвещатель"];
     const rolesContainer = document.getElementById('profile-roles-container');
@@ -666,14 +649,12 @@ function loadPersonalData() {
                     alertHtml = `<p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-2 animate-pulse flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>${window.t('cleaning_weekend')}</p>`;
                 }
 
-                // 🔥 ИСПРАВЛЕНИЕ: Перевод типа уборки и группы
                 let typeStr = currentDuty.type;
                 if (typeStr === 'Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
                 if (typeStr === 'Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
                 
                 const groupStr = currentDuty.group === "Все" || currentDuty.group === window.t('all_groups') ? window.t('all_groups') : `${window.t('group_short')} ${currentDuty.group}`;
 
-                // 🔥 ИСПРАВЛЕНИЕ: Динамическая дата без слова "deprecated"
                 const dutyStart = new Date(currentDuty.rawDate); dutyStart.setHours(0,0,0,0);
                 const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6);
                 const startDay = dutyStart.getDate();
@@ -719,8 +700,6 @@ function loadPersonalData() {
 
             snapshot.forEach(docSnap => {
                 const terr = docSnap.data();
-                
-                // ПРОПУСКАЕМ СДАННЫЕ УЧАСТКИ
                 if (terr.status === 'returned') return;
                 
                 activeCount++;
@@ -729,17 +708,17 @@ function loadPersonalData() {
                 const mapArea = mapUrl 
                     ? `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative cursor-pointer hover:bg-slate-100 transition-colors" onclick="window.open('${mapUrl}', '_blank')">
                             <svg class="w-8 h-8 text-emerald-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
-                            <span class="absolute bottom-3 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">${window.t('open_map') || 'Открыть карту'}</span>
+                            <span class="absolute bottom-3 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">${window.t('open_map')}</span>
                        </div>`
                     : `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative">
                             <svg class="w-8 h-8 text-slate-300 absolute opacity-50 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
-                            <span class="absolute bottom-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('no_map') || 'Нет карты'}</span>
+                            <span class="absolute bottom-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('no_map')}</span>
                        </div>`;
 
                 html += `
                     <div class="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col shadow-sm">
                         <div class="p-3 flex justify-between items-center bg-white border-b border-slate-100">
-                            <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num') || 'Участок №'} ${terr.number}</h3>
+                            <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num')} ${terr.number}</h3>
                             <button onclick="markTerritoryReturned('${docSnap.id}')" class="text-[9px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-md uppercase transition-colors outline-none shadow-sm">Сдать</button>
                         </div>
                         ${mapArea}
@@ -748,16 +727,15 @@ function loadPersonalData() {
             });
             
             if (activeCount === 0) {
-                container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-xl w-full">${window.t('no_active_territories') || 'У вас пока нет активных участков'}</p>`;
+                container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-xl w-full">${window.t('no_active_territories')}</p>`;
             } else {
                 container.innerHTML = html;
             }
         });
     } catch(e) {}
 
-    // Функция для возвещателя: отметить участок как сданный
     window.markTerritoryReturned = async (id) => {
-        if (confirm('Точно сдать этот участок?')) { // Позже можно добавить переводы в словарь
+        if (confirm('Точно сдать этот участок?')) {
             try {
                 await updateDoc(doc(db, "territories", id), {
                     status: 'returned',
@@ -912,145 +890,11 @@ function loadPersonalData() {
             }
         });
     } catch(e) {}
-
-    try {
-        const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
-        onSnapshot(eventsQuery, (snapshot) => {
-            const container = document.getElementById('calendar-events');
-            if (!container) return; 
-            let html = '';
-            
-            const now = new Date();
-            const todayYear = now.getFullYear();
-            const todayMonth = now.getMonth();
-            const todayDate = now.getDate();
-
-            snapshot.forEach(docSnap => {
-                const ev = docSnap.data();
-                const evDate = new Date(ev.date);
-                const evGroup = ev.group || window.t('no_group');
-                
-                if (evDate.getFullYear() === todayYear && evDate.getMonth() === todayMonth && evDate.getDate() === todayDate) {
-                    let isPastEvent = false;
-                    let displayTime = ev.time || "";
-                    
-                    if (displayTime) {
-                        let hours = 0, minutes = 0;
-                        if (!displayTime.includes(':') && displayTime.length >= 3) {
-                            if (displayTime.length === 4) displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
-                            else if (displayTime.length === 3) displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
-                        }
-                        if (displayTime.includes(':')) {
-                            [hours, minutes] = displayTime.split(':');
-                            const eventExactTime = new Date();
-                            eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-                            if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
-                        }
-                    }
-
-                    const groupBadge = evGroup !== window.t('no_group') ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">${window.t('group_short')} ${evGroup}</span>` : '';
-                    const activeClass = isPastEvent ? "bg-slate-50 text-slate-400 border-b border-slate-200" : "bg-white text-slate-800 border-b border-slate-100";
-                    const timeColor = isPastEvent ? "text-slate-400" : "text-rose-500";
-                    const leaderColor = isPastEvent ? "text-slate-400" : "text-rose-600";
-
-                    html += `
-                        <div class="flex items-center p-3 w-full cursor-default ${activeClass}">
-                            <div class="flex items-center gap-3 w-full">
-                                <div class="flex flex-col items-center justify-center w-12 shrink-0">
-                                    <span class="text-[8px] uppercase font-bold leading-none mb-1 opacity-70">${window.t('today_badge')}</span>
-                                    <span class="text-xl font-black leading-none">${evDate.getDate()}</span>
-                                </div>
-                                <div class="flex flex-col flex-grow truncate min-w-0">
-                                    <div class="flex items-center gap-2 truncate">
-                                        ${displayTime ? `<span class="text-xs font-bold shrink-0 ${timeColor}">${displayTime}</span>` : ''}
-                                        <span class="font-black text-sm truncate">${ev.title}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2 mt-1 truncate">
-                                        ${groupBadge}
-                                        ${ev.leader ? `<span class="text-[9px] uppercase font-medium opacity-80 truncate">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-
-                    if (!isPastEvent && !sessionStorage.getItem('event_toast_' + docSnap.id)) {
-                        window.showToast(`${window.t('today_event_toast')} ${ev.title} ${displayTime ? ' ' + displayTime : ''}`, 'info');
-                        sessionStorage.setItem('event_toast_' + docSnap.id, 'true');
-                    }
-                }
-            });
-
-            container.innerHTML = html || `<p class="p-4 text-xs text-slate-400 italic text-center">${window.t('no_events_today')}</p>`;
-        });
-    } catch(e) {}
 }
 
-window.requestTerritory = async (btn) => {
-    btn.innerText = "..."; btn.disabled = true;
-    try {
-        await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
-        btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success')}`;
-        setTimeout(() => { btn.innerText = window.t('request_btn'); btn.disabled = false; }, 3000);
-    } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('request_btn'); btn.disabled = false; }
-};
-
-window.openProfileModal = () => {
-    const m = document.getElementById('profile-modal');
-    if(m) m.classList.replace('hidden', 'flex');
-}
-
-window.openReportHistory = () => {
-    const m = document.getElementById('report-history-modal');
-    if(m) m.classList.replace('hidden', 'flex');
-
-    const list = document.getElementById('report-history-list');
-    list.innerHTML = `<p class="text-slate-400 text-sm italic py-4">${window.t('loading')}</p>`;
-
-    const q = query(collection(db, "reports"), where("userId", "==", userId));
-    getDocs(q).then(snapshot => {
-        if(snapshot.empty) {
-            list.innerHTML = `<p class="text-slate-400 text-sm italic py-4">${window.t('archive_empty')}</p>`;
-            return;
-        }
-        
-        let reports = [];
-        snapshot.forEach(doc => reports.push(doc.data()));
-        
-        reports.sort((a,b) => {
-            const dA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
-            const dB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
-            return dB - dA;
-        });
-
-        let html = '';
-        reports.forEach(r => {
-            const checkIcon = r.participated || r.hours > 0 ? `<svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>` : `-`;
-            
-            const displayMonth = r.month ? formatMonthKey(r.month) : window.t('unknown');
-            
-            html += `
-                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-left">
-                    <div class="flex justify-between items-center mb-2 border-b border-slate-200 pb-2">
-                        <span class="font-black text-purple-700 text-sm">${displayMonth}</span>
-                        <span class="text-[10px] text-slate-400 font-bold">${r.submittedAt ? new Date(r.submittedAt).toLocaleDateString(localeFormat) : ''}</span>
-                    </div>
-                    <div class="flex justify-between items-center text-xs font-bold text-slate-600">
-                        <span class="flex items-center gap-1">${window.t('participated')}: ${checkIcon}</span>
-                        <span>${window.t('hours_label').replace('<br>&nbsp;','')} <span class="text-slate-800 font-black text-sm">${r.hours || '-'}</span></span>
-                    </div>
-                    <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 mt-1 uppercase">
-                        <span>${window.t('studies_label').replace('<br>',' ')}: ${r.studies || '-'}</span>
-                        <span>${window.t('credit_label').replace('<br>&nbsp;','')} ${r.credit || r.pubs || '-'}</span>
-                    </div>
-                </div>
-            `;
-        });
-        list.innerHTML = html;
-    }).catch(e => {
-        list.innerHTML = `<p class="text-red-400 text-sm italic">${window.t('error_loading')}</p>`;
-    });
-};
+window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
+window.openReportHistory = () => document.getElementById('report-history-modal').classList.replace('hidden', 'flex');
+window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
 
 window.closeModals = () => {
     const m1 = document.getElementById('profile-modal');
@@ -1059,6 +903,8 @@ window.closeModals = () => {
     const m2 = document.getElementById('report-history-modal');
     if(m2) m2.classList.replace('flex', 'hidden');
 };
+
+window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
 
 window.logout = async () => {
     const uid = localStorage.getItem('userId');
@@ -1118,7 +964,7 @@ window.publishNews = async () => {
         removeImage();
         
         if(btn) {
-            btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success')}`;
+            btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>${window.t('success')}`;
             setTimeout(() => { btn.innerText = window.t('publish'); btn.disabled = false; }, 2000);
         }
     } catch (e) { 
