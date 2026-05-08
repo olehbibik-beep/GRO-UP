@@ -1,425 +1,185 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title data-lang="terr_title">Управление Участками - GRO-UP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { 
+            theme: { 
+                extend: { 
+                    colors: { 
+                        ui: { 
+                            bg: '#f8fafc', 
+                            adminNav: '#A82A56' 
+                        } 
+                    } 
+                } 
+            } 
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+    </style>
+</head>
+<body class="bg-ui-bg text-slate-800 min-h-screen font-sans">
 
-const dict = {
-    ru: {
-        "terr_title": "Управление Участками - GRO-UP",
-        "terr_h1": "Участки",
-        "manage_terr": "Управление территориями",
-        "requests_title": "Запросы",
-        "no_new_requests_terr": "Нет новых запросов",
-        "issue_terr": "Выдать участок",
-        "to_whom": "Кому выдать",
-        "loading": "Загрузка...",
-        "select_publisher": "Выберите возвещателя...",
-        "terr_number_label": "Номер участка",
-        "ph_terr_num": "Например: 105",
-        "btn_assign": "Назначить",
-        "in_progress": "В работе",
-        "returned_territories": "Сданные участки (Готово)",
-        "ph_search_terr": "Поиск по имени или №...",
-        "th_number": "Номер",
-        "th_publisher": "Возвещатель",
-        "th_taken": "Взят",
-        "th_returned_date": "Дата сдачи",
-        "th_action": "Действие",
-        "back_home": "На главную",
-        "saving": "Сохранение...",
-        "success_tick": "Успешно!",
-        "btn_force_return": "Отозвать",
-        "btn_delete_returned": "В архив (удалить)",
-        "all_terr_free": "Все участки свободны.",
-        "no_returned_terr": "Нет сданных участков.",
-        "alert_select_user_num": "Выберите пользователя и введите номер!",
-        "alert_terr_already_issued": "❌ Этот участок уже выдан и находится в работе!",
-        "confirm_return": "Принудительно отозвать участок у возвещателя?",
-        "confirm_delete_returned": "Очистить этот участок из списка сданных?",
-        "confirm_delete_request": "Удалить этот запрос?",
-        "error_general": "Ошибка!",
-        "title_issue_terr": "Выдать участок",
-        "delete": "Удалить",
-        "btn_back": "Назад",
-        "btn_map_db": "База карт",
-        "map_db_title": "База карт участков",
-        "map_instruction": "Добавьте ссылку на Google My Maps и скриншот участка. Возвещатели увидят этот скриншот на главной странице.",
-        "map_url_ph": "Ссылка https://...",
-        "btn_save_map": "Добавить базу",
-        "saved_maps": "Сохраненные карты",
-        "history_empty": "История пуста",
-        "alert_fill_all": "Укажите номер и ссылку!",
-        "add_photo": "Добавить фото карты",
-        "days_short": "дн."
-    },
-    cs: {
-        "terr_title": "Správa obvodů - GRO-UP",
-        "terr_h1": "Obvody",
-        "manage_terr": "Správa území",
-        "requests_title": "Žádosti",
-        "no_new_requests_terr": "Žádné nové žádosti",
-        "issue_terr": "Vydat obvod",
-        "to_whom": "Komu vydat",
-        "loading": "Načítání...",
-        "select_publisher": "Vyberte zvěstovatele...",
-        "terr_number_label": "Číslo obvodu",
-        "ph_terr_num": "Například: 105",
-        "btn_assign": "Přiřadit",
-        "in_progress": "V práci",
-        "returned_territories": "Vrácené obvody (Hotovo)",
-        "ph_search_terr": "Hledat podle jména nebo č...",
-        "th_number": "Číslo",
-        "th_publisher": "Zvěstovatel",
-        "th_taken": "Vydáno",
-        "th_returned_date": "Datum vrácení",
-        "th_action": "Akce",
-        "back_home": "Na hlavní stránku",
-        "saving": "Ukládání...",
-        "success_tick": "Úspěšně!",
-        "btn_force_return": "Odebrat",
-        "btn_delete_returned": "Do archivu (smazat)",
-        "all_terr_free": "Všechny obvody jsou volné.",
-        "no_returned_terr": "Žádné vrácené obvody.",
-        "alert_select_user_num": "Vyberte uživatele a zadejte číslo!",
-        "alert_terr_already_issued": "❌ Tento obvod je již vydán a zpracovává se!",
-        "confirm_return": "Nuceně odebrat obvod zvěstovateli?",
-        "confirm_delete_returned": "Vymazat tento obvod ze seznamu vrácených?",
-        "confirm_delete_request": "Smazat tuto žádost?",
-        "error_general": "Chyba!",
-        "title_issue_terr": "Vydat obvod",
-        "delete": "Smazat",
-        "btn_back": "Zpět",
-        "btn_map_db": "Databáze map",
-        "map_db_title": "Databáze map obvodů",
-        "map_instruction": "Přidejte odkaz na Google My Maps a screenshot obvodu. Zvěstovatelé uvidí tento screenshot na hlavní stránce.",
-        "map_url_ph": "Odkaz https://...",
-        "btn_save_map": "Přidat do databáze",
-        "saved_maps": "Uložené mapy",
-        "history_empty": "Historie je prázdná",
-        "alert_fill_all": "Zadejte číslo a odkaz!",
-        "add_photo": "Přidat fotku mapy",
-        "days_short": "dní"
-    }
-};
+   <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0">
+        <a href="index.html" data-lang-title="back_home" title="На главную" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-indigo-300 hover:text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            <span class="text-[8px] font-black uppercase tracking-widest hidden md:block" data-lang="btn_back">Назад</span>
+        </a>
+    </nav>
 
-const currentLang = localStorage.getItem('app_lang') || 'ru';
-const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU';
+    <main class="w-full max-w-5xl mx-auto pt-4 md:pt-6 px-4 pb-24 md:pl-28 md:pr-6">
+        
+        <div class="mb-6 flex justify-between items-center bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
+                    <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-black text-emerald-600" data-lang="terr_h1">Участки</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5" data-lang="manage_terr">Управление территориями</p>
+                </div>
+            </div>
+            
+            <button onclick="openMapsModal()" class="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-600 px-3 py-2 rounded-lg border border-slate-200 transition-colors font-bold text-xs outline-none">
+                <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span class="hidden md:inline" data-lang="btn_map_db">База карт</span>
+            </button>
+        </div>
 
-window.t = (key) => {
-    if (dict[currentLang] && dict[currentLang][key]) return dict[currentLang][key];
-    return key; 
-};
-
-const applyTranslations = () => {
-    document.querySelectorAll('[data-lang]').forEach(el => {
-        el.innerHTML = window.t(el.getAttribute('data-lang'));
-    });
-    document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
-        el.setAttribute('placeholder', window.t(el.getAttribute('data-lang-placeholder')));
-    });
-    document.querySelectorAll('[data-lang-title]').forEach(el => {
-        el.setAttribute('title', window.t(el.getAttribute('data-lang-title')));
-    });
-};
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', applyTranslations);
-} else {
-    applyTranslations();
-}
-
-const firebaseConfig = {
-    apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
-    authDomain: "gro-uping.firebaseapp.com",
-    projectId: "gro-uping",
-    storageBucket: "gro-uping.firebasestorage.app",
-    messagingSenderId: "819938349545",
-    appId: "1:819938349545:web:a00c3bef66d99f5b6cfb78"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const storage = getStorage(app); 
-const currentUserId = localStorage.getItem('userId');
-
-if (!currentUserId) window.location.href = 'login.html';
-
-getDoc(doc(db, "users", currentUserId)).then(docSnap => {
-    if (!docSnap.exists()) return window.location.href = 'login.html';
-    const roles = docSnap.data().roles || [];
-    const isFullAdmin = roles.includes("Владелец") || roles.includes("Админ");
-    const isTerr = isFullAdmin || roles.includes("Ответственный за участки");
-    if (!isTerr) window.location.href = 'index.html';
-});
-
-onSnapshot(collection(db, "users"), (snapshot) => {
-    const select = document.getElementById('user-select');
-    if (!select) return;
-    let users = [];
-    snapshot.forEach(d => {
-        if(d.data().status === 'active') users.push({ id: d.id, name: d.data().name });
-    });
-    users.sort((a, b) => a.name.localeCompare(b.name));
-    let html = `<option value="" disabled selected>${window.t('select_publisher')}</option>`;
-    users.forEach(u => { html += `<option value="${u.id}|${u.name}">${u.name}</option>`; });
-    select.innerHTML = html;
-});
-
-onSnapshot(query(collection(db, "requests"), orderBy("createdAt", "desc")), (snapshot) => {
-    const list = document.getElementById('requests-list');
-    let html = '';
-    let count = 0;
-    snapshot.forEach(docSnap => {
-        const req = docSnap.data();
-        if (req.status === 'new' && req.type === 'territory') {
-            count++;
-            const date = new Date(req.createdAt).toLocaleDateString(localeFormat, {day: 'numeric', month: 'short'});
-            html += `
-                <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-lg hover:border-emerald-200 transition-colors">
-                    <div>
-                        <p class="text-xs font-bold text-slate-800">${req.userName}</p>
-                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">${date}</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            
+            <div class="md:col-span-1 space-y-6">
+                
+                <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h2 class="text-sm font-bold flex items-center gap-2 mb-4 uppercase tracking-widest text-slate-500">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        <span data-lang="requests_title">Запросы</span> (<span id="requests-count">0</span>)
+                    </h2>
+                    <div id="requests-list" class="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                        <p class="text-slate-400 italic text-xs text-center py-4 bg-slate-50 rounded-lg" data-lang="no_new_requests_terr">Нет новых запросов</p>
                     </div>
-                    <div class="flex gap-1.5">
-                        <button onclick="prepareIssue('${req.userId}', '${req.userName}', '${docSnap.id}')" title="${window.t('title_issue_terr')}" class="w-7 h-7 flex items-center justify-center bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded transition-colors outline-none text-xs">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                        </button>
-                        <button onclick="deleteRequest('${docSnap.id}')" title="${window.t('delete')}" class="w-7 h-7 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-500 hover:bg-red-50 rounded transition-colors outline-none text-xs">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </div>
+
+                <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm sticky top-6">
+                    <h2 class="text-lg font-black text-slate-800 mb-5 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                        <span data-lang="issue_terr">Выдать участок</span>
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="to_whom">Кому выдать</label>
+                            <select id="user-select" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-emerald-400 font-bold text-slate-700 cursor-pointer">
+                                <option value="" disabled selected data-lang="loading">Загрузка...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="terr_number_label">Номер участка</label>
+                            <input type="number" id="territory-number" data-lang-placeholder="ph_terr_num" placeholder="Например: 105" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-emerald-400 font-black font-mono text-lg text-emerald-700 text-center">
+                        </div>
+                        <button id="assign-btn" data-lang="btn_assign" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-lg transition-all active:scale-95 mt-2 text-sm uppercase tracking-widest outline-none">
+                            Назначить
                         </button>
                     </div>
                 </div>
-            `;
-        }
-    });
-    document.getElementById('requests-count').innerText = count;
-    if(list) list.innerHTML = html || `<p class="text-slate-400 italic text-xs text-center py-4 bg-slate-50 rounded-lg">${window.t('no_new_requests_terr')}</p>`;
-});
 
-window.prepareIssue = async (userId, userName, reqId) => {
-    const select = document.getElementById('user-select');
-    select.value = `${userId}|${userName}`;
-    document.getElementById('territory-number').focus();
-    await deleteDoc(doc(db, "requests", reqId));
-};
-
-window.deleteRequest = async (id) => {
-    if (confirm(window.t('confirm_delete_request'))) await deleteDoc(doc(db, "requests", id));
-};
-
-
-// 🔥 ГЛОБАЛЬНЫЙ СПИСОК АКТИВНЫХ УЧАСТКОВ (для защиты от дублей)
-let activeTerritoryNumbers = [];
-
-onSnapshot(query(collection(db, "territories"), orderBy("issuedAt", "desc")), (snapshot) => {
-    const activeList = document.getElementById('territories-list');
-    const returnedList = document.getElementById('returned-territories-list');
-    
-    let activeHtml = '';
-    let returnedHtml = '';
-    
-    activeTerritoryNumbers = []; // Очищаем перед обновлением
-
-    snapshot.forEach(docSnap => {
-        const terr = docSnap.data();
-        
-        if (!terr.status || terr.status === 'active') {
-            activeTerritoryNumbers.push(Number(terr.number)); // Сохраняем занятый номер
-            
-            const issueDate = new Date(terr.issuedAt).toLocaleDateString(localeFormat, {day: 'numeric', month: 'short', year: 'numeric'});
-            
-            // Высчитываем дни для индикатора
-            const diffDays = Math.floor((new Date() - new Date(terr.issuedAt)) / (1000 * 60 * 60 * 24));
-            let timeColorClass = "bg-emerald-50 text-emerald-600 border-emerald-200";
-            if (diffDays >= 90) timeColorClass = "bg-red-50 text-red-600 border-red-200 animate-pulse";
-            else if (diffDays >= 30) timeColorClass = "bg-amber-50 text-amber-600 border-amber-200";
-
-            activeHtml += `
-                <tr class="hover:bg-slate-50 transition-colors user-row" data-search="${terr.number} ${terr.userName.toLowerCase()}">
-                    <td class="py-3 px-4 text-center">
-                        <span class="bg-emerald-50 text-emerald-700 font-mono font-black border border-emerald-200 px-2.5 py-1 rounded-lg text-sm">${terr.number}</span>
-                    </td>
-                    <td class="py-3 px-4 font-bold text-slate-800 text-sm truncate">${terr.userName}</td>
-                    <td class="py-3 px-4 text-center">
-                        <div class="text-xs font-bold text-slate-500 mb-0.5 whitespace-nowrap">${issueDate}</div>
-                        <span class="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border ${timeColorClass} inline-block">${diffDays} ${window.t('days_short')}</span>
-                    </td>
-                    <td class="py-3 px-4 text-right">
-                        <button onclick="forceReturnTerritory('${docSnap.id}')" class="bg-slate-50 border border-slate-200 text-slate-500 hover:text-red-500 hover:bg-red-50 hover:border-red-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ml-auto outline-none" title="${window.t('btn_force_return')}">
-                            ${window.t('btn_force_return')}
-                        </button>
-                    </td>
-                </tr>
-            `;
-        } else if (terr.status === 'returned') {
-            const returnDate = terr.returnedAt ? new Date(terr.returnedAt).toLocaleDateString(localeFormat, {day: 'numeric', month: 'short'}) : '?';
-            returnedHtml += `
-                <tr class="hover:bg-rose-50 transition-colors">
-                    <td class="py-3 px-4 text-center">
-                        <span class="bg-rose-100 text-rose-700 font-mono font-black border border-rose-200 px-2.5 py-1 rounded-lg text-sm">${terr.number}</span>
-                    </td>
-                    <td class="py-3 px-4 font-bold text-rose-900 text-sm truncate">${terr.userName}</td>
-                    <td class="py-3 px-4 text-center text-xs font-black text-rose-500 uppercase tracking-widest">${returnDate}</td>
-                    <td class="py-3 px-4 text-right">
-                        <button onclick="deleteTerritory('${docSnap.id}')" class="bg-white border border-rose-200 text-rose-500 hover:text-white hover:bg-rose-500 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 ml-auto outline-none shadow-sm" title="${window.t('btn_delete_returned')}">
-                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }
-    });
-
-    if(activeList) activeList.innerHTML = activeHtml || `<tr><td colspan="4" class="text-slate-400 italic text-sm text-center py-8">${window.t('all_terr_free')}</td></tr>`;
-    if(returnedList) returnedList.innerHTML = returnedHtml || `<tr><td colspan="4" class="text-rose-400 italic text-sm text-center py-6">${window.t('no_returned_terr')}</td></tr>`;
-});
-
-// 🔥 БЛОКИРОВКА ПРИ НАЗНАЧЕНИИ
-document.getElementById('assign-btn').addEventListener('click', async (e) => {
-    const userData = document.getElementById('user-select').value;
-    const terrNumStr = document.getElementById('territory-number').value.trim();
-    if (!userData || !terrNumStr) return alert(window.t('alert_select_user_num'));
-    
-    const terrNum = Number(terrNumStr);
-    
-    // Проверяем, не выдан ли уже этот участок
-    if (activeTerritoryNumbers.includes(terrNum)) {
-        return alert(window.t('alert_terr_already_issued'));
-    }
-
-    const btn = e.target;
-    btn.innerText = window.t('saving'); btn.disabled = true;
-    const [userId, userName] = userData.split('|');
-    try {
-        await addDoc(collection(db, "territories"), {
-            number: terrNum,
-            userId: userId,
-            userName: userName,
-            status: "active",
-            issuedAt: new Date().toISOString()
-        });
-        document.getElementById('user-select').value = '';
-        document.getElementById('territory-number').value = '';
-        btn.classList.replace('bg-slate-800', 'bg-emerald-500');
-        btn.innerHTML = window.t('success_tick');
-        setTimeout(() => { 
-            btn.classList.replace('bg-emerald-500', 'bg-slate-800');
-            btn.innerText = window.t('btn_assign'); btn.disabled = false; 
-        }, 2000);
-    } catch (err) { alert(window.t('error_general')); btn.disabled = false; btn.innerText = window.t('btn_assign'); }
-});
-
-window.forceReturnTerritory = async (id) => {
-    if (confirm(window.t('confirm_return'))) await deleteDoc(doc(db, "territories", id));
-};
-
-window.deleteTerritory = async (id) => {
-    if (confirm(window.t('confirm_delete_returned'))) await deleteDoc(doc(db, "territories", id));
-};
-
-const searchEl = document.getElementById('search-terr');
-if(searchEl) {
-    searchEl.addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        const rows = document.querySelectorAll('.user-row');
-        rows.forEach(row => {
-            if (row.getAttribute('data-search').includes(term)) row.style.display = '';
-            else row.style.display = 'none';
-        });
-    });
-}
-
-// БАЗА КАРТ
-let selectedMapImageFile = null;
-
-window.openMapsModal = () => document.getElementById('maps-modal').classList.replace('hidden', 'flex');
-window.closeMapsModal = () => {
-    document.getElementById('maps-modal').classList.replace('flex', 'hidden');
-    removeMapImage();
-};
-
-window.previewMapImage = (input) => {
-    if (input.files && input.files[0]) {
-        selectedMapImageFile = input.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            document.getElementById('map-preview').src = e.target.result;
-            document.getElementById('map-preview-container').classList.remove('hidden');
-        };
-        reader.readAsDataURL(selectedMapImageFile);
-    }
-};
-
-window.removeMapImage = () => {
-    selectedMapImageFile = null;
-    document.getElementById('map-image').value = '';
-    document.getElementById('map-preview-container').classList.add('hidden');
-};
-
-document.getElementById('save-map-btn').addEventListener('click', async (e) => {
-    const num = document.getElementById('map-num').value.trim();
-    const url = document.getElementById('map-url').value.trim();
-    
-    if (!num || !url) return alert(window.t('alert_fill_all'));
-    
-    const btn = e.target;
-    btn.disabled = true; btn.innerText = window.t('saving');
-    
-    try {
-        let imageUrl = null;
-        if (selectedMapImageFile) {
-            const fileName = `map_${num}_${Date.now()}`;
-            const storageRef = ref(storage, `maps/${fileName}`);
-            await uploadBytes(storageRef, selectedMapImageFile);
-            imageUrl = await getDownloadURL(storageRef);
-        }
-
-        const mapData = { 
-            url: url, 
-            updatedAt: new Date().toISOString() 
-        };
-        if (imageUrl) mapData.imageUrl = imageUrl;
-
-        await setDoc(doc(db, "territory_maps", num), mapData);
-        
-        document.getElementById('map-num').value = '';
-        document.getElementById('map-url').value = '';
-        removeMapImage();
-        
-        btn.innerText = window.t('btn_save_map');
-        btn.disabled = false;
-    } catch (err) { 
-        console.error(err);
-        alert(window.t('error_general')); 
-        btn.disabled = false; 
-        btn.innerText = window.t('btn_save_map'); 
-    }
-});
-
-onSnapshot(collection(db, "territory_maps"), (snapshot) => {
-    const list = document.getElementById('maps-list');
-    if (!list) return;
-    let html = '';
-    let maps = [];
-    snapshot.forEach(d => maps.push({ num: parseInt(d.id), url: d.data().url, img: d.data().imageUrl, id: d.id }));
-    maps.sort((a,b) => a.num - b.num);
-    
-    maps.forEach(m => {
-        const photoBadge = m.img ? `<span class="bg-emerald-100 text-emerald-700 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0">ФОТО</span>` : '';
-        html += `
-        <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-2.5 rounded-lg">
-            <div class="flex items-center gap-2 min-w-0">
-                <span class="bg-slate-200 text-slate-700 font-black font-mono text-[11px] px-2 py-1 rounded shrink-0">${m.num}</span>
-                ${photoBadge}
-                <a href="${m.url}" target="_blank" class="text-xs font-medium text-sky-500 hover:text-sky-600 hover:underline truncate">${m.url}</a>
             </div>
-            <button onclick="deleteMap('${m.id}')" class="text-slate-300 hover:text-red-500 ml-2 p-1 outline-none transition-colors" title="${window.t('delete')}">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-            </button>
-        </div>`;
-    });
-    list.innerHTML = html || `<p class="text-xs italic text-slate-400 text-center py-4">${window.t('history_empty')}</p>`;
-});
 
-window.deleteMap = async (id) => {
-    if(confirm(window.t('delete') + "?")) await deleteDoc(doc(db, "territory_maps", id));
-};
+            <div class="md:col-span-2 space-y-6">
+                
+                <div>
+                    <h2 class="text-lg font-black text-rose-600 mb-3 flex items-center gap-2" data-lang="returned_territories">Сданные участки (Готово)</h2>
+                    <div class="bg-rose-50/50 rounded-xl shadow-sm border border-rose-100 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse min-w-[500px]">
+                                <thead>
+                                    <tr class="bg-rose-100/50 border-b border-rose-200/50 text-[9px] text-rose-500 uppercase tracking-widest">
+                                        <th class="py-3 px-4 font-black w-20 text-center" data-lang="th_number">Номер</th>
+                                        <th class="py-3 px-4 font-black" data-lang="th_publisher">Возвещатель</th>
+                                        <th class="py-3 px-4 font-black text-center" data-lang="th_returned_date">Дата сдачи</th>
+                                        <th class="py-3 px-4 font-black text-right w-24" data-lang="th_action">Действие</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="returned-territories-list" class="divide-y divide-rose-100/50 text-sm font-medium">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-end mb-3">
+                        <h2 class="text-xl font-black text-slate-800 flex items-center gap-2" data-lang="in_progress">В работе</h2>
+                        <input type="text" id="search-terr" data-lang-placeholder="ph_search_terr" placeholder="Поиск по имени или №..." class="p-2 px-4 border border-slate-200 rounded-lg outline-none focus:border-emerald-500 w-64 text-sm font-medium bg-white shadow-sm">
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse min-w-[500px]">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-[9px] text-slate-400 uppercase tracking-widest">
+                                        <th class="py-3 px-4 font-bold w-20 text-center" data-lang="th_number">Номер</th>
+                                        <th class="py-3 px-4 font-bold" data-lang="th_publisher">Возвещатель</th>
+                                        <th class="py-3 px-4 font-bold text-center" data-lang="th_taken">Взят</th>
+                                        <th class="py-3 px-4 font-bold text-right w-24" data-lang="th_action">Действие</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="territories-list" class="divide-y divide-slate-100 text-sm font-medium">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="maps-modal" class="fixed inset-0 bg-slate-900/80 z-[70] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 relative border border-slate-200 max-h-[90vh] flex flex-col">
+            <button onclick="closeMapsModal()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-600 text-2xl font-black outline-none transition-colors">✖</button>
+            <h2 class="text-xl font-black text-slate-800 mb-2 flex items-center gap-2">
+                <svg class="w-6 h-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span data-lang="map_db_title">База карт участков</span>
+            </h2>
+            <p class="text-[11px] text-slate-500 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100" data-lang="map_instruction">Добавьте ссылку на Google My Maps и скриншот участка. Возвещатели увидят этот скриншот на главной странице.</p>
+            
+            <div class="flex flex-col gap-3 mb-4 shrink-0">
+                <div class="flex gap-2">
+                    <input type="number" id="map-num" data-lang-placeholder="th_number" placeholder="Номер" class="w-1/3 bg-slate-50 border border-slate-200 rounded-lg p-2.5 outline-none focus:border-emerald-400 font-black text-slate-700 text-sm">
+                    <input type="url" id="map-url" data-lang-placeholder="map_url_ph" placeholder="Ссылка https://..." class="w-2/3 bg-slate-50 border border-slate-200 rounded-lg p-2.5 outline-none focus:border-emerald-400 font-medium text-slate-700 text-sm">
+                </div>
+                
+                <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-emerald-500 hover:bg-emerald-50 hover:border-emerald-200 rounded-lg transition-colors flex items-center justify-center h-10 px-4 w-full shrink-0 shadow-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    <span class="text-[10px] font-bold uppercase tracking-widest" data-lang="add_photo">Добавить фото карты</span>
+                    <input type="file" id="map-image" accept="image/*" class="hidden" onchange="previewMapImage(this)">
+                </label>
+
+                <div id="map-preview-container" class="hidden relative inline-block w-full">
+                    <img id="map-preview" src="" class="rounded-lg max-h-32 w-full object-cover border border-slate-200">
+                    <button onclick="removeMapImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center outline-none shadow-md">✖</button>
+                </div>
+
+                <button id="save-map-btn" data-lang="btn_save_map" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-lg transition-colors active:scale-95 text-xs uppercase tracking-widest outline-none shrink-0 shadow-sm">Добавить карту</button>
+            </div>
+            
+            <div class="border-t border-slate-100 pt-4 flex-grow overflow-hidden flex flex-col">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 shrink-0" data-lang="saved_maps">Сохраненные карты</p>
+                <div id="maps-list" class="overflow-y-auto flex-grow space-y-2 pr-1 custom-scrollbar">
+                    <p class="text-xs italic text-slate-400 text-center py-2">Загрузка...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="territories.js?v=65"></script>
+</body>
+</html>
