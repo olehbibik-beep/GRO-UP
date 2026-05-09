@@ -512,6 +512,19 @@ window.submitReport = async () => {
     }
 };
 
+window.requestTerritory = async (btn) => {
+    btn.innerText = "..."; btn.disabled = true;
+    try {
+        await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
+        btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success') || 'Успешно'}`;
+        setTimeout(() => { btn.innerText = window.t('request_btn') || 'Попросить'; btn.disabled = false; }, 3000);
+    } catch (e) { 
+        alert(window.t('error_network') || 'Ошибка сети!'); 
+        btn.innerText = window.t('request_btn') || 'Попросить'; 
+        btn.disabled = false; 
+    }
+};
+
 onSnapshot(doc(db, "users", userId), async (docSnap) => {
     if (!docSnap.exists()) { if (navigator.onLine) window.logout(); return; }
     currentUserData = docSnap.data();
@@ -570,8 +583,6 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
     }
 });
 
-let currentZoomData = { id: "", pass: "" };
-
 async function loadProfileData() {
     const pName = document.getElementById('profile-name');
     const pGroup = document.getElementById('profile-group');
@@ -598,37 +609,13 @@ async function loadProfileData() {
         const congEl = document.getElementById('profile-congregation');
         const dashZoomId = document.getElementById('dash-zoom-id');
         const dashZoomPass = document.getElementById('dash-zoom-pass');
-        const btnZoom = document.getElementById('btn-zoom');
         
         if (docSnap.exists()) {
             const data = docSnap.data();
             if(congEl) congEl.innerText = data.name || "МАРИАНСКИЕ ЛАЗНЕ";
             
-            currentZoomData.id = data.zoomId || "";
-            currentZoomData.pass = data.zoomPass || "";
-            
-            if (dashZoomId) dashZoomId.innerText = currentZoomData.id || "Нет";
-            if (dashZoomPass) dashZoomPass.innerText = currentZoomData.pass || "Нет";
-
-            if (btnZoom) {
-                btnZoom.onclick = () => {
-                    if (currentZoomData.id) {
-                        const cleanId = currentZoomData.id.replace(/\s/g, '');
-                        let url = `zoomus://zoom.us/join?confno=${cleanId}`;
-                        if (currentZoomData.pass) url += `&pwd=${currentZoomData.pass}`;
-                        
-                        // Пытаемся открыть приложение Zoom
-                        window.location.href = url;
-                        
-                        // Если не получилось (нет приложения), через 1 сек кидаем в браузер
-                        setTimeout(() => {
-                            window.open(`https://zoom.us/j/${cleanId}`, '_blank');
-                        }, 1000);
-                    } else {
-                        alert("Zoom ID еще не добавлен в систему.");
-                    }
-                };
-            }
+            if (dashZoomId) dashZoomId.innerText = data.zoomId || "-";
+            if (dashZoomPass) dashZoomPass.innerText = data.zoomPass || "-";
         }
     });
 
@@ -643,19 +630,6 @@ async function loadProfileData() {
         } else if (pOverseer) { pOverseer.innerText = "-"; }
     } catch(e) {}
 }
-
-window.requestTerritory = async (btn) => {
-    btn.innerText = "..."; btn.disabled = true;
-    try {
-        await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
-        btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success') || 'Успешно'}`;
-        setTimeout(() => { btn.innerText = window.t('request_btn') || 'Попросить'; btn.disabled = false; }, 3000);
-    } catch (e) { 
-        alert(window.t('error_network') || 'Ошибка сети!'); 
-        btn.innerText = window.t('request_btn') || 'Попросить'; 
-        btn.disabled = false; 
-    }
-};
 
 function loadPersonalData() {
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
@@ -701,7 +675,7 @@ function loadPersonalData() {
             const isCleaningDay = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0);
 
             if (!currentDuty) {
-                container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-2">${window.t('no_duties')}</p>`;
+                container.innerHTML = `<p class="text-[9px] text-slate-400 italic text-center py-2">${window.t('no_duties')}</p>`;
             } else {
                 const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
                 const isMyGroup = String(currentDuty.group) === String(myGroup);
@@ -711,7 +685,7 @@ function loadPersonalData() {
                 let alertHtml = '';
                 if (isMyGroup && isCleaningDay) {
                     badgeClass = 'bg-rose-500 text-white border-rose-600 shadow-sm';
-                    alertHtml = `<p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-2 animate-pulse flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>${window.t('cleaning_weekend')}</p>`;
+                    alertHtml = `<p class="text-[9px] font-black text-rose-500 uppercase tracking-widest mt-1.5 animate-pulse flex items-center gap-1"><svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="truncate">${window.t('cleaning_weekend')}</span></p>`;
                 }
 
                 let typeStr = currentDuty.type;
@@ -732,11 +706,11 @@ function loadPersonalData() {
                 }
 
                 container.innerHTML = `
-                    <div class="flex items-center justify-between mb-1">
-                        <span class="text-sm font-black text-slate-800 truncate pr-2">${typeStr}</span>
-                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border ${badgeClass} shrink-0">${groupStr}</span>
+                    <div class="flex items-center justify-between mb-0.5">
+                        <span class="text-xs md:text-sm font-black text-slate-800 truncate pr-1">${typeStr}</span>
+                        <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border ${badgeClass} shrink-0">${groupStr}</span>
                     </div>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">${localizedDateRange}</span>
+                    <span class="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest block">${localizedDateRange}</span>
                     ${alertHtml}
                 `;
             }
