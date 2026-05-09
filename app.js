@@ -140,7 +140,8 @@ const dict = {
         "scan_qr": "Отсканируйте код",
         "days_short": "дн.",
         "return_terr_btn": "Сдать",
-        "no_translation": "Нет перевода"
+        "no_translation": "Нет перевода",
+        "zoom_error": "Zoom не настроен администратором"
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -278,7 +279,8 @@ const dict = {
         "scan_qr": "Naskenujte kód",
         "days_short": "dní",
         "return_terr_btn": "Odevzdat",
-        "no_translation": "Bez překladu"
+        "no_translation": "Bez překladu",
+        "zoom_error": "Zoom není nastaven administrátorem"
     }
 };
 
@@ -376,7 +378,6 @@ window.showToast = (message, type = 'info') => {
     }, 5000);
 };
 
-// 🔥 БРОНЕБОЙНЫЙ МЕХАНИЗМ УВЕДОМЛЕНИЙ ДЛЯ ANDROID
 window.setupNotifications = async () => {
     const pushBtn = document.getElementById('push-btn');
     if (!messaging) return alert("❌ Ваше устройство или браузер не поддерживает Push-уведомления (Попробуйте использовать Chrome).");
@@ -388,7 +389,6 @@ window.setupNotifications = async () => {
 
         let permission = Notification.permission;
         
-        // Если пользователь ранее заблокировал уведомления, говорим ему об этом!
         if (permission === 'denied') {
             throw new Error("Уведомления заблокированы! Нажмите на 'Замок' в адресной строке сверху и разрешите уведомления.");
         }
@@ -400,7 +400,6 @@ window.setupNotifications = async () => {
         
         if (permission !== 'granted') throw new Error("Нет разрешения на пуши");
 
-        // Регистрируем SW через универсальный путь
         let registration = await navigator.serviceWorker.getRegistration();
         if (!registration) {
             registration = await navigator.serviceWorker.register('./sw.js');
@@ -444,6 +443,7 @@ const TOP_ROLES = ["Владелец", "Админ"];
 const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
 let currentUserData = null; 
 let hasFullAccess = false;
+let currentZoomData = { id: "", pass: "" }; // Глобальный объект для Zoom
 
 const d = new Date();
 const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
@@ -611,8 +611,13 @@ async function loadProfileData() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             if(congEl) congEl.innerText = data.name || "МАРИАНСКИЕ ЛАЗНЕ";
-            if (dashZoomId) dashZoomId.innerText = data.zoomId || "-";
-            if (dashZoomPass) dashZoomPass.innerText = data.zoomPass || "-";
+            
+            // Сохраняем в глобальную переменную для кнопки
+            currentZoomData.id = data.zoomId || "";
+            currentZoomData.pass = data.zoomPass || "";
+
+            if (dashZoomId) dashZoomId.innerText = currentZoomData.id || "-";
+            if (dashZoomPass) dashZoomPass.innerText = currentZoomData.pass || "-";
         }
     });
 
@@ -627,6 +632,24 @@ async function loadProfileData() {
         } else if (pOverseer) { pOverseer.innerText = "-"; }
     } catch(e) {}
 }
+
+// 🔥 ФУНКЦИЯ ДЛЯ КНОПКИ ZOOM
+window.joinZoom = () => {
+    if (!currentZoomData || !currentZoomData.id || currentZoomData.id === '-') {
+        return alert(window.t('zoom_error') || 'Zoom не настроен администратором');
+    }
+    
+    // Очищаем ID от пробелов
+    const cleanId = currentZoomData.id.replace(/\s/g, '');
+    const pass = currentZoomData.pass || '';
+    
+    // Формируем чистую ссылку на веб-версию (она сама предложит открыть приложение)
+    const webUrl = `https://zoom.us/j/${cleanId}${pass ? '?pwd=' + pass : ''}`;
+    
+    // Открываем
+    window.open(webUrl, '_blank');
+};
+
 
 function loadPersonalData() {
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
@@ -934,7 +957,7 @@ function loadPersonalData() {
                         } else if (currentLang === 'ru') {
                             if (hasRu) {
                                 displayText = item.text_ru;
-                                shouldShow = true;
+                                window.showToast = true;
                             } else if (!hasRu && !hasCs && hasImg) {
                                 shouldShow = true; 
                             }
@@ -943,7 +966,7 @@ function loadPersonalData() {
                                 displayText = item.text_cs;
                                 shouldShow = true;
                             } else if (!hasRu && !hasCs && hasImg) {
-                                  shouldShow = true; 
+                                shouldShow = true; 
                             }
                         }
 
