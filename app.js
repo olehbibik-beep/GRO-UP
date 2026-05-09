@@ -45,9 +45,9 @@ const dict = {
         "error_network": "Ошибка сети!",
         "access_denied": "ДОСТУП ЗАКРЫТ",
         "no_group": "Без группы",
-        "no_duties": "На этой неделе дежурств нет",
+        "no_duties": "Нет дежурств",
         "duty_reminder": "Напоминание: Ваша группа дежурит в эти выходные!",
-        "cleaning_weekend": "Уборка в эти выходные!",
+        "cleaning_weekend": "Уборка",
         "no_active_territories": "У вас пока нет активных участков",
         "territory_num": "Участок №",
         "active": "Активен",
@@ -78,7 +78,6 @@ const dict = {
         "alert_publish_error": "Ошибка публикации! Проверьте правила Storage.",
         "confirm_delete_news": "Удалить это объявление?",
         "confirm_delete_task": "Точно удалить это задание?",
-        // Админка
         "admin_title": "Панель Администратора",
         "back_home": "На главную",
         "users_title": "Пользователи",
@@ -132,7 +131,7 @@ const dict = {
         "no_map": "Нет карты",
         "opt_cleaning": "🧹 Уборка зала",
         "opt_special_event": "⭐ Специальное событие",
-        "all_groups": "Вše",
+        "all_groups": "Все",
         "congregation_label": "Собрание",
         "scan_qr": "Отсканируйте код",
         "days_short": "дн.",
@@ -189,9 +188,9 @@ const dict = {
         "error_network": "Chyba sítě!",
         "access_denied": "PŘÍSTUP ODEPŘEN",
         "no_group": "Bez skupiny",
-        "no_duties": "Tento týden nejsou žádné služby",
+        "no_duties": "Žádné služby",
         "duty_reminder": "Připomenutí: Vaše skupina má tento víkend službu!",
-        "cleaning_weekend": "Úklid tento víkend!",
+        "cleaning_weekend": "Úklid",
         "no_active_territories": "Zatím nemáte žádné aktivní obvody",
         "territory_num": "Obvod č.",
         "active": "Aktivní",
@@ -222,7 +221,6 @@ const dict = {
         "alert_publish_error": "Chyba publikování! Zkontrolujte pravidla Storage.",
         "confirm_delete_news": "Smazat toto oznámení?",
         "confirm_delete_task": "Opravdu smazat tento úkol?",
-        // Админка
         "admin_title": "Panel administrátora",
         "back_home": "Na hlavní stránku",
         "users_title": "Uživatelé",
@@ -398,13 +396,16 @@ window.setupNotifications = async () => {
         if (pushBtn) pushBtn.innerHTML = '⏳'; 
 
         let permission = Notification.permission;
+        
         if (permission === 'denied') {
             throw new Error("Уведомления заблокированы! Разрешите их в настройках телефона.");
         }
+        
         if (permission !== 'granted') {
             const req = Notification.requestPermission();
             permission = (req instanceof Promise) ? await req : await new Promise(res => Notification.requestPermission(res));
         }
+        
         if (permission !== 'granted') throw new Error("Нет разрешения на пуши");
 
         let registration = await navigator.serviceWorker.getRegistration();
@@ -645,6 +646,7 @@ window.joinZoom = (event) => {
     window.location.href = webUrl;
 };
 
+// 🔥 ЖИВОЙ ВИДЖЕТ СТЕНДОВ С ЗАГЛУШКОЙ UNDEFINED
 function renderStandCard() {
     const container = document.getElementById('stand-widget-container');
     if (!container) return;
@@ -708,10 +710,10 @@ function updateStandWidgetUI() {
         const statsHtml = `
             <div class="mt-4 pt-4 border-t border-slate-100">
                 <div class="flex items-center justify-between mb-1.5">
-                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_month_shifts')}</span>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_month_shifts') || 'Смен в этом месяце'}</span>
                     <span class="${txtColor} font-black text-xs bg-slate-50 border border-slate-200 px-2 py-0.5 rounded shadow-sm">${monthCount}</span>
                 </div>
-                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex">
+                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex shadow-inner">
                     <div class="${progressColor} h-1.5 rounded-full transition-all" style="width: ${progressPercent}%"></div>
                 </div>
             </div>
@@ -726,15 +728,17 @@ function updateStandWidgetUI() {
 
                 const dayNum = parseInt(parts[2], 10);
                 const monthIndex = parseInt(parts[1], 10) - 1;
+                
+                // Защита: чтобы не было undefined если локация отсутствует в старой базе
+                const locName = shift.location && shift.location !== "undefined" ? shift.location : "ML - CupVital";
+                
+                // Защита для месяцев (на случай если словарь загружен некорректно)
                 const monthNameArr = window.t('months');
                 const monthName = (Array.isArray(monthNameArr) && monthNameArr[monthIndex]) ? monthNameArr[monthIndex] : parts[1];
-                
-                // 🔥 ЗАЩИТА: Если локация не указана в старой базе
-                const locName = shift.location && shift.location !== "undefined" ? shift.location : "ML - CupVital";
 
                 shiftsListHtml += `
                     <div class="w-full bg-slate-50 border border-slate-200 flex items-center p-2 rounded-md mb-2 last:mb-0 shadow-sm hover:bg-white transition-colors">
-                        <div class="flex flex-col items-center justify-center w-10 h-10 bg-slate-800 text-white rounded border border-slate-700 shrink-0">
+                        <div class="flex flex-col items-center justify-center w-10 h-10 bg-slate-800 text-white rounded border border-slate-700 shrink-0 shadow-inner">
                             <span class="text-[7px] uppercase font-bold leading-none mb-0.5 tracking-widest">${monthName}</span>
                             <span class="text-base font-black leading-none">${dayNum}</span>
                         </div>
@@ -748,7 +752,7 @@ function updateStandWidgetUI() {
 
             contentHtml = `
                 <div class="mt-3">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">${window.t('stand_upcoming')}</p>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">${window.t('stand_upcoming') || 'Твои ближайшие записи'}</p>
                     ${shiftsListHtml}
                 </div>
                 ${statsHtml}
@@ -757,7 +761,7 @@ function updateStandWidgetUI() {
             contentHtml = `
                 <div class="w-full p-6 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center rounded-md mt-3 shadow-sm">
                     <svg class="w-8 h-8 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_no_records')}</p>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_no_records') || 'Нет записей'}</p>
                 </div>
                 ${statsHtml}
             `;
@@ -765,7 +769,7 @@ function updateStandWidgetUI() {
 
     } else {
         if (isStandReqPending) {
-            buttonHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none mt-3">${window.t('stand_pending') || 'Заявка отправлена'}</button>`;
+            buttonHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none mt-3 shadow-sm">${window.t('stand_pending') || 'Заявка отправлена'}</button>`;
         } else {
             buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mt-3 shadow-sm">${window.t('stand_apply') || 'Подать заявку'}</button>`;
         }
@@ -778,11 +782,11 @@ function updateStandWidgetUI() {
     }
 
     container.innerHTML = `
-        <div class="bg-white rounded-md border border-slate-200 overflow-hidden p-4 w-full mb-6">
+        <div class="bg-white rounded-md border border-slate-200 overflow-hidden p-4 w-full mb-6 shadow-sm">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                 <h3 class="font-black text-slate-800 text-base md:text-lg flex items-center gap-2">
                     <svg class="w-5 h-5 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                    ${window.t('stand_title')}
+                    ${window.t('stand_title') || 'Служение со стендом'}
                 </h3>
             </div>
             ${contentHtml}
@@ -790,30 +794,6 @@ function updateStandWidgetUI() {
         </div>
     `;
 }
-
-window.requestStand = async (btn) => {
-    btn.innerText = "..."; btn.disabled = true;
-    try {
-        await addDoc(collection(db, "requests"), { 
-            type: "stand", 
-            userId: userId, 
-            userName: currentUserData.name, 
-            status: "new", 
-            createdAt: new Date().toISOString() 
-        });
-        btn.classList.replace('bg-slate-800', 'bg-emerald-500');
-        btn.innerHTML = `✅ ${window.t('success') || 'Успешно'}`;
-        setTimeout(() => { 
-            btn.classList.replace('bg-emerald-500', 'bg-slate-100');
-            btn.classList.replace('text-white', 'text-slate-400');
-            btn.innerText = window.t('stand_pending'); 
-        }, 2000);
-    } catch (e) { 
-        alert(window.t('error_network') || 'Ошибка сети!'); 
-        btn.innerText = window.t('stand_apply'); 
-        btn.disabled = false; 
-    }
-};
 
 function loadPersonalData() {
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
@@ -859,17 +839,17 @@ function loadPersonalData() {
             const isCleaningDay = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0);
 
             if (!currentDuty) {
-                container.innerHTML = `<p class="text-[9px] text-slate-400 italic text-center py-2">${window.t('no_duties')}</p>`;
+                container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-2">${window.t('no_duties')}</p>`;
             } else {
                 const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
                 const isMyGroup = String(currentDuty.group) === String(myGroup);
                 
-                let badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
+                let badgeClass = isMyGroup ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200';
                 
                 let alertHtml = '';
                 if (isMyGroup && isCleaningDay) {
                     badgeClass = 'bg-rose-500 text-white border-rose-600 shadow-sm';
-                    alertHtml = `<p class="text-[9px] font-black text-rose-500 uppercase tracking-widest mt-1.5 animate-pulse flex items-center gap-1"><svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="truncate">${window.t('cleaning_weekend')}</span></p>`;
+                    alertHtml = `<p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-1 animate-pulse flex items-center gap-1"><svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="truncate">${window.t('cleaning_weekend')}</span></p>`;
                 }
 
                 let typeStr = currentDuty.type;
@@ -890,12 +870,16 @@ function loadPersonalData() {
                 }
 
                 container.innerHTML = `
-                    <div class="flex items-center justify-between mb-0.5">
-                        <span class="text-xs md:text-sm font-black text-slate-800 truncate pr-1">${typeStr}</span>
-                        <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border ${badgeClass} shrink-0">${groupStr}</span>
+                    <div class="flex items-center justify-between w-full h-full">
+                        <div class="flex flex-col justify-center pr-2 min-w-0">
+                            <span class="text-sm md:text-base font-black text-slate-800 leading-tight truncate">${typeStr}</span>
+                            <span class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">${localizedDateRange}</span>
+                            ${alertHtml}
+                        </div>
+                        <div class="flex items-center justify-center px-4 py-2 rounded-md border ${badgeClass} h-full min-h-[48px] shrink-0">
+                            <span class="text-sm md:text-base font-black uppercase tracking-widest">${groupStr}</span>
+                        </div>
                     </div>
-                    <span class="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest block">${localizedDateRange}</span>
-                    ${alertHtml}
                 `;
             }
 
@@ -984,7 +968,7 @@ function loadPersonalData() {
                                 <button onclick="markTerritoryReturned('${docSnap.id}')" class="text-[9px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-md uppercase transition-colors outline-none shadow-sm">${window.t('return_terr_btn') || 'Сдать'}</button>
                             </div>
                             <div class="flex items-center gap-3">
-                                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex">
+                                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex shadow-inner">
                                     <div class="${barColor} h-1.5 rounded-full transition-all" style="width: ${progress}%"></div>
                                 </div>
                                 <span class="${textColor} text-[9px] font-black uppercase tracking-widest shrink-0 leading-none">${diffDays} ${window.t('days_short') || 'дн.'}</span>
@@ -1003,210 +987,77 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    window.markTerritoryReturned = async (id) => {
-        if (confirm('Точно сдать этот участок?')) { 
-            try {
-                await updateDoc(doc(db, "territories", id), {
-                    status: 'returned',
-                    returnedAt: new Date().toISOString()
-                });
-                window.showToast("Участок сдан! ✅");
-            } catch (e) {
-                alert("Ошибка сети!");
-            }
-        }
-    };
-
     try {
-        const tasksQuery = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
-        onSnapshot(tasksQuery, (snapshot) => {
-            const upList = document.getElementById('upcoming-tasks-list');
-            const pastList = document.getElementById('past-tasks-list');
-            if(!upList || !pastList) return;
-            upList.innerHTML = ''; pastList.innerHTML = '';
+        const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
+        onSnapshot(eventsQuery, (snapshot) => {
+            const container = document.getElementById('calendar-events');
+            if (!container) return; 
+            let html = '';
             
-            let upCount = 0, pastCount = 0;
-            const today = new Date(); today.setHours(0,0,0,0);
-            
+            const now = new Date();
+            const tzOffset = now.getTimezoneOffset() * 60000;
+            const todayStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
+
             snapshot.forEach(docSnap => {
-                const task = docSnap.data();
-                if (task.userId === userId || task.assistant === currentUserData.name) {
-                    const taskDate = new Date(task.date);
-                    const isPast = taskDate < today;
-                    const isAssistant = task.assistant === currentUserData.name;
-                    const opacityClass = isPast ? "opacity-60 grayscale bg-slate-50 border-slate-200" : "bg-white border-slate-200 shadow-sm";
-                    let roleText = isAssistant 
-                        ? `${window.t('assistant_for')} <span class="text-sky-600 ml-1 truncate">${task.userName}</span>` 
-                        : `${window.t('speech')} ${task.assistant ? `<span class="text-slate-500 text-[10px] md:text-xs block mt-0.5 truncate">${window.t('assistant_short')} <span class="text-sky-600">${task.assistant}</span></span>` : ''}`;
+                const ev = docSnap.data();
+                
+                if (ev.date === todayStr) {
+                    let isPastEvent = false;
+                    let displayTime = ev.time || "";
+                    
+                    if (displayTime) {
+                        let hours = 0, minutes = 0;
+                        if (!displayTime.includes(':') && displayTime.length >= 3) {
+                            if (displayTime.length === 4) displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
+                            else if (displayTime.length === 3) displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
+                        }
+                        if (displayTime.includes(':')) {
+                            [hours, minutes] = displayTime.split(':');
+                            const eventExactTime = new Date();
+                            eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+                            if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
+                        }
+                    }
 
-                    let catStr = task.category || task.title || "";
-                    if (catStr === 'ЧТЕНИЕ БИБЛИИ') catStr = window.t('cat_reading_db').replace('📖 ','');
-                    if (catStr === 'НАЧИНАЙТЕ РАЗГОВОР') catStr = window.t('cat_conversation').replace('🗣️ ','');
-                    if (catStr === 'РАЗВИВАЙТЕ ИНТЕРЕС') catStr = window.t('cat_interest').replace('🌱 ','');
-                    if (catStr === 'ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ') catStr = window.t('cat_disciples').replace('👥 ','');
-                    if (catStr === 'ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ') catStr = window.t('cat_beliefs').replace('💡 ','');
-                    if (catStr === 'РЕЧЬ') catStr = window.t('cat_talk_db').replace('🎙️ ','');
+                    const evGroup = ev.group || window.t('no_group');
+                    const groupBadge = evGroup !== window.t('no_group') 
+                        ? `<div class="flex items-center justify-center px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-md shrink-0 ml-auto">
+                             <span class="text-xs md:text-sm font-black uppercase tracking-widest text-slate-700">${window.t('group_short')} ${evGroup}</span>
+                           </div>` 
+                        : '';
+                    const activeClass = isPastEvent ? "bg-slate-50 text-slate-400 border-b border-slate-200" : "bg-white text-slate-800 border-b border-slate-100";
+                    const timeColor = isPastEvent ? "text-slate-400" : "text-rose-500";
+                    const leaderColor = isPastEvent ? "text-slate-400" : "text-rose-600";
+                    
+                    const dayNum = ev.date ? parseInt(ev.date.split('-')[2], 10) : now.getDate();
 
-                    const cardHtml = `
-                        <div class="p-4 rounded-md border ${opacityClass} mb-3 relative overflow-hidden transition-all">
-                            <div class="flex items-center gap-3">
-                                <div class="flex flex-col items-center justify-center w-12 h-12 ${isPast ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-sky-50 border-sky-100 text-sky-500'} rounded border shrink-0">
-                                    <span class="text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${taskDate.toLocaleDateString(localeFormat, { month: 'short' }).replace('.', '')}</span>
-                                    <span class="text-xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${taskDate.getDate()}</span>
+                    html += `
+                        <div class="flex items-center p-3 w-full cursor-default ${activeClass}">
+                            <div class="flex items-center gap-3 w-full">
+                                <div class="flex flex-col items-center justify-center w-12 h-12 bg-slate-50 border border-slate-200 rounded-md shrink-0">
+                                    <span class="text-[8px] uppercase font-bold text-slate-400 leading-none mb-1 tracking-widest">${window.t('today_badge')}</span>
+                                    <span class="text-xl font-black text-slate-700 leading-none">${dayNum}</span>
                                 </div>
-                                <div class="min-w-0 flex flex-col justify-center gap-1 w-full">
-                                    <h3 class="font-black text-slate-800 text-sm leading-tight">${roleText}</h3>
-                                    <div class="flex items-center justify-between gap-2">
-                                        <div class="flex items-center gap-1.5 min-w-0">
-                                            <span class="font-black ${isPast ? 'text-slate-500' : 'text-sky-700'} text-[9px] uppercase tracking-wide leading-tight truncate">${catStr}</span>
-                                        </div>
-                                        ${task.lesson ? `<span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded shrink-0">${window.t('lesson')} ${task.lesson}</span>` : ''}
+                                <div class="flex flex-col flex-grow truncate min-w-0">
+                                    <div class="flex items-center gap-2 truncate">
+                                        ${displayTime ? `<span class="text-sm font-black shrink-0 ${timeColor}">${displayTime}</span>` : ''}
+                                        <span class="font-black text-sm md:text-base truncate text-slate-800">${ev.title}</span>
                                     </div>
+                                    ${ev.leader ? `<span class="text-[10px] md:text-xs uppercase font-bold text-slate-500 truncate mt-0.5">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
                                 </div>
+                                ${groupBadge}
                             </div>
                         </div>
                     `;
-                    
-                    if (!isPast) { 
-                        upCount++; 
-                        upList.innerHTML += cardHtml; 
-                        
-                        if (!sessionStorage.getItem('task_toast_' + docSnap.id)) {
-                            window.showToast(`📚 ${window.t('new_task_toast')} ${task.category || task.title}`, 'info');
-                            sessionStorage.setItem('task_toast_' + docSnap.id, 'true');
-                        }
-                    } 
-                    else { 
-                        pastCount++; 
-                        pastList.innerHTML += cardHtml; 
-                    }
-                }
-            });
-            if (upCount === 0) upList.innerHTML = `<p class="text-slate-400 text-sm italic py-2 text-center border border-slate-200 rounded-md">${window.t('no_tasks_upcoming')}</p>`;
-            if (pastCount === 0) pastList.innerHTML = `<p class="text-slate-400 text-sm italic py-2 text-center">${window.t('history_empty')}</p>`;
-        });
-    } catch(e){}
 
-    try {
-        const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
-        onSnapshot(newsQuery, (snapshot) => {
-            let newsHTML = ``; 
-            
-            const now = new Date().getTime();
-            const oneWeek = 7 * 24 * 60 * 60 * 1000;
-            const oneDay = 24 * 60 * 60 * 1000;
-
-            const isNewsAdmin = currentUserData.roles && (currentUserData.roles.includes('Админ') || currentUserData.roles.includes('Владелец') || currentUserData.roles.includes('Старейшина'));
-
-            snapshot.forEach(docSnap => {
-                const item = docSnap.data();
-                if(item.section === 'news') {
-                    const itemTime = new Date(item.createdAt).getTime();
-
-                    if (now - itemTime < oneWeek) {
-                        const isNew = (now - itemTime) < oneDay;
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 border border-red-100 px-2 py-2 rounded-md w-full transition-colors outline-none flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>${window.t('delete')}</button>` : '';
-                        
-                        let displayText = '';
-                        let shouldShow = false;
-
-                        const hasRu = !!item.text_ru;
-                        const hasCs = !!item.text_cs;
-                        const hasLegacyText = !!item.text && !hasRu && !hasCs; 
-                        const hasImg = !!item.imageUrl;
-
-                        if (hasLegacyText) {
-                            displayText = item.text;
-                            shouldShow = true;
-                        } else if (currentLang === 'ru') {
-                            if (hasRu) {
-                                displayText = item.text_ru;
-                                shouldShow = true;
-                            } else if (!hasRu && !hasCs && hasImg) {
-                                shouldShow = true; 
-                            }
-                        } else if (currentLang === 'cs') {
-                            if (hasCs) {
-                                displayText = item.text_cs;
-                                shouldShow = true;
-                            } else if (!hasRu && !hasCs && hasImg) {
-                                shouldShow = true; 
-                            }
-                        }
-
-                        if (!shouldShow) return; 
-
-                        const bgCardClass = isNew ? "bg-white border-slate-200 shadow-sm" : "bg-slate-50 opacity-90 border-slate-200";
-                        const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-block mb-2">${window.t('new_badge')}</span>` : '';
-
-                        let contentHtml = '';
-                        if (!displayText && !item.imageUrl) {
-                            contentHtml = `
-                                <div class="flex flex-col items-center justify-center h-full py-6 text-slate-300">
-                                    <svg class="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                                    <span class="text-[10px] font-black uppercase tracking-widest opacity-50">${window.t('no_translation')}</span>
-                                </div>
-                            `;
-                        } else {
-                            const textHtml = displayText ? `<p class="text-slate-700 whitespace-pre-wrap text-xs md:text-sm leading-relaxed font-medium">${displayText}</p>` : '';
-                            const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="${displayText ? 'mt-3' : ''} rounded-md max-h-48 w-full object-cover border border-slate-200 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
-                            contentHtml = textHtml + imgHtml;
-                        }
-
-                        newsHTML += `
-                        <div class="w-[240px] md:w-[280px] h-auto self-stretch shrink-0 snap-center p-4 rounded-md border transition-all flex flex-col justify-between ${bgCardClass}">
-                            <div>
-                                ${newBadge}
-                                ${contentHtml}
-                            </div>
-                            <div class="mt-auto pt-4">${deleteBtn}</div>
-                        </div>`;
-
-                        if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) {
-                            window.showToast(window.t('new_announcement_toast'), 'info');
-                            sessionStorage.setItem('news_toast_' + docSnap.id, 'true');
-                        }
+                    if (!isPastEvent && !sessionStorage.getItem('event_toast_' + docSnap.id)) {
+                        window.showToast(`${window.t('today_event_toast')} ${ev.title} ${displayTime ? ' ' + displayTime : ''}`, 'info');
+                        sessionStorage.setItem('event_toast_' + docSnap.id, 'true');
                     }
                 }
             });
 
-            if (isNewsAdmin) {
-                let textAreaHtml = '';
-                if (currentLang === 'ru') {
-                    textAreaHtml = `<textarea id="news-input-ru" rows="3" placeholder="${window.t('write_text_ru')}" class="w-full bg-white rounded-t-md border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400 resize-none font-medium text-slate-700"></textarea>`;
-                } else {
-                    textAreaHtml = `<textarea id="news-input-cs" rows="3" placeholder="${window.t('write_text_cs')}" class="w-full bg-slate-50 rounded-b-md border-x border-b border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400 resize-none font-medium text-slate-700"></textarea>`;
-                }
-
-                newsHTML += `
-                <div class="w-[240px] md:w-[280px] h-auto self-stretch shrink-0 snap-center p-4 rounded-md border border-dashed border-slate-400 bg-slate-100/50 flex flex-col justify-center relative">
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 text-center flex items-center justify-center gap-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>${window.t('create_announcement')}</p>
-                    
-                    ${textAreaHtml}
-                    
-                    <div class="flex items-center justify-between mt-3 gap-2">
-                        <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-md transition-colors flex items-center justify-center w-10 h-8 shrink-0 shadow-sm">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                            <input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)">
-                        </label>
-                        <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 rounded-md flex-grow transition-colors h-8 outline-none shadow-sm">${window.t('publish')}</button>
-                    </div>
-                    <div id="image-preview-container" class="hidden mt-3 relative inline-block w-full">
-                        <img id="image-preview" src="" class="rounded-md max-h-20 w-full object-cover border border-slate-200">
-                        <button onclick="removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center outline-none">
-                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                    </div>
-                </div>`;
-            }
-
-            const contentNews = document.getElementById('content-news');
-            if(contentNews) {
-                contentNews.innerHTML = newsHTML || `
-                <div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-md border border-slate-200 flex items-center justify-center mx-4 md:mx-0 shadow-sm">
-                    <p class="text-slate-400 italic text-sm text-center">${window.t('no_news')}</p>
-                </div>`;
-            }
+            container.innerHTML = html || `<p class="p-4 text-xs text-slate-400 italic text-center">${window.t('no_events_today')}</p>`;
         });
     } catch(e) {}
 }
