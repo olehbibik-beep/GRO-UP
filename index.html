@@ -98,9 +98,9 @@
                     <div class="flex flex-row gap-3 mx-4 md:mx-0 mb-4 h-[84px]">
                         
                         <div class="w-1/2 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-row overflow-hidden">
-                            <button onclick="window.open('https://zoom.us/j/81247764801?pwd=OFdwTmtUL0VHc24yVWlmd0hVQU5CUT09#success', '_blank')" class="w-16 md:w-20 shrink-0 bg-[#22c55e] hover:bg-[#16a34a] transition-colors outline-none flex items-center justify-center shadow-inner">
+                            <a href="https://zoom.us/j/81247764801?pwd=OFdwTmtUL0VHc24yVWlmd0hVQU5CUT09#success" target="_blank" rel="noopener noreferrer" class="w-16 md:w-20 shrink-0 bg-[#22c55e] hover:bg-[#16a34a] transition-colors outline-none flex items-center justify-center shadow-inner cursor-pointer" style="text-decoration: none;">
                                 <span class="text-white font-black text-[12px] md:text-sm tracking-widest">ZOOM</span>
-                            </button>
+                            </a>
                             <div class="flex-grow bg-slate-50 flex flex-col justify-center pl-3 pr-1 border-l border-slate-100">
                                 <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-tight mb-1">ID: <span id="dash-zoom-id" class="text-slate-700 font-mono text-[9px] md:text-[11px] block">...</span></span>
                                 <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-tight">Pass: <span id="dash-zoom-pass" class="text-slate-700 font-mono text-[9px] md:text-[11px] block">...</span></span>
@@ -222,9 +222,6 @@
                     <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest" data-lang="congregation_label">Собрание</span>
                     <span id="profile-congregation" class="font-black text-indigo-600 text-sm truncate">Загрузка...</span>
                 </div>
-                <button onclick="openQrModal()" class="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-slate-500 hover:text-indigo-500 hover:border-indigo-300 transition-colors shadow-sm outline-none shrink-0">
-                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
-                </button>
             </div>
             
             <div class="bg-slate-50 rounded-lg border border-slate-200 p-3 mb-4 text-left text-xs">
@@ -283,14 +280,6 @@
             <div id="report-history-list" class="overflow-y-auto flex-grow space-y-3 pr-2 custom-scrollbar pb-2">
                 <p class="text-slate-400 text-sm italic" data-lang="loading_archive">Загрузка...</p>
             </div>
-        </div>
-    </div>
-
-    <div id="qr-modal" class="fixed inset-0 bg-slate-900/90 z-[80] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeQrModal()">
-        <div class="bg-white p-4 rounded-2xl relative max-w-xs w-full" onclick="event.stopPropagation()">
-            <button onclick="closeQrModal()" class="absolute -top-10 right-0 text-white text-3xl font-black outline-none">&times;</button>
-            <img src="qr.png" alt="QR Code" class="w-full h-auto rounded-xl border border-slate-200">
-            <p class="text-center text-sm font-bold text-slate-500 mt-4 uppercase tracking-widest" data-lang="scan_qr">Отсканируйте код</p>
         </div>
     </div>
 
