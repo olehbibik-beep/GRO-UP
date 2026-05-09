@@ -598,10 +598,11 @@ function renderStandCard() {
     const roles = currentUserData.roles || [];
     const isApprovedForStand = roles.includes('Служение со стендом') || roles.includes('Владелец') || roles.includes('Админ');
 
-    const tzOffset = new Date().getTimezoneOffset() * 60000;
-    const todayStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+    const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
 
-    // Проверяем 1. Ожидающие заявки, 2. Будущие записи на стенд
     Promise.all([
         getDocs(query(collection(db, "requests"), where("userId", "==", userId), where("type", "==", "stand"))),
         getDocs(query(collection(db, "stands"), where("userId", "==", userId)))
@@ -609,75 +610,114 @@ function renderStandCard() {
         
         const hasPendingRequest = !reqSnap.empty;
         
-        // Ищем ближайшую смену (начиная с сегодня)
         let upcomingShifts = [];
-        standsSnap.forEach(doc => {
-            const data = doc.data();
+        let monthCount = 0;
+
+        standsSnap.forEach(docSnap => {
+            const data = docSnap.data();
+            // Считаем все смены в текущем месяце
+            if (data.date >= firstDayStr) monthCount++;
+            // Отбираем будущие смены
             if (data.date >= todayStr) upcomingShifts.push(data);
         });
         
-        // Сортируем: сначала по дате, потом по времени
         upcomingShifts.sort((a, b) => {
             if (a.date !== b.date) return a.date.localeCompare(b.date);
             return a.time.localeCompare(b.time);
         });
 
-        const nextShift = upcomingShifts.length > 0 ? upcomingShifts[0] : null;
+        // Берем до 3 предстоящих смен
+        const nextShifts = upcomingShifts.slice(0, 3);
 
         let buttonHtml = '';
         let contentHtml = '';
 
         if (isApprovedForStand) {
-            buttonHtml = `<button onclick="window.location.href='stands.html'" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-lg text-xs uppercase tracking-widest outline-none shadow-sm transition-colors mt-3">${window.t('stand_signup')}</button>`;
+            buttonHtml = `<button onclick="window.location.href='stands.html'" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mt-4">${window.t('stand_signup') || 'Записаться'}</button>`;
             
-            if (nextShift) {
-                // ЕСТЬ ЗАПИСЬ: Показываем Быстрый просмотр
-                const dayNum = parseInt(nextShift.date.split('-')[2], 10);
-                const monthIndex = parseInt(nextShift.date.split('-')[1], 10) - 1;
-                const monthName = window.t('months')[monthIndex];
+            // 🔥 Индикатор часов (слотов)
+            let progressColor = 'bg-emerald-500';
+            let txtColor = 'text-emerald-700';
+            if (monthCount >= 20) { progressColor = 'bg-rose-500'; txtColor = 'text-rose-700'; }
+            else if (monthCount >= 10) { progressColor = 'bg-amber-500'; txtColor = 'text-amber-700'; }
+            
+            let progressPercent = (monthCount / 50) * 100;
+            if (progressPercent > 100) progressPercent = 100;
+
+            const statsHtml = `
+                <div class="mt-4 pt-4 border-t border-slate-100">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Смен в этом месяце</span>
+                        <span class="${txtColor} font-black text-xs">${monthCount}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex">
+                        <div class="${progressColor} h-1.5 rounded-full transition-all" style="width: ${progressPercent}%"></div>
+                    </div>
+                </div>
+            `;
+
+            if (nextShifts.length > 0) {
+                let shiftsListHtml = '';
+                nextShifts.forEach(shift => {
+                    if (!shift || !shift.date) return;
+                    const parts = shift.date.split('-');
+                    if (parts.length < 3) return;
+
+                    const dayNum = parseInt(parts[2], 10);
+                    const monthIndex = parseInt(parts[1], 10) - 1;
+                    const monthName = window.t('months') ? window.t('months')[monthIndex] : parts[1];
+
+                    shiftsListHtml += `
+                        <div class="w-full bg-slate-50 border border-slate-200 flex items-center p-2 rounded-md mb-2 last:mb-0">
+                            <div class="flex flex-col items-center justify-center w-10 h-10 bg-slate-800 text-white rounded border border-slate-700 shrink-0">
+                                <span class="text-[7px] uppercase font-bold leading-none mb-0.5 tracking-widest">${monthName}</span>
+                                <span class="text-base font-black leading-none">${dayNum}</span>
+                            </div>
+                            <div class="ml-3 flex flex-col truncate w-full">
+                                <p class="font-black text-slate-800 text-xs truncate leading-tight">${shift.location}</p>
+                                <p class="text-[10px] font-bold text-slate-500 mt-0.5 font-mono">${shift.time}</p>
+                            </div>
+                        </div>
+                    `;
+                });
 
                 contentHtml = `
-                    <div class="w-full bg-blue-50 border border-blue-100 flex items-center p-3 rounded-xl mt-3 shadow-sm">
-                        <div class="flex flex-col items-center justify-center w-12 h-12 bg-blue-500 text-white rounded-lg border border-blue-600 shrink-0">
-                            <span class="text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${monthName}</span>
-                            <span class="text-xl font-black leading-none">${dayNum}</span>
-                        </div>
-                        <div class="ml-3 flex flex-col truncate w-full">
-                            <p class="text-[9px] font-bold text-blue-400 uppercase tracking-widest mb-0.5">Твоя следующая смена</p>
-                            <p class="font-black text-slate-800 text-sm truncate leading-tight">${nextShift.location}</p>
-                            <p class="text-xs font-bold text-slate-500 mt-0.5">${nextShift.time}</p>
-                        </div>
+                    <div class="mt-3">
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Твои ближайшие записи</p>
+                        ${shiftsListHtml}
                     </div>
+                    ${statsHtml}
                 `;
             } else {
-                // НЕТ ЗАПИСЕЙ: Просто красивая картинка
                 contentHtml = `
-                    <div class="w-full h-24 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center rounded-lg mt-3">
-                        <svg class="w-10 h-10 text-white opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    <div class="w-full p-6 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center rounded-md mt-3">
+                        <svg class="w-8 h-8 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Нет записей</p>
                     </div>
+                    ${statsHtml}
                 `;
             }
 
         } else {
             if (hasPendingRequest) {
-                buttonHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black py-3 rounded-lg text-xs uppercase tracking-widest outline-none mt-3">${window.t('stand_pending')}</button>`;
+                buttonHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none mt-3">${window.t('stand_pending') || 'Заявка отправлена'}</button>`;
             } else {
-                buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-lg text-xs uppercase tracking-widest outline-none shadow-sm transition-colors mt-3">${window.t('stand_apply')}</button>`;
+                buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mt-3">${window.t('stand_apply') || 'Подать заявку'}</button>`;
             }
             
             contentHtml = `
-                <div class="w-full h-24 bg-slate-100 border border-slate-200 border-dashed flex items-center justify-center rounded-lg mt-3">
+                <div class="w-full h-24 bg-slate-50 border border-slate-200 flex items-center justify-center rounded-md mt-3">
                     <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                 </div>
             `;
         }
 
         container.innerHTML = `
-            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm p-4 w-full">
+            <div class="bg-white rounded-lg border border-slate-200 overflow-hidden p-4 w-full mb-6">
                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                     <h3 class="font-black text-slate-800 text-base md:text-lg flex items-center gap-2">
-                        <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                        ${window.t('stand_title')}
+                        <svg class="w-5 h-5 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                        ${window.t('stand_title') || 'Служение со стендом'}
                     </h3>
                 </div>
                 ${contentHtml}
