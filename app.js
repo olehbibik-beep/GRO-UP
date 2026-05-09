@@ -590,6 +590,7 @@ window.joinZoom = (event) => {
 };
 
 
+// 🔥 ФУНКЦИЯ: ОТРИСОВКА КАРТОЧКИ СТЕНДА ДЛЯ ПОЛЬЗОВАТЕЛЯ С БЫСТРЫМ ПРОСМОТРОМ
 function renderStandCard() {
     const container = document.getElementById('stand-widget-container');
     if (!container) return;
@@ -597,21 +598,66 @@ function renderStandCard() {
     const roles = currentUserData.roles || [];
     const isApprovedForStand = roles.includes('Служение со стендом') || roles.includes('Владелец') || roles.includes('Админ');
 
-    const q = query(collection(db, "requests"), where("userId", "==", userId), where("type", "==", "stand"));
-    getDocs(q).then(snap => {
-        const hasPendingRequest = !snap.empty;
+    const tzOffset = new Date().getTimezoneOffset() * 60000;
+    const todayStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
+
+    // Проверяем 1. Ожидающие заявки, 2. Будущие записи на стенд
+    Promise.all([
+        getDocs(query(collection(db, "requests"), where("userId", "==", userId), where("type", "==", "stand"))),
+        getDocs(query(collection(db, "stands"), where("userId", "==", userId)))
+    ]).then(([reqSnap, standsSnap]) => {
+        
+        const hasPendingRequest = !reqSnap.empty;
+        
+        // Ищем ближайшую смену (начиная с сегодня)
+        let upcomingShifts = [];
+        standsSnap.forEach(doc => {
+            const data = doc.data();
+            if (data.date >= todayStr) upcomingShifts.push(data);
+        });
+        
+        // Сортируем: сначала по дате, потом по времени
+        upcomingShifts.sort((a, b) => {
+            if (a.date !== b.date) return a.date.localeCompare(b.date);
+            return a.time.localeCompare(b.time);
+        });
+
+        const nextShift = upcomingShifts.length > 0 ? upcomingShifts[0] : null;
 
         let buttonHtml = '';
-        let imageHtml = '';
+        let contentHtml = '';
 
         if (isApprovedForStand) {
             buttonHtml = `<button onclick="window.location.href='stands.html'" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-lg text-xs uppercase tracking-widest outline-none shadow-sm transition-colors mt-3">${window.t('stand_signup')}</button>`;
             
-            imageHtml = `
-                <div class="w-full h-24 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center rounded-lg mt-3">
-                    <svg class="w-10 h-10 text-white opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                </div>
-            `;
+            if (nextShift) {
+                // ЕСТЬ ЗАПИСЬ: Показываем Быстрый просмотр
+                const dayNum = parseInt(nextShift.date.split('-')[2], 10);
+                const monthIndex = parseInt(nextShift.date.split('-')[1], 10) - 1;
+                const monthName = window.t('months')[monthIndex];
+
+                contentHtml = `
+                    <div class="w-full bg-blue-50 border border-blue-100 flex items-center p-3 rounded-xl mt-3 shadow-sm">
+                        <div class="flex flex-col items-center justify-center w-12 h-12 bg-blue-500 text-white rounded-lg border border-blue-600 shrink-0">
+                            <span class="text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${monthName}</span>
+                            <span class="text-xl font-black leading-none">${dayNum}</span>
+                        </div>
+                        <div class="ml-3 flex flex-col truncate w-full">
+                            <p class="text-[9px] font-bold text-blue-400 uppercase tracking-widest mb-0.5">Твоя следующая смена</p>
+                            <p class="font-black text-slate-800 text-sm truncate leading-tight">${nextShift.location}</p>
+                            <p class="text-xs font-bold text-slate-500 mt-0.5">${nextShift.time}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // НЕТ ЗАПИСЕЙ: Просто красивая картинка
+                contentHtml = `
+                    <div class="w-full h-24 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center rounded-lg mt-3">
+                        <svg class="w-10 h-10 text-white opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    </div>
+                `;
+            }
+
         } else {
             if (hasPendingRequest) {
                 buttonHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black py-3 rounded-lg text-xs uppercase tracking-widest outline-none mt-3">${window.t('stand_pending')}</button>`;
@@ -619,7 +665,7 @@ function renderStandCard() {
                 buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-lg text-xs uppercase tracking-widest outline-none shadow-sm transition-colors mt-3">${window.t('stand_apply')}</button>`;
             }
             
-            imageHtml = `
+            contentHtml = `
                 <div class="w-full h-24 bg-slate-100 border border-slate-200 border-dashed flex items-center justify-center rounded-lg mt-3">
                     <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                 </div>
@@ -634,7 +680,7 @@ function renderStandCard() {
                         ${window.t('stand_title')}
                     </h3>
                 </div>
-                ${imageHtml}
+                ${contentHtml}
                 ${buttonHtml}
             </div>
         `;
