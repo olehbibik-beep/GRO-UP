@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title data-lang="stand_admin_title">Управление стендами</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f8fafc' } } } } }
+    </script>
+</head>
+<body class="bg-ui-bg text-slate-800 min-h-screen font-sans pb-20">
+    
+    <nav class="fixed top-0 left-0 w-full bg-white border-b border-slate-200 flex items-center h-14 z-50 px-4 shadow-sm">
+        <a href="index.html" class="flex items-center text-slate-500 hover:text-blue-600 transition-colors outline-none font-bold text-sm gap-2">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            <span data-lang="btn_back">Назад</span>
+        </a>
+        <h1 class="mx-auto font-black text-slate-800 absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
+            <span data-lang="stand_admin_title">Стенды (Админ)</span>
+        </h1>
+    </nav>
+
+    <main class="w-full max-w-4xl mx-auto pt-20 px-4">
+        
+        <section class="mb-8">
+            <h2 class="text-sm font-bold flex items-center gap-2 mb-3 uppercase tracking-widest text-slate-500">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                <span data-lang="requests_title">Заявки на стенд</span> (<span id="stand-req-count">0</span>)
+            </h2>
+            <div class="bg-white rounded-xl shadow-sm border border-amber-100 overflow-hidden">
+                <div id="stand-requests-list" class="divide-y divide-slate-50"></div>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-sm font-bold flex items-center gap-2 mb-3 uppercase tracking-widest text-slate-500">
+                <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span data-lang="approved_users">Одобренные возвещатели</span>
+            </h2>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden p-4">
+                <div id="approved-users-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-sm font-bold uppercase tracking-widest text-slate-500 mb-3" data-lang="settings_stats">Настройки и статистика (В разработке)</h2>
+            <div class="bg-slate-100 border border-slate-200 border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center">
+                <svg class="w-12 h-12 text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <p class="text-sm font-bold text-slate-400" data-lang="future_module">Здесь будет блокировка дней и статистика стенда</p>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
+    <script type="module" src="stand-admin.js?v=1"></script>
+</body>
+</html>
