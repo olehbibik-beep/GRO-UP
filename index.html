@@ -98,9 +98,9 @@
                     <div class="flex flex-row gap-3 mx-4 md:mx-0 mb-4 h-[84px]">
                         
                         <div class="w-1/2 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-row overflow-hidden">
-                            <a href="https://zoom.us/j/81247764801?pwd=OFdwTmtUL0VHc24yVWlmd0hVQU5CUT09#success" target="_blank" rel="noopener noreferrer" class="w-16 md:w-20 shrink-0 bg-[#22c55e] hover:bg-[#16a34a] transition-colors outline-none flex items-center justify-center shadow-inner cursor-pointer" style="text-decoration: none;">
+                            <button onclick="joinZoom()" class="w-16 md:w-20 shrink-0 bg-[#22c55e] hover:bg-[#16a34a] transition-colors outline-none flex items-center justify-center shadow-inner cursor-pointer">
                                 <span class="text-white font-black text-[12px] md:text-sm tracking-widest">ZOOM</span>
-                            </a>
+                            </button>
                             <div class="flex-grow bg-slate-50 flex flex-col justify-center pl-3 pr-1 border-l border-slate-100">
                                 <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-tight mb-1">ID: <span id="dash-zoom-id" class="text-slate-700 font-mono text-[9px] md:text-[11px] block">...</span></span>
                                 <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-tight">Pass: <span id="dash-zoom-pass" class="text-slate-700 font-mono text-[9px] md:text-[11px] block">...</span></span>
@@ -294,7 +294,7 @@
         </div>
     </div>
 
-    <script type="module" src="app.js?v=350"></script>
+    <script type="module" src="app.js?v=360"></script>
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
 </body>
 </html>
