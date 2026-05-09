@@ -78,6 +78,7 @@ const dict = {
         "alert_publish_error": "Ошибка публикации! Проверьте правила Storage.",
         "confirm_delete_news": "Удалить это объявление?",
         "confirm_delete_task": "Точно удалить это задание?",
+        // Админка
         "admin_title": "Панель Администратора",
         "back_home": "На главную",
         "users_title": "Пользователи",
@@ -221,6 +222,7 @@ const dict = {
         "alert_publish_error": "Chyba publikování! Zkontrolujte pravidla Storage.",
         "confirm_delete_news": "Smazat toto oznámení?",
         "confirm_delete_task": "Opravdu smazat tento úkol?",
+        // Админка
         "admin_title": "Panel administrátora",
         "back_home": "Na hlavní stránku",
         "users_title": "Uživatelé",
@@ -646,7 +648,6 @@ window.joinZoom = (event) => {
     window.location.href = webUrl;
 };
 
-// 🔥 ЖИВОЙ ВИДЖЕТ СТЕНДОВ С ЗАГЛУШКОЙ UNDEFINED
 function renderStandCard() {
     const container = document.getElementById('stand-widget-container');
     if (!container) return;
@@ -728,11 +729,7 @@ function updateStandWidgetUI() {
 
                 const dayNum = parseInt(parts[2], 10);
                 const monthIndex = parseInt(parts[1], 10) - 1;
-                
-                // Защита: чтобы не было undefined если локация отсутствует в старой базе
                 const locName = shift.location && shift.location !== "undefined" ? shift.location : "ML - CupVital";
-                
-                // Защита для месяцев (на случай если словарь загружен некорректно)
                 const monthNameArr = window.t('months');
                 const monthName = (Array.isArray(monthNameArr) && monthNameArr[monthIndex]) ? monthNameArr[monthIndex] : parts[1];
 
@@ -839,17 +836,17 @@ function loadPersonalData() {
             const isCleaningDay = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0);
 
             if (!currentDuty) {
-                container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-2">${window.t('no_duties')}</p>`;
+                container.innerHTML = `<p class="text-[9px] text-slate-400 italic text-center py-2">${window.t('no_duties')}</p>`;
             } else {
                 const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
                 const isMyGroup = String(currentDuty.group) === String(myGroup);
                 
-                let badgeClass = isMyGroup ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200';
+                let badgeClass = isMyGroup ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200';
                 
                 let alertHtml = '';
                 if (isMyGroup && isCleaningDay) {
                     badgeClass = 'bg-rose-500 text-white border-rose-600 shadow-sm';
-                    alertHtml = `<p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-1 animate-pulse flex items-center gap-1"><svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="truncate">${window.t('cleaning_weekend')}</span></p>`;
+                    alertHtml = `<p class="text-[8px] font-black text-rose-500 uppercase tracking-widest mt-1 animate-pulse flex items-center gap-1 truncate"><svg class="w-2.5 h-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="truncate">${window.t('cleaning_weekend')}</span></p>`;
                 }
 
                 let typeStr = currentDuty.type;
@@ -870,14 +867,14 @@ function loadPersonalData() {
                 }
 
                 container.innerHTML = `
-                    <div class="flex items-center justify-between w-full h-full">
-                        <div class="flex flex-col justify-center pr-2 min-w-0">
-                            <span class="text-sm md:text-base font-black text-slate-800 leading-tight truncate">${typeStr}</span>
-                            <span class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">${localizedDateRange}</span>
+                    <div class="flex items-center justify-between w-full h-full gap-1">
+                        <div class="flex flex-col justify-center min-w-0 flex-grow">
+                            <span class="text-[10px] md:text-[11px] font-black text-slate-800 leading-tight truncate w-full">${typeStr}</span>
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate w-full">${localizedDateRange}</span>
                             ${alertHtml}
                         </div>
-                        <div class="flex items-center justify-center px-4 py-2 rounded-md border ${badgeClass} h-full min-h-[48px] shrink-0">
-                            <span class="text-sm md:text-base font-black uppercase tracking-widest">${groupStr}</span>
+                        <div class="flex items-center justify-center px-1.5 py-1 rounded bg-slate-50 border ${badgeClass} shrink-0 max-w-[40px]">
+                            <span class="text-[9px] md:text-[10px] font-black uppercase text-center">${groupStr}</span>
                         </div>
                     </div>
                 `;
@@ -987,6 +984,212 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
+    window.requestTerritory = async (btn) => {
+        btn.innerText = "..."; btn.disabled = true;
+        try {
+            await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
+            btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success') || 'Успешно'}`;
+            setTimeout(() => { btn.innerText = window.t('request_btn') || 'Попросить'; btn.disabled = false; }, 3000);
+        } catch (e) { 
+            alert(window.t('error_network') || 'Ошибка сети!'); 
+            btn.innerText = window.t('request_btn') || 'Попросить'; 
+            btn.disabled = false; 
+        }
+    };
+
+    try {
+        const tasksQuery = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
+        onSnapshot(tasksQuery, (snapshot) => {
+            const upList = document.getElementById('upcoming-tasks-list');
+            const pastList = document.getElementById('past-tasks-list');
+            if(!upList || !pastList) return;
+            upList.innerHTML = ''; pastList.innerHTML = '';
+            
+            let upCount = 0, pastCount = 0;
+            const today = new Date(); today.setHours(0,0,0,0);
+            
+            snapshot.forEach(docSnap => {
+                const task = docSnap.data();
+                if (task.userId === userId || task.assistant === currentUserData.name) {
+                    const taskDate = new Date(task.date);
+                    const isPast = taskDate < today;
+                    const isAssistant = task.assistant === currentUserData.name;
+                    const opacityClass = isPast ? "opacity-60 grayscale bg-slate-50 border-slate-200" : "bg-white border-slate-200 shadow-sm";
+                    let roleText = isAssistant 
+                        ? `${window.t('assistant_for')} <span class="text-sky-600 ml-1 truncate">${task.userName}</span>` 
+                        : `${window.t('speech')} ${task.assistant ? `<span class="text-slate-500 text-[10px] md:text-xs block mt-0.5 truncate">${window.t('assistant_short')} <span class="text-sky-600">${task.assistant}</span></span>` : ''}`;
+
+                    let catStr = task.category || task.title || "";
+                    if (catStr === 'ЧТЕНИЕ БИБЛИИ') catStr = window.t('cat_reading_db').replace('📖 ','');
+                    if (catStr === 'НАЧИНАЙТЕ РАЗГОВОР') catStr = window.t('cat_conversation').replace('🗣️ ','');
+                    if (catStr === 'РАЗВИВАЙТЕ ИНТЕРЕС') catStr = window.t('cat_interest').replace('🌱 ','');
+                    if (catStr === 'ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ') catStr = window.t('cat_disciples').replace('👥 ','');
+                    if (catStr === 'ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ') catStr = window.t('cat_beliefs').replace('💡 ','');
+                    if (catStr === 'РЕЧЬ') catStr = window.t('cat_talk_db').replace('🎙️ ','');
+
+                    const cardHtml = `
+                        <div class="p-4 rounded-md border ${opacityClass} mb-3 relative overflow-hidden transition-all">
+                            <div class="flex items-center gap-3">
+                                <div class="flex flex-col items-center justify-center w-12 h-12 ${isPast ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-sky-50 border-sky-100 text-sky-500'} rounded border shrink-0">
+                                    <span class="text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${taskDate.toLocaleDateString(localeFormat, { month: 'short' }).replace('.', '')}</span>
+                                    <span class="text-xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${taskDate.getDate()}</span>
+                                </div>
+                                <div class="min-w-0 flex flex-col justify-center gap-1 w-full">
+                                    <h3 class="font-black text-slate-800 text-sm leading-tight">${roleText}</h3>
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div class="flex items-center gap-1.5 min-w-0">
+                                            <span class="font-black ${isPast ? 'text-slate-500' : 'text-sky-700'} text-[9px] uppercase tracking-wide leading-tight truncate">${catStr}</span>
+                                        </div>
+                                        ${task.lesson ? `<span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded shrink-0">${window.t('lesson')} ${task.lesson}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    if (!isPast) { 
+                        upCount++; 
+                        upList.innerHTML += cardHtml; 
+                        
+                        if (!sessionStorage.getItem('task_toast_' + docSnap.id)) {
+                            window.showToast(`📚 ${window.t('new_task_toast')} ${task.category || task.title}`, 'info');
+                            sessionStorage.setItem('task_toast_' + docSnap.id, 'true');
+                        }
+                    } 
+                    else { 
+                        pastCount++; 
+                        pastList.innerHTML += cardHtml; 
+                    }
+                }
+            });
+            if (upCount === 0) upList.innerHTML = `<p class="text-slate-400 text-sm italic py-2 text-center border border-slate-200 rounded-md">${window.t('no_tasks_upcoming')}</p>`;
+            if (pastCount === 0) pastList.innerHTML = `<p class="text-slate-400 text-sm italic py-2 text-center">${window.t('history_empty')}</p>`;
+        });
+    } catch(e){}
+
+    try {
+        const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
+        onSnapshot(newsQuery, (snapshot) => {
+            let newsHTML = ``; 
+            
+            const now = new Date().getTime();
+            const oneWeek = 7 * 24 * 60 * 60 * 1000;
+            const oneDay = 24 * 60 * 60 * 1000;
+
+            const isNewsAdmin = currentUserData.roles && (currentUserData.roles.includes('Админ') || currentUserData.roles.includes('Владелец') || currentUserData.roles.includes('Старейшина'));
+
+            snapshot.forEach(docSnap => {
+                const item = docSnap.data();
+                if(item.section === 'news') {
+                    const itemTime = new Date(item.createdAt).getTime();
+
+                    if (now - itemTime < oneWeek) {
+                        const isNew = (now - itemTime) < oneDay;
+                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-2 font-bold uppercase tracking-widest bg-red-50 border border-red-100 px-2 py-1.5 rounded w-full transition-colors outline-none flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>${window.t('delete')}</button>` : '';
+                        
+                        let displayText = '';
+                        let shouldShow = false;
+
+                        const hasRu = !!item.text_ru;
+                        const hasCs = !!item.text_cs;
+                        const hasLegacyText = !!item.text && !hasRu && !hasCs; 
+                        const hasImg = !!item.imageUrl;
+
+                        if (hasLegacyText) {
+                            displayText = item.text;
+                            shouldShow = true;
+                        } else if (currentLang === 'ru') {
+                            if (hasRu) {
+                                displayText = item.text_ru;
+                                shouldShow = true;
+                            } else if (!hasRu && !hasCs && hasImg) {
+                                shouldShow = true; 
+                            }
+                        } else if (currentLang === 'cs') {
+                            if (hasCs) {
+                                displayText = item.text_cs;
+                                shouldShow = true;
+                            } else if (!hasRu && !hasCs && hasImg) {
+                                shouldShow = true; 
+                            }
+                        }
+
+                        if (!shouldShow) return; 
+
+                        const bgCardClass = isNew ? "bg-white border-slate-200 shadow-sm" : "bg-slate-50 opacity-90 border-slate-200";
+                        const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-block mb-1">${window.t('new_badge')}</span>` : '';
+
+                        let contentHtml = '';
+                        if (!displayText && !item.imageUrl) {
+                            contentHtml = `
+                                <div class="flex flex-col items-center justify-center h-full py-6 text-slate-300">
+                                    <svg class="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                    <span class="text-[10px] font-black uppercase tracking-widest opacity-50">${window.t('no_translation')}</span>
+                                </div>
+                            `;
+                        } else {
+                            const textHtml = displayText ? `<div class="flex-grow overflow-y-auto custom-scrollbar pr-1"><p class="text-slate-700 whitespace-pre-wrap text-[10px] md:text-[11px] leading-snug font-medium">${displayText}</p></div>` : '';
+                            const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="${displayText ? 'mt-2 h-16' : 'h-full'} w-full object-cover rounded border border-slate-200 cursor-pointer shrink-0" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
+                            contentHtml = textHtml + imgHtml;
+                        }
+
+                        newsHTML += `
+                        <div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center p-3.5 rounded-md border transition-all flex flex-col justify-between overflow-hidden relative ${bgCardClass}">
+                            <div class="overflow-hidden flex-grow flex flex-col">
+                                ${newBadge}
+                                ${contentHtml}
+                            </div>
+                            ${deleteBtn ? `<div class="mt-auto pt-2 shrink-0">${deleteBtn}</div>` : ''}
+                        </div>`;
+
+                        if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) {
+                            window.showToast(window.t('new_announcement_toast'), 'info');
+                            sessionStorage.setItem('news_toast_' + docSnap.id, 'true');
+                        }
+                    }
+                }
+            });
+
+            if (isNewsAdmin) {
+                let textAreaHtml = '';
+                if (currentLang === 'ru') {
+                    textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-white rounded-md border border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
+                } else {
+                    textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-slate-50 rounded-md border border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
+                }
+
+                newsHTML += `
+                <div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center p-3 rounded-md border border-dashed border-slate-400 bg-slate-100/50 flex flex-col relative overflow-hidden">
+                    <p class="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 text-center flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>${window.t('create_announcement')}</p>
+                    
+                    ${textAreaHtml}
+                    
+                    <div class="flex items-center justify-between mt-2 gap-1.5 shrink-0">
+                        <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded transition-colors flex items-center justify-center w-8 h-6 shrink-0 shadow-sm">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            <input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)">
+                        </label>
+                        <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[8px] font-bold px-2 rounded flex-grow transition-colors h-6 outline-none shadow-sm">${window.t('publish')}</button>
+                    </div>
+                    <div id="image-preview-container" class="hidden mt-2 relative inline-block w-full shrink-0">
+                        <img id="image-preview" src="" class="rounded h-10 w-full object-cover border border-slate-200">
+                        <button onclick="removeImage()" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center outline-none">
+                            <svg class="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                </div>`;
+            }
+
+            const contentNews = document.getElementById('content-news');
+            if(contentNews) {
+                contentNews.innerHTML = newsHTML || `
+                <div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-md border border-slate-200 flex items-center justify-center mx-4 md:mx-0 shadow-sm">
+                    <p class="text-slate-400 italic text-sm text-center">${window.t('no_news')}</p>
+                </div>`;
+            }
+        });
+    } catch(e) {}
+
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
@@ -1020,32 +1223,34 @@ function loadPersonalData() {
                     }
 
                     const evGroup = ev.group || window.t('no_group');
-                    const groupBadge = evGroup !== window.t('no_group') 
-                        ? `<div class="flex items-center justify-center px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-md shrink-0 ml-auto">
-                             <span class="text-xs md:text-sm font-black uppercase tracking-widest text-slate-700">${window.t('group_short')} ${evGroup}</span>
-                           </div>` 
-                        : '';
-                    const activeClass = isPastEvent ? "bg-slate-50 text-slate-400 border-b border-slate-200" : "bg-white text-slate-800 border-b border-slate-100";
+                    const hasGroup = evGroup !== window.t('no_group');
+                    
+                    const activeClass = isPastEvent ? "bg-slate-50 border-b border-slate-200 opacity-60 grayscale" : "bg-white border-b border-slate-100";
                     const timeColor = isPastEvent ? "text-slate-400" : "text-rose-500";
                     const leaderColor = isPastEvent ? "text-slate-400" : "text-rose-600";
+                    const titleColor = isPastEvent ? "text-slate-500" : "text-slate-800";
                     
                     const dayNum = ev.date ? parseInt(ev.date.split('-')[2], 10) : now.getDate();
 
                     html += `
                         <div class="flex items-center p-3 w-full cursor-default ${activeClass}">
-                            <div class="flex items-center gap-3 w-full">
-                                <div class="flex flex-col items-center justify-center w-12 h-12 bg-slate-50 border border-slate-200 rounded-md shrink-0">
-                                    <span class="text-[8px] uppercase font-bold text-slate-400 leading-none mb-1 tracking-widest">${window.t('today_badge')}</span>
-                                    <span class="text-xl font-black text-slate-700 leading-none">${dayNum}</span>
+                            <div class="flex items-center gap-1.5 shrink-0 mr-3">
+                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-slate-800 text-white rounded-md shadow-inner shrink-0">
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-300 leading-none mb-0.5 tracking-widest">${window.t('today_badge')}</span>
+                                    <span class="text-lg md:text-xl font-black leading-none">${dayNum}</span>
                                 </div>
-                                <div class="flex flex-col flex-grow truncate min-w-0">
-                                    <div class="flex items-center gap-2 truncate">
-                                        ${displayTime ? `<span class="text-sm font-black shrink-0 ${timeColor}">${displayTime}</span>` : ''}
-                                        <span class="font-black text-sm md:text-base truncate text-slate-800">${ev.title}</span>
-                                    </div>
-                                    ${ev.leader ? `<span class="text-[10px] md:text-xs uppercase font-bold text-slate-500 truncate mt-0.5">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
+                                ${hasGroup ? `
+                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-slate-100 border border-slate-200 text-slate-600 rounded-md shrink-0">
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
+                                    <span class="text-sm md:text-lg font-black leading-none">${evGroup}</span>
+                                </div>` : ''}
+                            </div>
+                            <div class="flex flex-col flex-grow truncate min-w-0">
+                                <div class="flex items-center gap-1.5 truncate">
+                                    ${displayTime ? `<span class="text-xs md:text-sm font-black shrink-0 ${timeColor}">${displayTime}</span>` : ''}
+                                    <span class="font-black text-sm md:text-base truncate ${titleColor}">${ev.title}</span>
                                 </div>
-                                ${groupBadge}
+                                ${ev.leader ? `<span class="text-[9px] md:text-[10px] uppercase font-bold text-slate-500 truncate mt-0.5">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
                             </div>
                         </div>
                     `;
