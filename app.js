@@ -140,7 +140,12 @@ const dict = {
         "scan_qr": "Отсканируйте код",
         "days_short": "дн.",
         "return_terr_btn": "Сдать",
-        "no_translation": "Нет перевода"
+        "no_translation": "Нет перевода",
+        // Стенды
+        "stand_title": "Служение со стендом",
+        "stand_apply": "Подать заявку",
+        "stand_signup": "Записаться",
+        "stand_pending": "Заявка отправлена"
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -278,7 +283,12 @@ const dict = {
         "scan_qr": "Naskenujte kód",
         "days_short": "dní",
         "return_terr_btn": "Odevzdat",
-        "no_translation": "Bez překladu"
+        "no_translation": "Bez překladu",
+        // Стенды
+        "stand_title": "Služba se stojanem",
+        "stand_apply": "Požádat",
+        "stand_signup": "Zapsat se",
+        "stand_pending": "Žádost odeslána"
     }
 };
 
@@ -376,7 +386,6 @@ window.showToast = (message, type = 'info') => {
     }, 5000);
 };
 
-// 🔥 БРОНЕБОЙНЫЙ МЕХАНИЗМ УВЕДОМЛЕНИЙ ДЛЯ ANDROID
 window.setupNotifications = async () => {
     const pushBtn = document.getElementById('push-btn');
     if (!messaging) return alert("❌ Ваше устройство или браузер не поддерживает Push-уведомления (Попробуйте использовать Chrome).");
@@ -442,6 +451,7 @@ const TOP_ROLES = ["Владелец", "Админ"];
 const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
 let currentUserData = null; 
 let hasFullAccess = false;
+let currentZoomData = { id: "", pass: "" }; 
 
 const d = new Date();
 const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
@@ -509,34 +519,6 @@ window.submitReport = async () => {
     }
 };
 
-// 🔥 ГЛОБАЛЬНЫЕ ФУНКЦИИ
-window.requestTerritory = async (btn) => {
-    btn.innerText = "..."; btn.disabled = true;
-    try {
-        await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
-        btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success') || 'Успешно'}`;
-        setTimeout(() => { btn.innerText = window.t('request_btn') || 'Попросить'; btn.disabled = false; }, 3000);
-    } catch (e) { 
-        alert(window.t('error_network') || 'Ошибка сети!'); 
-        btn.innerText = window.t('request_btn') || 'Попросить'; 
-        btn.disabled = false; 
-    }
-};
-
-window.markTerritoryReturned = async (id) => {
-    if (confirm('Точно сдать этот участок?')) { 
-        try {
-            await updateDoc(doc(db, "territories", id), {
-                status: 'returned',
-                returnedAt: new Date().toISOString()
-            });
-            window.showToast("Участок сдан! ✅");
-        } catch (e) {
-            alert("Ошибка сети!");
-        }
-    }
-};
-
 onSnapshot(doc(db, "users", userId), async (docSnap) => {
     if (!docSnap.exists()) { if (navigator.onLine) window.logout(); return; }
     currentUserData = docSnap.data();
@@ -591,9 +573,102 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         try { loadPersonalData(); } catch(e) { console.error("Error:", e); }
         try { loadProfileData(); } catch(e) { console.error("Error:", e); }
         
+        // 🔥 ОТРИСОВКА КАРТОЧКИ СТЕНДА
+        renderStandCard();
+
         window.hideGlobalLoader();
     }
 });
+
+// 🔥 НОВАЯ ФУНКЦИЯ: ОТРИСОВКА КАРТОЧКИ СТЕНДА ДЛЯ ПОЛЬЗОВАТЕЛЯ
+function renderStandCard() {
+    const container = document.getElementById('territories-container');
+    if (!container) return;
+
+    // Ищем, нет ли уже карточки стенда, чтобы не дублировать
+    let standCard = document.getElementById('stand-card');
+    if (standCard) standCard.remove();
+
+    const roles = currentUserData.roles || [];
+    const isApprovedForStand = roles.includes('Служение со стендом') || roles.includes('Владелец') || roles.includes('Админ');
+
+    // Проверяем, есть ли активная заявка (чтобы не давать спамить кнопку "Подать заявку")
+    const q = query(collection(db, "requests"), where("userId", "==", userId), where("type", "==", "stand"));
+    getDocs(q).then(snap => {
+        const hasPendingRequest = !snap.empty;
+
+        let buttonHtml = '';
+        let imageHtml = '';
+
+        if (isApprovedForStand) {
+            // ОДОБРЕН - Кнопка "Записаться" (Пока ведет на заглушку stands.html)
+            buttonHtml = `<button onclick="window.location.href='stands.html'" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-lg text-xs uppercase tracking-widest outline-none shadow-sm transition-colors mt-3">${window.t('stand_signup')}</button>`;
+            
+            // Если есть свое фото для одобренных, можно вставить тут. Пока ставим красивый градиент.
+            imageHtml = `
+                <div class="w-full h-24 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center rounded-lg mt-3">
+                    <svg class="w-10 h-10 text-white opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                </div>
+            `;
+        } else {
+            // НЕ ОДОБРЕН - Кнопка "Подать заявку"
+            if (hasPendingRequest) {
+                buttonHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black py-3 rounded-lg text-xs uppercase tracking-widest outline-none mt-3">${window.t('stand_pending')}</button>`;
+            } else {
+                buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-lg text-xs uppercase tracking-widest outline-none shadow-sm transition-colors mt-3">${window.t('stand_apply')}</button>`;
+            }
+            
+            // Заглушка-картинка для неодобренных
+            imageHtml = `
+                <div class="w-full h-24 bg-slate-100 border border-slate-200 border-dashed flex items-center justify-center rounded-lg mt-3">
+                    <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                </div>
+            `;
+        }
+
+        const newCard = document.createElement('div');
+        newCard.id = 'stand-card';
+        newCard.className = 'bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm p-4 w-full md:col-span-2 mb-4'; 
+        newCard.innerHTML = `
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-black text-slate-800 text-base md:text-lg flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                    ${window.t('stand_title')}
+                </h3>
+            </div>
+            ${imageHtml}
+            ${buttonHtml}
+        `;
+
+        // Вставляем карточку Стенда В САМОЕ НАЧАЛО вкладки Участков
+        container.parentElement.insertBefore(newCard, container);
+    });
+}
+
+// 🔥 НОВАЯ ФУНКЦИЯ ДЛЯ ОТПРАВКИ ЗАЯВКИ НА СТЕНД
+window.requestStand = async (btn) => {
+    btn.innerText = "..."; btn.disabled = true;
+    try {
+        await addDoc(collection(db, "requests"), { 
+            type: "stand", 
+            userId: userId, 
+            userName: currentUserData.name, 
+            status: "new", 
+            createdAt: new Date().toISOString() 
+        });
+        btn.classList.replace('bg-slate-800', 'bg-emerald-500');
+        btn.innerHTML = `✅ ${window.t('success') || 'Успешно'}`;
+        setTimeout(() => { 
+            btn.classList.replace('bg-emerald-500', 'bg-slate-100');
+            btn.classList.replace('text-white', 'text-slate-400');
+            btn.innerText = window.t('stand_pending'); 
+        }, 2000);
+    } catch (e) { 
+        alert(window.t('error_network') || 'Ошибка сети!'); 
+        btn.innerText = window.t('stand_apply'); 
+        btn.disabled = false; 
+    }
+};
 
 async function loadProfileData() {
     const pName = document.getElementById('profile-name');
@@ -624,8 +699,12 @@ async function loadProfileData() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             if(congEl) congEl.innerText = data.name || "МАРИАНСКИЕ ЛАЗНЕ";
-            if (dashZoomId) dashZoomId.innerText = data.zoomId || "-";
-            if (dashZoomPass) dashZoomPass.innerText = data.zoomPass || "-";
+            
+            currentZoomData.id = data.zoomId || "";
+            currentZoomData.pass = data.zoomPass || "";
+
+            if (dashZoomId) dashZoomId.innerText = currentZoomData.id || "-";
+            if (dashZoomPass) dashZoomPass.innerText = currentZoomData.pass || "-";
         }
     });
 
@@ -640,6 +719,20 @@ async function loadProfileData() {
         } else if (pOverseer) { pOverseer.innerText = "-"; }
     } catch(e) {}
 }
+
+window.joinZoom = () => {
+    if (!currentZoomData || !currentZoomData.id || currentZoomData.id === '-') {
+        return alert(window.t('zoom_error') || 'Zoom не настроен администратором');
+    }
+    
+    const cleanId = currentZoomData.id.replace(/\s/g, '');
+    const pass = currentZoomData.pass || '';
+    
+    const webUrl = `https://zoom.us/j/${cleanId}${pass ? '?pwd=' + pass : ''}`;
+    
+    window.open(webUrl, '_blank');
+};
+
 
 function loadPersonalData() {
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
@@ -828,6 +921,33 @@ function loadPersonalData() {
             }
         });
     } catch(e) {}
+
+    window.requestTerritory = async (btn) => {
+        btn.innerText = "..."; btn.disabled = true;
+        try {
+            await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
+            btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success') || 'Успешно'}`;
+            setTimeout(() => { btn.innerText = window.t('request_btn') || 'Попросить'; btn.disabled = false; }, 3000);
+        } catch (e) { 
+            alert(window.t('error_network') || 'Ошибка сети!'); 
+            btn.innerText = window.t('request_btn') || 'Попросить'; 
+            btn.disabled = false; 
+        }
+    };
+
+    window.markTerritoryReturned = async (id) => {
+        if (confirm('Точно сдать этот участок?')) { 
+            try {
+                await updateDoc(doc(db, "territories", id), {
+                    status: 'returned',
+                    returnedAt: new Date().toISOString()
+                });
+                window.showToast("Участок сдан! ✅");
+            } catch (e) {
+                alert("Ошибка сети!");
+            }
+        }
+    };
 
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
@@ -1019,78 +1139,6 @@ function loadPersonalData() {
                     <p class="text-slate-400 italic text-sm text-center">${window.t('no_news')}</p>
                 </div>`;
             }
-        });
-    } catch(e) {}
-
-    try {
-        const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
-        onSnapshot(eventsQuery, (snapshot) => {
-            const container = document.getElementById('calendar-events');
-            if (!container) return; 
-            let html = '';
-            
-            const now = new Date();
-            const tzOffset = now.getTimezoneOffset() * 60000;
-            const todayStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
-
-            snapshot.forEach(docSnap => {
-                const ev = docSnap.data();
-                
-                if (ev.date === todayStr) {
-                    let isPastEvent = false;
-                    let displayTime = ev.time || "";
-                    
-                    if (displayTime) {
-                        let hours = 0, minutes = 0;
-                        if (!displayTime.includes(':') && displayTime.length >= 3) {
-                            if (displayTime.length === 4) displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
-                            else if (displayTime.length === 3) displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
-                        }
-                        if (displayTime.includes(':')) {
-                            [hours, minutes] = displayTime.split(':');
-                            const eventExactTime = new Date();
-                            eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-                            if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
-                        }
-                    }
-
-                    const evGroup = ev.group || window.t('no_group');
-                    const groupBadge = evGroup !== window.t('no_group') ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">${window.t('group_short')} ${evGroup}</span>` : '';
-                    const activeClass = isPastEvent ? "bg-slate-50 text-slate-400 border-b border-slate-200" : "bg-white text-slate-800 border-b border-slate-100";
-                    const timeColor = isPastEvent ? "text-slate-400" : "text-rose-500";
-                    const leaderColor = isPastEvent ? "text-slate-400" : "text-rose-600";
-                    
-                    const dayNum = ev.date ? parseInt(ev.date.split('-')[2], 10) : now.getDate();
-
-                    html += `
-                        <div class="flex items-center p-3 w-full cursor-default ${activeClass}">
-                            <div class="flex items-center gap-3 w-full">
-                                <div class="flex flex-col items-center justify-center w-12 shrink-0">
-                                    <span class="text-[8px] uppercase font-bold leading-none mb-1 opacity-70">${window.t('today_badge')}</span>
-                                    <span class="text-xl font-black leading-none">${dayNum}</span>
-                                </div>
-                                <div class="flex flex-col flex-grow truncate min-w-0">
-                                    <div class="flex items-center gap-2 truncate">
-                                        ${displayTime ? `<span class="text-xs font-bold shrink-0 ${timeColor}">${displayTime}</span>` : ''}
-                                        <span class="font-black text-sm truncate">${ev.title}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2 mt-1 truncate">
-                                        ${groupBadge}
-                                        ${ev.leader ? `<span class="text-[9px] uppercase font-medium opacity-80 truncate">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-
-                    if (!isPastEvent && !sessionStorage.getItem('event_toast_' + docSnap.id)) {
-                        window.showToast(`${window.t('today_event_toast')} ${ev.title} ${displayTime ? ' ' + displayTime : ''}`, 'info');
-                        sessionStorage.setItem('event_toast_' + docSnap.id, 'true');
-                    }
-                }
-            });
-
-            container.innerHTML = html || `<p class="p-4 text-xs text-slate-400 italic text-center">${window.t('no_events_today')}</p>`;
         });
     } catch(e) {}
 }
