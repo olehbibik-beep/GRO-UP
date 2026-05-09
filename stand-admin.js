@@ -1,20 +1,20 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, getDoc, updateDoc, deleteDoc, query, where, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const dict = {
     ru: {
         "stand_admin_title": "Стенды (Админ)",
         "btn_back": "Назад",
         "requests_title": "Заявки на стенд",
-        "approved_users": "Одобренные возвещатели",
-        "schedule_title": "Управление расписанием",
-        "stats_title": "Статистика за текущий месяц",
+        "approved_users": "Одобренные",
+        "schedule_title": "Блокировка часов",
+        "stats_title": "Статистика за месяц (текущая локация)",
         "click_to_block": "Нажмите, чтобы закрыть/открыть час",
         "no_requests": "Нет новых заявок",
         "no_approved": "Пока нет одобренных возвещателей",
         "btn_approve": "Одобрить",
         "btn_reject": "Отклонить",
-        "btn_revoke": "Забрать доступ",
+        "btn_revoke": "Удалить",
         "confirm_revoke": "Точно забрать допуск к стенду у этого возвещателя?",
         "success": "Успешно!",
         "error_general": "Произошла ошибка!",
@@ -28,16 +28,16 @@ const dict = {
         "stand_admin_title": "Stojany (Admin)",
         "btn_back": "Zpět",
         "requests_title": "Žádosti o stojan",
-        "approved_users": "Schválení zvěstovatelé",
-        "schedule_title": "Správa rozvrhu",
-        "stats_title": "Statistika za tento měsíc",
-        "click_to_block": "Kliknutím zavřete/otevřete hodinu",
+        "approved_users": "Schválení",
+        "schedule_title": "Blokování hodin",
+        "stats_title": "Statistika za měsíc (aktuální lokace)",
+        "click_to_block": "Kliknutím zavřete/otevřete",
         "no_requests": "Žádné nové žádosti",
-        "no_approved": "Zatím žádní schválení zvěstovatelé",
+        "no_approved": "Zatím žádní schválení",
         "btn_approve": "Schválit",
         "btn_reject": "Zamítnout",
-        "btn_revoke": "Odebrat přístup",
-        "confirm_revoke": "Opravdu odebrat přístup ke stojanu tomuto zvěstovateli?",
+        "btn_revoke": "Odebrat",
+        "confirm_revoke": "Opravdu odebrat přístup ke stojanu?",
         "success": "Úspěšně!",
         "error_general": "Došlo k chybě!",
         "active_slot": "Otevřeno",
@@ -50,10 +50,7 @@ const dict = {
 
 const currentLang = localStorage.getItem('app_lang') || 'ru';
 window.t = (key) => dict[currentLang][key] || key;
-
-document.querySelectorAll('[data-lang]').forEach(el => {
-    el.innerHTML = window.t(el.getAttribute('data-lang'));
-});
+document.querySelectorAll('[data-lang]').forEach(el => el.innerHTML = window.t(el.getAttribute('data-lang')));
 
 window.showToast = (message) => {
     const container = document.getElementById('toast-container');
@@ -63,10 +60,11 @@ window.showToast = (message) => {
     toast.innerText = message;
     container.appendChild(toast);
     requestAnimationFrame(() => toast.classList.remove('-translate-y-10', 'opacity-0'));
-    setTimeout(() => {
-        toast.classList.add('-translate-y-10', 'opacity-0');
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    setTimeout(() => { toast.classList.add('-translate-y-10', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
+};
+
+window.scrollDates = (offset) => {
+    document.getElementById('admin-dates-container').scrollBy({ left: offset, behavior: 'smooth' });
 };
 
 const firebaseConfig = {
@@ -84,7 +82,6 @@ const userId = localStorage.getItem('userId');
 
 if (!userId) window.location.href = 'login.html';
 
-// ПРОВЕРКА ПРАВ
 getDoc(doc(db, "users", userId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     const roles = docSnap.data().roles || [];
@@ -98,12 +95,29 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
     }
 });
 
-// 1. ЗАЯВКИ
+let activeLocation = "ML - CupVital";
+
+// ЛОКАЦИИ АДМИНА
+window.selectLocation = (loc) => {
+    document.querySelectorAll('.loc-btn').forEach(btn => btn.classList.remove('active', 'bg-[#0f172a]', 'text-white'));
+    document.querySelectorAll('.loc-btn').forEach(btn => btn.classList.add('bg-white', 'text-slate-500'));
+    
+    const activeBtn = document.getElementById(`loc-${loc.replace(/\s/g, '')}`);
+    if (activeBtn) {
+        activeBtn.classList.remove('bg-white', 'text-slate-500');
+        activeBtn.classList.add('active', 'bg-[#0f172a]', 'text-white');
+    }
+    
+    activeLocation = loc;
+    loadDaySettings(); 
+    loadStatistics();  
+};
+
+// ЗАЯВКИ
 const reqQuery = query(collection(db, "requests"), where("type", "==", "stand"));
 onSnapshot(reqQuery, (snapshot) => {
     const list = document.getElementById('stand-requests-list');
     const countEl = document.getElementById('stand-req-count');
-    
     let html = '';
     let count = 0;
 
@@ -117,27 +131,25 @@ onSnapshot(reqQuery, (snapshot) => {
             <div class="flex items-center justify-between p-3 bg-white hover:bg-slate-50 transition-colors">
                 <div class="flex flex-col">
                     <p class="font-black text-slate-800 text-sm leading-tight">${req.userName}</p>
-                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Хочет служить со стендом</p>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Заявка на стенд</p>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="approveStand('${req.id}', '${req.userId}')" title="${window.t('btn_approve')}" class="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors shadow-sm outline-none">✔️</button>
-                    <button onclick="rejectStand('${req.id}')" title="${window.t('btn_reject')}" class="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shadow-sm outline-none">✖</button>
+                    <button onclick="approveStand('${req.id}', '${req.userId}')" class="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors shadow-sm outline-none">✔️</button>
+                    <button onclick="rejectStand('${req.id}')" class="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shadow-sm outline-none">✖</button>
                 </div>
             </div>
         `;
     });
-
     countEl.innerText = count;
     list.innerHTML = html || `<p class="text-slate-400 text-xs text-center py-4 italic">${window.t('no_requests')}</p>`;
 });
 
-// 2. ОДОБРЕННЫЕ ПОЛЬЗОВАТЕЛИ
+// ОДОБРЕННЫЕ ПОЛЬЗОВАТЕЛИ
 onSnapshot(collection(db, "users"), (snapshot) => {
     const list = document.getElementById('approved-users-list');
     let html = '';
-    let count = 0;
-
     const users = [];
+
     snapshot.forEach(docSnap => {
         const u = docSnap.data();
         if (u.status === 'active' && u.roles && u.roles.includes('Служение со стендом')) {
@@ -148,7 +160,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     users.sort((a, b) => a.name.localeCompare(b.name));
 
     users.forEach(u => {
-        count++;
         html += `
             <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
                 <span class="font-bold text-slate-700 text-sm truncate pr-2">${u.name}</span>
@@ -158,16 +169,13 @@ onSnapshot(collection(db, "users"), (snapshot) => {
             </div>
         `;
     });
-
     list.innerHTML = html || `<p class="col-span-full text-slate-400 text-xs text-center py-4 italic">${window.t('no_approved')}</p>`;
 });
 
-// ГЛОБАЛЬНЫЕ ФУНКЦИИ ОДОБРЕНИЯ
 window.approveStand = async (reqId, userId) => {
     try {
         const userRef = doc(db, "users", userId);
         const userSnap = await getDoc(userRef);
-        
         if (userSnap.exists()) {
             const roles = userSnap.data().roles || [];
             if (!roles.includes("Служение со стендом")) {
@@ -180,16 +188,13 @@ window.approveStand = async (reqId, userId) => {
     } catch (e) { alert(window.t('error_general')); }
 };
 
-window.rejectStand = async (reqId) => {
-    try { await deleteDoc(doc(db, "requests", reqId)); } catch (e) {}
-};
+window.rejectStand = async (reqId) => { try { await deleteDoc(doc(db, "requests", reqId)); } catch (e) {} };
 
 window.removeStandAccess = async (userId) => {
     if (confirm(window.t('confirm_revoke'))) {
         try {
             const userRef = doc(db, "users", userId);
             const userSnap = await getDoc(userRef);
-            
             if (userSnap.exists()) {
                 let roles = userSnap.data().roles || [];
                 roles = roles.filter(r => r !== "Служение со стендом");
@@ -201,11 +206,15 @@ window.removeStandAccess = async (userId) => {
 };
 
 // ------------------------------------------------------------------
-// 3. УПРАВЛЕНИЕ РАСПИСАНИЕМ (БЛОКИРОВКА СЛОТОВ)
+// УПРАВЛЕНИЕ РАСПИСАНИЕМ (БЛОКИРОВКА СЛОТОВ)
 // ------------------------------------------------------------------
 
 let selectedAdminDateStr = "";
-const TIME_SLOTS = ["08:00 - 09:00","09:00 - 10:00","10:00 - 11:00","11:00 - 12:00","12:00 - 13:00","13:00 - 14:00","14:00 - 15:00","15:00 - 16:00"];
+const TIME_SLOTS = [
+    "06:00 - 07:00", "07:00 - 08:00", "08:00 - 09:00", "09:00 - 10:00",
+    "10:00 - 11:00", "11:00 - 12:00", "12:00 - 13:00", "13:00 - 14:00",
+    "14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00"
+];
 let unsubscribeSettings = null;
 
 function initAdminDates() {
@@ -213,7 +222,7 @@ function initAdminDates() {
     let html = '';
     const today = new Date();
     
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 30; i++) {
         const d = new Date(today);
         d.setDate(today.getDate() + i);
         
@@ -227,8 +236,8 @@ function initAdminDates() {
         if (i === 0) { selectedAdminDateStr = dateStr; document.getElementById('admin-selected-date').innerText = `${dayNum} ${monthName}`; }
 
         html += `
-            <button onclick="selectAdminDate('${dateStr}', '${dayNum}', '${monthName}', this)" class="date-chip shrink-0 w-[55px] h-[60px] rounded-lg border flex flex-col items-center justify-center transition-colors outline-none snap-center ${isSelected}">
-                <span class="text-xs font-black mb-0.5">${dayNum}</span>
+            <button onclick="selectAdminDate('${dateStr}', '${dayNum}', '${monthName}', this)" class="date-chip shrink-0 w-[55px] h-[65px] md:w-[60px] md:h-[70px] rounded-xl border flex flex-col items-center justify-center transition-colors outline-none snap-center ${isSelected}">
+                <span class="text-xs md:text-sm font-black mb-0.5">${dayNum}</span>
                 <span class="date-day text-[9px] font-bold uppercase tracking-widest text-slate-400">${dayName}</span>
             </button>
         `;
@@ -240,9 +249,9 @@ function initAdminDates() {
 
 window.selectAdminDate = (dateStr, dayNum, monthName, btnEl) => {
     document.querySelectorAll('#admin-dates-container .date-chip').forEach(el => {
-        el.className = 'date-chip shrink-0 w-[55px] h-[60px] rounded-lg border flex flex-col items-center justify-center transition-colors outline-none snap-center bg-white border-slate-200 text-slate-500';
+        el.className = 'date-chip shrink-0 w-[55px] h-[65px] md:w-[60px] md:h-[70px] rounded-xl border flex flex-col items-center justify-center transition-colors outline-none snap-center bg-white border-slate-200 text-slate-500';
     });
-    btnEl.className = 'date-chip active shrink-0 w-[55px] h-[60px] rounded-lg border flex flex-col items-center justify-center transition-colors outline-none snap-center';
+    btnEl.className = 'date-chip active shrink-0 w-[55px] h-[65px] md:w-[60px] md:h-[70px] rounded-xl border flex flex-col items-center justify-center transition-colors outline-none snap-center';
     
     selectedAdminDateStr = dateStr;
     document.getElementById('admin-selected-date').innerText = `${dayNum} ${monthName}`;
@@ -253,7 +262,9 @@ function loadDaySettings() {
     if (unsubscribeSettings) unsubscribeSettings();
     const container = document.getElementById('admin-slots-container');
     
-    unsubscribeSettings = onSnapshot(doc(db, "stand_settings", selectedAdminDateStr), (docSnap) => {
+    const settingsDocId = `${selectedAdminDateStr}_${activeLocation.replace(/\s+/g, '')}`;
+    
+    unsubscribeSettings = onSnapshot(doc(db, "stand_settings", settingsDocId), (docSnap) => {
         let blockedSlots = [];
         if (docSnap.exists()) { blockedSlots = docSnap.data().blocked || []; }
 
@@ -273,8 +284,8 @@ function loadDaySettings() {
 
             html += `
                 <button onclick="toggleSlotBlock('${time}', ${isBlocked})" class="w-full flex items-center justify-between p-3 rounded-lg border outline-none transition-colors shadow-sm ${btnClass}">
-                    <span class="font-black text-sm font-mono">${time}</span>
-                    <span class="flex items-center text-xs font-bold uppercase tracking-widest">${iconHtml} ${textHtml}</span>
+                    <span class="font-black text-xs md:text-sm font-mono">${time}</span>
+                    <span class="flex items-center text-[10px] md:text-xs font-bold uppercase tracking-widest">${iconHtml} ${textHtml}</span>
                 </button>
             `;
         });
@@ -283,33 +294,37 @@ function loadDaySettings() {
 }
 
 window.toggleSlotBlock = async (time, currentlyBlocked) => {
-    const docRef = doc(db, "stand_settings", selectedAdminDateStr);
+    const settingsDocId = `${selectedAdminDateStr}_${activeLocation.replace(/\s+/g, '')}`;
+    const docRef = doc(db, "stand_settings", settingsDocId);
+    
     try {
         const snap = await getDoc(docRef);
         let blocked = [];
         if (snap.exists()) blocked = snap.data().blocked || [];
         
         if (currentlyBlocked) {
-            blocked = blocked.filter(t => t !== time); // Разблокируем
+            blocked = blocked.filter(t => t !== time); 
         } else {
-            blocked.push(time); // Блокируем
+            blocked.push(time); 
         }
         await setDoc(docRef, { blocked }, { merge: true });
     } catch (e) { console.error(e); }
 };
 
 // ------------------------------------------------------------------
-// 4. СТАТИСТИКА
+// 4. СТАТИСТИКА (Только по выбранной локации)
 // ------------------------------------------------------------------
+let unsubscribeStats = null;
+
 function loadStatistics() {
+    if (unsubscribeStats) unsubscribeStats();
+    
     const today = new Date();
-    // Ищем первое число текущего месяца (формат YYYY-MM-01)
     const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
     
-    // Вытягиваем все записи стендов в этом месяце
-    const statsQuery = query(collection(db, "stands"), where("date", ">=", firstDayStr));
+    const statsQuery = query(collection(db, "stands"), where("date", ">=", firstDayStr), where("location", "==", activeLocation));
     
-    onSnapshot(statsQuery, (snapshot) => {
+    unsubscribeStats = onSnapshot(statsQuery, (snapshot) => {
         const container = document.getElementById('stats-container');
         let stats = {};
         
@@ -319,15 +334,13 @@ function loadStatistics() {
             stats[data.userName]++;
         });
 
-        // Превращаем объект в массив и сортируем по количеству смен
         const sortedStats = Object.keys(stats).map(name => ({ name, count: stats[name] })).sort((a, b) => b.count - a.count);
 
         let html = '';
         if (sortedStats.length === 0) {
-            html = `<p class="text-slate-400 text-xs italic text-center py-2">Записей в этом месяце еще нет</p>`;
+            html = `<p class="text-slate-400 text-xs italic text-center py-2">Записей на ${activeLocation} в этом месяце еще нет</p>`;
         } else {
             sortedStats.forEach((s, index) => {
-                // Топ-3 выделяем визуально
                 const isTop = index < 3;
                 const bgClass = isTop ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-50 border-slate-100';
                 const textColor = isTop ? 'text-indigo-700' : 'text-slate-700';
