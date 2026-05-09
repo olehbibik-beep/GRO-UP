@@ -14,6 +14,7 @@ const dict = {
         "confirm_cancel": "Отменить эту запись на стенд?",
         "success": "Успешно!",
         "error_network": "Ошибка сети",
+        "not_serving": "Не служим",
         "months": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"],
         "days": ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
     },
@@ -29,6 +30,7 @@ const dict = {
         "confirm_cancel": "Zrušit tento zápis na stojan?",
         "success": "Úspěšně!",
         "error_network": "Chyba sítě",
+        "not_serving": "Nesloužíme",
         "months": ["Led", "Úno", "Bře", "Dub", "Kvě", "Čvn", "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro"],
         "days": ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"]
     }
@@ -78,7 +80,6 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
     userName = data.name;
     const roles = data.roles || [];
     
-    // Пускаем только тех, у кого есть допуск или админов
     const canAccess = roles.includes("Служение со стендом") || roles.includes("Ответственный за стенды") || roles.includes("Владелец") || roles.includes("Админ");
     if (!canAccess) {
         document.body.innerHTML = `<div class="p-10 text-center font-bold text-red-500 mt-20">${window.t('access_denied')}</div>`;
@@ -89,11 +90,9 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
     initDates();
 });
 
-// Глобальные переменные
-let selectedDateStr = ""; // Формат YYYY-MM-DD
+let selectedDateStr = "";
 let unsubscribeSlots = null;
 
-// Стандартные часы (позже в Этапе 3 сделаем их настраиваемыми)
 const TIME_SLOTS = [
     "08:00 - 09:00",
     "09:00 - 10:00",
@@ -105,18 +104,15 @@ const TIME_SLOTS = [
     "15:00 - 16:00"
 ];
 
-// ГЕНЕРАЦИЯ КАЛЕНДАРЯ НА 14 ДНЕЙ
 function initDates() {
     const container = document.getElementById('dates-container');
     let html = '';
-    
     const today = new Date();
     
     for (let i = 0; i < 14; i++) {
         const d = new Date(today);
         d.setDate(today.getDate() + i);
         
-        // Надежное форматирование YYYY-MM-DD с учетом часового пояса
         const tzOffset = d.getTimezoneOffset() * 60000;
         const dateStr = new Date(d.getTime() - tzOffset).toISOString().split('T')[0];
         
@@ -154,17 +150,22 @@ function updateDateDisplay(dayNum, monthName, dayName) {
     document.getElementById('selected-date-display').innerText = `${dayNum} ${monthName} — ${dayName}`;
 }
 
-// ЗАГРУЗКА И ОТРИСОВКА СЛОТОВ
-function loadSlots() {
+async function loadSlots() {
     if (unsubscribeSlots) unsubscribeSlots();
     
     const container = document.getElementById('slots-container');
     container.innerHTML = `<p class="text-center py-10 text-slate-400 italic text-sm">${window.t('loading')}</p>`;
     
+    // 🔥 ПРОВЕРЯЕМ, ЗАБЛОКИРОВАНЫ ЛИ ЧАСЫ АДМИНАМИ
+    const settingsDoc = await getDoc(doc(db, "stand_settings", selectedDateStr));
+    let blockedSlots = [];
+    if (settingsDoc.exists()) {
+        blockedSlots = settingsDoc.data().blocked || [];
+    }
+
     const q = query(collection(db, "stands"), where("date", "==", selectedDateStr));
     
     unsubscribeSlots = onSnapshot(q, (snapshot) => {
-        // Собираем данные в удобную карту: map[time][slotIndex] = data
         let slotsData = {};
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
@@ -176,40 +177,47 @@ function loadSlots() {
         
         TIME_SLOTS.forEach(time => {
             html += `<div class="flex items-stretch min-h-[50px] bg-white group hover:bg-slate-50 transition-colors">`;
-            // Колонка времени
             html += `<div class="w-1/4 p-2 flex items-center justify-center border-r border-slate-100">
                         <span class="text-[10px] md:text-xs font-black text-slate-600 tracking-wide">${time.replace(' - ', '<br>')}</span>
                      </div>`;
             
-            // Колонки Возвещателей (Slot 1 и Slot 2)
-            for (let slot = 1; slot <= 2; slot++) {
-                const shift = slotsData[time] ? slotsData[time][slot] : null;
-                
-                let cellHtml = '';
-                if (!shift) {
-                    // СВОБОДНО
-                    cellHtml = `<button onclick="toggleSlot('${time}', ${slot}, null)" class="w-full h-full p-2 outline-none">
-                                    <div class="w-full h-full min-h-[36px] bg-emerald-50 hover:bg-emerald-500 border border-emerald-200 text-emerald-600 hover:text-white rounded-lg flex items-center justify-center transition-all text-[9px] md:text-[10px] font-black uppercase tracking-widest shadow-sm">
-                                        ${window.t('btn_signup')}
-                                    </div>
-                                </button>`;
-                } else if (shift.userId === userId) {
-                    // МОЯ ЗАПИСЬ
-                    cellHtml = `<button onclick="toggleSlot('${time}', ${slot}, '${shift.id}')" class="w-full h-full p-2 outline-none">
-                                    <div class="w-full h-full min-h-[36px] bg-blue-500 hover:bg-red-500 border border-blue-600 hover:border-red-600 text-white rounded-lg flex flex-col items-center justify-center transition-colors shadow-sm">
-                                        <span class="text-[10px] md:text-xs font-black truncate w-full px-1 text-center">${shift.userName}</span>
-                                    </div>
-                                </button>`;
-                } else {
-                    // ЗАНЯТО ДРУГИМ
-                    cellHtml = `<div class="w-full h-full p-2">
-                                    <div class="w-full h-full min-h-[36px] bg-slate-100 border border-slate-200 text-slate-500 rounded-lg flex items-center justify-center">
-                                        <span class="text-[10px] md:text-xs font-bold truncate w-full px-1 text-center">${shift.userName}</span>
-                                    </div>
-                                </div>`;
+            // Если час заблокирован админом — рисуем заглушку на всю ширину
+            if (blockedSlots.includes(time)) {
+                html += `
+                    <div class="w-3/4 flex-grow border-l border-slate-100 p-2">
+                        <div class="w-full h-full min-h-[36px] bg-slate-100 border border-slate-200 text-slate-400 rounded-lg flex items-center justify-center text-[10px] md:text-xs font-black uppercase tracking-widest shadow-inner">
+                            ${window.t('not_serving')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Если не заблокирован — рисуем обычные колонки
+                for (let slot = 1; slot <= 2; slot++) {
+                    const shift = slotsData[time] ? slotsData[time][slot] : null;
+                    
+                    let cellHtml = '';
+                    if (!shift) {
+                        cellHtml = `<button onclick="toggleSlot('${time}', ${slot}, null)" class="w-full h-full p-2 outline-none">
+                                        <div class="w-full h-full min-h-[36px] bg-emerald-50 hover:bg-emerald-500 border border-emerald-200 text-emerald-600 hover:text-white rounded-lg flex items-center justify-center transition-all text-[9px] md:text-[10px] font-black uppercase tracking-widest shadow-sm">
+                                            ${window.t('btn_signup')}
+                                        </div>
+                                    </button>`;
+                    } else if (shift.userId === userId) {
+                        cellHtml = `<button onclick="toggleSlot('${time}', ${slot}, '${shift.id}')" class="w-full h-full p-2 outline-none">
+                                        <div class="w-full h-full min-h-[36px] bg-blue-500 hover:bg-red-500 border border-blue-600 hover:border-red-600 text-white rounded-lg flex flex-col items-center justify-center transition-colors shadow-sm">
+                                            <span class="text-[10px] md:text-xs font-black truncate w-full px-1 text-center">${shift.userName}</span>
+                                        </div>
+                                    </button>`;
+                    } else {
+                        cellHtml = `<div class="w-full h-full p-2">
+                                        <div class="w-full h-full min-h-[36px] bg-slate-100 border border-slate-200 text-slate-500 rounded-lg flex items-center justify-center">
+                                            <span class="text-[10px] md:text-xs font-bold truncate w-full px-1 text-center">${shift.userName}</span>
+                                        </div>
+                                    </div>`;
+                    }
+                    
+                    html += `<div class="w-3/8 flex-grow border-l border-slate-100 ${slot === 1 ? '' : 'border-l-slate-100'}">${cellHtml}</div>`;
                 }
-                
-                html += `<div class="w-3/8 flex-grow border-l border-slate-100 ${slot === 1 ? '' : 'border-l-slate-100'}">${cellHtml}</div>`;
             }
             html += `</div>`;
         });
@@ -218,18 +226,14 @@ function loadSlots() {
     });
 }
 
-// ЗАПИСЬ И ОТМЕНА ЗАПИСИ
 window.toggleSlot = async (time, slot, existingDocId) => {
     try {
         if (existingDocId) {
-            // Отмена записи
             if (confirm(window.t('confirm_cancel'))) {
                 await deleteDoc(doc(db, "stands", existingDocId));
                 window.showToast(window.t('success'));
             }
         } else {
-            // Создание новой записи
-            // Используем жесткий ID, чтобы никто не мог случайно создать дубль в одну миллисекунду
             const docId = `${selectedDateStr}_${time.replace(/\s/g, '')}_${slot}`;
             
             await setDoc(doc(db, "stands", docId), {
