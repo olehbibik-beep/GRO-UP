@@ -139,7 +139,8 @@ const dict = {
         "congregation_label": "Собрание",
         "scan_qr": "Отсканируйте код",
         "days_short": "дн.",
-        "return_terr_btn": "Сдать"
+        "return_terr_btn": "Сдать",
+        "no_translation": "Нет перевода"
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -276,7 +277,8 @@ const dict = {
         "congregation_label": "Sbor",
         "scan_qr": "Naskenujte kód",
         "days_short": "dní",
-        "return_terr_btn": "Odevzdat"
+        "return_terr_btn": "Odevzdat",
+        "no_translation": "Bez překladu"
     }
 };
 
@@ -492,20 +494,6 @@ window.submitReport = async () => {
     }
 };
 
-// 🔥 ФУНКЦИЯ ДЛЯ КНОПКИ "ПОПРОСИТЬ УЧАСТОК" 
-window.requestTerritory = async (btn) => {
-    btn.innerText = "..."; btn.disabled = true;
-    try {
-        await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
-        btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success') || 'Успешно'}`;
-        setTimeout(() => { btn.innerText = window.t('request_btn') || 'Попросить'; btn.disabled = false; }, 3000);
-    } catch (e) { 
-        alert(window.t('error_network') || 'Ошибка сети!'); 
-        btn.innerText = window.t('request_btn') || 'Попросить'; 
-        btn.disabled = false; 
-    }
-};
-
 onSnapshot(doc(db, "users", userId), async (docSnap) => {
     if (!docSnap.exists()) { if (navigator.onLine) window.logout(); return; }
     currentUserData = docSnap.data();
@@ -605,6 +593,20 @@ async function loadProfileData() {
     } catch(e) {}
 }
 
+// ГЛОБАЛЬНАЯ ФУНКЦИЯ "ПОПРОСИТЬ УЧАСТОК"
+window.requestTerritory = async (btn) => {
+    btn.innerText = "..."; btn.disabled = true;
+    try {
+        await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
+        btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success') || 'Успешно'}`;
+        setTimeout(() => { btn.innerText = window.t('request_btn') || 'Попросить'; btn.disabled = false; }, 3000);
+    } catch (e) { 
+        alert(window.t('error_network') || 'Ошибка сети!'); 
+        btn.innerText = window.t('request_btn') || 'Попросить'; 
+        btn.disabled = false; 
+    }
+};
+
 function loadPersonalData() {
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
         if (docSnap.exists()) {
@@ -696,7 +698,6 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // 🔥 ЛОГИКА ОТРИСОВКИ УЧАСТКОВ ДЛЯ ПОЛЬЗОВАТЕЛЯ
     try {
         let allMapsCache = {};
         onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
@@ -720,7 +721,6 @@ function loadPersonalData() {
                 
                 activeCount++;
                 
-                // 🔥 Высчитываем дни для таймлайна с защитой от NaN
                 let diffDays = 0;
                 if (terr.issuedAt) {
                     const t = new Date(terr.issuedAt).getTime();
@@ -899,13 +899,12 @@ function loadPersonalData() {
                         const isNew = (now - itemTime) < oneDay;
                         const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 border border-red-100 px-2 py-2 rounded-lg w-full transition-colors outline-none flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>${window.t('delete')}</button>` : '';
                         
-                        // 🔥 ЖЕСТКАЯ ФИЛЬТРАЦИЯ ОБЪЯВЛЕНИЙ ПО ЯЗЫКУ
                         let displayText = '';
                         let shouldShow = false;
 
                         const hasRu = !!item.text_ru;
                         const hasCs = !!item.text_cs;
-                        const hasLegacyText = !!item.text && !hasRu && !hasCs; // Старые посты до разделения
+                        const hasLegacyText = !!item.text && !hasRu && !hasCs; 
                         const hasImg = !!item.imageUrl;
 
                         if (hasLegacyText) {
@@ -916,18 +915,17 @@ function loadPersonalData() {
                                 displayText = item.text_ru;
                                 shouldShow = true;
                             } else if (!hasRu && !hasCs && hasImg) {
-                                shouldShow = true; // Только картинка (афиша)
+                                shouldShow = true; 
                             }
                         } else if (currentLang === 'cs') {
                             if (hasCs) {
                                 displayText = item.text_cs;
                                 shouldShow = true;
                             } else if (!hasRu && !hasCs && hasImg) {
-                                shouldShow = true; // Только картинка
+                                shouldShow = true; 
                             }
                         }
 
-                        // Если пост не предназначен для этого языка - просто пропускаем (даже для админов)
                         if (!shouldShow) return; 
 
                         const bgCardClass = isNew ? "bg-white border-slate-200" : "bg-slate-50 opacity-90 border-slate-200";
@@ -964,7 +962,7 @@ function loadPersonalData() {
                     
                     <div class="flex items-center justify-between mt-3 gap-2">
                         <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-lg transition-colors flex items-center justify-center w-10 h-8 shrink-0">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             <input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)">
                         </label>
                         <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 rounded-lg flex-grow transition-colors h-8 outline-none">${window.t('publish')}</button>
@@ -985,6 +983,81 @@ function loadPersonalData() {
                     <p class="text-slate-400 italic text-sm text-center">${window.t('no_news')}</p>
                 </div>`;
             }
+        });
+    } catch(e) {}
+
+    // 🔥 ВОЗВРАЩЕННАЯ ФУНКЦИЯ СОБЫТИЙ ИЗ КАЛЕНДАРЯ
+    try {
+        const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
+        onSnapshot(eventsQuery, (snapshot) => {
+            const container = document.getElementById('calendar-events');
+            if (!container) return; 
+            let html = '';
+            
+            const now = new Date();
+            // Надежное определение "сегодня" в формате YYYY-MM-DD
+            const tzOffset = now.getTimezoneOffset() * 60000;
+            const todayStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
+
+            snapshot.forEach(docSnap => {
+                const ev = docSnap.data();
+                
+                if (ev.date === todayStr) {
+                    let isPastEvent = false;
+                    let displayTime = ev.time || "";
+                    
+                    if (displayTime) {
+                        let hours = 0, minutes = 0;
+                        if (!displayTime.includes(':') && displayTime.length >= 3) {
+                            if (displayTime.length === 4) displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
+                            else if (displayTime.length === 3) displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
+                        }
+                        if (displayTime.includes(':')) {
+                            [hours, minutes] = displayTime.split(':');
+                            const eventExactTime = new Date();
+                            eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+                            if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
+                        }
+                    }
+
+                    const evGroup = ev.group || window.t('no_group');
+                    const groupBadge = evGroup !== window.t('no_group') ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">${window.t('group_short')} ${evGroup}</span>` : '';
+                    const activeClass = isPastEvent ? "bg-slate-50 text-slate-400 border-b border-slate-200" : "bg-white text-slate-800 border-b border-slate-100";
+                    const timeColor = isPastEvent ? "text-slate-400" : "text-rose-500";
+                    const leaderColor = isPastEvent ? "text-slate-400" : "text-rose-600";
+                    
+                    // Вытаскиваем число для значка
+                    const dayNum = ev.date ? parseInt(ev.date.split('-')[2], 10) : now.getDate();
+
+                    html += `
+                        <div class="flex items-center p-3 w-full cursor-default ${activeClass}">
+                            <div class="flex items-center gap-3 w-full">
+                                <div class="flex flex-col items-center justify-center w-12 shrink-0">
+                                    <span class="text-[8px] uppercase font-bold leading-none mb-1 opacity-70">${window.t('today_badge')}</span>
+                                    <span class="text-xl font-black leading-none">${dayNum}</span>
+                                </div>
+                                <div class="flex flex-col flex-grow truncate min-w-0">
+                                    <div class="flex items-center gap-2 truncate">
+                                        ${displayTime ? `<span class="text-xs font-bold shrink-0 ${timeColor}">${displayTime}</span>` : ''}
+                                        <span class="font-black text-sm truncate">${ev.title}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 mt-1 truncate">
+                                        ${groupBadge}
+                                        ${ev.leader ? `<span class="text-[9px] uppercase font-medium opacity-80 truncate">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    if (!isPastEvent && !sessionStorage.getItem('event_toast_' + docSnap.id)) {
+                        window.showToast(`${window.t('today_event_toast')} ${ev.title} ${displayTime ? ' ' + displayTime : ''}`, 'info');
+                        sessionStorage.setItem('event_toast_' + docSnap.id, 'true');
+                    }
+                }
+            });
+
+            container.innerHTML = html || `<p class="p-4 text-xs text-slate-400 italic text-center">${window.t('no_events_today')}</p>`;
         });
     } catch(e) {}
 }
