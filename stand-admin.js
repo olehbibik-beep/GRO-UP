@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, getDoc, updateDoc, deleteDoc, query, where, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const dict = {
     ru: {
@@ -10,6 +10,7 @@ const dict = {
         "schedule_title": "Блокировка часов",
         "stats_title": "Статистика за месяц (текущая локация)",
         "click_to_block": "Нажмите, чтобы закрыть/открыть час",
+        "copy_month": "На месяц",
         "no_requests": "Нет новых заявок",
         "no_approved": "Пока нет одобренных возвещателей",
         "btn_approve": "Одобрить",
@@ -32,6 +33,7 @@ const dict = {
         "schedule_title": "Blokování hodin",
         "stats_title": "Statistika za měsíc (aktuální lokace)",
         "click_to_block": "Kliknutím zavřete/otevřete",
+        "copy_month": "Na měsíc",
         "no_requests": "Žádné nové žádosti",
         "no_approved": "Zatím žádní schválení",
         "btn_approve": "Schválit",
@@ -56,16 +58,14 @@ window.showToast = (message) => {
     const container = document.getElementById('toast-container');
     if (!container) return;
     const toast = document.createElement('div');
-    toast.className = `bg-indigo-600 text-white px-4 py-3 rounded-lg shadow-lg text-xs font-bold text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
+    toast.className = `bg-slate-800 text-white px-4 py-3 rounded-md shadow-lg text-xs font-bold text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
     toast.innerText = message;
     container.appendChild(toast);
     requestAnimationFrame(() => toast.classList.remove('-translate-y-10', 'opacity-0'));
     setTimeout(() => { toast.classList.add('-translate-y-10', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
 };
 
-window.scrollDates = (offset) => {
-    document.getElementById('admin-dates-container').scrollBy({ left: offset, behavior: 'smooth' });
-};
+window.scrollDates = (offset) => { document.getElementById('admin-dates-container').scrollBy({ left: offset, behavior: 'smooth' }); };
 
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
@@ -87,25 +87,20 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
     const roles = docSnap.data().roles || [];
     const isStandAdmin = roles.includes("Ответственный за стенды") || roles.includes("Владелец") || roles.includes("Админ");
     
-    if (!isStandAdmin) {
-        window.location.href = 'index.html';
-    } else {
-        initAdminDates();
-        loadStatistics();
-    }
+    if (!isStandAdmin) window.location.href = 'index.html';
+    else { initAdminDates(); loadStatistics(); }
 });
 
 let activeLocation = "ML - CupVital";
 
-// ЛОКАЦИИ АДМИНА
 window.selectLocation = (loc) => {
-    document.querySelectorAll('.loc-btn').forEach(btn => btn.classList.remove('active', 'bg-[#0f172a]', 'text-white'));
+    document.querySelectorAll('.loc-btn').forEach(btn => btn.classList.remove('active', 'bg-[#1e293b]', 'text-white'));
     document.querySelectorAll('.loc-btn').forEach(btn => btn.classList.add('bg-white', 'text-slate-500'));
     
     const activeBtn = document.getElementById(`loc-${loc.replace(/\s/g, '')}`);
     if (activeBtn) {
         activeBtn.classList.remove('bg-white', 'text-slate-500');
-        activeBtn.classList.add('active', 'bg-[#0f172a]', 'text-white');
+        activeBtn.classList.add('active', 'bg-[#1e293b]', 'text-white');
     }
     
     activeLocation = loc;
@@ -113,7 +108,6 @@ window.selectLocation = (loc) => {
     loadStatistics();  
 };
 
-// ЗАЯВКИ
 const reqQuery = query(collection(db, "requests"), where("type", "==", "stand"));
 onSnapshot(reqQuery, (snapshot) => {
     const list = document.getElementById('stand-requests-list');
@@ -134,8 +128,8 @@ onSnapshot(reqQuery, (snapshot) => {
                     <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Заявка на стенд</p>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="approveStand('${req.id}', '${req.userId}')" class="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors shadow-sm outline-none">✔️</button>
-                    <button onclick="rejectStand('${req.id}')" class="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shadow-sm outline-none">✖</button>
+                    <button onclick="approveStand('${req.id}', '${req.userId}')" class="w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-md transition-colors border border-emerald-100 outline-none">✔️</button>
+                    <button onclick="rejectStand('${req.id}')" class="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors outline-none">✖</button>
                 </div>
             </div>
         `;
@@ -144,7 +138,6 @@ onSnapshot(reqQuery, (snapshot) => {
     list.innerHTML = html || `<p class="text-slate-400 text-xs text-center py-4 italic">${window.t('no_requests')}</p>`;
 });
 
-// ОДОБРЕННЫЕ ПОЛЬЗОВАТЕЛИ
 onSnapshot(collection(db, "users"), (snapshot) => {
     const list = document.getElementById('approved-users-list');
     let html = '';
@@ -161,9 +154,9 @@ onSnapshot(collection(db, "users"), (snapshot) => {
 
     users.forEach(u => {
         html += `
-            <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
+            <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-md">
                 <span class="font-bold text-slate-700 text-sm truncate pr-2">${u.name}</span>
-                <button onclick="removeStandAccess('${u.id}')" class="shrink-0 px-2.5 py-1 bg-white border border-slate-200 text-slate-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 text-[9px] font-black uppercase tracking-widest rounded transition-colors outline-none shadow-sm">
+                <button onclick="removeStandAccess('${u.id}')" class="shrink-0 px-2.5 py-1 bg-white border border-slate-200 text-slate-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 text-[9px] font-black uppercase tracking-widest rounded transition-colors outline-none">
                     ${window.t('btn_revoke')}
                 </button>
             </div>
@@ -205,13 +198,12 @@ window.removeStandAccess = async (userId) => {
     }
 };
 
-// ------------------------------------------------------------------
-// УПРАВЛЕНИЕ РАСПИСАНИЕМ (БЛОКИРОВКА СЛОТОВ)
-// ------------------------------------------------------------------
-
+// РАСПИСАНИЕ
 let selectedAdminDateStr = "";
+let currentAdminDayNum = null;
+let currentBlockedCache = [];
+
 const TIME_SLOTS = [
-    "06:00 - 07:00", "07:00 - 08:00", "08:00 - 09:00", "09:00 - 10:00",
     "10:00 - 11:00", "11:00 - 12:00", "12:00 - 13:00", "13:00 - 14:00",
     "14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00"
 ];
@@ -229,14 +221,19 @@ function initAdminDates() {
         const tzOffset = d.getTimezoneOffset() * 60000;
         const dateStr = new Date(d.getTime() - tzOffset).toISOString().split('T')[0];
         const dayNum = d.getDate();
-        const dayName = window.t('days')[d.getDay()];
+        const dayOfWeek = d.getDay(); // 0-6
+        const dayName = window.t('days')[dayOfWeek];
         const monthName = window.t('months')[d.getMonth()];
         
         const isSelected = i === 0 ? 'active' : 'bg-white border-slate-200 text-slate-500';
-        if (i === 0) { selectedAdminDateStr = dateStr; document.getElementById('admin-selected-date').innerText = `${dayNum} ${monthName}`; }
+        if (i === 0) { 
+            selectedAdminDateStr = dateStr; 
+            currentAdminDayNum = dayOfWeek;
+            document.getElementById('admin-selected-date').innerText = `${dayNum} ${monthName}`; 
+        }
 
         html += `
-            <button onclick="selectAdminDate('${dateStr}', '${dayNum}', '${monthName}', this)" class="date-chip shrink-0 w-[55px] h-[65px] md:w-[60px] md:h-[70px] rounded-xl border flex flex-col items-center justify-center transition-colors outline-none snap-center ${isSelected}">
+            <button onclick="selectAdminDate('${dateStr}', '${dayNum}', '${monthName}', ${dayOfWeek}, this)" class="date-chip shrink-0 w-[55px] h-[65px] md:w-[60px] md:h-[70px] rounded-md border flex flex-col items-center justify-center transition-colors outline-none snap-center ${isSelected}">
                 <span class="text-xs md:text-sm font-black mb-0.5">${dayNum}</span>
                 <span class="date-day text-[9px] font-bold uppercase tracking-widest text-slate-400">${dayName}</span>
             </button>
@@ -247,13 +244,14 @@ function initAdminDates() {
     loadDaySettings();
 }
 
-window.selectAdminDate = (dateStr, dayNum, monthName, btnEl) => {
+window.selectAdminDate = (dateStr, dayNum, monthName, dayOfWeek, btnEl) => {
     document.querySelectorAll('#admin-dates-container .date-chip').forEach(el => {
-        el.className = 'date-chip shrink-0 w-[55px] h-[65px] md:w-[60px] md:h-[70px] rounded-xl border flex flex-col items-center justify-center transition-colors outline-none snap-center bg-white border-slate-200 text-slate-500';
+        el.className = 'date-chip shrink-0 w-[55px] h-[65px] md:w-[60px] md:h-[70px] rounded-md border flex flex-col items-center justify-center transition-colors outline-none snap-center bg-white border-slate-200 text-slate-500';
     });
-    btnEl.className = 'date-chip active shrink-0 w-[55px] h-[65px] md:w-[60px] md:h-[70px] rounded-xl border flex flex-col items-center justify-center transition-colors outline-none snap-center';
+    btnEl.className = 'date-chip active shrink-0 w-[55px] h-[65px] md:w-[60px] md:h-[70px] rounded-md border flex flex-col items-center justify-center transition-colors outline-none snap-center';
     
     selectedAdminDateStr = dateStr;
+    currentAdminDayNum = dayOfWeek;
     document.getElementById('admin-selected-date').innerText = `${dayNum} ${monthName}`;
     loadDaySettings();
 };
@@ -267,6 +265,7 @@ function loadDaySettings() {
     unsubscribeSettings = onSnapshot(doc(db, "stand_settings", settingsDocId), (docSnap) => {
         let blockedSlots = [];
         if (docSnap.exists()) { blockedSlots = docSnap.data().blocked || []; }
+        currentBlockedCache = blockedSlots; // Сохраняем для шаблона
 
         let html = '';
         TIME_SLOTS.forEach(time => {
@@ -277,13 +276,13 @@ function loadDaySettings() {
                 : 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-500 hover:text-white';
                 
             const iconHtml = isBlocked 
-                ? `<svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>` 
-                : `<svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+                ? `<svg class="w-4 h-4 mr-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>` 
+                : `<svg class="w-4 h-4 mr-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
                 
             const textHtml = isBlocked ? window.t('blocked_slot') : window.t('active_slot');
 
             html += `
-                <button onclick="toggleSlotBlock('${time}', ${isBlocked})" class="w-full flex items-center justify-between p-3 rounded-lg border outline-none transition-colors shadow-sm ${btnClass}">
+                <button onclick="toggleSlotBlock('${time}', ${isBlocked})" class="w-full flex items-center justify-between p-3 rounded-md border outline-none transition-colors ${btnClass}">
                     <span class="font-black text-xs md:text-sm font-mono">${time}</span>
                     <span class="flex items-center text-[10px] md:text-xs font-bold uppercase tracking-widest">${iconHtml} ${textHtml}</span>
                 </button>
@@ -302,29 +301,46 @@ window.toggleSlotBlock = async (time, currentlyBlocked) => {
         let blocked = [];
         if (snap.exists()) blocked = snap.data().blocked || [];
         
-        if (currentlyBlocked) {
-            blocked = blocked.filter(t => t !== time); 
-        } else {
-            blocked.push(time); 
-        }
+        if (currentlyBlocked) blocked = blocked.filter(t => t !== time); 
+        else blocked.push(time); 
+        
         await setDoc(docRef, { blocked }, { merge: true });
     } catch (e) { console.error(e); }
 };
 
-// ------------------------------------------------------------------
-// 4. СТАТИСТИКА (Только по выбранной локации)
-// ------------------------------------------------------------------
-let unsubscribeStats = null;
+// 🔥 МАССОВОЕ КОПИРОВАНИЕ ШАБЛОНА
+window.applyScheduleToAll = async () => {
+    const dayName = window.t('days')[currentAdminDayNum];
+    if (!confirm(`Применить текущие настройки блокировки ко всем таким же дням недели (${dayName}) на 30 дней вперед для локации ${activeLocation}?`)) return;
 
+    try {
+        const today = new Date();
+        const safeLoc = activeLocation.replace(/\s+/g, '');
+
+        for (let i = 0; i < 30; i++) {
+            const d = new Date(today);
+            d.setDate(today.getDate() + i);
+            if (d.getDay() === currentAdminDayNum) {
+                const tzOffset = d.getTimezoneOffset() * 60000;
+                const targetDateStr = new Date(d.getTime() - tzOffset).toISOString().split('T')[0];
+                const targetDocId = `${targetDateStr}_${safeLoc}`;
+                
+                await setDoc(doc(db, "stand_settings", targetDocId), { blocked: currentBlockedCache }, { merge: true });
+            }
+        }
+        window.showToast(window.t('success'));
+    } catch (error) {
+        alert(window.t('error_general'));
+    }
+};
+
+// СТАТИСТИКА
 function loadStatistics() {
-    if (unsubscribeStats) unsubscribeStats();
-    
     const today = new Date();
     const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
-    
     const statsQuery = query(collection(db, "stands"), where("date", ">=", firstDayStr), where("location", "==", activeLocation));
     
-    unsubscribeStats = onSnapshot(statsQuery, (snapshot) => {
+    onSnapshot(statsQuery, (snapshot) => {
         const container = document.getElementById('stats-container');
         let stats = {};
         
@@ -341,20 +357,28 @@ function loadStatistics() {
             html = `<p class="text-slate-400 text-xs italic text-center py-2">Записей на ${activeLocation} в этом месяце еще нет</p>`;
         } else {
             sortedStats.forEach((s, index) => {
-                const isTop = index < 3;
-                const bgClass = isTop ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-50 border-slate-100';
-                const textColor = isTop ? 'text-indigo-700' : 'text-slate-700';
-                const countColor = isTop ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-600';
+                const count = s.count;
+                // Цветовая шкала 0-10, 10-20, 20+
+                let progressColor = 'bg-emerald-500';
+                let txtColor = 'text-emerald-700';
+                if (count >= 20) { progressColor = 'bg-rose-500'; txtColor = 'text-rose-700'; }
+                else if (count >= 10) { progressColor = 'bg-amber-500'; txtColor = 'text-amber-700'; }
+                
+                let progressPercent = (count / 50) * 100;
+                if (progressPercent > 100) progressPercent = 100;
 
                 html += `
-                    <div class="flex items-center justify-between p-2.5 rounded-lg border ${bgClass}">
-                        <span class="font-bold text-sm ${textColor} truncate pr-2 flex items-center gap-2">
-                            ${isTop ? '⭐' : ''} ${s.name}
-                        </span>
-                        <span class="flex items-center gap-1.5 shrink-0">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('total_shifts')}</span>
-                            <span class="${countColor} px-2 py-0.5 rounded font-black text-xs min-w-[24px] text-center">${s.count}</span>
-                        </span>
+                    <div class="flex flex-col p-3 rounded-md border border-slate-100 bg-slate-50 mb-2">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-sm text-slate-800 truncate pr-2">${index < 3 ? '⭐ ' : ''}${s.name}</span>
+                            <span class="flex items-center gap-1.5 shrink-0">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('total_shifts')}</span>
+                                <span class="bg-white border border-slate-200 px-2 py-0.5 rounded ${txtColor} font-black text-xs min-w-[24px] text-center shadow-sm">${count}</span>
+                            </span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden flex">
+                            <div class="${progressColor} h-1.5 rounded-full transition-all" style="width: ${progressPercent}%"></div>
+                        </div>
                     </div>
                 `;
             });
@@ -363,3 +387,23 @@ function loadStatistics() {
         if (container) container.innerHTML = html;
     });
 }
+
+// 🔥 ОЧИСТКА СТАТИСТИКИ
+window.clearStats = async () => {
+    if (!confirm(`Вы точно хотите удалить все записи стендов за этот месяц для локации ${activeLocation}? Это действие нельзя отменить!`)) return;
+
+    try {
+        const today = new Date();
+        const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+        const q = query(collection(db, "stands"), where("date", ">=", firstDayStr), where("location", "==", activeLocation));
+        
+        const snapshot = await getDocs(q);
+        const batchDeletes = [];
+        snapshot.forEach(docSnap => batchDeletes.push(deleteDoc(doc(db, "stands", docSnap.id))));
+        
+        await Promise.all(batchDeletes);
+        window.showToast(window.t('success'));
+    } catch (e) {
+        alert(window.t('error_general'));
+    }
+};
