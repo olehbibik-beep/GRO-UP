@@ -45,6 +45,8 @@ const dict = {
         "role_group": "Группа",
         "role_terr": "Участки",
         "role_school": "Школа",
+        "role_stand": "Стенды",
+        "role_stand_user": "Допущен к стенду",
         "no_new_requests": "Нет новых заявок",
         "no_active_users": "Нет активных пользователей",
         "no_group": "Без группы"
@@ -92,6 +94,8 @@ const dict = {
         "role_group": "Skupina",
         "role_terr": "Obvody",
         "role_school": "Škola",
+        "role_stand": "Stojany",
+        "role_stand_user": "Služba se stojanem",
         "no_new_requests": "Žádné nové žádosti",
         "no_active_users": "Žádní aktivní uživatelé",
         "no_group": "Bez skupiny"
@@ -157,7 +161,6 @@ getDoc(doc(db, "users", uid)).then(docSnap => {
     if ((path.includes('calendar.html') || path.includes('duties.html')) && !isOverseer) window.location.href = 'index.html';
 });
 
-// ГЛОБАЛЬНЫЕ НАСТРОЙКИ (Собрание и ZOOM)
 onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
     const elName = document.getElementById('congregation-name');
     const elZoomId = document.getElementById('zoom-id');
@@ -189,7 +192,6 @@ window.updateZoomData = async (field, val) => {
     } catch(e) { alert(window.t('error_save')); }
 };
 
-// АВТОСОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЕЙ
 window.updateField = async (id, field, value) => {
     try {
         let valToSave = value.trim();
@@ -231,7 +233,6 @@ window.toggleRole = async (id, roleName, isChecked) => {
     } catch (e) { alert(window.t('error_update_role')); }
 };
 
-// УПРАВЛЕНИЕ: БАН И УДАЛЕНИЕ
 window.blockUser = async (id) => {
     if(confirm(window.t('confirm_block'))) await updateDoc(doc(db, "users", id), { status: 'blocked' });
 };
@@ -320,12 +321,14 @@ onSnapshot(collection(db, "users"), (snapshot) => {
                     </td>
                     
                     <td class="py-1.5 px-3">
-                        <div class="flex flex-wrap gap-1 w-60">
+                        <div class="flex flex-wrap gap-1 w-64">
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-slate-600 font-bold uppercase hover:bg-slate-100 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Возвещатель', this.checked)" class="accent-slate-500 w-3 h-3 cursor-pointer" ${r.includes('Возвещатель') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_publisher')}</label>
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-emerald-600 font-bold uppercase hover:bg-emerald-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Пионер', this.checked)" class="accent-emerald-500 w-3 h-3 cursor-pointer" ${r.includes('Пионер') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_pioneer')}</label>
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-sky-600 font-bold uppercase hover:bg-sky-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Помощник собрания', this.checked)" class="accent-sky-500 w-3 h-3 cursor-pointer" ${r.includes('Помощник собрания') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_ms')}</label>
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-amber-600 font-bold uppercase hover:bg-amber-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Старейшина', this.checked)" class="accent-amber-500 w-3 h-3 cursor-pointer" ${r.includes('Старейшина') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_elder')}</label>
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-rose-600 font-bold uppercase hover:bg-rose-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Админ', this.checked)" class="accent-rose-500 w-3 h-3 cursor-pointer" ${r.includes('Админ') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_admin')}</label>
+                            
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-blue-600 font-bold uppercase hover:bg-blue-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Служение со стендом', this.checked)" class="accent-blue-500 w-3 h-3 cursor-pointer" ${r.includes('Служение со стендом') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_stand_user')}</label>
                         </div>
                     </td>
                     
@@ -334,6 +337,8 @@ onSnapshot(collection(db, "users"), (snapshot) => {
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-purple-700 font-bold uppercase hover:bg-purple-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Надзиратель группы', this.checked)" class="accent-purple-500 w-3 h-3 cursor-pointer" ${r.includes('Надзиратель группы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_group')}</label>
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-teal-700 font-bold uppercase hover:bg-teal-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за участки', this.checked)" class="accent-teal-500 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за участки') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_terr')}</label>
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-indigo-700 font-bold uppercase hover:bg-indigo-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за школу', this.checked)" class="accent-indigo-500 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за школу') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_school')}</label>
+                            
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-blue-700 font-bold uppercase hover:bg-blue-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за стенды', this.checked)" class="accent-blue-600 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за стенды') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_stand')}</label>
                         </div>
                     </td>
                     
