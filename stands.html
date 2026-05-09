@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon-512.png" type="image/png">
+    <meta name="theme-color" content="#0f172a">
+    
+    <title data-lang="stands_title">Служение со стендом</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f8fafc', adminNav: '#1e3a8a' } } } } }
+    </script>
+    <style>
+        ::-webkit-scrollbar { display: none; }
+        body { -ms-overflow-style: none; scrollbar-width: none; }
+        .date-chip.active { background-color: #3b82f6; color: white; border-color: #2563eb; }
+        .date-chip.active .date-day { color: #bfdbfe; }
+    </style>
+</head>
+<body class="bg-ui-bg text-slate-800 min-h-screen font-sans">
+
+    <nav class="fixed top-0 left-0 w-full bg-white border-b border-slate-200 flex items-center h-14 z-50 px-4 shadow-sm">
+        <a href="index.html" class="flex items-center text-slate-500 hover:text-blue-600 transition-colors outline-none font-bold text-sm gap-2">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            <span data-lang="btn_back">Назад</span>
+        </a>
+        <h1 class="mx-auto font-black text-slate-800 absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+            <span data-lang="stands_title">Стенды</span>
+        </h1>
+    </nav>
+
+    <main class="w-full max-w-4xl mx-auto pt-20 px-4 pb-12">
+        
+        <div class="mb-4 relative">
+            <div id="dates-container" class="flex overflow-x-auto gap-2 pb-2 snap-x snap-mandatory">
+                </div>
+        </div>
+
+        <div class="flex items-center justify-between mb-2 px-1">
+            <h2 id="selected-date-display" class="font-black text-slate-700 text-lg">...</h2>
+            <div class="flex gap-2 text-[9px] font-bold uppercase tracking-widest text-slate-400">
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500 block"></span>Свободно</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500 block"></span>Твоё</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+            <div class="flex bg-slate-50 border-b border-slate-200 p-3 text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-widest text-center">
+                <div class="w-1/4" data-lang="time_label">Время</div>
+                <div class="w-3/8 flex-grow border-l border-slate-200" data-lang="pub_1">Возвещатель 1</div>
+                <div class="w-3/8 flex-grow border-l border-slate-200" data-lang="pub_2">Возвещатель 2</div>
+            </div>
+            
+            <div id="slots-container" class="divide-y divide-slate-100 flex flex-col">
+                <p class="text-center py-10 text-slate-400 italic text-sm" data-lang="loading">Загрузка...</p>
+            </div>
+        </div>
+        
+    </main>
+
+    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
+    <script type="module" src="stands.js?v=10"></script>
+</body>
+</html>
