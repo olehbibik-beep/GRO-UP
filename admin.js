@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// 🔥 ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ (С ФРАЗАМИ ДЛЯ АДМИНКИ)
 const dict = {
     ru: {
         "admin_title": "Панель Администратора",
@@ -21,7 +20,6 @@ const dict = {
         "th_responsible": "Ответственный за",
         "th_manage": "Управление",
         
-        // Фразы из admin.js
         "error_save": "Ошибка сохранения!",
         "alert_pin_length": "ПИН-код должен состоять ровно из 6 цифр!",
         "error_save_pin": "Ошибка при сохранении ПИН-кода!",
@@ -69,7 +67,6 @@ const dict = {
         "th_responsible": "Zodpovědný za",
         "th_manage": "Správa",
 
-        // Фразы из admin.js
         "error_save": "Chyba při ukládání!",
         "alert_pin_length": "PIN kód musí mít přesně 6 číslic!",
         "error_save_pin": "Chyba při ukládání PIN kódu!",
@@ -127,7 +124,6 @@ if (document.readyState === 'loading') {
 } else {
     applyTranslations();
 }
-// ============================================
 
 const firebaseConfig = {
     apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
@@ -144,9 +140,6 @@ const db = getFirestore(app);
 const userId = localStorage.getItem('userId');
 if (!userId) window.location.href = 'login.html';
 
-// ==========================================
-// 1. ПРОВЕРКА ПРАВ И ЗАЩИТА СТРАНИЦ
-// ==========================================
 const uid = typeof currentUserId !== 'undefined' ? currentUserId : userId;
 getDoc(doc(db, "users", uid)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
@@ -164,13 +157,17 @@ getDoc(doc(db, "users", uid)).then(docSnap => {
     if ((path.includes('calendar.html') || path.includes('duties.html')) && !isOverseer) window.location.href = 'index.html';
 });
 
-// ==========================================
-// 2. ГЛОБАЛЬНАЯ НАСТРОЙКА: СОБРАНИЕ
-// ==========================================
+// ГЛОБАЛЬНЫЕ НАСТРОЙКИ (Собрание и ZOOM)
 onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
-    const el = document.getElementById('congregation-name');
-    if(docSnap.exists() && el) {
-        el.value = docSnap.data().name || "МАРИАНСКИЕ ЛАЗНЕ";
+    const elName = document.getElementById('congregation-name');
+    const elZoomId = document.getElementById('zoom-id');
+    const elZoomPass = document.getElementById('zoom-pass');
+    
+    if(docSnap.exists()) {
+        const data = docSnap.data();
+        if (elName) elName.value = data.name || "МАРИАНСКИЕ ЛАЗНЕ";
+        if (elZoomId) elZoomId.value = data.zoomId || "";
+        if (elZoomPass) elZoomPass.value = data.zoomPass || "";
     }
 });
 
@@ -178,19 +175,25 @@ window.updateCongregation = async (val) => {
     const el = document.getElementById('congregation-name');
     try {
         await setDoc(doc(db, "settings", "congregation"), { name: val.trim() || "МАРИАНСКИЕ ЛАЗНЕ" }, { merge: true });
-        el.classList.add('bg-emerald-50', 'border-emerald-400', 'text-emerald-700');
-        setTimeout(() => el.classList.remove('bg-emerald-50', 'border-emerald-400', 'text-emerald-700'), 1500);
+        el.classList.add('bg-indigo-100', 'border-indigo-400');
+        setTimeout(() => el.classList.remove('bg-indigo-100', 'border-indigo-400'), 1500);
     } catch(e) { alert(window.t('error_save')); }
 };
 
-// ==========================================
-// 3. АВТОСОХРАНЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ
-// ==========================================
+window.updateZoomData = async (field, val) => {
+    const el = document.getElementById(field === 'zoomId' ? 'zoom-id' : 'zoom-pass');
+    try {
+        await setDoc(doc(db, "settings", "congregation"), { [field]: val.trim() }, { merge: true });
+        el.classList.add('bg-emerald-100', 'border-emerald-400');
+        setTimeout(() => el.classList.remove('bg-emerald-100', 'border-emerald-400'), 1500);
+    } catch(e) { alert(window.t('error_save')); }
+};
 
+// АВТОСОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЕЙ
 window.updateField = async (id, field, value) => {
     try {
         let valToSave = value.trim();
-        if (field === 'group' && !valToSave) valToSave = "Без группы"; // В базе оставляем русский ключ
+        if (field === 'group' && !valToSave) valToSave = "Без группы"; 
         await updateDoc(doc(db, "users", id), { [field]: valToSave });
     } catch (e) { alert(window.t('error_save')); }
 };
@@ -228,9 +231,7 @@ window.toggleRole = async (id, roleName, isChecked) => {
     } catch (e) { alert(window.t('error_update_role')); }
 };
 
-// ==========================================
-// 4. УПРАВЛЕНИЕ: БАН И УДАЛЕНИЕ
-// ==========================================
+// УПРАВЛЕНИЕ: БАН И УДАЛЕНИЕ
 window.blockUser = async (id) => {
     if(confirm(window.t('confirm_block'))) await updateDoc(doc(db, "users", id), { status: 'blocked' });
 };
@@ -251,9 +252,6 @@ window.rejectUser = async (id) => {
     }
 };
 
-// ==========================================
-// 5. ПОЛУЧЕНИЕ И ОТРИСОВКА СПИСКА
-// ==========================================
 onSnapshot(collection(db, "users"), (snapshot) => {
     const pendingList = document.getElementById('pending-list');
     const activeList = document.getElementById('active-list');
@@ -269,7 +267,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         const icon = u.gender === 'girl' ? '👩‍💼' : '👨‍💼';
 
         if (u.status === 'pending') {
-            // ОЖИДАЮЩИЕ ПОЛЬЗОВАТЕЛИ
             pendingCount++;
             pendingHTML += `
                 <div class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl shadow-sm user-row" data-name="${u.name.toLowerCase()}">
@@ -287,7 +284,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
                 </div>
             `;
         } else if (u.status === 'active' || u.status === 'blocked') {
-            // АКТИВНЫЕ ПОЛЬЗОВАТЕЛИ
             activeCount++;
             let r = u.roles || [];
             
@@ -358,9 +354,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     activeList.innerHTML = activeHTML || `<tr><td colspan="7" class="text-center py-8 text-slate-400 italic text-sm">${window.t('no_active_users')}</td></tr>`;
 });
 
-// ==========================================
-// 6. ЖИВОЙ ПОИСК ПО ИМЕНИ
-// ==========================================
 document.getElementById('search-user').addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     const rows = document.querySelectorAll('.user-row');
