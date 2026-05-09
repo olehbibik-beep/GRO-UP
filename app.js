@@ -326,7 +326,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app); 
 
-// 🔥 ЖЕЛЕЗОБЕТОННАЯ ЗАЩИТА: Игнорируем ошибки Push-уведомлений на старых телефонах!
 let messaging = null;
 try {
     messaging = getMessaging(app);
@@ -355,7 +354,6 @@ window.hideGlobalLoader = () => {
     }
 };
 
-// Таймер-страховка: если база зависнет, спиннер всё равно пропадет через 2.5 сек
 setTimeout(window.hideGlobalLoader, 2500);
 
 window.scrollNews = (offset) => {
@@ -514,19 +512,6 @@ window.submitReport = async () => {
     }
 };
 
-window.requestTerritory = async (btn) => {
-    btn.innerText = "..."; btn.disabled = true;
-    try {
-        await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
-        btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success') || 'Успешно'}`;
-        setTimeout(() => { btn.innerText = window.t('request_btn') || 'Попросить'; btn.disabled = false; }, 3000);
-    } catch (e) { 
-        alert(window.t('error_network') || 'Ошибка сети!'); 
-        btn.innerText = window.t('request_btn') || 'Попросить'; 
-        btn.disabled = false; 
-    }
-};
-
 onSnapshot(doc(db, "users", userId), async (docSnap) => {
     if (!docSnap.exists()) { if (navigator.onLine) window.logout(); return; }
     currentUserData = docSnap.data();
@@ -585,6 +570,8 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
     }
 });
 
+let currentZoomData = { id: "", pass: "" };
+
 async function loadProfileData() {
     const pName = document.getElementById('profile-name');
     const pGroup = document.getElementById('profile-group');
@@ -606,11 +593,42 @@ async function loadProfileData() {
         }).join('');
     }
     
+    // 🔥 ЗАГРУЗКА ДАННЫХ СОБРАНИЯ И ZOOM
     onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
         const congEl = document.getElementById('profile-congregation');
-        if (congEl) {
-            if(docSnap.exists() && docSnap.data().name) congEl.innerText = `${docSnap.data().name}`;
-            else congEl.innerText = `МАРИАНСКИЕ ЛАЗНЕ`;
+        const dashZoomId = document.getElementById('dash-zoom-id');
+        const dashZoomPass = document.getElementById('dash-zoom-pass');
+        const btnZoom = document.getElementById('btn-zoom');
+        
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if(congEl) congEl.innerText = data.name || "МАРИАНСКИЕ ЛАЗНЕ";
+            
+            currentZoomData.id = data.zoomId || "";
+            currentZoomData.pass = data.zoomPass || "";
+            
+            if (dashZoomId) dashZoomId.innerText = currentZoomData.id || "Нет";
+            if (dashZoomPass) dashZoomPass.innerText = currentZoomData.pass || "Нет";
+
+            if (btnZoom) {
+                btnZoom.onclick = () => {
+                    if (currentZoomData.id) {
+                        const cleanId = currentZoomData.id.replace(/\s/g, '');
+                        let url = `zoomus://zoom.us/join?confno=${cleanId}`;
+                        if (currentZoomData.pass) url += `&pwd=${currentZoomData.pass}`;
+                        
+                        // Пытаемся открыть приложение Zoom
+                        window.location.href = url;
+                        
+                        // Если не получилось (нет приложения), через 1 сек кидаем в браузер
+                        setTimeout(() => {
+                            window.open(`https://zoom.us/j/${cleanId}`, '_blank');
+                        }, 1000);
+                    } else {
+                        alert("Zoom ID еще не добавлен в систему.");
+                    }
+                };
+            }
         }
     });
 
@@ -625,6 +643,19 @@ async function loadProfileData() {
         } else if (pOverseer) { pOverseer.innerText = "-"; }
     } catch(e) {}
 }
+
+window.requestTerritory = async (btn) => {
+    btn.innerText = "..."; btn.disabled = true;
+    try {
+        await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
+        btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success') || 'Успешно'}`;
+        setTimeout(() => { btn.innerText = window.t('request_btn') || 'Попросить'; btn.disabled = false; }, 3000);
+    } catch (e) { 
+        alert(window.t('error_network') || 'Ошибка сети!'); 
+        btn.innerText = window.t('request_btn') || 'Попросить'; 
+        btn.disabled = false; 
+    }
+};
 
 function loadPersonalData() {
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
@@ -717,7 +748,6 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // УЧАСТКИ
     try {
         let allMapsCache = {};
         onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
@@ -829,7 +859,6 @@ function loadPersonalData() {
         }
     };
 
-    // ЗАДАНИЯ
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
         onSnapshot(tasksQuery, (snapshot) => {
@@ -900,7 +929,6 @@ function loadPersonalData() {
         });
     } catch(e){}
 
-    // ОБЪЯВЛЕНИЯ
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
@@ -1024,7 +1052,6 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // 🔥 ВОЗВРАЩЕННАЯ ФУНКЦИЯ СОБЫТИЙ ИЗ КАЛЕНДАРЯ
     try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
