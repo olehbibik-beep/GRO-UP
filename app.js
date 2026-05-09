@@ -376,9 +376,10 @@ window.showToast = (message, type = 'info') => {
     }, 5000);
 };
 
+// 🔥 БРОНЕБОЙНЫЙ МЕХАНИЗМ УВЕДОМЛЕНИЙ ДЛЯ ANDROID
 window.setupNotifications = async () => {
     const pushBtn = document.getElementById('push-btn');
-    if (!messaging) return alert("❌ Ваше устройство или браузер не поддерживает Push-уведомления (Попробуйте обновить iOS и добавить сайт на экран 'Домой').");
+    if (!messaging) return alert("❌ Ваше устройство или браузер не поддерживает Push-уведомления (Попробуйте использовать Chrome).");
 
     try {
         if (!('Notification' in window)) return alert("❌ " + window.t('alert_no_notifications'));
@@ -386,25 +387,23 @@ window.setupNotifications = async () => {
         if (pushBtn) pushBtn.innerHTML = '⏳'; 
 
         let permission = Notification.permission;
-        if (permission !== 'granted') {
-            permission = await new Promise((resolve) => {
-                const result = Notification.requestPermission(resolve);
-                if (result && typeof result.then === 'function') result.then(resolve);
-            });
+        
+        // Если пользователь ранее заблокировал уведомления, говорим ему об этом!
+        if (permission === 'denied') {
+            throw new Error("Уведомления заблокированы! Нажмите на 'Замок' в адресной строке сверху и разрешите уведомления.");
         }
+        
+        if (permission !== 'granted') {
+            const req = Notification.requestPermission();
+            permission = (req instanceof Promise) ? await req : await new Promise(res => Notification.requestPermission(res));
+        }
+        
         if (permission !== 'granted') throw new Error("Нет разрешения на пуши");
 
-        let registration = await navigator.serviceWorker.register('./sw.js');
-        
-        if (!registration.active) {
-            await new Promise((resolve) => {
-                const worker = registration.installing || registration.waiting;
-                if (!worker) { resolve(); return; }
-                worker.addEventListener('statechange', (e) => {
-                    if (e.target.state === 'activated') resolve();
-                });
-                setTimeout(resolve, 3000); 
-            });
+        // Регистрируем SW через универсальный путь
+        let registration = await navigator.serviceWorker.getRegistration();
+        if (!registration) {
+            registration = await navigator.serviceWorker.register('./sw.js');
         }
 
         const token = await getToken(messaging, { 
@@ -417,11 +416,11 @@ window.setupNotifications = async () => {
             window.showToast("✅ " + window.t('toast_notifications_enabled'));
             if (pushBtn) pushBtn.style.display = 'none';
         } else {
-            throw new Error("Пустой токен");
+            throw new Error("Сбой Google FCM: токен пуст.");
         }
     } catch (error) { 
-        if (error.message.includes('active service worker') || error.message.includes('A service worker must be active')) {
-            alert("⏳ iOS почти настроил уведомления!\n\nПриложение сейчас перезагрузится. После этого нажмите на колокольчик еще раз!");
+        if (error.message.includes('active service worker')) {
+            alert("⏳ Настраиваем связь...\n\nПриложение сейчас перезагрузится. После этого нажмите на колокольчик еще раз!");
             window.location.reload();
         } else {
             alert("❌ ОШИБКА: " + error.message); 
@@ -604,7 +603,6 @@ async function loadProfileData() {
         }).join('');
     }
     
-    // 🔥 ЗАГРУЗКА ДАННЫХ СОБРАНИЯ И ZOOM
     onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
         const congEl = document.getElementById('profile-congregation');
         const dashZoomId = document.getElementById('dash-zoom-id');
@@ -613,7 +611,6 @@ async function loadProfileData() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             if(congEl) congEl.innerText = data.name || "МАРИАНСКИЕ ЛАЗНЕ";
-            
             if (dashZoomId) dashZoomId.innerText = data.zoomId || "-";
             if (dashZoomPass) dashZoomPass.innerText = data.zoomPass || "-";
         }
@@ -946,7 +943,7 @@ function loadPersonalData() {
                                 displayText = item.text_cs;
                                 shouldShow = true;
                             } else if (!hasRu && !hasCs && hasImg) {
-                                shouldShow = true; 
+                                  shouldShow = true; 
                             }
                         }
 
@@ -1002,7 +999,7 @@ function loadPersonalData() {
                     
                     <div class="flex items-center justify-between mt-3 gap-2">
                         <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-lg transition-colors flex items-center justify-center w-10 h-8 shrink-0">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             <input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)">
                         </label>
                         <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 rounded-lg flex-grow transition-colors h-8 outline-none">${window.t('publish')}</button>
