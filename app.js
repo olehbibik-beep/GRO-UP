@@ -325,12 +325,24 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app); 
-const messaging = getMessaging(app);
 
-enableIndexedDbPersistence(db).catch(() => {});
+// 🔥 ЖЕЛЕЗОБЕТОННАЯ ЗАЩИТА: Игнорируем ошибки Push-уведомлений на старых телефонах!
+let messaging = null;
+try {
+    messaging = getMessaging(app);
+} catch (e) {
+    console.warn("Push-уведомления не поддерживаются в этом браузере.");
+}
+
+try {
+    enableIndexedDbPersistence(db).catch(() => {});
+} catch (e) {}
 
 const userId = localStorage.getItem('userId');
-if (!userId) window.location.href = 'login.html';
+if (!userId) {
+    window.location.href = 'login.html';
+    throw new Error("No user ID found"); 
+}
 
 let isLoaderHidden = false;
 window.hideGlobalLoader = () => {
@@ -342,6 +354,8 @@ window.hideGlobalLoader = () => {
         setTimeout(() => loader.style.display = 'none', 500);
     }
 };
+
+// Таймер-страховка: если база зависнет, спиннер всё равно пропадет через 2.5 сек
 setTimeout(window.hideGlobalLoader, 2500);
 
 window.scrollNews = (offset) => {
@@ -366,6 +380,8 @@ window.showToast = (message, type = 'info') => {
 
 window.setupNotifications = async () => {
     const pushBtn = document.getElementById('push-btn');
+    if (!messaging) return alert("❌ Ваше устройство или браузер не поддерживает Push-уведомления (Попробуйте обновить iOS и добавить сайт на экран 'Домой').");
+
     try {
         if (!('Notification' in window)) return alert("❌ " + window.t('alert_no_notifications'));
         
@@ -417,11 +433,15 @@ window.setupNotifications = async () => {
     }
 };
 
-onMessage(messaging, (payload) => {
-    if (payload && payload.notification) {
-        window.showToast(`🔔 ${payload.notification.title}`, 'info');
-    }
-});
+if (messaging) {
+    try {
+        onMessage(messaging, (payload) => {
+            if (payload && payload.notification) {
+                window.showToast(`🔔 ${payload.notification.title}`, 'info');
+            }
+        });
+    } catch (e) {}
+}
 
 const TOP_ROLES = ["Владелец", "Админ"]; 
 const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
@@ -529,7 +549,7 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         
         const pushBtn = document.getElementById('push-btn');
         if (pushBtn) {
-            if (!currentUserData.pushToken) pushBtn.style.display = 'flex';
+            if (!currentUserData.pushToken && messaging) pushBtn.style.display = 'flex';
             else pushBtn.style.display = 'none';
         }
 
@@ -697,6 +717,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
+    // УЧАСТКИ
     try {
         let allMapsCache = {};
         onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
@@ -808,6 +829,7 @@ function loadPersonalData() {
         }
     };
 
+    // ЗАДАНИЯ
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
         onSnapshot(tasksQuery, (snapshot) => {
@@ -878,6 +900,7 @@ function loadPersonalData() {
         });
     } catch(e){}
 
+    // ОБЪЯВЛЕНИЯ
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
