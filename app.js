@@ -139,8 +139,7 @@ const dict = {
         "congregation_label": "Собрание",
         "scan_qr": "Отсканируйте код",
         "days_short": "дн.",
-        "return_terr_btn": "Сдать",
-        "no_translation": "Нет перевода"
+        "return_terr_btn": "Сдать"
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -277,8 +276,7 @@ const dict = {
         "congregation_label": "Sbor",
         "scan_qr": "Naskenujte kód",
         "days_short": "dní",
-        "return_terr_btn": "Odevzdat",
-        "no_translation": "Bez překladu"
+        "return_terr_btn": "Odevzdat"
     }
 };
 
@@ -494,6 +492,7 @@ window.submitReport = async () => {
     }
 };
 
+// 🔥 ФУНКЦИЯ ДЛЯ КНОПКИ "ПОПРОСИТЬ УЧАСТОК" 
 window.requestTerritory = async (btn) => {
     btn.innerText = "..."; btn.disabled = true;
     try {
@@ -697,6 +696,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
+    // 🔥 ЛОГИКА ОТРИСОВКИ УЧАСТКОВ ДЛЯ ПОЛЬЗОВАТЕЛЯ
     try {
         let allMapsCache = {};
         onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
@@ -720,9 +720,13 @@ function loadPersonalData() {
                 
                 activeCount++;
                 
+                // 🔥 Высчитываем дни для таймлайна с защитой от NaN
                 let diffDays = 0;
                 if (terr.issuedAt) {
-                    diffDays = Math.floor((new Date() - new Date(terr.issuedAt)) / (1000 * 60 * 60 * 24));
+                    const t = new Date(terr.issuedAt).getTime();
+                    if (!isNaN(t)) {
+                        diffDays = Math.floor((Date.now() - t) / (1000 * 60 * 60 * 24));
+                    }
                 }
                 
                 let barColor = "bg-emerald-500";
@@ -895,35 +899,49 @@ function loadPersonalData() {
                         const isNew = (now - itemTime) < oneDay;
                         const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 border border-red-100 px-2 py-2 rounded-lg w-full transition-colors outline-none flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>${window.t('delete')}</button>` : '';
                         
+                        // 🔥 ЖЕСТКАЯ ФИЛЬТРАЦИЯ ОБЪЯВЛЕНИЙ ПО ЯЗЫКУ
                         let displayText = '';
-                        if (currentLang === 'ru') {
-                            displayText = item.text_ru || item.text || '';
-                        } else {
-                            displayText = item.text_cs || item.text || '';
+                        let shouldShow = false;
+
+                        const hasRu = !!item.text_ru;
+                        const hasCs = !!item.text_cs;
+                        const hasLegacyText = !!item.text && !hasRu && !hasCs; // Старые посты до разделения
+                        const hasImg = !!item.imageUrl;
+
+                        if (hasLegacyText) {
+                            displayText = item.text;
+                            shouldShow = true;
+                        } else if (currentLang === 'ru') {
+                            if (hasRu) {
+                                displayText = item.text_ru;
+                                shouldShow = true;
+                            } else if (!hasRu && !hasCs && hasImg) {
+                                shouldShow = true; // Только картинка (афиша)
+                            }
+                        } else if (currentLang === 'cs') {
+                            if (hasCs) {
+                                displayText = item.text_cs;
+                                shouldShow = true;
+                            } else if (!hasRu && !hasCs && hasImg) {
+                                shouldShow = true; // Только картинка
+                            }
                         }
+
+                        // Если пост не предназначен для этого языка - просто пропускаем (даже для админов)
+                        if (!shouldShow) return; 
 
                         const bgCardClass = isNew ? "bg-white border-slate-200" : "bg-slate-50 opacity-90 border-slate-200";
                         const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-block mb-2">${window.t('new_badge')}</span>` : '';
 
-                        let contentHtml = '';
-                        if (!displayText && !item.imageUrl) {
-                            contentHtml = `
-                                <div class="flex flex-col items-center justify-center h-full py-6 text-slate-300">
-                                    <svg class="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                                    <span class="text-[10px] font-black uppercase tracking-widest opacity-50">${window.t('no_translation')}</span>
-                                </div>
-                            `;
-                        } else {
-                            const textHtml = displayText ? `<p class="text-slate-700 whitespace-pre-wrap text-xs md:text-sm leading-relaxed font-medium">${displayText}</p>` : '';
-                            const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="${displayText ? 'mt-3' : ''} rounded-lg max-h-48 w-full object-cover border border-slate-200 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
-                            contentHtml = textHtml + imgHtml;
-                        }
+                        const textHtml = displayText ? `<p class="text-slate-700 whitespace-pre-wrap text-xs md:text-sm leading-relaxed font-medium">${displayText}</p>` : '';
+                        const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="${displayText ? 'mt-3' : ''} rounded-lg max-h-48 w-full object-cover border border-slate-200 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
 
                         newsHTML += `
                         <div class="w-[240px] md:w-[280px] h-auto self-stretch shrink-0 snap-center p-4 rounded-lg border transition-all flex flex-col justify-between ${bgCardClass}">
                             <div>
                                 ${newBadge}
-                                ${contentHtml}
+                                ${textHtml}
+                                ${imgHtml}
                             </div>
                             <div class="mt-auto pt-4">${deleteBtn}</div>
                         </div>`;
@@ -946,7 +964,7 @@ function loadPersonalData() {
                     
                     <div class="flex items-center justify-between mt-3 gap-2">
                         <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-lg transition-colors flex items-center justify-center w-10 h-8 shrink-0">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             <input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)">
                         </label>
                         <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 rounded-lg flex-grow transition-colors h-8 outline-none">${window.t('publish')}</button>
