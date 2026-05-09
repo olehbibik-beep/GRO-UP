@@ -140,8 +140,7 @@ const dict = {
         "scan_qr": "Отсканируйте код",
         "days_short": "дн.",
         "return_terr_btn": "Сдать",
-        "no_translation": "Нет перевода",
-        "zoom_error": "Zoom не настроен администратором"
+        "no_translation": "Нет перевода"
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -279,8 +278,7 @@ const dict = {
         "scan_qr": "Naskenujte kód",
         "days_short": "dní",
         "return_terr_btn": "Odevzdat",
-        "no_translation": "Bez překladu",
-        "zoom_error": "Zoom není nastaven administrátorem"
+        "no_translation": "Bez překladu"
     }
 };
 
@@ -378,6 +376,7 @@ window.showToast = (message, type = 'info') => {
     }, 5000);
 };
 
+// 🔥 БРОНЕБОЙНЫЙ МЕХАНИЗМ УВЕДОМЛЕНИЙ ДЛЯ ANDROID
 window.setupNotifications = async () => {
     const pushBtn = document.getElementById('push-btn');
     if (!messaging) return alert("❌ Ваше устройство или браузер не поддерживает Push-уведомления (Попробуйте использовать Chrome).");
@@ -443,7 +442,6 @@ const TOP_ROLES = ["Владелец", "Админ"];
 const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
 let currentUserData = null; 
 let hasFullAccess = false;
-let currentZoomData = { id: "", pass: "" }; // Глобальный объект для Zoom
 
 const d = new Date();
 const strictMonthId = `${d.getFullYear()}_${d.getMonth()}`; 
@@ -511,6 +509,7 @@ window.submitReport = async () => {
     }
 };
 
+// 🔥 ГЛОБАЛЬНЫЕ ФУНКЦИИ
 window.requestTerritory = async (btn) => {
     btn.innerText = "..."; btn.disabled = true;
     try {
@@ -521,6 +520,20 @@ window.requestTerritory = async (btn) => {
         alert(window.t('error_network') || 'Ошибка сети!'); 
         btn.innerText = window.t('request_btn') || 'Попросить'; 
         btn.disabled = false; 
+    }
+};
+
+window.markTerritoryReturned = async (id) => {
+    if (confirm('Точно сдать этот участок?')) { 
+        try {
+            await updateDoc(doc(db, "territories", id), {
+                status: 'returned',
+                returnedAt: new Date().toISOString()
+            });
+            window.showToast("Участок сдан! ✅");
+        } catch (e) {
+            alert("Ошибка сети!");
+        }
     }
 };
 
@@ -611,13 +624,8 @@ async function loadProfileData() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             if(congEl) congEl.innerText = data.name || "МАРИАНСКИЕ ЛАЗНЕ";
-            
-            // Сохраняем в глобальную переменную для кнопки
-            currentZoomData.id = data.zoomId || "";
-            currentZoomData.pass = data.zoomPass || "";
-
-            if (dashZoomId) dashZoomId.innerText = currentZoomData.id || "-";
-            if (dashZoomPass) dashZoomPass.innerText = currentZoomData.pass || "-";
+            if (dashZoomId) dashZoomId.innerText = data.zoomId || "-";
+            if (dashZoomPass) dashZoomPass.innerText = data.zoomPass || "-";
         }
     });
 
@@ -632,24 +640,6 @@ async function loadProfileData() {
         } else if (pOverseer) { pOverseer.innerText = "-"; }
     } catch(e) {}
 }
-
-// 🔥 ФУНКЦИЯ ДЛЯ КНОПКИ ZOOM
-window.joinZoom = () => {
-    if (!currentZoomData || !currentZoomData.id || currentZoomData.id === '-') {
-        return alert(window.t('zoom_error') || 'Zoom не настроен администратором');
-    }
-    
-    // Очищаем ID от пробелов
-    const cleanId = currentZoomData.id.replace(/\s/g, '');
-    const pass = currentZoomData.pass || '';
-    
-    // Формируем чистую ссылку на веб-версию (она сама предложит открыть приложение)
-    const webUrl = `https://zoom.us/j/${cleanId}${pass ? '?pwd=' + pass : ''}`;
-    
-    // Открываем
-    window.open(webUrl, '_blank');
-};
-
 
 function loadPersonalData() {
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
@@ -839,20 +829,6 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    window.markTerritoryReturned = async (id) => {
-        if (confirm('Точно сдать этот участок?')) { 
-            try {
-                await updateDoc(doc(db, "territories", id), {
-                    status: 'returned',
-                    returnedAt: new Date().toISOString()
-                });
-                window.showToast("Участок сдан! ✅");
-            } catch (e) {
-                alert("Ошибка сети!");
-            }
-        }
-    };
-
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
         onSnapshot(tasksQuery, (snapshot) => {
@@ -957,7 +933,7 @@ function loadPersonalData() {
                         } else if (currentLang === 'ru') {
                             if (hasRu) {
                                 displayText = item.text_ru;
-                                window.showToast = true;
+                                shouldShow = true;
                             } else if (!hasRu && !hasCs && hasImg) {
                                 shouldShow = true; 
                             }
