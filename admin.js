@@ -19,7 +19,6 @@ const dict = {
         "th_status": "Статус в собрании",
         "th_responsible": "Ответственный за",
         "th_manage": "Управление",
-        
         "error_save": "Ошибка сохранения!",
         "alert_pin_length": "ПИН-код должен состоять ровно из 6 цифр!",
         "error_save_pin": "Ошибка при сохранении ПИН-кода!",
@@ -46,7 +45,6 @@ const dict = {
         "role_terr": "Участки",
         "role_school": "Школа",
         "role_stand": "Стенды",
-        "role_stand_user": "Допущен к стенду",
         "no_new_requests": "Нет новых заявок",
         "no_active_users": "Нет активных пользователей",
         "no_group": "Без группы"
@@ -68,7 +66,6 @@ const dict = {
         "th_status": "Status ve sboru",
         "th_responsible": "Zodpovědný za",
         "th_manage": "Správa",
-
         "error_save": "Chyba při ukládání!",
         "alert_pin_length": "PIN kód musí mít přesně 6 číslic!",
         "error_save_pin": "Chyba při ukládání PIN kódu!",
@@ -95,7 +92,6 @@ const dict = {
         "role_terr": "Obvody",
         "role_school": "Škola",
         "role_stand": "Stojany",
-        "role_stand_user": "Služba se stojanem",
         "no_new_requests": "Žádné nové žádosti",
         "no_active_users": "Žádní aktivní uživatelé",
         "no_group": "Bez skupiny"
@@ -150,15 +146,7 @@ getDoc(doc(db, "users", uid)).then(docSnap => {
     
     const roles = docSnap.data().roles || [];
     const isFullAdmin = roles.includes("Владелец") || roles.includes("Админ");
-    const isSchool = isFullAdmin || roles.includes("Ответственный за школу");
-    const isTerr = isFullAdmin || roles.includes("Ответственный за участки");
-    const isOverseer = isFullAdmin || roles.includes("Надзиратель группы");
-
-    const path = window.location.pathname;
-    if (path.includes('admin.html') && !isFullAdmin) window.location.href = 'index.html';
-    if (path.includes('school.html') && !isSchool) window.location.href = 'index.html';
-    if (path.includes('territories.html') && !isTerr) window.location.href = 'index.html';
-    if ((path.includes('calendar.html') || path.includes('duties.html')) && !isOverseer) window.location.href = 'index.html';
+    if (!isFullAdmin) window.location.href = 'index.html';
 });
 
 onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
@@ -327,8 +315,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-sky-600 font-bold uppercase hover:bg-sky-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Помощник собрания', this.checked)" class="accent-sky-500 w-3 h-3 cursor-pointer" ${r.includes('Помощник собрания') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_ms')}</label>
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-amber-600 font-bold uppercase hover:bg-amber-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Старейшина', this.checked)" class="accent-amber-500 w-3 h-3 cursor-pointer" ${r.includes('Старейшина') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_elder')}</label>
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-rose-600 font-bold uppercase hover:bg-rose-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Админ', this.checked)" class="accent-rose-500 w-3 h-3 cursor-pointer" ${r.includes('Админ') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_admin')}</label>
-                            
-                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-blue-600 font-bold uppercase hover:bg-blue-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Служение со стендом', this.checked)" class="accent-blue-500 w-3 h-3 cursor-pointer" ${r.includes('Служение со стендом') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_stand_user')}</label>
                         </div>
                     </td>
                     
