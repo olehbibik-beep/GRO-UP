@@ -61,7 +61,8 @@ const dict = {
         "new_badge": "Новое",
         "new_announcement_toast": "📢 Новое объявление в ленте!",
         "create_announcement": "Создать объявление",
-        "write_text": "Напишите текст...",
+        "write_text_ru": "Текст (на русском)...",
+        "write_text_cs": "Текст (на чешском)...",
         "publish": "Опубликовать",
         "no_news": "Актуальных объявлений нет",
         "today_badge": "СЕГОДНЯ",
@@ -138,7 +139,8 @@ const dict = {
         "congregation_label": "Собрание",
         "scan_qr": "Отсканируйте код",
         "days_short": "дн.",
-        "return_terr_btn": "Сдать"
+        "return_terr_btn": "Сдать",
+        "no_translation": "Нет перевода"
     },
     cs: {
         "loading_data": "Načítání dat...",
@@ -197,7 +199,8 @@ const dict = {
         "new_badge": "Nové",
         "new_announcement_toast": "📢 Nové oznámení v kanálu!",
         "create_announcement": "Vytvořit oznámení",
-        "write_text": "Napište text...",
+        "write_text_ru": "Text (Ruština)...",
+        "write_text_cs": "Text (Čeština)...",
         "publish": "Publikovat",
         "no_news": "Žádná aktuální oznámení",
         "today_badge": "DNES",
@@ -274,7 +277,8 @@ const dict = {
         "congregation_label": "Sbor",
         "scan_qr": "Naskenujte kód",
         "days_short": "dní",
-        "return_terr_btn": "Odevzdat"
+        "return_terr_btn": "Odevzdat",
+        "no_translation": "Bez překladu"
     }
 };
 
@@ -490,7 +494,6 @@ window.submitReport = async () => {
     }
 };
 
-// 🔥 ФУНКЦИЯ ДЛЯ КНОПКИ "ПОПРОСИТЬ УЧАСТОК" ВЕРНУЛАСЬ!
 window.requestTerritory = async (btn) => {
     btn.innerText = "..."; btn.disabled = true;
     try {
@@ -703,7 +706,6 @@ function loadPersonalData() {
             });
         });
 
-        // 🔥 КАРТОЧКИ УЧАСТКОВ И ТАЙМЛАЙН
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
         onSnapshot(terrQuery, (snapshot) => {
             const container = document.getElementById('territories-container');
@@ -714,13 +716,10 @@ function loadPersonalData() {
 
             snapshot.forEach(docSnap => {
                 const terr = docSnap.data();
-                
-                // Пропускаем участки со статусом returned
                 if (terr.status === 'returned') return;
                 
                 activeCount++;
                 
-                // Высчитываем дни для таймлайна
                 let diffDays = 0;
                 if (terr.issuedAt) {
                     diffDays = Math.floor((new Date() - new Date(terr.issuedAt)) / (1000 * 60 * 60 * 24));
@@ -730,7 +729,7 @@ function loadPersonalData() {
                 let textColor = "text-emerald-600";
                 let progress = (diffDays / 90) * 100;
                 if (progress > 100) progress = 100;
-                if (progress < 2) progress = 2; // Минимум, чтобы полоска была видна
+                if (progress < 2) progress = 2; 
 
                 if (diffDays >= 90) {
                     barColor = "bg-red-500";
@@ -768,15 +767,15 @@ function loadPersonalData() {
                 html += `
                     <div class="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col shadow-sm">
                         <div class="p-3 flex flex-col bg-white border-b border-slate-100">
-                            <div class="flex justify-between items-center mb-2">
+                            <div class="flex justify-between items-center mb-3">
                                 <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num') || 'Участок №'} ${terr.number}</h3>
                                 <button onclick="markTerritoryReturned('${docSnap.id}')" class="text-[9px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-md uppercase transition-colors outline-none shadow-sm">${window.t('return_terr_btn') || 'Сдать'}</button>
                             </div>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-3">
                                 <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex">
                                     <div class="${barColor} h-1.5 rounded-full transition-all" style="width: ${progress}%"></div>
                                 </div>
-                                <span class="${textColor} text-[9px] font-black uppercase tracking-widest shrink-0">${diffDays} ${window.t('days_short') || 'дн.'}</span>
+                                <span class="${textColor} text-[9px] font-black uppercase tracking-widest shrink-0 leading-none">${diffDays} ${window.t('days_short') || 'дн.'}</span>
                             </div>
                         </div>
                         ${mapArea}
@@ -792,7 +791,6 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // ФУНКЦИЯ ВОЗВРАТА УЧАСТКА ДЛЯ ПОЛЬЗОВАТЕЛЯ
     window.markTerritoryReturned = async (id) => {
         if (confirm('Точно сдать этот участок?')) { 
             try {
@@ -896,17 +894,36 @@ function loadPersonalData() {
                     if (now - itemTime < oneWeek) {
                         const isNew = (now - itemTime) < oneDay;
                         const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-4 font-bold uppercase tracking-widest bg-red-50/50 border border-red-100 px-2 py-2 rounded-lg w-full transition-colors outline-none flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>${window.t('delete')}</button>` : '';
-                        const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="mt-3 rounded-lg max-h-48 w-full object-cover border border-slate-200 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
+                        
+                        let displayText = '';
+                        if (currentLang === 'ru') {
+                            displayText = item.text_ru || item.text || '';
+                        } else {
+                            displayText = item.text_cs || item.text || '';
+                        }
 
                         const bgCardClass = isNew ? "bg-white border-slate-200" : "bg-slate-50 opacity-90 border-slate-200";
                         const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-block mb-2">${window.t('new_badge')}</span>` : '';
+
+                        let contentHtml = '';
+                        if (!displayText && !item.imageUrl) {
+                            contentHtml = `
+                                <div class="flex flex-col items-center justify-center h-full py-6 text-slate-300">
+                                    <svg class="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                    <span class="text-[10px] font-black uppercase tracking-widest opacity-50">${window.t('no_translation')}</span>
+                                </div>
+                            `;
+                        } else {
+                            const textHtml = displayText ? `<p class="text-slate-700 whitespace-pre-wrap text-xs md:text-sm leading-relaxed font-medium">${displayText}</p>` : '';
+                            const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="${displayText ? 'mt-3' : ''} rounded-lg max-h-48 w-full object-cover border border-slate-200 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
+                            contentHtml = textHtml + imgHtml;
+                        }
 
                         newsHTML += `
                         <div class="w-[240px] md:w-[280px] h-auto self-stretch shrink-0 snap-center p-4 rounded-lg border transition-all flex flex-col justify-between ${bgCardClass}">
                             <div>
                                 ${newBadge}
-                                <p class="text-slate-700 whitespace-pre-wrap text-xs md:text-sm leading-relaxed font-medium">${item.text}</p>
-                                ${imgHtml}
+                                ${contentHtml}
                             </div>
                             <div class="mt-auto pt-4">${deleteBtn}</div>
                         </div>`;
@@ -923,7 +940,10 @@ function loadPersonalData() {
                 newsHTML += `
                 <div class="w-[240px] md:w-[280px] h-auto self-stretch shrink-0 snap-center p-4 rounded-lg border border-dashed border-slate-400 bg-slate-100/50 flex flex-col justify-center relative">
                     <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 text-center flex items-center justify-center gap-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>${window.t('create_announcement')}</p>
-                    <textarea id="news-input" rows="2" placeholder="${window.t('write_text')}" class="w-full bg-white rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow"></textarea>
+                    
+                    <textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-white rounded-t-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400 resize-none font-medium text-slate-700"></textarea>
+                    <textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-slate-50 rounded-b-lg border-x border-b border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400 resize-none font-medium text-slate-700"></textarea>
+                    
                     <div class="flex items-center justify-between mt-3 gap-2">
                         <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-lg transition-colors flex items-center justify-center w-10 h-8 shrink-0">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -995,9 +1015,12 @@ window.removeImage = () => {
 };
 
 window.publishNews = async () => {
-    const input = document.getElementById('news-input');
-    const text = input ? input.value.trim() : '';
-    if (!text && !selectedImageFile) return alert(window.t('alert_add_text_photo'));
+    const inputRu = document.getElementById('news-input-ru');
+    const inputCs = document.getElementById('news-input-cs');
+    const textRu = inputRu ? inputRu.value.trim() : '';
+    const textCs = inputCs ? inputCs.value.trim() : '';
+
+    if (!textRu && !textCs && !selectedImageFile) return alert(window.t('alert_add_text_photo'));
 
     const btn = document.getElementById('publish-news-btn');
     if(btn) { btn.innerText = window.t('loading'); btn.disabled = true; }
@@ -1014,12 +1037,15 @@ window.publishNews = async () => {
 
         await addDoc(collection(db, "section_content"), {
             section: 'news',
-            text: text,
+            text_ru: textRu,
+            text_cs: textCs,
+            text: textRu || textCs, 
             imageUrl: imageUrl,
             createdAt: new Date().toISOString()
         });
         
-        if(input) input.value = '';
+        if(inputRu) inputRu.value = '';
+        if(inputCs) inputCs.value = '';
         removeImage();
         
         if(btn) {
