@@ -122,26 +122,22 @@ const dict = {
         "role_school": "Школа",
         "no_new_requests": "Нет новых заявок",
         "no_active_users": "Нет активных пользователей",
-        // Для перевода заданий на главном экране
         "cat_reading_db": "📖 Чтение Библии",
         "cat_conversation": "🗣️ Разговор",
         "cat_interest": "🌱 Интерес",
         "cat_disciples": "👥 Подготавливайте",
         "cat_beliefs": "💡 Взгляды",
         "cat_talk_db": "🎙️ Речь",
-        // Для карт и дежурств
         "open_map": "Открыть карту",
         "no_map": "Нет карты",
         "opt_cleaning": "🧹 Уборка зала",
         "opt_special_event": "⭐ Специальное событие",
-        "all_groups": "Все",
-        // Профиль
+        "all_groups": "Вše",
         "congregation_label": "Собрание",
         "scan_qr": "Отсканируйте код",
         "days_short": "дн.",
         "return_terr_btn": "Сдать",
         "no_translation": "Нет перевода",
-        // Стенды
         "stand_title": "Служение со стендом",
         "stand_apply": "Подать заявку",
         "stand_signup": "Записаться",
@@ -270,26 +266,22 @@ const dict = {
         "role_school": "Škola",
         "no_new_requests": "Žádné nové žádosti",
         "no_active_users": "Žádní aktivní uživatelé",
-        // Для перевода заданий на главном экране
         "cat_reading_db": "📖 Čtení Bible",
         "cat_conversation": "🗣️ Rozhovor",
         "cat_interest": "🌱 Zájem",
         "cat_disciples": "👥 Čiňte učedníky",
         "cat_beliefs": "💡 Přesvědčení",
         "cat_talk_db": "🎙️ Proslov",
-        // Для карт и дежурств
         "open_map": "Otevřít mapu",
         "no_map": "Bez mapy",
         "opt_cleaning": "🧹 Úklid sálu",
         "opt_special_event": "⭐ Zvláštní událost",
         "all_groups": "Vše",
-        // Профиль
         "congregation_label": "Sbor",
         "scan_qr": "Naskenujte kód",
         "days_short": "dní",
         "return_terr_btn": "Odevzdat",
         "no_translation": "Bez překladu",
-        // Стенды
         "stand_title": "Služba se stojanem",
         "stand_apply": "Požádat",
         "stand_signup": "Zapsat se",
@@ -385,7 +377,7 @@ window.showToast = (message, type = 'info') => {
     const container = document.getElementById('toast-container');
     if (!container) return;
     const toast = document.createElement('div');
-    const bgColor = type === 'warning' ? 'bg-amber-500' : 'bg-indigo-600';
+    const bgColor = type === 'warning' ? 'bg-amber-500' : 'bg-slate-800';
     toast.className = `${bgColor} text-white px-4 py-3 rounded-md shadow-lg text-xs font-bold text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
     toast.innerText = message;
     container.appendChild(toast);
@@ -406,16 +398,13 @@ window.setupNotifications = async () => {
         if (pushBtn) pushBtn.innerHTML = '⏳'; 
 
         let permission = Notification.permission;
-        
         if (permission === 'denied') {
             throw new Error("Уведомления заблокированы! Разрешите их в настройках телефона.");
         }
-        
         if (permission !== 'granted') {
             const req = Notification.requestPermission();
             permission = (req instanceof Promise) ? await req : await new Promise(res => Notification.requestPermission(res));
         }
-        
         if (permission !== 'granted') throw new Error("Нет разрешения на пуши");
 
         let registration = await navigator.serviceWorker.getRegistration();
@@ -529,20 +518,6 @@ window.submitReport = async () => {
     }
 };
 
-window.requestTerritory = async (btn) => {
-    btn.innerText = "..."; btn.disabled = true;
-    try {
-        await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
-        btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success') || 'Успешно'}`;
-        setTimeout(() => { btn.innerText = window.t('request_btn') || 'Попросить'; btn.disabled = false; }, 3000);
-    } catch (e) { 
-        alert(window.t('error_network') || 'Ошибка сети!'); 
-        btn.innerText = window.t('request_btn') || 'Попросить'; 
-        btn.disabled = false; 
-    }
-};
-
-// 🔥 ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ДЛЯ СТЕНДОВ (Синхронизация)
 let isStandReqPending = false;
 let myStands = [];
 let unsubStandReqs = null;
@@ -670,7 +645,6 @@ window.joinZoom = (event) => {
     window.location.href = webUrl;
 };
 
-// 🔥 ЖИВОЙ ВИДЖЕТ СТЕНДОВ С СИНХРОНИЗАЦИЕЙ
 function renderStandCard() {
     const container = document.getElementById('stand-widget-container');
     if (!container) return;
@@ -754,6 +728,9 @@ function updateStandWidgetUI() {
                 const monthIndex = parseInt(parts[1], 10) - 1;
                 const monthNameArr = window.t('months');
                 const monthName = (Array.isArray(monthNameArr) && monthNameArr[monthIndex]) ? monthNameArr[monthIndex] : parts[1];
+                
+                // 🔥 ЗАЩИТА: Если локация не указана в старой базе
+                const locName = shift.location && shift.location !== "undefined" ? shift.location : "ML - CupVital";
 
                 shiftsListHtml += `
                     <div class="w-full bg-slate-50 border border-slate-200 flex items-center p-2 rounded-md mb-2 last:mb-0 shadow-sm hover:bg-white transition-colors">
@@ -762,7 +739,7 @@ function updateStandWidgetUI() {
                             <span class="text-base font-black leading-none">${dayNum}</span>
                         </div>
                         <div class="ml-3 flex flex-col truncate w-full">
-                            <p class="font-black text-slate-800 text-xs truncate leading-tight">${shift.location}</p>
+                            <p class="font-black text-slate-800 text-xs truncate leading-tight">${locName}</p>
                             <p class="text-[10px] font-bold text-slate-500 mt-0.5 font-mono">${shift.time}</p>
                         </div>
                     </div>
@@ -1026,6 +1003,20 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
+    window.markTerritoryReturned = async (id) => {
+        if (confirm('Точно сдать этот участок?')) { 
+            try {
+                await updateDoc(doc(db, "territories", id), {
+                    status: 'returned',
+                    returnedAt: new Date().toISOString()
+                });
+                window.showToast("Участок сдан! ✅");
+            } catch (e) {
+                alert("Ошибка сети!");
+            }
+        }
+    };
+
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
         onSnapshot(tasksQuery, (snapshot) => {
@@ -1216,78 +1207,6 @@ function loadPersonalData() {
                     <p class="text-slate-400 italic text-sm text-center">${window.t('no_news')}</p>
                 </div>`;
             }
-        });
-    } catch(e) {}
-
-    try {
-        const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
-        onSnapshot(eventsQuery, (snapshot) => {
-            const container = document.getElementById('calendar-events');
-            if (!container) return; 
-            let html = '';
-            
-            const now = new Date();
-            const tzOffset = now.getTimezoneOffset() * 60000;
-            const todayStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
-
-            snapshot.forEach(docSnap => {
-                const ev = docSnap.data();
-                
-                if (ev.date === todayStr) {
-                    let isPastEvent = false;
-                    let displayTime = ev.time || "";
-                    
-                    if (displayTime) {
-                        let hours = 0, minutes = 0;
-                        if (!displayTime.includes(':') && displayTime.length >= 3) {
-                            if (displayTime.length === 4) displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
-                            else if (displayTime.length === 3) displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
-                        }
-                        if (displayTime.includes(':')) {
-                            [hours, minutes] = displayTime.split(':');
-                            const eventExactTime = new Date();
-                            eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-                            if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
-                        }
-                    }
-
-                    const evGroup = ev.group || window.t('no_group');
-                    const groupBadge = evGroup !== window.t('no_group') ? `<span class="bg-transparent border border-current px-1.5 py-0.5 rounded text-[8px] font-bold uppercase leading-none opacity-80">${window.t('group_short')} ${evGroup}</span>` : '';
-                    const activeClass = isPastEvent ? "bg-slate-50 text-slate-400 border-b border-slate-200" : "bg-white text-slate-800 border-b border-slate-100";
-                    const timeColor = isPastEvent ? "text-slate-400" : "text-rose-500";
-                    const leaderColor = isPastEvent ? "text-slate-400" : "text-rose-600";
-                    
-                    const dayNum = ev.date ? parseInt(ev.date.split('-')[2], 10) : now.getDate();
-
-                    html += `
-                        <div class="flex items-center p-3 w-full cursor-default ${activeClass}">
-                            <div class="flex items-center gap-3 w-full">
-                                <div class="flex flex-col items-center justify-center w-12 shrink-0">
-                                    <span class="text-[8px] uppercase font-bold leading-none mb-1 opacity-70">${window.t('today_badge')}</span>
-                                    <span class="text-xl font-black leading-none">${dayNum}</span>
-                                </div>
-                                <div class="flex flex-col flex-grow truncate min-w-0">
-                                    <div class="flex items-center gap-2 truncate">
-                                        ${displayTime ? `<span class="text-xs font-bold shrink-0 ${timeColor}">${displayTime}</span>` : ''}
-                                        <span class="font-black text-sm truncate">${ev.title}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2 mt-1 truncate">
-                                        ${groupBadge}
-                                        ${ev.leader ? `<span class="text-[9px] uppercase font-medium opacity-80 truncate">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-
-                    if (!isPastEvent && !sessionStorage.getItem('event_toast_' + docSnap.id)) {
-                        window.showToast(`${window.t('today_event_toast')} ${ev.title} ${displayTime ? ' ' + displayTime : ''}`, 'info');
-                        sessionStorage.setItem('event_toast_' + docSnap.id, 'true');
-                    }
-                }
-            });
-
-            container.innerHTML = html || `<p class="p-4 text-xs text-slate-400 italic text-center">${window.t('no_events_today')}</p>`;
         });
     } catch(e) {}
 }
