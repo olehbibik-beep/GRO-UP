@@ -54,7 +54,8 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1" data-lang="leader">Проводит</label>
-                        <input type="text" id="event-leader" class="w-full bg-slate-50 border border-slate-200 rounded-md p-2 outline-none focus:border-indigo-400 font-bold text-slate-700">
+                        <input type="text" id="event-leader" list="brothers-list" autocomplete="off" class="w-full bg-slate-50 border border-slate-200 rounded-md p-2 outline-none focus:border-indigo-400 font-bold text-slate-700">
+                        <datalist id="brothers-list"></datalist>
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1" data-lang="group">Группа</label>
@@ -93,6 +94,6 @@
     </main>
     
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
-    <script type="module" src="calendar.js?v=60"></script>
+    <script type="module" src="calendar.js?v=65"></script>
 </body>
 </html>
