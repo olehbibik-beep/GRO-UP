@@ -42,7 +42,7 @@ const dict = {
         "stand_apply": "Подать заявку", "stand_signup": "Записаться", "stand_pending": "Заявка отправлена", "stand_month_shifts": "Смен в этом месяце",
         "stand_upcoming": "Твои ближайшие записи", "stand_no_records": "Нет записей", "zoom_error": "Zoom не настроен", "zoom_click_hint": "Нажми<br>на ZOOM",
         "zoom_launch": "ЗАПУСК", "months": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"],
-        "days": ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
+        "days": ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"], "info_title": "Информация", "in_development": "Раздел в разработке"
     },
     cs: {
         "loading_data": "Načítání dat...", "pending_title": "Žádost se vyřizuje", "pending_desc": "Čekejte na potvrzení administrátorem.",
@@ -82,7 +82,7 @@ const dict = {
         "stand_apply": "Požádat", "stand_signup": "Zapsat se", "stand_pending": "Žádost odeslána", "stand_month_shifts": "Služeb v tomto měsíci",
         "stand_upcoming": "Tvé nejbližší služby", "stand_no_records": "Žádné zápisy", "zoom_error": "Zoom není nastaven", "zoom_click_hint": "Klikni<br>na ZOOM",
         "zoom_launch": "SPUSTIT", "months": ["Led", "Úno", "Bře", "Dub", "Kvě", "Čvn", "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro"],
-        "days": ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"]
+        "days": ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"], "info_title": "Informace", "in_development": "Sekce ve vývoji"
     }
 };
 
@@ -200,7 +200,6 @@ window.handleZoomClick = (event) => {
         document.getElementById('zoom-info-hidden').classList.remove('flex');
         document.getElementById('zoom-info-revealed').classList.remove('hidden');
         document.getElementById('zoom-info-revealed').classList.add('flex');
-        document.getElementById('zoom-btn-text').innerText = window.t('zoom_launch') || "ЗАПУСК";
         window.zoomStateReady = true;
         setTimeout(resetZoomUI, 10000);
     } else {
@@ -218,10 +217,8 @@ function resetZoomUI() {
     window.zoomStateReady = false;
     const hidden = document.getElementById('zoom-info-hidden');
     const revealed = document.getElementById('zoom-info-revealed');
-    const btnText = document.getElementById('zoom-btn-text');
     if(hidden) { hidden.classList.remove('hidden'); hidden.classList.add('flex'); }
     if(revealed) { revealed.classList.add('hidden'); revealed.classList.remove('flex'); }
-    if(btnText) btnText.innerText = "ZOOM";
 }
 
 const d = new Date();
@@ -231,18 +228,29 @@ const currentMonthStr = d.toLocaleDateString(localeFormat, { month: 'long', year
 const monthLabel = document.getElementById('current-month-label');
 if (monthLabel) monthLabel.innerText = currentMonthStr;
 
+// 🔥 УМНАЯ СИСТЕМА ВКЛАДОК С ПАМЯТЬЮ
 window.switchTab = (tabId, btnElement) => {
+    localStorage.setItem('activeTab', tabId);
+    
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tabId}`);
     if(targetTab) targetTab.classList.add('active');
+    
     document.querySelectorAll('.nav-icon-container').forEach(icon => {
         icon.classList.remove('bg-slate-700', 'text-white', 'shadow-inner');
         icon.classList.add('text-slate-500');
     });
+    
+    if(!btnElement) {
+        btnElement = document.querySelector(`nav button[onclick="switchTab('${tabId}', this)"]`);
+    }
+    
     if(btnElement) {
         const icon = btnElement.querySelector('.nav-icon-container');
-        icon.classList.remove('text-slate-500'); 
-        icon.classList.add('bg-slate-700', 'text-white', 'shadow-inner');
+        if(icon) {
+            icon.classList.remove('text-slate-500'); 
+            icon.classList.add('bg-slate-700', 'text-white', 'shadow-inner');
+        }
     }
 };
 
@@ -341,6 +349,11 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         try { loadPersonalData(); } catch(e) {}
         try { loadProfileData(); } catch(e) {}
         renderStandCard();
+        
+        // Включаем нужную вкладку при загрузке
+        const savedTab = localStorage.getItem('activeTab') || 'home';
+        window.switchTab(savedTab);
+        
         window.hideGlobalLoader();
     }
 });
@@ -520,7 +533,6 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-// 🔥 УМНЫЙ КАЛЕНДАРЬ НА ГЛАВНОЙ СТРАНИЦЕ
 function loadPersonalData() {
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
         if (docSnap.exists()) {
@@ -575,7 +587,7 @@ function loadPersonalData() {
                 let typeStr = currentDuty.type;
                 if (typeStr === 'Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
                 if (typeStr === 'Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
-                const groupStr = currentDuty.group === "Все" || currentDuty.group === window.t('all_groups') ? window.t('all_groups') : `${window.t('group_short')} ${currentDuty.group}`;
+                const groupStr = currentDuty.group === "Все" || currentDuty.group === window.t('all_groups') ? window.t('all_groups') : currentDuty.group;
 
                 const dutyStart = new Date(currentDuty.rawDate); dutyStart.setHours(0,0,0,0);
                 const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6);
@@ -589,14 +601,15 @@ function loadPersonalData() {
                 }
 
                 container.innerHTML = `
-                    <div class="flex items-center justify-between w-full h-full gap-1">
+                    <div class="flex items-center justify-between w-full h-full p-1 gap-2">
                         <div class="flex flex-col justify-center min-w-0 flex-grow">
-                            <span class="text-[10px] md:text-[11px] font-black text-slate-800 leading-tight truncate w-full">${typeStr}</span>
-                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate w-full">${localizedDateRange}</span>
+                            <span class="text-xs md:text-sm font-black text-slate-800 leading-tight truncate w-full">${typeStr}</span>
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate w-full">${localizedDateRange}</span>
                             ${alertHtml}
                         </div>
-                        <div class="flex items-center justify-center px-1.5 py-1 rounded bg-slate-50 border ${badgeClass} shrink-0 max-w-[40px]">
-                            <span class="text-[9px] md:text-[10px] font-black uppercase text-center">${groupStr}</span>
+                        <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-md border ${badgeClass} shrink-0 bg-slate-50 shadow-inner">
+                            <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
+                            <span class="text-lg md:text-xl font-black leading-none">${groupStr}</span>
                         </div>
                     </div>
                 `;
@@ -867,7 +880,7 @@ function loadPersonalData() {
                     const itemTime = new Date(item.createdAt).getTime();
                     if (now - itemTime < oneWeek) {
                         const isNew = (now - itemTime) < oneDay;
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 mt-2 font-bold uppercase tracking-widest bg-red-50 border border-red-100 px-2 py-1.5 rounded w-full transition-colors outline-none flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>${window.t('delete')}</button>` : '';
+                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white w-7 h-7 flex items-center justify-center rounded-full z-10 transition-colors shadow-sm outline-none"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : '';
                         
                         let displayText = ''; let shouldShow = false;
                         const hasRu = !!item.text_ru; const hasCs = !!item.text_cs;
@@ -881,18 +894,21 @@ function loadPersonalData() {
                         if (!shouldShow) return; 
 
                         const bgCardClass = isNew ? "bg-white border-slate-200 shadow-sm" : "bg-slate-50 opacity-90 border-slate-200";
-                        const newBadge = isNew ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-block mb-1">${window.t('new_badge')}</span>` : '';
+                        const newBadge = isNew ? `<span class="absolute top-2 left-2 bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-sm z-10">${window.t('new_badge')}</span>` : '';
 
                         let contentHtml = '';
+                        const imgClass = displayText ? "h-20" : "h-full";
+                        const textPadding = item.imageUrl ? "p-3 pb-4" : "p-4";
+
                         if (!displayText && !item.imageUrl) {
                             contentHtml = `<div class="flex flex-col items-center justify-center h-full py-6 text-slate-300"><svg class="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="text-[10px] font-black uppercase tracking-widest opacity-50">${window.t('no_translation')}</span></div>`;
                         } else {
-                            const textHtml = displayText ? `<div class="flex-grow overflow-y-auto custom-scrollbar pr-1"><p class="text-slate-700 whitespace-pre-wrap text-[10px] md:text-[11px] leading-snug font-medium">${displayText}</p></div>` : '';
-                            const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="${displayText ? 'mt-2 h-16' : 'h-full'} w-full object-cover rounded border border-slate-200 cursor-pointer shrink-0" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
-                            contentHtml = textHtml + imgHtml;
+                            const textHtml = displayText ? `<div class="${textPadding} flex-grow overflow-y-auto custom-scrollbar"><p class="text-slate-700 whitespace-pre-wrap text-[10px] md:text-[11px] leading-snug font-medium">${displayText}</p></div>` : '';
+                            const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="w-full ${imgClass} object-cover shrink-0 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
+                            contentHtml = imgHtml + textHtml;
                         }
 
-                        newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center p-3.5 rounded-md border transition-all flex flex-col justify-between overflow-hidden relative ${bgCardClass}"><div class="overflow-hidden flex-grow flex flex-col">${newBadge}${contentHtml}</div>${deleteBtn ? `<div class="mt-auto pt-2 shrink-0">${deleteBtn}</div>` : ''}</div>`;
+                        newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center rounded-md border transition-all flex flex-col overflow-hidden relative ${bgCardClass}">${deleteBtn}${newBadge}${contentHtml}</div>`;
                         if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) { window.showToast(window.t('new_announcement_toast'), 'info'); sessionStorage.setItem('news_toast_' + docSnap.id, 'true'); }
                     }
                 }
@@ -900,10 +916,10 @@ function loadPersonalData() {
 
             if (isNewsAdmin) {
                 let textAreaHtml = '';
-                if (currentLang === 'ru') textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-white rounded-t-md border border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
-                else textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-slate-50 rounded-b-md border-x border-b border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
+                if (currentLang === 'ru') textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-white rounded-md border border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
+                else textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-slate-50 rounded-md border border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
 
-                newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center p-3 rounded-md border border-dashed border-slate-400 bg-slate-100/50 flex flex-col relative overflow-hidden"><p class="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 text-center flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>${window.t('create_announcement')}</p>${textAreaHtml}<div class="flex items-center justify-between mt-2 gap-1.5 shrink-0"><label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded transition-colors flex items-center justify-center w-8 h-6 shrink-0 shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)"></label><button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[8px] font-bold px-2 rounded flex-grow transition-colors h-6 outline-none shadow-sm">${window.t('publish')}</button></div><div id="image-preview-container" class="hidden mt-2 relative inline-block w-full shrink-0"><img id="image-preview" src="" class="rounded h-10 w-full object-cover border border-slate-200"><button onclick="removeImage()" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center outline-none"><svg class="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button></div></div>`;
+                newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center p-3 rounded-md border border-dashed border-slate-400 bg-slate-100/50 flex flex-col relative overflow-hidden"><p class="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 text-center flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>${window.t('create_announcement')}</p>${textAreaHtml}<div class="flex items-center justify-between mt-2 gap-1.5 shrink-0"><label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded transition-colors flex items-center justify-center w-8 h-6 shrink-0 shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)"></label><button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[8px] font-bold px-2 rounded flex-grow transition-colors h-6 outline-none shadow-sm">${window.t('publish')}</button></div><div id="image-preview-container" class="hidden mt-2 relative inline-block w-full shrink-0"><img id="image-preview" src="" class="rounded h-10 w-full object-cover border border-slate-200"><button onclick="removeImage()" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center outline-none"><svg class="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button></div></div>`;
             }
 
             const contentNews = document.getElementById('content-news');
