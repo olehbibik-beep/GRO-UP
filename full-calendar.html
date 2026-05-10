@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title data-lang="full_calendar_title">Полный Календарь - GRO-UP</title>
+    <title data-lang="full_calendar_title">Календарь - GRO-UP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { 
@@ -51,11 +51,10 @@
         <div id="months-grid" class="grid grid-cols-6 gap-1 md:gap-2 shrink-0">
             </div>
 
-        <div class="flex-1 min-h-0 bg-white rounded-md border border-slate-200 flex flex-col overflow-hidden">
-            <div id="selected-date-title" class="p-2 border-b border-slate-100 bg-slate-50 text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-widest text-center shrink-0">
+        <div class="flex-1 min-h-0 bg-slate-100 rounded-md border border-slate-300 flex flex-col overflow-hidden shadow-inner">
+            <div id="selected-date-title" class="p-2 border-b border-slate-900 bg-slate-800 text-[10px] md:text-xs font-black text-white uppercase tracking-widest text-center shrink-0">
                 Выберите день
             </div>
-            
             <div id="events-panel-list" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
                 </div>
         </div>
@@ -70,20 +69,22 @@
 
     </main>
 
+    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const dict = {
             ru: {
-                "archive_title": "Архив", "back_home": "На главную", "btn_back": "Назад",
+                "archive_title": "События", "back_home": "На главную", "btn_back": "Назад",
                 "group_short": "Гр.", "leader_short": "Вед:", "full_calendar_title": "Календарь - GRO-UP",
                 "no_events_this_day": "В этот день событий нет", "loading": "Загрузка...",
                 "dow_1": "ПН", "dow_2": "ВТ", "dow_3": "СР", "dow_4": "ЧТ", "dow_5": "ПТ", "dow_6": "СБ", "dow_7": "ВС",
                 "months": ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
             },
             cs: {
-                "archive_title": "Archiv", "back_home": "Na hlavní stránku", "btn_back": "Zpět",
+                "archive_title": "Události", "back_home": "Na hlavní stránku", "btn_back": "Zpět",
                 "group_short": "Sk.", "leader_short": "Ved:", "full_calendar_title": "Kalendář - GRO-UP",
                 "no_events_this_day": "V tento den nejsou žádné události", "loading": "Načítání...",
                 "dow_1": "PO", "dow_2": "ÚT", "dow_3": "ST", "dow_4": "ČT", "dow_5": "PÁ", "dow_6": "SO", "dow_7": "NE",
@@ -119,11 +120,10 @@
         const monthsNames = dict[currentLang].months;
         let currentYear = new Date().getFullYear();
         let currentMonth = new Date().getMonth(); 
-        let selectedDay = null; // По умолчанию день не выбран
+        let selectedDay = null; 
         
         let allEvents = {}; 
 
-        // Инициализация загрузчика
         setTimeout(() => {
             document.getElementById('global-loader').style.opacity = '0';
             setTimeout(() => document.getElementById('global-loader').style.display = 'none', 500);
@@ -180,25 +180,38 @@
             const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
             const now = new Date();
 
-            for (let i = 0; i < shift; i++) {
-                grid.innerHTML += `<div></div>`;
-            }
+            for (let i = 0; i < shift; i++) { grid.innerHTML += `<div></div>`; }
 
             for (let d = 1; d <= totalDays; d++) {
+                const dateObj = new Date(currentYear, currentMonth, d);
+                const dow = dateObj.getDay();
+                const isWeekend = (dow === 0 || dow === 6); // Суббота или Воскресенье
                 const isToday = (d === now.getDate() && currentMonth === now.getMonth() && currentYear === now.getFullYear());
                 const isSelected = (d === selectedDay);
                 const dayEvents = (allEvents[currentYear] && allEvents[currentYear][currentMonth] && allEvents[currentYear][currentMonth][d]) || [];
                 
+                const hasSpecial = dayEvents.some(e => e.isSpecial);
+                const hasNormal = dayEvents.length > 0;
+
                 let dotHtml = '';
-                if (dayEvents.length > 0) {
-                    const hasSpecial = dayEvents.some(e => e.isSpecial);
-                    const dotColor = hasSpecial ? 'bg-rose-500' : (isSelected ? 'bg-emerald-400' : 'bg-emerald-500');
+                if (hasNormal) {
+                    // Если особое событие — красная точка, иначе голубая
+                    const dotColor = hasSpecial ? 'bg-rose-500' : 'bg-sky-500';
                     dotHtml = `<div class="w-1.5 h-1.5 rounded-full ${dotColor} absolute bottom-1 shadow-sm"></div>`;
                 }
 
-                let bgClass = 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100';
-                if (isSelected) bgClass = 'bg-slate-800 border-slate-800 text-white shadow-inner';
-                else if (isToday) bgClass = 'bg-white border-emerald-500 text-emerald-600';
+                // Логика покраски плиток
+                let bgClass = 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100'; // Обычный день
+                
+                if (isSelected) {
+                    bgClass = 'bg-slate-800 border-slate-800 text-white shadow-inner';
+                } else if (isToday) {
+                    bgClass = 'bg-white border-emerald-500 text-emerald-600';
+                } else if (hasSpecial) {
+                    bgClass = 'bg-emerald-100 border-emerald-300 text-emerald-800 hover:bg-emerald-200'; // Особое событие
+                } else if (isWeekend) {
+                    bgClass = 'bg-slate-200 border-slate-300 text-slate-800 hover:bg-slate-300'; // Выходные чуть темнее
+                }
 
                 grid.innerHTML += `
                     <button onclick="selectDay(${d})" class="rounded-md border flex flex-col items-center justify-center text-xs md:text-sm font-black relative cursor-pointer transition-colors outline-none w-full h-full ${bgClass}">
@@ -226,7 +239,7 @@
                 list.innerHTML = `
                     <div class="flex flex-col items-center justify-center h-full opacity-50 py-4">
                         <svg class="w-6 h-6 text-slate-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${window.t('no_events_this_day')}</p>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">${window.t('no_events_this_day')}</p>
                     </div>
                 `;
                 return;
@@ -234,16 +247,17 @@
 
             let html = '';
             dayEvents.forEach(ev => {
-                const groupHtml = ev.group !== "Все" && ev.group !== "Všechny" ? `<span class="text-[8px] font-bold text-slate-500 uppercase tracking-widest border border-slate-200 bg-white px-1 py-0.5 rounded">${window.t('group_short')} ${ev.group}</span>` : '';
+                // Карточки темные (bg-slate-800), плашка группы темно-серая (bg-slate-700)
+                const groupHtml = ev.group !== "Все" && ev.group !== "Všechny" ? `<span class="text-[8px] font-bold text-slate-300 uppercase tracking-widest border border-slate-600 bg-slate-700 px-1.5 py-0.5 rounded">${window.t('group_short')} ${ev.group}</span>` : '';
                 html += `
-                    <div class="flex flex-col p-2 bg-slate-50 border border-slate-200 rounded-md">
-                        <div class="flex justify-between items-start mb-1 gap-2">
-                            <span class="font-black text-slate-800 text-[11px] md:text-xs leading-tight">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
+                    <div class="flex flex-col p-3 bg-slate-800 border border-slate-700 rounded-md shadow-sm">
+                        <div class="flex justify-between items-start mb-1.5 gap-2">
+                            <span class="font-black text-white text-xs md:text-sm leading-tight">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
                             ${groupHtml}
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-mono font-bold text-slate-500">${ev.time || ''}</span>
-                            ${ev.leader ? `<span class="text-[9px] uppercase font-bold text-emerald-600 tracking-widest">${window.t('leader_short')} ${ev.leader}</span>` : ''}
+                            <span class="text-[10px] md:text-xs font-mono font-bold text-slate-400">${ev.time || ''}</span>
+                            ${ev.leader ? `<span class="text-[9px] uppercase font-bold text-emerald-400 tracking-widest">${window.t('leader_short')} ${ev.leader}</span>` : ''}
                         </div>
                     </div>
                 `;
@@ -251,7 +265,6 @@
             list.innerHTML = html;
         }
 
-        // Загрузка событий из БД
         const q = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(q, (snapshot) => {
             allEvents = {};
@@ -272,7 +285,6 @@
                 allEvents[y][m][d].push(ev);
             });
             
-            // Если мы только зашли, выбираем сегодняшний день
             const now = new Date();
             if (selectedDay === null && currentYear === now.getFullYear() && currentMonth === now.getMonth()) {
                 selectedDay = now.getDate();
