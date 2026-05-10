@@ -10,8 +10,7 @@
             theme: { 
                 extend: { 
                     colors: { 
-                        ui: { bg: '#cbd5e1', nav: '#0f172a' },
-                        brand: { green: '#68c086', dark: '#141724' }
+                        ui: { bg: '#f8fafc', nav: '#0f172a' }
                     } 
                 } 
             } 
@@ -22,122 +21,86 @@
         body { -ms-overflow-style: none; scrollbar-width: none; overflow: hidden; }
         .custom-scrollbar::-webkit-scrollbar { display: block; width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
 <body class="bg-ui-bg text-slate-800 font-sans w-full h-[100dvh] overflow-hidden flex flex-col relative">
 
-    <main class="flex-1 flex flex-col w-full max-w-2xl mx-auto pt-4 md:pt-6 px-4 md:pl-24 md:pr-6 pb-20 md:pb-6 min-h-0 gap-3">
-        
-        <div class="flex items-center justify-between shrink-0 bg-white rounded-xl p-2 px-4 shadow-sm border border-slate-200">
-            <h1 class="text-xl md:text-2xl font-black text-slate-800 leading-none" data-lang="archive_title">Архив</h1>
-            <div class="flex items-center gap-4">
-                <button onclick="changeYear(-1)" class="text-slate-400 hover:text-brand-green text-2xl font-black transition-colors outline-none">‹</button>
-                <div id="display-year" class="text-xl font-black text-slate-800 w-12 text-center">2026</div>
-                <button onclick="changeYear(1)" class="text-slate-400 hover:text-brand-green text-2xl font-black transition-colors outline-none">›</button>
-            </div>
-        </div>
+    <div id="global-loader" class="fixed inset-0 bg-ui-bg z-[200] flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="animate-spin rounded-full h-10 w-10 border-4 border-slate-300 border-t-slate-800 mb-4"></div>
+        <p class="text-[10px] font-bold text-slate-400 tracking-widest uppercase animate-pulse" data-lang="loading">Загрузка...</p>
+    </div>
 
-        <div class="shrink-0 h-[25vh] md:h-[200px]">
-            <div id="months-grid" class="grid grid-cols-4 grid-rows-3 gap-2 h-full">
-            </div>
-        </div>
-
-        <div class="flex-1 min-h-0 bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-            <div class="p-3 md:p-4 flex flex-col h-full">
-                <h2 id="month-title" class="text-center font-black text-slate-800 uppercase tracking-widest text-sm mb-2 shrink-0">МЕСЯЦ</h2>
-                
-                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1 shrink-0">
-                    <span data-lang="dow_1">ПН</span><span data-lang="dow_2">ВТ</span><span data-lang="dow_3">СР</span><span data-lang="dow_4">ЧТ</span><span data-lang="dow_5">ПТ</span><span data-lang="dow_6">СБ</span><span data-lang="dow_7">ВС</span>
-                </div>
-                
-                <div id="days-grid" class="grid grid-cols-7 gap-1 flex-1 auto-rows-fr content-start">
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <nav class="fixed bottom-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-between z-40 pb-safe md:h-[100dvh] md:w-20 md:flex-col md:justify-start md:py-6 md:border-t-0">
-        <a href="index.html" data-lang-title="back_home" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
-            <div class="nav-icon-container text-slate-500 hover:text-white p-2.5 rounded-full transition-colors flex flex-col items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                <span class="text-[8px] font-black uppercase tracking-widest hidden md:block" data-lang="btn_back">Назад</span>
-            </div>
+    <nav class="fixed bottom-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-slate-800 md:border-t-0 no-print">
+        <a href="index.html" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-slate-400 hover:text-white" title="Назад">
+            <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
         </a>
     </nav>
 
-    <div id="modal" class="hidden fixed inset-0 bg-slate-900/80 z-[100] items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-brand-dark w-full max-w-sm rounded-3xl p-6 shadow-2xl relative flex flex-col border border-slate-800">
-            
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white text-2xl font-black outline-none transition-colors leading-none">✖</button>
-            
-            <h3 id="modal-title" class="text-brand-green font-black text-left mb-4 uppercase tracking-widest text-sm pr-8 border-b border-slate-800 pb-4"></h3>
-            
-            <div id="modal-list" class="max-h-[60vh] overflow-y-auto custom-scrollbar flex flex-col">
+    <main class="flex-1 flex flex-col w-full max-w-lg mx-auto pt-4 md:pt-6 px-4 md:pl-28 md:pr-6 pb-20 md:pb-6 min-h-0 gap-3">
+        
+        <div class="flex items-center justify-between shrink-0 bg-white border border-slate-200 rounded-md p-3">
+            <h1 class="text-sm font-black text-slate-800 leading-none uppercase tracking-widest" data-lang="archive_title">Архив</h1>
+            <div class="flex items-center gap-4">
+                <button onclick="changeYear(-1)" class="text-slate-400 hover:text-slate-800 text-xl font-black transition-colors outline-none">‹</button>
+                <div id="display-year" class="text-sm font-black text-slate-800 w-10 text-center">...</div>
+                <button onclick="changeYear(1)" class="text-slate-400 hover:text-slate-800 text-xl font-black transition-colors outline-none">›</button>
             </div>
         </div>
-    </div>
+
+        <div id="months-grid" class="grid grid-cols-6 gap-1 md:gap-2 shrink-0">
+            </div>
+
+        <div class="flex-1 min-h-0 bg-white rounded-md border border-slate-200 flex flex-col overflow-hidden">
+            <div id="selected-date-title" class="p-2 border-b border-slate-100 bg-slate-50 text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-widest text-center shrink-0">
+                Выберите день
+            </div>
+            
+            <div id="events-panel-list" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
+                </div>
+        </div>
+
+        <div class="shrink-0 bg-white border border-slate-200 rounded-md flex flex-col h-[35vh] md:h-[280px]">
+            <div class="grid grid-cols-7 gap-1 text-center text-[9px] font-bold text-slate-400 p-2 border-b border-slate-100 shrink-0">
+                <span data-lang="dow_1">ПН</span><span data-lang="dow_2">ВТ</span><span data-lang="dow_3">СР</span><span data-lang="dow_4">ЧТ</span><span data-lang="dow_5">ПТ</span><span data-lang="dow_6">СБ</span><span data-lang="dow_7">ВС</span>
+            </div>
+            <div id="days-grid" class="grid grid-cols-7 gap-1 p-2 flex-1 auto-rows-fr content-start">
+                </div>
+        </div>
+
+    </main>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // 🔥 ЕДИНЫЙ ЖЕЛЕЗОБЕТОННЫЙ СЛОВАРЬ
         const dict = {
             ru: {
-                // Основное
-                "archive_title": "Архив",
-                "back_home": "На главную",
-                "btn_back": "Назад",
-                "group_short": "Гр.",
-                "leader_short": "Вед:",
-                "full_calendar_title": "Полный Календарь - GRO-UP",
-                "no_events_this_day": "В этот день событий нет",
-                // Дни недели
+                "archive_title": "Архив", "back_home": "На главную", "btn_back": "Назад",
+                "group_short": "Гр.", "leader_short": "Вед:", "full_calendar_title": "Календарь - GRO-UP",
+                "no_events_this_day": "В этот день событий нет", "loading": "Загрузка...",
                 "dow_1": "ПН", "dow_2": "ВТ", "dow_3": "СР", "dow_4": "ЧТ", "dow_5": "ПТ", "dow_6": "СБ", "dow_7": "ВС",
-                // Месяцы
                 "months": ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
             },
             cs: {
-                // Основное
-                "archive_title": "Archiv",
-                "back_home": "Na hlavní stránku",
-                "btn_back": "Zpět",
-                "group_short": "Sk.",
-                "leader_short": "Ved:",
-                "full_calendar_title": "Plný kalendář - GRO-UP",
-                "no_events_this_day": "V tento den nejsou žádné události",
-                // Дни недели
+                "archive_title": "Archiv", "back_home": "Na hlavní stránku", "btn_back": "Zpět",
+                "group_short": "Sk.", "leader_short": "Ved:", "full_calendar_title": "Kalendář - GRO-UP",
+                "no_events_this_day": "V tento den nejsou žádné události", "loading": "Načítání...",
                 "dow_1": "PO", "dow_2": "ÚT", "dow_3": "ST", "dow_4": "ČT", "dow_5": "PÁ", "dow_6": "SO", "dow_7": "NE",
-                // Месяцы
                 "months": ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"]
             }
         };
 
         const currentLang = localStorage.getItem('app_lang') || 'ru';
-
-        window.t = (key) => {
-            if (dict[currentLang] && dict[currentLang][key]) {
-                return dict[currentLang][key];
-            }
-            return key; 
-        };
+        window.t = (key) => dict[currentLang][key] || key;
 
         const applyTranslations = () => {
-            document.querySelectorAll('[data-lang]').forEach(el => {
-                el.innerHTML = window.t(el.getAttribute('data-lang'));
-            });
-            document.querySelectorAll('[data-lang-title]').forEach(el => {
-                el.setAttribute('title', window.t(el.getAttribute('data-lang-title')));
-            });
+            document.querySelectorAll('[data-lang]').forEach(el => el.innerHTML = window.t(el.getAttribute('data-lang')));
+            document.querySelectorAll('[data-lang-title]').forEach(el => el.setAttribute('title', window.t(el.getAttribute('data-lang-title'))));
         };
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', applyTranslations);
-        } else {
-            applyTranslations();
-        }
-        // =========================================================
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyTranslations);
+        else applyTranslations();
 
         const firebaseConfig = {
             apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
@@ -153,23 +116,43 @@
         const userId = localStorage.getItem('userId');
         if (!userId) window.location.href = 'index.html';
 
-        const monthsNames = dict[currentLang].months; // Берем месяцы из словаря!
+        const monthsNames = dict[currentLang].months;
         let currentYear = new Date().getFullYear();
         let currentMonth = new Date().getMonth(); 
+        let selectedDay = null; // По умолчанию день не выбран
         
         let allEvents = {}; 
+
+        // Инициализация загрузчика
+        setTimeout(() => {
+            document.getElementById('global-loader').style.opacity = '0';
+            setTimeout(() => document.getElementById('global-loader').style.display = 'none', 500);
+        }, 1500);
 
         window.changeYear = (dir) => {
             currentYear += dir;
             document.getElementById('display-year').innerText = currentYear;
+            selectedDay = null;
             renderMonths();
             renderDays();
+            renderSelectedEvents();
         };
 
         window.selectMonth = (mIdx) => {
             currentMonth = mIdx;
+            const now = new Date();
+            if (currentYear === now.getFullYear() && currentMonth === now.getMonth()) selectedDay = now.getDate();
+            else selectedDay = 1;
+
             renderMonths();
             renderDays();
+            renderSelectedEvents();
+        };
+
+        window.selectDay = (d) => {
+            selectedDay = d;
+            renderDays();
+            renderSelectedEvents();
         };
 
         function renderMonths() {
@@ -177,16 +160,15 @@
             let html = '';
             for (let i = 0; i < 12; i++) {
                 const isSelected = (i === currentMonth);
-                const bgClass = isSelected ? 'bg-brand-green text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50';
+                const bgClass = isSelected ? 'bg-slate-800 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50';
                 
                 html += `
-                    <button onclick="selectMonth(${i})" class="${bgClass} rounded-lg flex items-center justify-center font-black text-[10px] md:text-xs uppercase tracking-widest transition-colors outline-none h-full w-full">
+                    <button onclick="selectMonth(${i})" class="${bgClass} aspect-square rounded-md flex items-center justify-center font-black text-[9px] md:text-xs uppercase tracking-widest transition-colors outline-none w-full">
                         ${monthsNames[i].substring(0,3)}
                     </button>
                 `;
             }
             grid.innerHTML = html;
-            document.getElementById('month-title').innerText = `${monthsNames[currentMonth]} ${currentYear}`;
         }
 
         function renderDays() {
@@ -204,72 +186,84 @@
 
             for (let d = 1; d <= totalDays; d++) {
                 const isToday = (d === now.getDate() && currentMonth === now.getMonth() && currentYear === now.getFullYear());
+                const isSelected = (d === selectedDay);
                 const dayEvents = (allEvents[currentYear] && allEvents[currentYear][currentMonth] && allEvents[currentYear][currentMonth][d]) || [];
                 
-                let dotsHtml = '';
-                dayEvents.forEach(ev => {
-                    let dotColor = 'bg-sky-500';
-                    if (ev.category === 'special') dotColor = 'bg-rose-500';
-                    dotsHtml += `<div class="w-1 h-1 rounded-full ${dotColor}"></div>`;
-                });
+                let dotHtml = '';
+                if (dayEvents.length > 0) {
+                    const hasSpecial = dayEvents.some(e => e.isSpecial);
+                    const dotColor = hasSpecial ? 'bg-rose-500' : (isSelected ? 'bg-emerald-400' : 'bg-emerald-500');
+                    dotHtml = `<div class="w-1.5 h-1.5 rounded-full ${dotColor} absolute bottom-1 shadow-sm"></div>`;
+                }
 
-                const todayClass = isToday ? 'border-2 border-brand-green text-brand-green bg-green-50/50' : 'bg-slate-50 border border-slate-100 text-slate-700';
+                let bgClass = 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100';
+                if (isSelected) bgClass = 'bg-slate-800 border-slate-800 text-white shadow-inner';
+                else if (isToday) bgClass = 'bg-white border-emerald-500 text-emerald-600';
 
                 grid.innerHTML += `
-                    <div onclick="openModal(${d})" class="rounded-lg ${todayClass} flex flex-col items-center justify-center text-sm md:text-base font-black relative cursor-pointer hover:bg-slate-100 transition-colors min-h-0 w-full h-full">
-                        <span>${d}</span>
-                        <div class="absolute bottom-1 flex gap-0.5 justify-center w-full px-1 flex-wrap">
-                            ${dotsHtml}
-                        </div>
-                    </div>
+                    <button onclick="selectDay(${d})" class="rounded-md border flex flex-col items-center justify-center text-xs md:text-sm font-black relative cursor-pointer transition-colors outline-none w-full h-full ${bgClass}">
+                        ${d}
+                        ${dotHtml}
+                    </button>
                 `;
             }
         }
 
-        window.openModal = (d) => {
-            document.getElementById('modal-title').innerText = `${d} ${monthsNames[currentMonth]}`;
-            const list = document.getElementById('modal-list');
-            const dayEvents = (allEvents[currentYear] && allEvents[currentYear][currentMonth] && allEvents[currentYear][currentMonth][d]) || [];
+        function renderSelectedEvents() {
+            const list = document.getElementById('events-panel-list');
+            const title = document.getElementById('selected-date-title');
             
-            list.innerHTML = dayEvents.map((ev) => {
-                const isSpecial = ev.category === 'special';
-                const colorTitle = isSpecial ? 'text-rose-400' : 'text-white';
-                const dotColor = isSpecial ? 'bg-rose-500' : 'bg-sky-500';
+            if (!selectedDay) {
+                title.innerText = window.t('archive_title');
+                list.innerHTML = `<p class="text-[10px] text-slate-400 text-center italic py-4">Выберите день</p>`;
+                return;
+            }
 
-                const timeHtml = ev.time ? `<span class="text-xs text-slate-500 font-mono font-bold mr-3">${ev.time}</span>` : '';
-                const groupHtml = ev.group !== "Все" ? `<span class="text-[9px] font-bold text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded ml-2 uppercase">${window.t('group_short')} ${ev.group}</span>` : '';
+            title.innerText = `${selectedDay} ${monthsNames[currentMonth]} ${currentYear}`;
+            const dayEvents = (allEvents[currentYear] && allEvents[currentYear][currentMonth] && allEvents[currentYear][currentMonth][selectedDay]) || [];
 
-                return `
-                    <div class="flex flex-col py-3 border-b border-slate-800/50 last:border-0">
-                        <div class="flex items-start">
-                            <div class="mt-1.5 mr-2 shrink-0 w-1.5 h-1.5 rounded-full ${dotColor}"></div>
-                            ${timeHtml}
-                            <div class="flex flex-col flex-grow">
-                                <div class="flex items-center flex-wrap gap-y-1">
-                                    <span class="text-sm font-bold leading-tight ${colorTitle}">${ev.title}</span>
-                                    ${groupHtml}
-                                </div>
-                                ${ev.leader ? `<div class="text-[10px] uppercase font-bold text-brand-green mt-1.5 tracking-wider opacity-90">${window.t('leader_short')} ${ev.leader}</div>` : ''}
-                            </div>
+            if (dayEvents.length === 0) {
+                list.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full opacity-50 py-4">
+                        <svg class="w-6 h-6 text-slate-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${window.t('no_events_this_day')}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            dayEvents.forEach(ev => {
+                const groupHtml = ev.group !== "Все" && ev.group !== "Všechny" ? `<span class="text-[8px] font-bold text-slate-500 uppercase tracking-widest border border-slate-200 bg-white px-1 py-0.5 rounded">${window.t('group_short')} ${ev.group}</span>` : '';
+                html += `
+                    <div class="flex flex-col p-2 bg-slate-50 border border-slate-200 rounded-md">
+                        <div class="flex justify-between items-start mb-1 gap-2">
+                            <span class="font-black text-slate-800 text-[11px] md:text-xs leading-tight">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
+                            ${groupHtml}
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-mono font-bold text-slate-500">${ev.time || ''}</span>
+                            ${ev.leader ? `<span class="text-[9px] uppercase font-bold text-emerald-600 tracking-widest">${window.t('leader_short')} ${ev.leader}</span>` : ''}
                         </div>
                     </div>
                 `;
-            }).join('') || `<p class="text-xs text-slate-500 text-center italic py-6">${window.t('no_events_this_day')}</p>`;
-            
-            document.getElementById('modal').style.display = 'flex';
-        };
+            });
+            list.innerHTML = html;
+        }
 
-        window.closeModal = () => document.getElementById('modal').style.display = 'none';
-
+        // Загрузка событий из БД
         const q = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(q, (snapshot) => {
             allEvents = {};
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
-                const dObj = new Date(ev.date);
-                const y = dObj.getFullYear();
-                const m = dObj.getMonth();
-                const d = dObj.getDate();
+                if (!ev.date) return;
+                const parts = ev.date.split('-');
+                if (parts.length < 3) return;
+
+                const y = parseInt(parts[0], 10);
+                const m = parseInt(parts[1], 10) - 1; 
+                const d = parseInt(parts[2], 10);
 
                 if (!allEvents[y]) allEvents[y] = {};
                 if (!allEvents[y][m]) allEvents[y][m] = {};
@@ -277,7 +271,15 @@
 
                 allEvents[y][m][d].push(ev);
             });
+            
+            // Если мы только зашли, выбираем сегодняшний день
+            const now = new Date();
+            if (selectedDay === null && currentYear === now.getFullYear() && currentMonth === now.getMonth()) {
+                selectedDay = now.getDate();
+            }
+
             renderDays();
+            renderSelectedEvents();
         });
 
         document.getElementById('display-year').innerText = currentYear;
