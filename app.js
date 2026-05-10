@@ -78,7 +78,6 @@ const dict = {
         "alert_publish_error": "Ошибка публикации! Проверьте правила Storage.",
         "confirm_delete_news": "Удалить это объявление?",
         "confirm_delete_task": "Точно удалить это задание?",
-        // Админка
         "admin_title": "Панель Администратора",
         "back_home": "На главную",
         "users_title": "Пользователи",
@@ -457,23 +456,18 @@ let currentUserData = null;
 let hasFullAccess = false;
 let currentZoomData = { id: "", pass: "" }; 
 
-// 🔥 ЛОГИКА ДВУХШАГОВОГО ZOOM
 window.zoomStateReady = false;
 window.handleZoomClick = (event) => {
     event.preventDefault();
     if (!window.zoomStateReady) {
-        // Шаг 1: Показываем ID/Pass, меняем текст
         document.getElementById('zoom-info-hidden').classList.add('hidden');
         document.getElementById('zoom-info-hidden').classList.remove('flex');
         document.getElementById('zoom-info-revealed').classList.remove('hidden');
         document.getElementById('zoom-info-revealed').classList.add('flex');
         document.getElementById('zoom-btn-text').innerText = window.t('zoom_launch') || "ЗАПУСК";
         window.zoomStateReady = true;
-        
-        // Сброс через 10 сек, если не нажали
         setTimeout(resetZoomUI, 10000);
     } else {
-        // Шаг 2: Запускаем
         if (!currentZoomData || !currentZoomData.id || currentZoomData.id === '-') {
             alert(window.t('zoom_error') || 'Zoom не настроен');
             resetZoomUI();
@@ -483,7 +477,6 @@ window.handleZoomClick = (event) => {
         const pass = currentZoomData.pass || '';
         const webUrl = `https://zoom.us/j/${cleanId}${pass ? '?pwd=' + pass : ''}`;
         window.location.href = webUrl;
-        
         setTimeout(resetZoomUI, 2000);
     }
 };
@@ -1041,17 +1034,16 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    window.markTerritoryReturned = async (id) => {
-        if (confirm('Точно сдать этот участок?')) { 
-            try {
-                await updateDoc(doc(db, "territories", id), {
-                    status: 'returned',
-                    returnedAt: new Date().toISOString()
-                });
-                window.showToast("Участок сдан! ✅");
-            } catch (e) {
-                alert("Ошибка сети!");
-            }
+    window.requestTerritory = async (btn) => {
+        btn.innerText = "..."; btn.disabled = true;
+        try {
+            await addDoc(collection(db, "requests"), { type: "territory", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
+            btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success') || 'Успешно'}`;
+            setTimeout(() => { btn.innerText = window.t('request_btn') || 'Попросить'; btn.disabled = false; }, 3000);
+        } catch (e) { 
+            alert(window.t('error_network') || 'Ошибка сети!'); 
+            btn.innerText = window.t('request_btn') || 'Попросить'; 
+            btn.disabled = false; 
         }
     };
 
@@ -1211,9 +1203,9 @@ function loadPersonalData() {
             if (isNewsAdmin) {
                 let textAreaHtml = '';
                 if (currentLang === 'ru') {
-                    textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-white rounded-md border border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
+                    textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-white rounded-t-md border border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
                 } else {
-                    textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-slate-50 rounded-md border border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
+                    textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-slate-50 rounded-b-md border-x border-b border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
                 }
 
                 newsHTML += `
