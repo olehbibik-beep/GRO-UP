@@ -3,134 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title data-lang="calendar_title">Календарь Событий - GRO-UP</title>
+    <title data-lang="calendar_title">Календарь встреч</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { 
-            theme: { 
-                extend: { 
-                    colors: { 
-                        ui: { bg: '#cbd5e1', adminNav: '#70227E' },
-                        brand: { green: '#66C085', dark: '#161B26' }
-                    } 
-                } 
-            } 
-        }
+        tailwind.config = { theme: { extend: { colors: { ui: { bg: '#cbd5e1', nav: '#0f172a' } } } } }
     </script>
     <style>
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; border-radius: 8px; }
-        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 8px; }
+        ::-webkit-scrollbar { display: none; }
+        body { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-ui-bg text-slate-800 min-h-screen font-sans pb-24">
+<body class="bg-ui-bg text-slate-800 min-h-screen font-sans pb-20">
 
-    <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0">
-        <a href="index.html" data-lang-title="back_home" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
-            <div class="nav-icon-container text-indigo-300 hover:text-white p-2.5 rounded-full transition-colors flex flex-col items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                <span class="text-[8px] font-black uppercase tracking-widest hidden md:block" data-lang="btn_back">Назад</span>
-            </div>
+    <nav class="fixed bottom-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-slate-800 md:border-t-0 no-print">
+        <a href="index.html" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-slate-400 hover:text-white" title="Назад">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
         </a>
     </nav>
 
-    <main class="w-full max-w-5xl mx-auto pt-4 md:pt-6 px-4 md:pl-28 md:pr-6">
+    <main class="w-full max-w-4xl mx-auto px-4 py-6 md:pl-28 md:pr-6">
         
-        <div class="mb-4 md:mb-6 flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center shrink-0 border border-rose-100">
-                    <svg class="w-5 h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                </div>
-                <div>
-                    <h1 class="text-lg md:text-2xl font-black text-rose-600 leading-tight" data-lang="calendar_h1">Календарь</h1>
-                    <p class="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5" data-lang="calendar_subtitle">График событий собрания</p>
-                </div>
-            </div>
+        <div class="mb-6 flex justify-between items-center bg-white p-5 rounded-md shadow-sm border border-slate-200">
+            <h1 class="text-xl md:text-2xl font-black text-slate-800 flex items-center gap-2">
+                <svg class="w-6 h-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <span data-lang="calendar_title">Календарь встреч</span>
+            </h1>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            
-            <div class="md:col-span-1">
-                <div class="bg-white p-5 rounded-xl border border-slate-200 sticky top-6">
-                    <h2 class="text-base md:text-lg font-black text-slate-800 mb-5 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                        <span data-lang="create_meeting">Создать встречу</span>
-                    </h2>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="event_type">Тип события</label>
-                            <select id="event-category" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-rose-400 font-bold text-slate-700 cursor-pointer">
-                                <option value="meeting" selected data-lang="opt_regular">Обычная встреча</option>
-                                <option value="special" data-lang="opt_special">Особое событие (важно)</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="event_name">Название</label>
-                            <input type="text" id="event-title" data-lang-placeholder="ph_meeting" placeholder="Встреча для проповеди" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-rose-400 transition-colors font-bold text-slate-700">
-                        </div>
-                        
-                        <div class="flex gap-3">
-                            <div class="w-full">
-                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="event_date">Дата</label>
-                                <input type="date" id="event-date" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-rose-400 transition-colors font-bold text-slate-700 cursor-pointer">
-                            </div>
-                            <div class="w-full">
-                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="event_time">Время</label>
-                                <input type="text" id="event-time" placeholder="18:30" maxlength="5" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-rose-400 transition-colors font-bold text-slate-700">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="event_group_label">Группа (пусто = для всех)</label>
-                            <input type="number" id="event-group" data-lang-placeholder="ph_group" placeholder="Например: 5" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-rose-400 transition-colors font-bold text-slate-700">
-                        </div>
-
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="leaders_queue">Ведущие (авто-очередь)</label>
-                            <div id="leaders-list" class="max-h-32 overflow-y-auto bg-slate-50 border border-slate-200 rounded-lg p-2 space-y-1 custom-scrollbar">
-                                <p class="text-xs text-slate-400 italic" data-lang="loading_brothers">Загрузка братьев...</p>
-                            </div>
-                        </div>
-
-                        <div class="bg-rose-50/50 p-4 rounded-lg border border-rose-100 mt-2">
-                            <label class="flex items-center gap-2 cursor-pointer mb-2">
-                                <input type="checkbox" id="event-recurring" class="w-4 h-4 accent-rose-600 rounded cursor-pointer" onchange="document.getElementById('weeks-container').classList.toggle('hidden')">
-                                <span class="text-xs font-bold text-rose-900 uppercase tracking-wide mt-0.5" data-lang="repeat_weekly">Повторять еженедельно</span>
-                            </label>
-                            <div id="weeks-container" class="hidden flex items-center justify-between gap-2 mt-3 bg-white p-2 rounded-lg border border-rose-200">
-                                <span class="text-xs text-rose-700 font-bold" data-lang="how_many_weeks">На сколько недель?</span>
-                                <input type="number" id="event-weeks" value="4" min="2" max="12" class="w-16 p-1.5 text-center font-black text-rose-900 bg-rose-50 rounded-lg border border-rose-200 outline-none">
-                            </div>
-                        </div>
-
-                        <button id="save-event-btn" data-lang="publish_btn" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-lg transition-colors active:bg-slate-700 mt-4 text-sm uppercase tracking-widest outline-none">
-                            Опубликовать
-                        </button>
+        <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden p-4 mb-6">
+            <form id="add-event-form" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1" data-lang="date">Дата</label>
+                        <input type="date" id="event-date" required class="w-full bg-slate-50 border border-slate-200 rounded-md p-2 outline-none focus:border-indigo-400 font-bold text-slate-700">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1" data-lang="time">Время</label>
+                        <input type="time" id="event-time" required class="w-full bg-slate-50 border border-slate-200 rounded-md p-2 outline-none focus:border-indigo-400 font-bold text-slate-700">
                     </div>
                 </div>
-            </div>
-
-            <div class="md:col-span-2">
-                <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3 bg-white p-4 rounded-xl border border-slate-200">
-                    <h2 class="text-lg md:text-xl font-black text-slate-800 flex items-center gap-2" data-lang="meeting_schedule">
-                        График встреч
-                    </h2>
-                    <label class="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors">
-                        <input type="checkbox" id="show-all-events-cb" class="w-4 h-4 accent-slate-800 rounded cursor-pointer shrink-0">
-                        <span class="text-xs font-bold text-slate-600 uppercase tracking-wide mt-0.5" data-lang="show_other_groups">Показать другие группы</span>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1" data-lang="event_name">Название</label>
+                    <input type="text" id="event-title" required class="w-full bg-slate-50 border border-slate-200 rounded-md p-2 outline-none focus:border-indigo-400 font-bold text-slate-700" data-lang-placeholder="event_name_placeholder">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1" data-lang="leader">Проводит</label>
+                        <input type="text" id="event-leader" class="w-full bg-slate-50 border border-slate-200 rounded-md p-2 outline-none focus:border-indigo-400 font-bold text-slate-700">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1" data-lang="group">Группа</label>
+                        <select id="event-group" class="w-full bg-slate-50 border border-slate-200 rounded-md p-2 outline-none focus:border-indigo-400 font-bold text-slate-700">
+                            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="Все" data-lang="all_groups">Все</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 bg-slate-50 p-3 rounded-md border border-slate-100 mt-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="event-special" class="w-4 h-4 accent-indigo-500">
+                        <span class="text-xs font-bold text-slate-700 uppercase tracking-widest" data-lang="special_event">Особое событие</span>
                     </label>
                 </div>
-                
-                <div id="events-list" class="bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden">
-                    <p class="text-slate-500 italic p-6 text-center text-sm" data-lang="loading">Загрузка...</p>
+                <div class="flex items-center gap-4 bg-red-50 p-3 rounded-md border border-red-100 mt-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="repeat-weekly" class="w-4 h-4 accent-red-500">
+                        <span class="text-xs font-bold text-red-700 uppercase tracking-widest" data-lang="repeat_weekly">Повторять еженедельно</span>
+                    </label>
                 </div>
-            </div>
+                <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors shadow-sm" data-lang="publish">Опубликовать</button>
+            </form>
+        </div>
 
+        <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h2 class="font-black text-slate-800 text-lg" data-lang="schedule_title">Расписание встреч</h2>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="show-all-groups" onchange="loadEvents()" class="w-4 h-4 accent-indigo-500">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest" data-lang="show_other_groups">Другие группы</span>
+                </label>
+            </div>
+            <div id="events-list" class="divide-y divide-slate-50"></div>
         </div>
     </main>
-
-    <script type="module" src="calendar.js?v=55"></script> 
+    
+    <script type="module" src="calendar.js"></script>
 </body>
 </html>
