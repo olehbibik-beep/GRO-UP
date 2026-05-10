@@ -200,7 +200,7 @@ window.handleZoomClick = (event) => {
         document.getElementById('zoom-info-hidden').classList.remove('flex');
         document.getElementById('zoom-info-revealed').classList.remove('hidden');
         document.getElementById('zoom-info-revealed').classList.add('flex');
-        document.getElementById('zoom-btn-text').innerText = window.t('zoom_launch');
+        document.getElementById('zoom-btn-text').innerText = window.t('zoom_launch') || "ЗАПУСК";
         window.zoomStateReady = true;
         setTimeout(resetZoomUI, 10000);
     } else {
@@ -520,6 +520,7 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
+// 🔥 УМНЫЙ КАЛЕНДАРЬ НА ГЛАВНОЙ СТРАНИЦЕ
 function loadPersonalData() {
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
         if (docSnap.exists()) {
@@ -744,6 +745,114 @@ function loadPersonalData() {
     } catch(e){}
 
     try {
+        const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
+        onSnapshot(eventsQuery, (snapshot) => {
+            const container = document.getElementById('calendar-events');
+            if (!container) return; 
+            
+            const now = new Date();
+            const tzOffset = now.getTimezoneOffset() * 60000;
+            const todayStr = new Date(now.getTime() - tzOffset).toISOString().split('T')[0];
+
+            let todayEvents = [];
+            let futureEvents = [];
+
+            snapshot.forEach(docSnap => {
+                const ev = docSnap.data();
+                ev.id = docSnap.id;
+                if (ev.date === todayStr) {
+                    todayEvents.push(ev);
+                } else if (ev.date > todayStr) {
+                    futureEvents.push(ev);
+                }
+            });
+
+            let eventsToRender = [];
+            let isShowingFuture = false;
+
+            if (todayEvents.length > 0) {
+                eventsToRender = todayEvents;
+            } else if (futureEvents.length > 0) {
+                isShowingFuture = true;
+                const nextDate = futureEvents[0].date;
+                eventsToRender = futureEvents.filter(e => e.date === nextDate);
+            }
+
+            let html = '';
+            if (eventsToRender.length > 0) {
+                eventsToRender.forEach(ev => {
+                    let isPastEvent = false;
+                    let displayTime = ev.time || "";
+                    
+                    if (!isShowingFuture && displayTime) {
+                        let hours = 0, minutes = 0;
+                        if (!displayTime.includes(':') && displayTime.length >= 3) {
+                            if (displayTime.length === 4) displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
+                            else if (displayTime.length === 3) displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
+                        }
+                        if (displayTime.includes(':')) {
+                            [hours, minutes] = displayTime.split(':');
+                            const eventExactTime = new Date();
+                            eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+                            if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
+                        }
+                    }
+
+                    const evGroup = ev.group || window.t('no_group');
+                    const hasGroup = evGroup !== window.t('no_group');
+                    
+                    const activeClass = isPastEvent ? "bg-slate-50 border-b border-slate-200 opacity-60 grayscale" : "bg-white border-b border-slate-100";
+                    const timeColor = isPastEvent ? "text-slate-400" : (isShowingFuture ? "text-indigo-500" : "text-rose-500");
+                    const leaderColor = isPastEvent ? "text-slate-400" : "text-indigo-600";
+                    const titleColor = isPastEvent ? "text-slate-500" : "text-slate-800";
+                    
+                    const dateObj = new Date(ev.date);
+                    const dayNum = dateObj.getDate();
+                    const monthIndex = dateObj.getMonth();
+                    
+                    const monthNameArr = window.t('months');
+                    const badgeText = isShowingFuture 
+                        ? ((Array.isArray(monthNameArr) && monthNameArr[monthIndex]) ? monthNameArr[monthIndex] : ev.date.split('-')[1])
+                        : window.t('today_badge');
+
+                    const badgeBg = isShowingFuture ? "bg-indigo-600 text-white" : "bg-slate-800 text-white";
+
+                    html += `
+                        <div class="flex items-center p-3 w-full cursor-default ${activeClass}">
+                            <div class="flex items-center gap-1.5 shrink-0 mr-3">
+                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 ${badgeBg} rounded-md shadow-inner shrink-0">
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-300 leading-none mb-0.5 tracking-widest">${badgeText}</span>
+                                    <span class="text-lg md:text-xl font-black leading-none">${dayNum}</span>
+                                </div>
+                                ${hasGroup ? `
+                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-slate-100 border border-slate-200 text-slate-600 rounded-md shrink-0">
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
+                                    <span class="text-sm md:text-lg font-black leading-none">${evGroup}</span>
+                                </div>` : ''}
+                            </div>
+                            <div class="flex flex-col flex-grow truncate min-w-0">
+                                <div class="flex items-center gap-1.5 truncate">
+                                    ${displayTime ? `<span class="text-xs md:text-sm font-black shrink-0 ${timeColor}">${displayTime}</span>` : ''}
+                                    <span class="font-black text-sm md:text-base truncate ${titleColor}">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
+                                </div>
+                                ${ev.leader ? `<span class="text-[9px] md:text-[10px] uppercase font-bold text-slate-500 truncate mt-0.5">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
+                            </div>
+                        </div>
+                    `;
+
+                    if (!isPastEvent && !isShowingFuture && !sessionStorage.getItem('event_toast_' + ev.id)) {
+                        window.showToast(`${window.t('today_event_toast')} ${ev.title} ${displayTime ? ' ' + displayTime : ''}`, 'info');
+                        sessionStorage.setItem('event_toast_' + ev.id, 'true');
+                    }
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `<p class="p-4 text-xs text-slate-400 italic text-center">${window.t('no_events_today')}</p>`;
+            }
+        });
+    } catch(e) {}
+
+    try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
             let newsHTML = ``; 
@@ -806,7 +915,6 @@ function loadPersonalData() {
 window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
 window.openReportHistory = () => document.getElementById('report-history-modal').classList.replace('hidden', 'flex');
 window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
-
 window.closeModals = () => {
     const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
     const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
@@ -820,7 +928,6 @@ window.logout = async () => {
 };
 
 let selectedImageFile = null;
-
 window.previewImage = (input) => {
     if (input.files && input.files[0]) {
         selectedImageFile = input.files[0];
@@ -842,7 +949,6 @@ window.removeImage = () => {
 window.publishNews = async () => {
     const inputRu = document.getElementById('news-input-ru'); const inputCs = document.getElementById('news-input-cs');
     const textRu = inputRu ? inputRu.value.trim() : ''; const textCs = inputCs ? inputCs.value.trim() : '';
-
     if (!textRu && !textCs && !selectedImageFile) return alert(window.t('alert_add_text_photo'));
 
     const btn = document.getElementById('publish-news-btn');
