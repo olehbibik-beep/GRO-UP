@@ -5,295 +5,83 @@ import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/fireb
 
 const dict = {
     ru: {
-        "loading_data": "Загрузка данных...",
-        "pending_title": "Заявка на рассмотрении",
-        "pending_desc": "Ожидайте подтверждения администратора.",
-        "logout_btn": "Выйти",
-        "loading_events": "Загрузка встреч...",
-        "all_year": "Весь<br>год",
-        "loading_feed": "Загрузка ленты...",
-        "my_report": "Мой отчет",
-        "participated": "Служил(а)",
-        "hours_label": "Часы<br>&nbsp;",
-        "studies_label": "Изучения<br>Библии",
-        "credit_label": "Кредит<br>&nbsp;",
-        "fill_btn": "Заполнить",
-        "this_week": "На этой неделе",
-        "loading_duties": "Загрузка...",
-        "active_tasks": "Активные задания",
-        "no_active_tasks": "Нет активных заданий",
-        "archive_title": "Архив",
-        "history_empty": "История пуста",
-        "my_territories": "Мои участки",
-        "request_btn": "Попросить",
-        "no_territories": "У вас пока нет участков",
-        "profile_group": "Группа",
-        "profile_overseer": "Ответственный",
-        "language": "Язык / Jazyk",
-        "profile_logout": "Выйти из аккаунта",
-        "my_archive": "Мой архив",
-        "loading_archive": "Загрузка...",
-        "alert_no_notifications": "Уведомления не поддерживаются на этом устройстве.",
-        "alert_notifications_blocked": "Уведомления заблокированы браузером!\n\nРазрешите их в настройках.",
-        "toast_notifications_enabled": "Уведомления успешно включены!",
-        "submit_report": "Отправить отчет",
-        "alert_report_empty": "Отметьте галочку 'Служил(а)' или введите часы!",
-        "saving": "Сохранение...",
-        "saved": "Сохранено:",
-        "success": "Успешно",
-        "change": "Изменить",
-        "error_network": "Ошибка сети!",
-        "access_denied": "ДОСТУП ЗАКРЫТ",
-        "no_group": "Без группы",
-        "no_duties": "Нет дежурств",
-        "duty_reminder": "Напоминание: Ваша группа дежурит в эти выходные!",
-        "cleaning_weekend": "Уборка",
-        "no_active_territories": "У вас пока нет активных участков",
-        "territory_num": "Участок №",
-        "active": "Активен",
-        "assistant_for": "Помощник у",
-        "speech": "Выступление",
-        "assistant_short": "Пом:",
-        "lesson": "Урок",
-        "no_tasks_upcoming": "У тебя пока нет активных заданий",
-        "new_task_toast": "У вас новое задание",
-        "delete": "Удалить",
-        "new_badge": "Новое",
-        "new_announcement_toast": "📢 Новое объявление в ленте!",
-        "create_announcement": "Создать объявление",
-        "write_text_ru": "Текст (на русском)...",
-        "write_text_cs": "Текст (на чешском)...",
-        "publish": "Опубликовать",
-        "no_news": "Актуальных объявлений нет",
-        "today_badge": "СЕГОДНЯ",
-        "group_short": "Гр.",
-        "leader_short": "Вед:",
-        "today_event_toast": "📅 Сегодня:",
-        "no_events_today": "На сегодня событий нет",
-        "loading": "Загрузка...",
-        "archive_empty": "Архив пуст",
-        "unknown": "Неизвестно",
-        "error_loading": "Ошибка загрузки",
-        "alert_add_text_photo": "Добавьте текст или фото!",
-        "alert_publish_error": "Ошибка публикации! Проверьте правила Storage.",
-        "confirm_delete_news": "Удалить это объявление?",
-        "confirm_delete_task": "Точно удалить это задание?",
-        "admin_title": "Панель Администратора",
-        "back_home": "На главную",
-        "users_title": "Пользователи",
-        "autosave_data": "Автосохранение данных",
-        "cong_name_label": "Название собрания (Увидят все)",
-        "cong_name_placeholder": "Например: Центральное",
-        "requests_title": "Заявки",
-        "active_users": "Активные",
-        "search_placeholder": "Поиск...",
-        "th_name_gender": "Имя и Пол",
-        "th_pin": "ПИН",
-        "th_group": "Группа",
-        "th_school": "Школа",
-        "th_status": "Статус в собрании",
-        "th_responsible": "Ответственный за",
-        "th_manage": "Управление",
-        "error_save": "Ошибка сохранения!",
-        "alert_pin_length": "ПИН-код должен состоять ровно из 6 цифр!",
-        "error_save_pin": "Ошибка при сохранении ПИН-кода!",
-        "error_update_role": "Ошибка при обновлении роли!",
-        "confirm_block": "Заблокировать пользователя?",
-        "confirm_delete_profile": "ВНИМАНИЕ! Удалить профиль?",
-        "error_general": "Ошибка!",
-        "confirm_reject": "Точно отклонить заявку и удалить данные?",
-        "error_delete": "Ошибка удаления",
-        "status_pending": "Ожидает",
-        "btn_approve": "Одобрить",
-        "btn_reject": "Отклонить",
-        "btn_unblock": "Разблокировать",
-        "btn_block": "Заблокировать",
-        "btn_delete": "Удалить",
-        "gender_boy": "Брат",
-        "gender_girl": "Сестра",
-        "role_publisher": "Возвещатель",
-        "role_pioneer": "Пионер",
-        "role_ms": "Помощник собр.",
-        "role_elder": "Старейшина",
-        "role_admin": "Админ",
-        "role_group": "Группа",
-        "role_terr": "Участки",
-        "role_school": "Школа",
-        "no_new_requests": "Нет новых заявок",
-        "no_active_users": "Нет активных пользователей",
-        "cat_reading_db": "📖 Чтение Библии",
-        "cat_conversation": "🗣️ Разговор",
-        "cat_interest": "🌱 Интерес",
-        "cat_disciples": "👥 Подготавливайте",
-        "cat_beliefs": "💡 Взгляды",
-        "cat_talk_db": "🎙️ Речь",
-        "open_map": "Открыть карту",
-        "no_map": "Нет карты",
-        "opt_cleaning": "🧹 Уборка зала",
-        "opt_special_event": "⭐ Специальное событие",
-        "all_groups": "Все",
-        "congregation_label": "Собрание",
-        "scan_qr": "Отсканируйте код",
-        "days_short": "дн.",
-        "return_terr_btn": "Сдать",
-        "no_translation": "Нет перевода",
-        "stand_title": "Служение со стендом",
-        "stand_apply": "Подать заявку",
-        "stand_signup": "Записаться",
-        "stand_pending": "Заявка отправлена",
-        "stand_month_shifts": "Смен в этом месяце",
-        "stand_upcoming": "Твои ближайшие записи",
-        "stand_no_records": "Нет записей",
-        "zoom_error": "Zoom не настроен",
-        "zoom_click_hint": "Нажми<br>на ZOOM",
-        "zoom_launch": "ЗАПУСК",
-        "months": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"],
+        "loading_data": "Загрузка данных...", "pending_title": "Заявка на рассмотрении", "pending_desc": "Ожидайте подтверждения администратора.",
+        "logout_btn": "Выйти", "loading_events": "Загрузка встреч...", "all_year": "Весь<br>год", "loading_feed": "Загрузка ленты...",
+        "my_report": "Мой отчет", "participated": "Служил(а)", "hours_label": "Часы<br>&nbsp;", "studies_label": "Изучения<br>Библии", "credit_label": "Кредит<br>&nbsp;",
+        "fill_btn": "Заполнить", "this_week": "На этой неделе", "loading_duties": "Загрузка...", "active_tasks": "Активные задания",
+        "no_active_tasks": "Нет активных заданий", "archive_title": "Архив", "history_empty": "История пуста", "my_territories": "Мои участки",
+        "request_btn": "Попросить", "no_territories": "У вас пока нет участков", "profile_group": "Группа", "profile_overseer": "Ответственный",
+        "language": "Язык / Jazyk", "profile_logout": "Выйти из аккаунта", "my_archive": "Мой архив", "loading_archive": "Загрузка...",
+        "alert_no_notifications": "Уведомления не поддерживаются на этом устройстве.", "alert_notifications_blocked": "Уведомления заблокированы браузером!\n\nРазрешите их в настройках.",
+        "toast_notifications_enabled": "Уведомления успешно включены!", "submit_report": "Отправить отчет", "alert_report_empty": "Отметьте галочку 'Служил(а)' или введите часы!",
+        "saving": "Сохранение...", "saved": "Сохранено:", "success": "Успешно", "change": "Изменить", "error_network": "Ошибка сети!",
+        "access_denied": "ДОСТУП ЗАКРЫТ", "no_group": "Без группы", "no_duties": "Нет дежурств", "duty_reminder": "Напоминание: Ваша группа дежурит в эти выходные!",
+        "cleaning_weekend": "Уборка", "no_active_territories": "У вас пока нет активных участков", "territory_num": "Участок №",
+        "active": "Активен", "assistant_for": "Помощник у", "speech": "Выступление", "assistant_short": "Пом:", "lesson": "Урок",
+        "no_tasks_upcoming": "У тебя пока нет активных заданий", "new_task_toast": "У вас новое задание", "delete": "Удалить",
+        "new_badge": "Новое", "new_announcement_toast": "📢 Новое объявление в ленте!", "create_announcement": "Создать объявление",
+        "write_text_ru": "Текст (на русском)...", "write_text_cs": "Текст (на чешском)...", "publish": "Опубликовать", "no_news": "Актуальных объявлений нет",
+        "today_badge": "СЕГОДНЯ", "group_short": "Гр.", "leader_short": "Вед:", "today_event_toast": "📅 Сегодня:", "no_events_today": "На сегодня событий нет",
+        "loading": "Загрузка...", "archive_empty": "Архив пуст", "unknown": "Неизвестно", "error_loading": "Ошибка загрузки",
+        "alert_add_text_photo": "Добавьте текст или фото!", "alert_publish_error": "Ошибка публикации! Проверьте правила Storage.",
+        "confirm_delete_news": "Удалить это объявление?", "confirm_delete_task": "Точно удалить это задание?", "admin_title": "Панель Администратора",
+        "back_home": "На главную", "users_title": "Пользователи", "autosave_data": "Автосохранение данных", "cong_name_label": "Название собрания (Увидят все)",
+        "cong_name_placeholder": "Например: Центральное", "requests_title": "Заявки", "active_users": "Активные", "search_placeholder": "Поиск...",
+        "th_name_gender": "Имя и Пол", "th_pin": "ПИН", "th_group": "Группа", "th_school": "Школа", "th_status": "Статус в собрании",
+        "th_responsible": "Ответственный за", "th_manage": "Управление", "error_save": "Ошибка сохранения!", "alert_pin_length": "ПИН-код должен состоять ровно из 6 цифр!",
+        "error_save_pin": "Ошибка при сохранении ПИН-кода!", "error_update_role": "Ошибка при обновлении роли!", "confirm_block": "Заблокировать пользователя?",
+        "confirm_delete_profile": "ВНИМАНИЕ! Удалить профиль?", "error_general": "Ошибка!", "confirm_reject": "Точно отклонить заявку и удалить данные?",
+        "error_delete": "Ошибка удаления", "status_pending": "Ожидает", "btn_approve": "Одобрить", "btn_reject": "Отклонить", "btn_unblock": "Разблокировать",
+        "btn_block": "Заблокировать", "btn_delete": "Удалить", "gender_boy": "Брат", "gender_girl": "Сестра", "role_publisher": "Возвещатель",
+        "role_pioneer": "Пионер", "role_ms": "Помощник собр.", "role_elder": "Старейшина", "role_admin": "Админ", "role_group": "Группа",
+        "role_terr": "Участки", "role_school": "Школа", "no_new_requests": "Нет новых заявок", "no_active_users": "Нет активных пользователей",
+        "cat_reading_db": "📖 Чтение Библии", "cat_conversation": "🗣️ Разговор", "cat_interest": "🌱 Интерес", "cat_disciples": "👥 Подготавливайте",
+        "cat_beliefs": "💡 Взгляды", "cat_talk_db": "🎙️ Речь", "open_map": "Открыть карту", "no_map": "Нет карты", "opt_cleaning": "🧹 Уборка зала",
+        "opt_special_event": "⭐ Специальное событие", "all_groups": "Все", "congregation_label": "Собрание", "scan_qr": "Отсканируйте код",
+        "days_short": "дн.", "return_terr_btn": "Сдать", "no_translation": "Нет перевода", "stand_title": "Служение со стендом",
+        "stand_apply": "Подать заявку", "stand_signup": "Записаться", "stand_pending": "Заявка отправлена", "stand_month_shifts": "Смен в этом месяце",
+        "stand_upcoming": "Твои ближайшие записи", "stand_no_records": "Нет записей", "zoom_error": "Zoom не настроен", "zoom_click_hint": "Нажми<br>на ZOOM",
+        "zoom_launch": "ЗАПУСК", "months": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"],
         "days": ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
     },
     cs: {
-        "loading_data": "Načítání dat...",
-        "pending_title": "Žádost se vyřizuje",
-        "pending_desc": "Čekejte na potvrzení administrátorem.",
-        "logout_btn": "Odejít",
-        "loading_events": "Načítání schůzek...",
-        "all_year": "Celý<br>rok",
-        "loading_feed": "Načítání příspěvků...",
-        "my_report": "Moje zpráva",
-        "participated": "Ve službě",
-        "hours_label": "Hodiny<br>&nbsp;",
-        "studies_label": "Biblická<br>studia",
-        "credit_label": "Kredit<br>&nbsp;",
-        "fill_btn": "Vyplnit",
-        "this_week": "Tento týden",
-        "loading_duties": "Načítání...",
-        "active_tasks": "Aktivní úkoly",
-        "no_active_tasks": "Žádné aktivní úkoly",
-        "archive_title": "Archiv",
-        "history_empty": "Historie je prázdná",
-        "my_territories": "Moje obvody",
-        "request_btn": "Požádat",
-        "no_territories": "Zatím nemáte žádné obvody",
-        "profile_group": "Skupina",
-        "profile_overseer": "Dozorce",
-        "language": "Jazyk / Язык",
-        "profile_logout": "Odhlásit se",
-        "my_archive": "Můj archiv",
-        "loading_archive": "Načítání...",
-        "alert_no_notifications": "Oznámení nejsou na tomto zařízení podporována.",
-        "alert_notifications_blocked": "Oznámení jsou blokována prohlížečem!\n\nPovolte je v nastavení.",
-        "toast_notifications_enabled": "Oznámení byla úspěšně zapnuta!",
-        "submit_report": "Odeslat zprávu",
-        "alert_report_empty": "Zaškrtněte 'Ve službě' nebo zadejte hodiny!",
-        "saving": "Ukládání...",
-        "saved": "Uloženo:",
-        "success": "Úspěšně",
-        "change": "Změnit",
-        "error_network": "Chyba sítě!",
-        "access_denied": "PŘÍSTUP ODEPŘEN",
-        "no_group": "Bez skupiny",
-        "no_duties": "Žádné služby",
-        "duty_reminder": "Připomenutí: Vaše skupina má tento víkend službu!",
-        "cleaning_weekend": "Úklid",
-        "no_active_territories": "Zatím nemáte žádné aktivní obvody",
-        "territory_num": "Obvod č.",
-        "active": "Aktivní",
-        "assistant_for": "Pomocník u",
-        "speech": "Proslov",
-        "assistant_short": "Pom:",
-        "lesson": "Lekce",
-        "no_tasks_upcoming": "Zatím nemáte žádné aktivní úkoly",
-        "new_task_toast": "Máte nový úkol",
-        "delete": "Smazat",
-        "new_badge": "Nové",
-        "new_announcement_toast": "📢 Nové oznámení v kanálu!",
-        "create_announcement": "Vytvořit oznámení",
-        "write_text_ru": "Text (Ruština)...",
-        "write_text_cs": "Text (Čeština)...",
-        "publish": "Publikovat",
-        "no_news": "Žádná aktuální oznámení",
-        "today_badge": "DNES",
-        "group_short": "Sk.",
-        "leader_short": "Ved:",
-        "today_event_toast": "📅 Dnes:",
-        "no_events_today": "Dnes nejsou žádné události",
-        "loading": "Načítání...",
-        "archive_empty": "Archiv je prázdný",
-        "unknown": "Neznámé",
-        "error_loading": "Chyba načítání",
-        "alert_add_text_photo": "Přidejte text nebo fotku!",
-        "alert_publish_error": "Chyba publikování! Zkontrolujte pravidla Storage.",
-        "confirm_delete_news": "Smazat toto oznámení?",
-        "confirm_delete_task": "Opravdu smazat tento úkol?",
-        "admin_title": "Panel administrátora",
-        "back_home": "Na hlavní stránku",
-        "users_title": "Uživatelé",
-        "autosave_data": "Automatické ukládání dat",
-        "cong_name_label": "Název sboru (Uvidí všichni)",
-        "cong_name_placeholder": "Například: Centrální",
-        "requests_title": "Žádosti",
-        "active_users": "Aktivní",
-        "search_placeholder": "Hledat...",
-        "th_name_gender": "Jméno a Pohlaví",
-        "th_pin": "PIN",
-        "th_group": "Skupina",
-        "th_school": "Škola",
-        "th_status": "Status ve sboru",
-        "th_responsible": "Zodpovědný za",
-        "th_manage": "Správa",
-        "error_save": "Chyba při ukládání!",
-        "alert_pin_length": "PIN kód musí mít přesně 6 číslic!",
-        "error_save_pin": "Chyba při ukládání PIN kódu!",
-        "error_update_role": "Chyba při aktualizaci role!",
-        "confirm_block": "Zablokovat uživatele?",
-        "confirm_delete_profile": "POZOR! Smazat profil?",
-        "error_general": "Chyba!",
-        "confirm_reject": "Opravdu zamítnout žádost a smazat data?",
-        "error_delete": "Chyba při mazání",
-        "status_pending": "Čeká",
-        "btn_approve": "Schválit",
-        "btn_reject": "Zamítnout",
-        "btn_unblock": "Odblokovat",
-        "btn_block": "Zablokovat",
-        "btn_delete": "Smazat",
-        "gender_boy": "Bratr",
-        "gender_girl": "Sestra",
-        "role_publisher": "Zvěstovatel",
-        "role_pioneer": "Průkopník",
-        "role_ms": "Služební pom.",
-        "role_elder": "Starší",
-        "role_admin": "Admin",
-        "role_group": "Skupina",
-        "role_terr": "Obvody",
-        "role_school": "Škola",
-        "no_new_requests": "Žádné nové žádosti",
-        "no_active_users": "Žádní aktivní uživatelé",
-        "cat_reading_db": "📖 Čtení Bible",
-        "cat_conversation": "🗣️ Rozhovor",
-        "cat_interest": "🌱 Zájem",
-        "cat_disciples": "👥 Čiňte učedníky",
-        "cat_beliefs": "💡 Přesvědčení",
-        "cat_talk_db": "🎙️ Proslov",
-        "open_map": "Otevřít mapu",
-        "no_map": "Bez mapy",
-        "opt_cleaning": "🧹 Úklid sálu",
-        "opt_special_event": "⭐ Zvláštní událost",
-        "all_groups": "Vše",
-        "congregation_label": "Sbor",
-        "scan_qr": "Naskenujte kód",
-        "days_short": "dní",
-        "return_terr_btn": "Odevzdat",
-        "no_translation": "Bez překladu",
-        "stand_title": "Služba se stojanem",
-        "stand_apply": "Požádat",
-        "stand_signup": "Zapsat se",
-        "stand_pending": "Žádost odeslána",
-        "stand_month_shifts": "Služeb v tomto měsíci",
-        "stand_upcoming": "Tvé nejbližší služby",
-        "stand_no_records": "Žádné zápisy",
-        "zoom_error": "Zoom není nastaven",
-        "zoom_click_hint": "Klikni<br>na ZOOM",
-        "zoom_launch": "SPUSTIT",
-        "months": ["Led", "Úno", "Bře", "Dub", "Kvě", "Čvn", "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro"],
+        "loading_data": "Načítání dat...", "pending_title": "Žádost se vyřizuje", "pending_desc": "Čekejte na potvrzení administrátorem.",
+        "logout_btn": "Odejít", "loading_events": "Načítání schůzek...", "all_year": "Celý<br>rok", "loading_feed": "Načítání příspěvků...",
+        "my_report": "Moje zpráva", "participated": "Ve službě", "hours_label": "Hodiny<br>&nbsp;", "studies_label": "Biblická<br>studia", "credit_label": "Kredit<br>&nbsp;",
+        "fill_btn": "Vyplnit", "this_week": "Tento týden", "loading_duties": "Načítání...", "active_tasks": "Aktivní úkoly",
+        "no_active_tasks": "Žádné aktivní úkoly", "archive_title": "Archiv", "history_empty": "Historie je prázdná", "my_territories": "Moje obvody",
+        "request_btn": "Požádat", "no_territories": "Zatím nemáte žádné obvody", "profile_group": "Skupina", "profile_overseer": "Dozorce",
+        "language": "Jazyk / Язык", "profile_logout": "Odhlásit se", "my_archive": "Můj archiv", "loading_archive": "Načítání...",
+        "alert_no_notifications": "Oznámení nejsou na tomto zařízení podporována.", "alert_notifications_blocked": "Oznámení jsou blokována prohlížečem!\n\nPovolte je v nastavení.",
+        "toast_notifications_enabled": "Oznámení byla úspěšně zapnuta!", "submit_report": "Odeslat zprávu", "alert_report_empty": "Zaškrtněte 'Ve službě' nebo zadejte hodiny!",
+        "saving": "Ukládání...", "saved": "Uloženo:", "success": "Úspěšně", "change": "Změnit", "error_network": "Chyba sítě!",
+        "access_denied": "PŘÍSTUP ODEPŘEN", "no_group": "Bez skupiny", "no_duties": "Žádné služby", "duty_reminder": "Připomenutí: Vaše skupina má tento víkend službu!",
+        "cleaning_weekend": "Úklid", "no_active_territories": "Zatím nemáte žádné aktivní obvody", "territory_num": "Obvod č.",
+        "active": "Aktivní", "assistant_for": "Pomocník u", "speech": "Proslov", "assistant_short": "Pom:", "lesson": "Lekce",
+        "no_tasks_upcoming": "Zatím nemáte žádné aktivní úkoly", "new_task_toast": "Máte nový úkol", "delete": "Smazat",
+        "new_badge": "Nové", "new_announcement_toast": "📢 Nové oznámení v kanálu!", "create_announcement": "Vytvořit oznámení",
+        "write_text_ru": "Text (Ruština)...", "write_text_cs": "Text (Čeština)...", "publish": "Publikovat", "no_news": "Žádná aktuální oznámení",
+        "today_badge": "DNES", "group_short": "Sk.", "leader_short": "Ved:", "today_event_toast": "📅 Dnes:", "no_events_today": "Dnes nejsou žádné události",
+        "loading": "Načítání...", "archive_empty": "Archiv je prázdný", "unknown": "Neznámé", "error_loading": "Chyba načítání",
+        "alert_add_text_photo": "Přidejte text nebo fotku!", "alert_publish_error": "Chyba publikování! Zkontrolujte pravidla Storage.",
+        "confirm_delete_news": "Smazat toto oznámení?", "confirm_delete_task": "Opravdu smazat tento úkol?", "admin_title": "Panel administrátora",
+        "back_home": "Na hlavní stránku", "users_title": "Uživatelé", "autosave_data": "Automatické ukládání dat", "cong_name_label": "Název sboru (Uvidí všichni)",
+        "cong_name_placeholder": "Například: Centrální", "requests_title": "Žádosti", "active_users": "Aktivní", "search_placeholder": "Hledat...",
+        "th_name_gender": "Jméno a Pohlaví", "th_pin": "PIN", "th_group": "Skupina", "th_school": "Škola", "th_status": "Status ve sboru",
+        "th_responsible": "Zodpovědný za", "th_manage": "Správa", "error_save": "Chyba při ukládání!", "alert_pin_length": "PIN kód musí mít přesně 6 číslic!",
+        "error_save_pin": "Chyba při ukládání PIN kódu!", "error_update_role": "Chyba při aktualizaci role!", "confirm_block": "Zablokovat uživatele?",
+        "confirm_delete_profile": "POZOR! Smazat profil?", "error_general": "Chyba!", "confirm_reject": "Opravdu zamítnout žádost a smazat data?",
+        "error_delete": "Chyba při mazání", "status_pending": "Čeká", "btn_approve": "Schválit", "btn_reject": "Zamítnout", "btn_unblock": "Odblokovat",
+        "btn_block": "Zablokovat", "btn_delete": "Smazat", "gender_boy": "Bratr", "gender_girl": "Sestra", "role_publisher": "Zvěstovatel",
+        "role_pioneer": "Průkopník", "role_ms": "Služební pom.", "role_elder": "Starší", "role_admin": "Admin", "role_group": "Skupina",
+        "role_terr": "Obvody", "role_school": "Škola", "no_new_requests": "Žádné nové žádosti", "no_active_users": "Žádní aktivní uživatelé",
+        "cat_reading_db": "📖 Čtení Bible", "cat_conversation": "🗣️ Rozhovor", "cat_interest": "🌱 Zájem", "cat_disciples": "👥 Čiňte učedníky",
+        "cat_beliefs": "💡 Přesvědčení", "cat_talk_db": "🎙️ Proslov", "open_map": "Otevřít mapu", "no_map": "Bez mapy", "opt_cleaning": "🧹 Úklid sálu",
+        "opt_special_event": "⭐ Zvláštní událost", "all_groups": "Vše", "congregation_label": "Sbor", "scan_qr": "Naskenujte kód",
+        "days_short": "dní", "return_terr_btn": "Odevzdat", "no_translation": "Bez překladu", "stand_title": "Služba se stojanem",
+        "stand_apply": "Požádat", "stand_signup": "Zapsat se", "stand_pending": "Žádost odeslána", "stand_month_shifts": "Služeb v tomto měsíci",
+        "stand_upcoming": "Tvé nejbližší služby", "stand_no_records": "Žádné zápisy", "zoom_error": "Zoom není nastaven", "zoom_click_hint": "Klikni<br>na ZOOM",
+        "zoom_launch": "SPUSTIT", "months": ["Led", "Úno", "Bře", "Dub", "Kvě", "Čvn", "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro"],
         "days": ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"]
     }
 };
@@ -302,9 +90,7 @@ const currentLang = localStorage.getItem('app_lang') || 'ru';
 const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU';
 
 window.t = (key) => {
-    if (dict[currentLang] && dict[currentLang][key]) {
-        return dict[currentLang][key];
-    }
+    if (dict[currentLang] && dict[currentLang][key]) return dict[currentLang][key];
     return key; 
 };
 
@@ -316,7 +102,6 @@ window.changeLanguage = (lang) => {
 const applyTranslations = () => {
     const selector = document.getElementById('lang-selector');
     if (selector) selector.value = currentLang;
-
     document.querySelectorAll('[data-lang]').forEach(el => {
         const key = el.getAttribute('data-lang');
         el.innerHTML = window.t(key);
@@ -346,18 +131,13 @@ let messaging = null;
 try {
     messaging = getMessaging(app);
 } catch (e) {
-    console.warn("Push-уведомления не поддерживаются в этом браузере.");
+    console.warn("Push-уведомления не поддерживаются.");
 }
 
-try {
-    enableIndexedDbPersistence(db).catch(() => {});
-} catch (e) {}
+try { enableIndexedDbPersistence(db).catch(() => {}); } catch (e) {}
 
 const userId = localStorage.getItem('userId');
-if (!userId) {
-    window.location.href = 'login.html';
-    throw new Error("No user ID found"); 
-}
+if (!userId) window.location.href = 'login.html';
 
 let isLoaderHidden = false;
 window.hideGlobalLoader = () => {
@@ -398,13 +178,10 @@ window.setupNotifications = async () => {
 
     try {
         if (!('Notification' in window)) return alert("❌ " + window.t('alert_no_notifications'));
-        
         if (pushBtn) pushBtn.innerHTML = '⏳'; 
 
         let permission = Notification.permission;
-        if (permission === 'denied') {
-            throw new Error("Уведомления заблокированы! Разрешите их в настройках телефона.");
-        }
+        if (permission === 'denied') throw new Error("Уведомления заблокированы! Разрешите их в настройках телефона.");
         if (permission !== 'granted') {
             const req = Notification.requestPermission();
             permission = (req instanceof Promise) ? await req : await new Promise(res => Notification.requestPermission(res));
@@ -412,9 +189,7 @@ window.setupNotifications = async () => {
         if (permission !== 'granted') throw new Error("Нет разрешения на пуши");
 
         let registration = await navigator.serviceWorker.getRegistration();
-        if (!registration) {
-            registration = await navigator.serviceWorker.register('./sw.js');
-        }
+        if (!registration) registration = await navigator.serviceWorker.register('./sw.js');
 
         const token = await getToken(messaging, { 
             vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk',
@@ -434,7 +209,6 @@ window.setupNotifications = async () => {
             window.location.reload();
         } else {
             alert("❌ ОШИБКА: " + error.message); 
-            console.error(error); 
             if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
         }
     }
@@ -443,15 +217,12 @@ window.setupNotifications = async () => {
 if (messaging) {
     try {
         onMessage(messaging, (payload) => {
-            if (payload && payload.notification) {
-                window.showToast(`🔔 ${payload.notification.title}`, 'info');
-            }
+            if (payload && payload.notification) window.showToast(`🔔 ${payload.notification.title}`, 'info');
         });
     } catch (e) {}
 }
 
 const TOP_ROLES = ["Владелец", "Админ"]; 
-const OVERSEER_ROLES = ["Владелец", "Админ", "Надзиратель группы"];
 let currentUserData = null; 
 let hasFullAccess = false;
 let currentZoomData = { id: "", pass: "" }; 
@@ -589,14 +360,12 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
             else pushBtn.style.display = 'none';
         }
 
-        let showAdminMenu = false;
-        if (userRoles.some(r => TOP_ROLES.includes(r))) hasFullAccess = true;
-        else hasFullAccess = false;
+        hasFullAccess = userRoles.some(r => TOP_ROLES.includes(r));
 
         const setAdminLink = (id, condition) => {
             const btn = document.getElementById(id);
             if (btn) {
-                if (condition) { btn.classList.remove('hidden'); btn.classList.add('flex'); showAdminMenu = true; }
+                if (condition) { btn.classList.remove('hidden'); btn.classList.add('flex'); }
                 else { btn.classList.add('hidden'); btn.classList.remove('flex'); }
             }
         };
@@ -611,8 +380,11 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
 
         const profileAdminLinks = document.getElementById('profile-admin-links');
         if(profileAdminLinks) {
-            if(showAdminMenu || userRoles.includes("Ответственный за стенды")) { profileAdminLinks.classList.remove('hidden'); profileAdminLinks.classList.add('grid'); } 
-            else { profileAdminLinks.classList.add('hidden'); profileAdminLinks.classList.remove('grid'); }
+            if(hasFullAccess || userRoles.includes("Ответственный за стенды") || userRoles.includes("Надзиратель группы") || userRoles.includes("Ответственный за участки") || userRoles.includes("Ответственный за школу")) { 
+                profileAdminLinks.classList.remove('hidden'); profileAdminLinks.classList.add('grid'); 
+            } else { 
+                profileAdminLinks.classList.add('hidden'); profileAdminLinks.classList.remove('grid'); 
+            }
         }
 
         try { loadPersonalData(); } catch(e) { console.error("Error:", e); }
@@ -653,10 +425,8 @@ async function loadProfileData() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             if(congEl) congEl.innerText = data.name || "МАРИАНСКИЕ ЛАЗНЕ";
-            
             currentZoomData.id = data.zoomId || "";
             currentZoomData.pass = data.zoomPass || "";
-
             if (dashZoomId) dashZoomId.innerText = currentZoomData.id || "-";
             if (dashZoomPass) dashZoomPass.innerText = currentZoomData.pass || "-";
         }
@@ -709,7 +479,7 @@ function updateStandWidgetUI() {
     let monthCount = 0;
 
     myStands.forEach(data => {
-        if (data.date >= firstDayStr) monthCount++;
+        if (data.date >= firstDayStr && data.date.startsWith(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`)) monthCount++;
         if (data.date >= todayStr) upcomingShifts.push(data);
     });
     
@@ -755,7 +525,10 @@ function updateStandWidgetUI() {
 
                 const dayNum = parseInt(parts[2], 10);
                 const monthIndex = parseInt(parts[1], 10) - 1;
+                
+                // Защита от undefined если старая запись
                 const locName = shift.location && shift.location !== "undefined" ? shift.location : "ML - CupVital";
+                
                 const monthNameArr = window.t('months');
                 const monthName = (Array.isArray(monthNameArr) && monthNameArr[monthIndex]) ? monthNameArr[monthIndex] : parts[1];
 
