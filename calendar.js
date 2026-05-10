@@ -69,8 +69,29 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
         document.getElementById('global-loader').style.opacity = '0';
         setTimeout(() => document.getElementById('global-loader').style.display = 'none', 500);
         initEventsListener();
+        loadBrothers(); // Выгружаем братьев для подсказок
     }
 });
+
+function loadBrothers() {
+    onSnapshot(collection(db, "users"), (snapshot) => {
+        const dataList = document.getElementById('brothers-list');
+        if(!dataList) return;
+        let options = '';
+        let brothers = [];
+        snapshot.forEach(docSnap => {
+            const u = docSnap.data();
+            if (u.status === 'active' && u.gender === 'boy') {
+                brothers.push(u.name);
+            }
+        });
+        brothers.sort((a,b) => a.localeCompare(b));
+        brothers.forEach(name => {
+            options += `<option value="${name}">`;
+        });
+        dataList.innerHTML = options;
+    });
+}
 
 function initEventsListener() {
     onSnapshot(query(collection(db, "events"), orderBy("date", "asc")), (snapshot) => {
@@ -90,7 +111,7 @@ window.forceRenderEvents = () => {
     const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
     cachedEvents.forEach(ev => {
-        if (ev.date < todayStr) return; // Скрываем старые в админке
+        if (ev.date < todayStr) return; 
         
         const groupMatch = (ev.group === "Все" || ev.group === "Všechny" || ev.group == userGroup || showAll);
         if (!groupMatch) return;
