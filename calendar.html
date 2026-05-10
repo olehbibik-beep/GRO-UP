@@ -13,11 +13,16 @@
         body { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-ui-bg text-slate-800 min-h-screen font-sans pb-20">
+<body class="bg-ui-bg text-slate-800 min-h-screen font-sans pb-20 md:pb-0">
+
+    <div id="global-loader" class="fixed inset-0 bg-ui-bg z-[200] flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="animate-spin rounded-full h-10 w-10 border-4 border-slate-300 border-t-slate-800 mb-4"></div>
+        <p class="text-[10px] font-bold text-slate-400 tracking-widest uppercase animate-pulse" data-lang="loading">Загрузка...</p>
+    </div>
 
     <nav class="fixed bottom-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-slate-800 md:border-t-0 no-print">
         <a href="index.html" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-slate-400 hover:text-white" title="Назад">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+            <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
         </a>
     </nav>
 
@@ -54,7 +59,8 @@
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1" data-lang="group">Группа</label>
                         <select id="event-group" class="w-full bg-slate-50 border border-slate-200 rounded-md p-2 outline-none focus:border-indigo-400 font-bold text-slate-700">
-                            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="Все" data-lang="all_groups">Все</option>
+                            <option value="Все" data-lang="all_groups">Все</option>
+                            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
                         </select>
                     </div>
                 </div>
@@ -67,7 +73,7 @@
                 <div class="flex items-center gap-4 bg-red-50 p-3 rounded-md border border-red-100 mt-2">
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" id="repeat-weekly" class="w-4 h-4 accent-red-500">
-                        <span class="text-xs font-bold text-red-700 uppercase tracking-widest" data-lang="repeat_weekly">Повторять еженедельно</span>
+                        <span class="text-xs font-bold text-red-700 uppercase tracking-widest" data-lang="repeat_weekly">Повторять еженедельно (12 нед.)</span>
                     </label>
                 </div>
                 <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors shadow-sm" data-lang="publish">Опубликовать</button>
@@ -76,16 +82,17 @@
 
         <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
             <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h2 class="font-black text-slate-800 text-lg" data-lang="schedule_title">Расписание встреч</h2>
+                <h2 class="font-black text-slate-800 text-base md:text-lg" data-lang="schedule_title">Расписание встреч</h2>
                 <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" id="show-all-groups" onchange="loadEvents()" class="w-4 h-4 accent-indigo-500">
+                    <input type="checkbox" id="show-all-groups" onchange="window.forceRenderEvents()" class="w-4 h-4 accent-indigo-500">
                     <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest" data-lang="show_other_groups">Другие группы</span>
                 </label>
             </div>
-            <div id="events-list" class="divide-y divide-slate-50"></div>
+            <div id="events-list" class="divide-y divide-slate-100"></div>
         </div>
     </main>
     
-    <script type="module" src="calendar.js"></script>
+    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
+    <script type="module" src="calendar.js?v=60"></script>
 </body>
 </html>
