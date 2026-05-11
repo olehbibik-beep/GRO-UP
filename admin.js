@@ -45,6 +45,7 @@ const dict = {
         "role_terr": "Участки",
         "role_school": "Школа",
         "role_stand": "Стенды",
+        "role_schedule": "График",
         "no_new_requests": "Нет новых заявок",
         "no_active_users": "Нет активных пользователей",
         "no_group": "Без группы"
@@ -92,6 +93,7 @@ const dict = {
         "role_terr": "Obvody",
         "role_school": "Škola",
         "role_stand": "Stojany",
+        "role_schedule": "Rozvrh",
         "no_new_requests": "Žádné nové žádosti",
         "no_active_users": "Žádní aktivní uživatelé",
         "no_group": "Bez skupiny"
@@ -323,8 +325,12 @@ onSnapshot(collection(db, "users"), (snapshot) => {
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-purple-700 font-bold uppercase hover:bg-purple-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Надзиратель группы', this.checked)" class="accent-purple-500 w-3 h-3 cursor-pointer" ${r.includes('Надзиратель группы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_group')}</label>
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-teal-700 font-bold uppercase hover:bg-teal-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за участки', this.checked)" class="accent-teal-500 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за участки') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_terr')}</label>
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-indigo-700 font-bold uppercase hover:bg-indigo-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за школу', this.checked)" class="accent-indigo-500 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за школу') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_school')}</label>
-                            
                             <label class="flex items-center gap-1 cursor-pointer text-[8px] text-blue-700 font-bold uppercase hover:bg-blue-50 p-1 border border-transparent rounded transition-colors"><input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за стенды', this.checked)" class="accent-blue-600 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за стенды') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${window.t('role_stand')}</label>
+                            
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-fuchsia-700 font-bold uppercase hover:bg-fuchsia-50 p-1 border border-transparent rounded transition-colors">
+                                <input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за график', this.checked)" class="accent-fuchsia-600 w-3 h-3 cursor-pointer" ${r.includes('Ответственный за график') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> 
+                                ${window.t('role_schedule')}
+                            </label>
                         </div>
                     </td>
                     
