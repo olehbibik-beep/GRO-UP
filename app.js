@@ -123,6 +123,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app); 
 
+// 🔥 БРОНЕБОЙНАЯ ИНИЦИАЛИЗАЦИЯ ПУШЕЙ
 let messaging = null;
 try { messaging = getMessaging(app); } catch (e) { console.warn("Push unsupported."); }
 try { enableIndexedDbPersistence(db).catch(() => {}); } catch (e) {}
@@ -156,27 +157,40 @@ window.showToast = (message, type = 'info') => {
     setTimeout(() => { toast.classList.add('-translate-y-10', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 5000);
 };
 
+// 🔥 УМНЫЙ ЗАПРОС ПУШ-УВЕДОМЛЕНИЙ
 window.setupNotifications = async () => {
     const pushBtn = document.getElementById('push-btn');
     if (!messaging) return alert("❌ Ваше устройство или браузер не поддерживает Push-уведомления.");
+    
     try {
         if (!('Notification' in window)) return alert("❌ " + window.t('alert_no_notifications'));
         if (pushBtn) pushBtn.innerHTML = '⏳'; 
+        
         let permission = Notification.permission;
-        if (permission === 'denied') throw new Error("Уведомления заблокированы! Разрешите их в настройках телефона.");
+        if (permission === 'denied') throw new Error("Уведомления заблокированы! Разрешите их в настройках телефона (браузера).");
+        
         if (permission !== 'granted') {
             const req = Notification.requestPermission();
             permission = (req instanceof Promise) ? await req : await new Promise(res => Notification.requestPermission(res));
         }
+        
         if (permission !== 'granted') throw new Error("Нет разрешения на пуши");
+        
         let registration = await navigator.serviceWorker.getRegistration();
         if (!registration) registration = await navigator.serviceWorker.register('./sw.js');
-        const token = await getToken(messaging, { vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk', serviceWorkerRegistration: registration });
+        
+        const token = await getToken(messaging, { 
+            vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk', 
+            serviceWorkerRegistration: registration 
+        });
+
         if (token) {
             await updateDoc(doc(db, "users", userId), { pushToken: token });
             window.showToast("✅ " + window.t('toast_notifications_enabled'));
             if (pushBtn) pushBtn.style.display = 'none';
-        } else throw new Error("Сбой Google FCM: токен пуст.");
+        } else {
+            throw new Error("Сбой Google FCM: токен пуст.");
+        }
     } catch (error) { 
         if (error.message.includes('active service worker')) {
             alert("⏳ Настраиваем связь...\n\nПриложение сейчас перезагрузится. После этого нажмите на колокольчик еще раз!");
@@ -188,8 +202,26 @@ window.setupNotifications = async () => {
     }
 };
 
+// 🔥 ЖИВОЙ ПЕРЕХВАТ ПУШЕЙ В ОТКРЫТОМ ПРИЛОЖЕНИИ
 if (messaging) {
-    try { onMessage(messaging, (payload) => { if (payload && payload.notification) window.showToast(`🔔 ${payload.notification.title}`, 'info'); }); } catch (e) {}
+    try { 
+        onMessage(messaging, (payload) => { 
+            console.log("Push received:", payload);
+            
+            // Защита: иногда Firebase прячет текст в payload.data, а иногда в payload.notification
+            const title = payload.notification?.title || payload.data?.title || "Уведомление";
+            const body = payload.notification?.body || payload.data?.body || "";
+            
+            window.showToast(`🔔 ${title}\n${body}`, 'info'); 
+            
+            // Дополнительно: вызываем системный пуш телефона поверх экрана
+            if (Notification.permission === 'granted') {
+                new Notification(title, { body: body, icon: 'icon-512.png' });
+            }
+        }); 
+    } catch (e) {
+        console.error("FCM onMessage Error", e);
+    }
 }
 
 const TOP_ROLES = ["Владелец", "Админ"]; 
@@ -318,10 +350,16 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         if(mainDashboard) { mainDashboard.style.display = 'block'; }
         
         let userRoles = currentUserData.roles || [];
+        
+        // 🔥 ПРОДВИНУТАЯ ЛОГИКА ПОКАЗА КОЛОКОЛЬЧИКА
         const pushBtn = document.getElementById('push-btn');
-        if (pushBtn) {
-            if (!currentUserData.pushToken && messaging) pushBtn.style.display = 'flex';
-            else pushBtn.style.display = 'none';
+        if (pushBtn && messaging) {
+            // Колокольчик появится, если ПУШИ ЕЩЕ НЕ РАЗРЕШЕНЫ В БРАУЗЕРЕ ИЛИ в базе нет сохраненного токена
+            if (Notification.permission !== 'granted' || !currentUserData.pushToken) {
+                pushBtn.style.display = 'flex';
+            } else {
+                pushBtn.style.display = 'none';
+            }
         }
 
         hasFullAccess = userRoles.some(r => TOP_ROLES.includes(r));
@@ -662,8 +700,8 @@ function loadPersonalData() {
                 }
 
                 container.innerHTML = `
-                    <div class="flex items-center justify-between w-full h-full gap-2">
-                        <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-md border ${badgeClass} shrink-0 bg-slate-50 shadow-inner ml-2">
+                    <div class="flex items-center justify-between w-full h-full gap-2 pl-2">
+                        <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-md border ${badgeClass} shrink-0 bg-slate-50 shadow-inner">
                             <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
                             <span class="text-lg md:text-xl font-black leading-none">${groupStr}</span>
                         </div>
@@ -876,11 +914,10 @@ function loadPersonalData() {
                     if (evGroup === "Все" || evGroup === "Všechny") evGroup = window.t('all_groups');
                     const hasGroup = evGroup !== window.t('no_group');
                     
-                    // ТЕМНАЯ ТЕМА ДЛЯ КАЛЕНДАРЯ НА ГЛАВНОЙ (bg-slate-800)
-                    const activeClass = isPastEvent ? "opacity-50 grayscale" : ""; 
-                    const timeColor = isPastEvent ? "text-slate-500" : (isShowingFuture ? "text-sky-400" : "text-emerald-400");
-                    const leaderColor = isPastEvent ? "text-slate-500" : "text-slate-300";
-                    const titleColor = isPastEvent ? "text-slate-400" : "text-white";
+                    const activeClass = isPastEvent ? "bg-slate-50 border-b border-slate-200 opacity-60 grayscale" : "bg-white border-b border-slate-100";
+                    const timeColor = isPastEvent ? "text-slate-400" : (isShowingFuture ? "text-indigo-500" : "text-rose-500");
+                    const leaderColor = isPastEvent ? "text-slate-400" : "text-indigo-600";
+                    const titleColor = isPastEvent ? "text-slate-500" : "text-slate-800";
                     
                     const dateObj = new Date(ev.date);
                     const dayNum = dateObj.getDate();
@@ -891,28 +928,27 @@ function loadPersonalData() {
                         ? ((Array.isArray(monthNameArr) && monthNameArr[monthIndex]) ? monthNameArr[monthIndex] : ev.date.split('-')[1])
                         : window.t('today_badge');
 
-                    // Значок даты: Белый на темном фоне
-                    const badgeBg = "bg-white text-slate-800";
-                    const badgeTextCol = "text-slate-500";
-                    
-                    // Значок группы: Полупрозрачный светлый
-                    const groupBadge = hasGroup ? `<div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-slate-700/50 text-white rounded-md shrink-0"><span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span><span class="text-sm md:text-lg font-black leading-none">${evGroup}</span></div>` : '';
+                    const badgeBg = isShowingFuture ? "bg-indigo-600 text-white" : "bg-slate-800 text-white";
 
                     html += `
-                        <div class="flex items-center p-3 w-full cursor-default border-b border-slate-700/50 last:border-0 ${activeClass}">
+                        <div class="flex items-center p-3 w-full cursor-default ${activeClass}">
                             <div class="flex items-center gap-1.5 shrink-0 mr-3">
-                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 ${badgeBg} rounded-md shadow-sm shrink-0">
-                                    <span class="text-[7px] md:text-[8px] uppercase font-bold ${badgeTextCol} leading-none mb-0.5 tracking-widest">${badgeText}</span>
+                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 ${badgeBg} rounded-md shadow-inner shrink-0">
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-300 leading-none mb-0.5 tracking-widest">${badgeText}</span>
                                     <span class="text-lg md:text-xl font-black leading-none">${dayNum}</span>
                                 </div>
-                                ${groupBadge}
+                                ${hasGroup ? `
+                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-slate-100 border border-slate-200 text-slate-600 rounded-md shrink-0">
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
+                                    <span class="text-sm md:text-lg font-black leading-none">${evGroup}</span>
+                                </div>` : ''}
                             </div>
                             <div class="flex flex-col flex-grow truncate min-w-0">
                                 <div class="flex items-center gap-1.5 truncate">
                                     ${displayTime ? `<span class="text-xs md:text-sm font-black shrink-0 ${timeColor}">${displayTime}</span>` : ''}
                                     <span class="font-black text-sm md:text-base truncate ${titleColor}">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
                                 </div>
-                                ${ev.leader ? `<span class="text-[9px] md:text-[10px] uppercase font-bold text-slate-400 truncate mt-0.5">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
+                                ${ev.leader ? `<span class="text-[9px] md:text-[10px] uppercase font-bold text-slate-500 truncate mt-0.5">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
                             </div>
                         </div>
                     `;
@@ -944,8 +980,6 @@ function loadPersonalData() {
                     const itemTime = new Date(item.createdAt).getTime();
                     if (now - itemTime < oneWeek) {
                         const isNew = (now - itemTime) < oneDay;
-                        
-                        // КНОПКА УДАЛЕНИЯ В САМОМ НИЗУ КАК СТРОКА
                         const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 font-bold uppercase tracking-widest bg-red-50 hover:bg-red-100 border-t border-red-100 px-2 py-1.5 w-full transition-colors outline-none flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>${window.t('delete')}</button>` : '';
                         
                         let displayText = ''; let shouldShow = false;
@@ -966,25 +1000,13 @@ function loadPersonalData() {
                         if (!displayText && !item.imageUrl) {
                             contentHtml = `<div class="flex flex-col items-center justify-center flex-grow py-6 text-slate-300"><svg class="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="text-[10px] font-black uppercase tracking-widest opacity-50">${window.t('no_translation')}</span></div>`;
                         } else {
-                            // 🔥 ТЕКСТ СВЕРХУ, КАРТИНКА СНИЗУ ИЛИ РАСТЯГИВАЕТСЯ
                             const imgClass = displayText ? "h-16 md:h-20 border-t border-slate-100" : "flex-grow h-full";
                             const textHtml = displayText ? `<div class="p-3 overflow-y-auto custom-scrollbar flex flex-col justify-start bg-white"><p class="text-slate-800 whitespace-pre-wrap text-[10px] md:text-[11px] leading-snug font-bold">${displayText}</p></div>` : '';
                             const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="w-full ${imgClass} object-cover shrink-0 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
-                            
-                            // Сначала текст, потом картинка
                             contentHtml = textHtml + imgHtml;
                         }
 
-                        // 🔥 КАРТОЧКА ОБЪЯВЛЕНИЙ
-                        newsHTML += `
-                        <div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center rounded-md border transition-all flex flex-col overflow-hidden relative ${bgCardClass}">
-                            ${newBadge}
-                            <div class="flex-grow flex flex-col overflow-hidden w-full justify-start items-stretch bg-white">
-                                ${contentHtml}
-                            </div>
-                            ${deleteBtn}
-                        </div>`;
-
+                        newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center rounded-md border transition-all flex flex-col overflow-hidden relative ${bgCardClass}">${newBadge}<div class="flex-grow flex flex-col overflow-hidden w-full justify-start items-stretch bg-white">${contentHtml}</div>${deleteBtn}</div>`;
                         if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) { window.showToast(window.t('new_announcement_toast'), 'info'); sessionStorage.setItem('news_toast_' + docSnap.id, 'true'); }
                     }
                 }
@@ -995,26 +1017,7 @@ function loadPersonalData() {
                 if (currentLang === 'ru') textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-transparent border-0 p-2 text-[10px] outline-none resize-none font-medium text-slate-700 flex-grow custom-scrollbar mb-1"></textarea>`;
                 else textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-transparent border-0 p-2 text-[10px] outline-none resize-none font-medium text-slate-700 flex-grow custom-scrollbar mb-1"></textarea>`;
 
-                newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center p-3 rounded-md border border-dashed border-slate-400 bg-slate-100/50 flex flex-col relative overflow-hidden">
-                    <p class="p-1 text-[8px] font-bold text-slate-500 uppercase tracking-widest text-center flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>${window.t('create_announcement')}</p>
-                    
-                    <div id="image-preview-container" class="hidden relative w-full shrink-0 mb-1">
-                        <img id="image-preview" src="" class="h-10 md:h-12 w-full object-cover rounded border border-slate-200">
-                        <button onclick="removeImage()" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center outline-none">
-                            <svg class="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                    </div>
-
-                    ${textAreaHtml}
-                    
-                    <div class="flex items-center justify-between gap-1.5 shrink-0 mt-auto">
-                        <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded transition-colors flex items-center justify-center w-8 h-6 shrink-0 shadow-sm">
-                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
-                            <input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)">
-                        </label>
-                        <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[8px] font-bold px-2 rounded flex-grow transition-colors h-6 outline-none shadow-sm">${window.t('publish')}</button>
-                    </div>
-                </div>`;
+                newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center p-3 rounded-md border border-dashed border-slate-400 bg-slate-100/50 flex flex-col relative overflow-hidden"><p class="p-1 text-[8px] font-bold text-slate-500 uppercase tracking-widest text-center flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>${window.t('create_announcement')}</p><div id="image-preview-container" class="hidden relative w-full shrink-0 mb-1"><img id="image-preview" src="" class="h-10 md:h-12 w-full object-cover rounded border border-slate-200"><button onclick="removeImage()" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center outline-none"><svg class="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button></div>${textAreaHtml}<div class="flex items-center justify-between gap-1.5 shrink-0 mt-auto"><label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded transition-colors flex items-center justify-center w-8 h-6 shrink-0 shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)"></label><button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[8px] font-bold px-2 rounded flex-grow transition-colors h-6 outline-none shadow-sm">${window.t('publish')}</button></div></div>`;
             }
 
             const contentNews = document.getElementById('content-news');
