@@ -356,11 +356,11 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         
         const savedTab = localStorage.getItem('activeTab') || 'home';
         window.switchTab(savedTab);
+        
         window.hideGlobalLoader();
     }
 });
 
-// 🔥 ЛОГИКА ДЛЯ ИДЕЙ (SUGGESTIONS)
 window.submitSuggestion = async () => {
     const input = document.getElementById('suggest-input');
     const text = input.value.trim();
@@ -370,14 +370,13 @@ window.submitSuggestion = async () => {
     try {
         await addDoc(collection(db, "suggestions"), {
             text: text,
+            userId: userId, 
             userName: currentUserData.name,
             createdAt: new Date().toISOString()
         });
         input.value = '';
         window.showToast(window.t('success'));
-    } catch (e) {
-        alert(window.t('error_network'));
-    }
+    } catch (e) { alert(window.t('error_network')); }
     btn.disabled = false;
 };
 
@@ -397,26 +396,28 @@ onSnapshot(query(collection(db, "suggestions"), orderBy("createdAt", "desc")), (
         const dateStr = `${d.getDate()}.${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
         
         let delBtn = '';
-        if (currentUserData && currentUserData.roles && (currentUserData.roles.includes('Админ') || currentUserData.roles.includes('Владелец'))) {
+        const isOwner = data.userId === userId || data.userName === currentUserData.name;
+        const isAdmin = currentUserData && currentUserData.roles && (currentUserData.roles.includes('Админ') || currentUserData.roles.includes('Владелец'));
+        
+        if (isAdmin || isOwner) {
             delBtn = `<button onclick="deleteSuggestion('${docSnap.id}')" class="text-slate-300 hover:text-red-500 outline-none ml-2 transition-colors">✖</button>`;
         }
 
         html += `
-            <div class="bg-slate-50 p-3 rounded-md border border-slate-100 flex flex-col mb-2">
-                <div class="flex justify-between items-start mb-1">
+            <div class="bg-slate-50 p-3 rounded-md border border-slate-100 flex flex-col mb-2 shadow-sm">
+                <div class="flex justify-between items-start mb-1 border-b border-slate-200 pb-1.5">
                     <span class="font-black text-xs text-indigo-600">${data.userName}</span>
                     <div class="flex items-center">
                         <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${dateStr}</span>
                         ${delBtn}
                     </div>
                 </div>
-                <p class="text-sm font-medium text-slate-700 whitespace-pre-wrap">${data.text}</p>
+                <p class="text-xs md:text-sm font-medium text-slate-700 whitespace-pre-wrap">${data.text}</p>
             </div>
         `;
     });
-    list.innerHTML = html || `<p class="text-slate-400 text-sm italic text-center py-2">${window.t('suggest_empty')}</p>`;
+    list.innerHTML = html || `<p class="text-slate-400 text-sm italic text-center py-4">${window.t('suggest_empty')}</p>`;
 });
-// ----------------------------------------------------
 
 async function loadProfileData() {
     const pName = document.getElementById('profile-name');
@@ -647,9 +648,7 @@ function loadPersonalData() {
                 let typeStr = currentDuty.type;
                 if (typeStr === 'Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
                 if (typeStr === 'Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
-                
-                const rawGroup = String(currentDuty.group);
-                const groupStr = (rawGroup === "Все" || rawGroup === "Všechny" || rawGroup === window.t('all_groups')) ? window.t('all_groups') : rawGroup;
+                const groupStr = currentDuty.group === "Все" || currentDuty.group === window.t('all_groups') ? window.t('all_groups') : currentDuty.group;
 
                 const dutyStart = new Date(currentDuty.rawDate); dutyStart.setHours(0,0,0,0);
                 const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6);
@@ -663,8 +662,8 @@ function loadPersonalData() {
                 }
 
                 container.innerHTML = `
-                    <div class="flex items-center w-full h-full gap-3 pl-2">
-                        <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-md border ${badgeClass} shrink-0 bg-slate-50 shadow-inner">
+                    <div class="flex items-center justify-between w-full h-full gap-2">
+                        <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-md border ${badgeClass} shrink-0 bg-slate-50 shadow-inner ml-2">
                             <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
                             <span class="text-lg md:text-xl font-black leading-none">${groupStr}</span>
                         </div>
@@ -877,10 +876,11 @@ function loadPersonalData() {
                     if (evGroup === "Все" || evGroup === "Všechny") evGroup = window.t('all_groups');
                     const hasGroup = evGroup !== window.t('no_group');
                     
-                    const activeClass = isPastEvent ? "bg-slate-50 border-b border-slate-200 opacity-60 grayscale" : "bg-white border-b border-slate-100";
-                    const timeColor = isPastEvent ? "text-slate-400" : (isShowingFuture ? "text-indigo-500" : "text-rose-500");
-                    const leaderColor = isPastEvent ? "text-slate-400" : "text-indigo-600";
-                    const titleColor = isPastEvent ? "text-slate-500" : "text-slate-800";
+                    // ТЕМНАЯ ТЕМА ДЛЯ КАЛЕНДАРЯ НА ГЛАВНОЙ (bg-slate-800)
+                    const activeClass = isPastEvent ? "opacity-50 grayscale" : ""; 
+                    const timeColor = isPastEvent ? "text-slate-500" : (isShowingFuture ? "text-sky-400" : "text-emerald-400");
+                    const leaderColor = isPastEvent ? "text-slate-500" : "text-slate-300";
+                    const titleColor = isPastEvent ? "text-slate-400" : "text-white";
                     
                     const dateObj = new Date(ev.date);
                     const dayNum = dateObj.getDate();
@@ -891,27 +891,28 @@ function loadPersonalData() {
                         ? ((Array.isArray(monthNameArr) && monthNameArr[monthIndex]) ? monthNameArr[monthIndex] : ev.date.split('-')[1])
                         : window.t('today_badge');
 
-                    const badgeBg = isShowingFuture ? "bg-indigo-600 text-white" : "bg-slate-800 text-white";
+                    // Значок даты: Белый на темном фоне
+                    const badgeBg = "bg-white text-slate-800";
+                    const badgeTextCol = "text-slate-500";
+                    
+                    // Значок группы: Полупрозрачный светлый
+                    const groupBadge = hasGroup ? `<div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-slate-700/50 text-white rounded-md shrink-0"><span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span><span class="text-sm md:text-lg font-black leading-none">${evGroup}</span></div>` : '';
 
                     html += `
-                        <div class="flex items-center p-3 w-full cursor-default ${activeClass}">
+                        <div class="flex items-center p-3 w-full cursor-default border-b border-slate-700/50 last:border-0 ${activeClass}">
                             <div class="flex items-center gap-1.5 shrink-0 mr-3">
-                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 ${badgeBg} rounded-md shadow-inner shrink-0">
-                                    <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-300 leading-none mb-0.5 tracking-widest">${badgeText}</span>
+                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 ${badgeBg} rounded-md shadow-sm shrink-0">
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold ${badgeTextCol} leading-none mb-0.5 tracking-widest">${badgeText}</span>
                                     <span class="text-lg md:text-xl font-black leading-none">${dayNum}</span>
                                 </div>
-                                ${hasGroup ? `
-                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-slate-100 border border-slate-200 text-slate-600 rounded-md shrink-0">
-                                    <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
-                                    <span class="text-sm md:text-lg font-black leading-none">${evGroup}</span>
-                                </div>` : ''}
+                                ${groupBadge}
                             </div>
                             <div class="flex flex-col flex-grow truncate min-w-0">
                                 <div class="flex items-center gap-1.5 truncate">
                                     ${displayTime ? `<span class="text-xs md:text-sm font-black shrink-0 ${timeColor}">${displayTime}</span>` : ''}
                                     <span class="font-black text-sm md:text-base truncate ${titleColor}">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
                                 </div>
-                                ${ev.leader ? `<span class="text-[9px] md:text-[10px] uppercase font-bold text-slate-500 truncate mt-0.5">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
+                                ${ev.leader ? `<span class="text-[9px] md:text-[10px] uppercase font-bold text-slate-400 truncate mt-0.5">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
                             </div>
                         </div>
                     `;
@@ -944,7 +945,7 @@ function loadPersonalData() {
                     if (now - itemTime < oneWeek) {
                         const isNew = (now - itemTime) < oneDay;
                         
-                        // 🔥 КНОПКА УДАЛЕНИЯ ВНИЗУ КАК СТРОКА
+                        // КНОПКА УДАЛЕНИЯ В САМОМ НИЗУ КАК СТРОКА
                         const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 font-bold uppercase tracking-widest bg-red-50 hover:bg-red-100 border-t border-red-100 px-2 py-1.5 w-full transition-colors outline-none flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>${window.t('delete')}</button>` : '';
                         
                         let displayText = ''; let shouldShow = false;
@@ -965,19 +966,20 @@ function loadPersonalData() {
                         if (!displayText && !item.imageUrl) {
                             contentHtml = `<div class="flex flex-col items-center justify-center flex-grow py-6 text-slate-300"><svg class="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="text-[10px] font-black uppercase tracking-widest opacity-50">${window.t('no_translation')}</span></div>`;
                         } else {
-                            const imgClass = displayText ? "h-20 md:h-24" : "flex-grow h-full";
-                            const textPadding = item.imageUrl ? "p-3 pb-4" : "p-4";
-                            
+                            // 🔥 ТЕКСТ СВЕРХУ, КАРТИНКА СНИЗУ ИЛИ РАСТЯГИВАЕТСЯ
+                            const imgClass = displayText ? "h-16 md:h-20 border-t border-slate-100" : "flex-grow h-full";
+                            const textHtml = displayText ? `<div class="p-3 overflow-y-auto custom-scrollbar flex flex-col justify-start bg-white"><p class="text-slate-800 whitespace-pre-wrap text-[10px] md:text-[11px] leading-snug font-bold">${displayText}</p></div>` : '';
                             const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="w-full ${imgClass} object-cover shrink-0 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
-                            const textHtml = displayText ? `<div class="${textPadding} flex-grow overflow-y-auto custom-scrollbar flex flex-col justify-start"><p class="text-slate-800 whitespace-pre-wrap text-xs md:text-sm leading-snug font-black">${displayText}</p></div>` : '';
                             
-                            contentHtml = imgHtml + textHtml;
+                            // Сначала текст, потом картинка
+                            contentHtml = textHtml + imgHtml;
                         }
 
+                        // 🔥 КАРТОЧКА ОБЪЯВЛЕНИЙ
                         newsHTML += `
                         <div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center rounded-md border transition-all flex flex-col overflow-hidden relative ${bgCardClass}">
                             ${newBadge}
-                            <div class="flex-grow flex flex-col overflow-hidden w-full justify-start items-start">
+                            <div class="flex-grow flex flex-col overflow-hidden w-full justify-start items-stretch bg-white">
                                 ${contentHtml}
                             </div>
                             ${deleteBtn}
@@ -990,10 +992,29 @@ function loadPersonalData() {
 
             if (isNewsAdmin) {
                 let textAreaHtml = '';
-                if (currentLang === 'ru') textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-white border-b border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
-                else textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-slate-50 border-b border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
+                if (currentLang === 'ru') textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-transparent border-0 p-2 text-[10px] outline-none resize-none font-medium text-slate-700 flex-grow custom-scrollbar mb-1"></textarea>`;
+                else textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-transparent border-0 p-2 text-[10px] outline-none resize-none font-medium text-slate-700 flex-grow custom-scrollbar mb-1"></textarea>`;
 
-                newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center rounded-md border border-dashed border-slate-400 bg-slate-100/50 flex flex-col relative overflow-hidden"><p class="p-2 text-[8px] font-bold text-slate-500 uppercase tracking-widest text-center flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>${window.t('create_announcement')}</p>${textAreaHtml}<div class="flex items-center justify-between p-2 gap-1.5 shrink-0"><label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded transition-colors flex items-center justify-center w-8 h-6 shrink-0 shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)"></label><button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[8px] font-bold px-2 rounded flex-grow transition-colors h-6 outline-none shadow-sm">${window.t('publish')}</button></div><div id="image-preview-container" class="hidden absolute inset-x-0 bottom-0 top-8 bg-white z-20 shrink-0"><img id="image-preview" src="" class="h-full w-full object-cover border-t border-slate-200"><button onclick="removeImage()" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center outline-none"><svg class="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button></div></div>`;
+                newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center p-3 rounded-md border border-dashed border-slate-400 bg-slate-100/50 flex flex-col relative overflow-hidden">
+                    <p class="p-1 text-[8px] font-bold text-slate-500 uppercase tracking-widest text-center flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>${window.t('create_announcement')}</p>
+                    
+                    <div id="image-preview-container" class="hidden relative w-full shrink-0 mb-1">
+                        <img id="image-preview" src="" class="h-10 md:h-12 w-full object-cover rounded border border-slate-200">
+                        <button onclick="removeImage()" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center outline-none">
+                            <svg class="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+
+                    ${textAreaHtml}
+                    
+                    <div class="flex items-center justify-between gap-1.5 shrink-0 mt-auto">
+                        <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded transition-colors flex items-center justify-center w-8 h-6 shrink-0 shadow-sm">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
+                            <input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)">
+                        </label>
+                        <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[8px] font-bold px-2 rounded flex-grow transition-colors h-6 outline-none shadow-sm">${window.t('publish')}</button>
+                    </div>
+                </div>`;
             }
 
             const contentNews = document.getElementById('content-news');
