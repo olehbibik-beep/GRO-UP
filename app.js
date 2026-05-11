@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy, updateDoc, enableIndexedDbPersistence, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
@@ -42,9 +42,8 @@ const dict = {
         "stand_apply": "Подать заявку", "stand_signup": "Записаться", "stand_pending": "Заявка отправлена", "stand_month_shifts": "Смен в этом месяце",
         "stand_upcoming": "Твои ближайшие записи", "stand_no_records": "Нет записей", "zoom_error": "Zoom не настроен", "zoom_click_hint": "Нажми<br>на ZOOM",
         "zoom_launch": "ЗАПУСК", "months": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"],
-        "days": ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"], 
-        "info_title": "Информация", "suggest_title": "Идеи и предложения", "suggest_placeholder": "Заголовок / Текст предложения...",
-        "suggest_btn": "Отправить", "suggest_empty": "Пока нет предложений."
+        "days": ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"], "info_title": "Информация", "in_development": "Раздел в разработке",
+        "meeting_program": "Программа собрания"
     },
     cs: {
         "loading_data": "Načítání dat...", "pending_title": "Žádost se vyřizuje", "pending_desc": "Čekejte na potvrzení administrátorem.",
@@ -79,14 +78,13 @@ const dict = {
         "role_terr": "Obvody", "role_school": "Škola", "no_new_requests": "Žádné nové žádosti", "no_active_users": "Žádní aktivní uživatelé",
         "cat_reading_db": "📖 Čtení Bible", "cat_conversation": "🗣️ Rozhovor", "cat_interest": "🌱 Zájem", "cat_disciples": "👥 Čiňte učedníky",
         "cat_beliefs": "💡 Přesvědčení", "cat_talk_db": "🎙️ Proslov", "open_map": "Otevřít mapu", "no_map": "Bez mapy", "opt_cleaning": "🧹 Úklid sálu",
-        "opt_special_event": "⭐ Zvláštní událost", "all_groups": "Společné", "congregation_label": "Sbor", "scan_qr": "Naskenujte kód",
+        "opt_special_event": "⭐ Zvláštní událost", "all_groups": "Vše", "congregation_label": "Sbor", "scan_qr": "Naskenujte kód",
         "days_short": "dní", "return_terr_btn": "Odevzdat", "no_translation": "Bez překladu", "stand_title": "Služba se stojanem",
         "stand_apply": "Požádat", "stand_signup": "Zapsat se", "stand_pending": "Žádost odeslána", "stand_month_shifts": "Služeb v tomto měsíci",
         "stand_upcoming": "Tvé nejbližší služby", "stand_no_records": "Žádné zápisy", "zoom_error": "Zoom není nastaven", "zoom_click_hint": "Klikni<br>na ZOOM",
         "zoom_launch": "SPUSTIT", "months": ["Led", "Úno", "Bře", "Dub", "Kvě", "Čvn", "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro"],
-        "days": ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"], 
-        "info_title": "Informace", "suggest_title": "Nápady a návrhy", "suggest_placeholder": "Nadpis / Text návrhu...",
-        "suggest_btn": "Odeslat", "suggest_empty": "Zatím žádné návrhy."
+        "days": ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"], "info_title": "Informace", "in_development": "Sekce ve vývoji",
+        "meeting_program": "Program schůze"
     }
 };
 
@@ -123,7 +121,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app); 
 
-// 🔥 БРОНЕБОЙНАЯ ИНИЦИАЛИЗАЦИЯ ПУШЕЙ
 let messaging = null;
 try { messaging = getMessaging(app); } catch (e) { console.warn("Push unsupported."); }
 try { enableIndexedDbPersistence(db).catch(() => {}); } catch (e) {}
@@ -157,7 +154,6 @@ window.showToast = (message, type = 'info') => {
     setTimeout(() => { toast.classList.add('-translate-y-10', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 5000);
 };
 
-// 🔥 УМНЫЙ ЗАПРОС ПУШ-УВЕДОМЛЕНИЙ
 window.setupNotifications = async () => {
     const pushBtn = document.getElementById('push-btn');
     if (!messaging) return alert("❌ Ваше устройство или браузер не поддерживает Push-уведомления.");
@@ -202,26 +198,17 @@ window.setupNotifications = async () => {
     }
 };
 
-// 🔥 ЖИВОЙ ПЕРЕХВАТ ПУШЕЙ В ОТКРЫТОМ ПРИЛОЖЕНИИ
 if (messaging) {
     try { 
         onMessage(messaging, (payload) => { 
-            console.log("Push received:", payload);
-            
-            // Защита: иногда Firebase прячет текст в payload.data, а иногда в payload.notification
             const title = payload.notification?.title || payload.data?.title || "Уведомление";
             const body = payload.notification?.body || payload.data?.body || "";
-            
             window.showToast(`🔔 ${title}\n${body}`, 'info'); 
-            
-            // Дополнительно: вызываем системный пуш телефона поверх экрана
             if (Notification.permission === 'granted') {
                 new Notification(title, { body: body, icon: 'icon-512.png' });
             }
         }); 
-    } catch (e) {
-        console.error("FCM onMessage Error", e);
-    }
+    } catch (e) {}
 }
 
 const TOP_ROLES = ["Владелец", "Админ"]; 
@@ -267,20 +254,14 @@ if (monthLabel) monthLabel.innerText = currentMonthStr;
 
 window.switchTab = (tabId, btnElement) => {
     localStorage.setItem('activeTab', tabId);
-    
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tabId}`);
     if(targetTab) targetTab.classList.add('active');
-    
     document.querySelectorAll('.nav-icon-container').forEach(icon => {
         icon.classList.remove('bg-slate-700', 'text-white', 'shadow-inner');
         icon.classList.add('text-slate-500');
     });
-    
-    if(!btnElement) {
-        btnElement = document.querySelector(`nav button[onclick="switchTab('${tabId}', this)"]`);
-    }
-    
+    if(!btnElement) btnElement = document.querySelector(`nav button[onclick="switchTab('${tabId}', this)"]`);
     if(btnElement) {
         const icon = btnElement.querySelector('.nav-icon-container');
         if(icon) {
@@ -350,16 +331,10 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         if(mainDashboard) { mainDashboard.style.display = 'block'; }
         
         let userRoles = currentUserData.roles || [];
-        
-        // 🔥 ПРОДВИНУТАЯ ЛОГИКА ПОКАЗА КОЛОКОЛЬЧИКА
         const pushBtn = document.getElementById('push-btn');
         if (pushBtn && messaging) {
-            // Колокольчик появится, если ПУШИ ЕЩЕ НЕ РАЗРЕШЕНЫ В БРАУЗЕРЕ ИЛИ в базе нет сохраненного токена
-            if (Notification.permission !== 'granted' || !currentUserData.pushToken) {
-                pushBtn.style.display = 'flex';
-            } else {
-                pushBtn.style.display = 'none';
-            }
+            if (Notification.permission !== 'granted' || !currentUserData.pushToken) { pushBtn.style.display = 'flex'; } 
+            else { pushBtn.style.display = 'none'; }
         }
 
         hasFullAccess = userRoles.some(r => TOP_ROLES.includes(r));
@@ -378,10 +353,11 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         setAdminLink('profile-terr-btn', hasFullAccess || userRoles.includes("Ответственный за участки"));
         setAdminLink('profile-school-btn', hasFullAccess || userRoles.includes("Ответственный за школу"));
         setAdminLink('profile-stand-admin-btn', hasFullAccess || userRoles.includes("Ответственный за стенды"));
+        setAdminLink('profile-schedule-btn', hasFullAccess || userRoles.includes("Ответственный за график"));
 
         const profileAdminLinks = document.getElementById('profile-admin-links');
         if(profileAdminLinks) {
-            if(hasFullAccess || userRoles.includes("Ответственный за стенды") || userRoles.includes("Надзиратель группы") || userRoles.includes("Ответственный за участки") || userRoles.includes("Ответственный за школу")) { 
+            if(hasFullAccess || userRoles.includes("Ответственный за стенды") || userRoles.includes("Ответственный за график") || userRoles.includes("Надзиратель группы") || userRoles.includes("Ответственный за участки") || userRoles.includes("Ответственный за школу")) { 
                 profileAdminLinks.classList.remove('hidden'); profileAdminLinks.classList.add('grid'); 
             } else { 
                 profileAdminLinks.classList.add('hidden'); profileAdminLinks.classList.remove('grid'); 
@@ -394,67 +370,8 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
         
         const savedTab = localStorage.getItem('activeTab') || 'home';
         window.switchTab(savedTab);
-        
         window.hideGlobalLoader();
     }
-});
-
-window.submitSuggestion = async () => {
-    const input = document.getElementById('suggest-input');
-    const text = input.value.trim();
-    if (!text) return;
-    const btn = document.getElementById('submit-suggest-btn');
-    btn.disabled = true;
-    try {
-        await addDoc(collection(db, "suggestions"), {
-            text: text,
-            userId: userId, 
-            userName: currentUserData.name,
-            createdAt: new Date().toISOString()
-        });
-        input.value = '';
-        window.showToast(window.t('success'));
-    } catch (e) { alert(window.t('error_network')); }
-    btn.disabled = false;
-};
-
-window.deleteSuggestion = async (id) => {
-    if (confirm("Удалить это предложение?")) {
-        await deleteDoc(doc(db, "suggestions", id));
-    }
-};
-
-onSnapshot(query(collection(db, "suggestions"), orderBy("createdAt", "desc")), (snap) => {
-    const list = document.getElementById('suggestions-list');
-    if (!list) return;
-    let html = '';
-    snap.forEach(docSnap => {
-        const data = docSnap.data();
-        const d = new Date(data.createdAt);
-        const dateStr = `${d.getDate()}.${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-        
-        let delBtn = '';
-        const isOwner = data.userId === userId || data.userName === currentUserData.name;
-        const isAdmin = currentUserData && currentUserData.roles && (currentUserData.roles.includes('Админ') || currentUserData.roles.includes('Владелец'));
-        
-        if (isAdmin || isOwner) {
-            delBtn = `<button onclick="deleteSuggestion('${docSnap.id}')" class="text-slate-300 hover:text-red-500 outline-none ml-2 transition-colors">✖</button>`;
-        }
-
-        html += `
-            <div class="bg-slate-50 p-3 rounded-md border border-slate-100 flex flex-col mb-2 shadow-sm">
-                <div class="flex justify-between items-start mb-1 border-b border-slate-200 pb-1.5">
-                    <span class="font-black text-xs text-indigo-600">${data.userName}</span>
-                    <div class="flex items-center">
-                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${dateStr}</span>
-                        ${delBtn}
-                    </div>
-                </div>
-                <p class="text-xs md:text-sm font-medium text-slate-700 whitespace-pre-wrap">${data.text}</p>
-            </div>
-        `;
-    });
-    list.innerHTML = html || `<p class="text-slate-400 text-sm italic text-center py-4">${window.t('suggest_empty')}</p>`;
 });
 
 async function loadProfileData() {
@@ -472,7 +389,8 @@ async function loadProfileData() {
             else if(r === "Помощник собрания") colorClass = "bg-sky-100 text-sky-700 border border-sky-200";
             else if(r === "Пионер") colorClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
             else if(r === "Админ" || r === "Владелец") colorClass = "bg-rose-100 text-rose-700 border border-rose-200";
-            if(["Ответственный за участки", "Ответственный за школу", "Участник школы", "Надзиратель группы"].includes(r)) return '';
+            else if(r === "Ответственный за график") colorClass = "bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200";
+            if(["Ответственный за участки", "Ответственный за школу", "Участник школы", "Надзиратель группы", "Служение со стендом"].includes(r)) return '';
             return `<span class="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${colorClass}">${r}</span>`;
         }).join('');
     }
@@ -632,6 +550,129 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
+// 🔥 ПОЛНОСТЬЮ ПЕРЕРАБОТАННАЯ ФУНКЦИЯ ДЛЯ ВЫВОДА ПРОГРАММЫ ВСТРЕЧ
+function weekToDateString(weekId) {
+    if(!weekId) return "";
+    const [year, weekStr] = weekId.split('-W');
+    const w = parseInt(weekStr, 10);
+    const y = parseInt(year, 10);
+    const simpleDate = new Date(y, 0, 1 + (w - 1) * 7);
+    const day = simpleDate.getDay();
+    const diff = simpleDate.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(simpleDate.setDate(diff));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const m1 = window.t('months') ? window.t('months')[monday.getMonth()] : monday.getMonth()+1;
+    const m2 = window.t('months') ? window.t('months')[sunday.getMonth()] : sunday.getMonth()+1;
+
+    if (monday.getMonth() === sunday.getMonth()) {
+        return `${monday.getDate()} - ${sunday.getDate()} ${m1}`;
+    } else {
+        return `${monday.getDate()} ${m1} - ${sunday.getDate()} ${m2}`;
+    }
+}
+
+function buildScheduleCard(d, myName) {
+    const weekLabel = weekToDateString(d.weekId);
+
+    const row = (title, person, highlightColor) => {
+        if(!person && !title) return '';
+        const isMe = person === myName;
+        const bg = isMe ? `bg-${highlightColor}-50 border-${highlightColor}-200 shadow-inner` : 'bg-slate-50 border-slate-100';
+        const nameColor = isMe ? `text-${highlightColor}-700` : 'text-slate-800';
+        const badge = isMe ? `<span class="bg-${highlightColor}-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ml-2 shadow-sm shrink-0">Моё задание</span>` : '';
+
+        return `
+            <div class="flex items-center justify-between p-2 rounded-md border ${bg} mb-1 transition-colors">
+                <span class="text-[10px] md:text-xs font-bold text-slate-500 w-1/2 truncate pr-2">${title}</span>
+                <div class="w-1/2 flex items-center justify-end text-right truncate">
+                    <span class="text-xs md:text-sm font-black ${nameColor} truncate">${person || '-'}</span>
+                    ${badge}
+                </div>
+            </div>
+        `;
+    };
+
+    const minRows = (d.ministry || []).map((m, idx) => {
+        if(!m.student && !m.assistant && !m.type) return '';
+        const isMe = (m.student === myName || m.assistant === myName);
+        const bg = isMe ? 'bg-amber-50 border-amber-200 shadow-inner' : 'bg-slate-50 border-slate-100';
+        const studentCol = m.student === myName ? 'text-amber-700' : 'text-slate-800';
+        const assistCol = m.assistant === myName ? 'text-amber-700' : 'text-slate-500';
+        const badge = isMe ? `<span class="bg-amber-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">Моё задание</span>` : '';
+
+        const names = `<div class="flex flex-col text-right truncate w-full items-end">
+            <span class="text-xs md:text-sm font-black ${studentCol} truncate leading-tight">${m.student || '-'}</span>
+            ${m.assistant ? `<span class="text-[9px] font-bold ${assistCol} truncate">Пом: ${m.assistant}</span>` : ''}
+        </div>`;
+
+        return `
+            <div class="flex items-center justify-between p-2 rounded-md border ${bg} mb-1 transition-colors">
+                <span class="text-[10px] md:text-xs font-bold text-slate-500 w-1/2 pr-2 leading-tight">${idx+1}. ${m.type || 'Задание'}</span>
+                <div class="w-1/2 flex items-center justify-end">
+                    ${names}
+                    ${badge}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const cbsIsMe = (d.cbs_conductor===myName || d.cbs_reader===myName);
+
+    return `
+        <div class="border border-slate-200 rounded-md overflow-hidden shadow-sm mb-6 last:mb-0">
+            <div class="bg-slate-800 p-3 text-center border-b border-slate-900">
+                <h4 class="text-white font-black text-sm uppercase tracking-widest">${weekLabel}</h4>
+            </div>
+
+            <div class="p-3 md:p-4 space-y-5 bg-white">
+                <div>${row('Председатель', d.chairman, 'slate')}</div>
+
+                <div>
+                    <h5 class="text-[10px] font-black text-teal-600 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        Сокровища из слова бога
+                    </h5>
+                    ${row(d.treasure_title || 'Речь 10 мин.', d.treasure_name, 'teal')}
+                    ${row('Духовные жемчужины', d.gems_name, 'teal')}
+                    ${row('Чтение Библии', d.reading_name, 'teal')}
+                </div>
+
+                <div>
+                    <h5 class="text-[10px] font-black text-amber-600 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+                        Оттачиваем навыки служения
+                    </h5>
+                    ${minRows}
+                </div>
+
+                <div>
+                    <h5 class="text-[10px] font-black text-red-700 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        Христианская жизнь
+                    </h5>
+                    ${row('Местные потребности', d.local_name, 'red')}
+                    <div class="flex items-center justify-between p-2 rounded-md border ${cbsIsMe ? 'bg-red-50 border-red-200 shadow-inner' : 'bg-slate-50 border-slate-100'} mb-1 transition-colors">
+                        <div class="flex flex-col w-1/2 pr-2">
+                            <span class="text-[10px] md:text-xs font-bold text-slate-500 leading-tight">Изучение Библии</span>
+                            ${d.cbs_material ? `<span class="text-[8px] font-bold text-slate-400 truncate mt-0.5">${d.cbs_material}</span>` : ''}
+                        </div>
+                        <div class="w-1/2 flex items-center justify-end text-right">
+                            <div class="flex flex-col items-end truncate">
+                                <span class="text-xs md:text-sm font-black ${d.cbs_conductor===myName?'text-red-700':'text-slate-800'} truncate leading-tight">${d.cbs_conductor || '-'}</span>
+                                ${d.cbs_reader ? `<span class="text-[9px] font-bold ${d.cbs_reader===myName?'text-red-700':'text-slate-500'} truncate">Чтец: ${d.cbs_reader}</span>` : ''}
+                            </div>
+                            ${cbsIsMe ? `<span class="bg-red-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">Моё задание</span>` : ''}
+                        </div>
+                    </div>
+                    ${row('Заключительная молитва', d.prayer, 'red')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 function loadPersonalData() {
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
         if (docSnap.exists()) {
@@ -647,6 +688,33 @@ function loadPersonalData() {
             }
         }
     });
+
+    // 🔥 СЛУШАТЕЛЬ РАСПИСАНИЯ ВСТРЕЧ (НОВОЕ)
+    try {
+        onSnapshot(collection(db, "meeting_schedules"), (snapshot) => {
+            const container = document.getElementById('meeting-program-list');
+            if(!container) return;
+
+            let schedules = [];
+            snapshot.forEach(doc => schedules.push(doc.data()));
+            schedules.sort((a,b) => a.weekId.localeCompare(b.weekId));
+
+            const today = new Date();
+            const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
+            const pastDaysOfYear = (today - firstDayOfYear) / 86400000;
+            const currentWeekNum = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+            const currentWeekStr = `${today.getFullYear()}-W${String(currentWeekNum - 1).padStart(2, '0')}`; // Берем с прошлой недели, чтобы не пропадало сразу
+
+            const upcomingSchedules = schedules.filter(s => s.weekId >= currentWeekStr);
+
+            let html = '';
+            upcomingSchedules.forEach(s => {
+                html += buildScheduleCard(s, currentUserData.name);
+            });
+
+            container.innerHTML = html || `<p class="text-slate-400 text-sm italic text-center py-4">Нет опубликованных программ</p>`;
+        });
+    } catch(e) { console.error(e); }
 
     try {
         const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
@@ -997,16 +1065,26 @@ function loadPersonalData() {
                         const newBadge = isNew ? `<span class="absolute top-2 left-2 bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-sm z-10">${window.t('new_badge')}</span>` : '';
 
                         let contentHtml = '';
+                        const imgClass = displayText ? "h-20 md:h-24" : "flex-grow";
+                        const textPadding = item.imageUrl ? "p-3 pb-4" : "p-4";
+
                         if (!displayText && !item.imageUrl) {
                             contentHtml = `<div class="flex flex-col items-center justify-center flex-grow py-6 text-slate-300"><svg class="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="text-[10px] font-black uppercase tracking-widest opacity-50">${window.t('no_translation')}</span></div>`;
                         } else {
-                            const imgClass = displayText ? "h-16 md:h-20 border-t border-slate-100" : "flex-grow h-full";
-                            const textHtml = displayText ? `<div class="p-3 overflow-y-auto custom-scrollbar flex flex-col justify-start bg-white"><p class="text-slate-800 whitespace-pre-wrap text-[10px] md:text-[11px] leading-snug font-bold">${displayText}</p></div>` : '';
                             const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="w-full ${imgClass} object-cover shrink-0 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
-                            contentHtml = textHtml + imgHtml;
+                            const textHtml = displayText ? `<div class="${textPadding} flex-grow overflow-y-auto custom-scrollbar"><p class="text-slate-700 whitespace-pre-wrap text-[10px] md:text-[11px] leading-snug font-medium">${displayText}</p></div>` : '';
+                            contentHtml = imgHtml + textHtml;
                         }
 
-                        newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center rounded-md border transition-all flex flex-col overflow-hidden relative ${bgCardClass}">${newBadge}<div class="flex-grow flex flex-col overflow-hidden w-full justify-start items-stretch bg-white">${contentHtml}</div>${deleteBtn}</div>`;
+                        newsHTML += `
+                        <div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center rounded-md border transition-all flex flex-col overflow-hidden relative ${bgCardClass}">
+                            ${newBadge}
+                            <div class="flex-grow flex flex-col overflow-hidden w-full bg-white">
+                                ${contentHtml}
+                            </div>
+                            ${deleteBtn}
+                        </div>`;
+
                         if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) { window.showToast(window.t('new_announcement_toast'), 'info'); sessionStorage.setItem('news_toast_' + docSnap.id, 'true'); }
                     }
                 }
