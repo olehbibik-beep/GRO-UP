@@ -42,7 +42,9 @@ const dict = {
         "stand_apply": "Подать заявку", "stand_signup": "Записаться", "stand_pending": "Заявка отправлена", "stand_month_shifts": "Смен в этом месяце",
         "stand_upcoming": "Твои ближайшие записи", "stand_no_records": "Нет записей", "zoom_error": "Zoom не настроен", "zoom_click_hint": "Нажми<br>на ZOOM",
         "zoom_launch": "ЗАПУСК", "months": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"],
-        "days": ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"], "info_title": "Информация", "in_development": "Раздел в разработке"
+        "days": ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"], 
+        "info_title": "Информация", "suggest_title": "Идеи и предложения", "suggest_placeholder": "Заголовок / Текст предложения...",
+        "suggest_btn": "Отправить", "suggest_empty": "Пока нет предложений."
     },
     cs: {
         "loading_data": "Načítání dat...", "pending_title": "Žádost se vyřizuje", "pending_desc": "Čekejte na potvrzení administrátorem.",
@@ -77,12 +79,14 @@ const dict = {
         "role_terr": "Obvody", "role_school": "Škola", "no_new_requests": "Žádné nové žádosti", "no_active_users": "Žádní aktivní uživatelé",
         "cat_reading_db": "📖 Čtení Bible", "cat_conversation": "🗣️ Rozhovor", "cat_interest": "🌱 Zájem", "cat_disciples": "👥 Čiňte učedníky",
         "cat_beliefs": "💡 Přesvědčení", "cat_talk_db": "🎙️ Proslov", "open_map": "Otevřít mapu", "no_map": "Bez mapy", "opt_cleaning": "🧹 Úklid sálu",
-        "opt_special_event": "⭐ Zvláštní událost", "all_groups": "Vše", "congregation_label": "Sbor", "scan_qr": "Naskenujte kód",
+        "opt_special_event": "⭐ Zvláštní událost", "all_groups": "Společné", "congregation_label": "Sbor", "scan_qr": "Naskenujte kód",
         "days_short": "dní", "return_terr_btn": "Odevzdat", "no_translation": "Bez překladu", "stand_title": "Služba se stojanem",
         "stand_apply": "Požádat", "stand_signup": "Zapsat se", "stand_pending": "Žádost odeslána", "stand_month_shifts": "Služeb v tomto měsíci",
         "stand_upcoming": "Tvé nejbližší služby", "stand_no_records": "Žádné zápisy", "zoom_error": "Zoom není nastaven", "zoom_click_hint": "Klikni<br>na ZOOM",
         "zoom_launch": "SPUSTIT", "months": ["Led", "Úno", "Bře", "Dub", "Kvě", "Čvn", "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro"],
-        "days": ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"], "info_title": "Informace", "in_development": "Sekce ve vývoji"
+        "days": ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"], 
+        "info_title": "Informace", "suggest_title": "Nápady a návrhy", "suggest_placeholder": "Nadpis / Text návrhu...",
+        "suggest_btn": "Odeslat", "suggest_empty": "Zatím žádné návrhy."
     }
 };
 
@@ -100,6 +104,7 @@ const applyTranslations = () => {
     const selector = document.getElementById('lang-selector');
     if (selector) selector.value = currentLang;
     document.querySelectorAll('[data-lang]').forEach(el => el.innerHTML = window.t(el.getAttribute('data-lang')));
+    document.querySelectorAll('[data-lang-placeholder]').forEach(el => el.setAttribute('placeholder', window.t(el.getAttribute('data-lang-placeholder'))));
 };
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyTranslations);
@@ -355,6 +360,64 @@ onSnapshot(doc(db, "users", userId), async (docSnap) => {
     }
 });
 
+// 🔥 ЛОГИКА ДЛЯ ИДЕЙ (SUGGESTIONS)
+window.submitSuggestion = async () => {
+    const input = document.getElementById('suggest-input');
+    const text = input.value.trim();
+    if (!text) return;
+    const btn = document.getElementById('submit-suggest-btn');
+    btn.disabled = true;
+    try {
+        await addDoc(collection(db, "suggestions"), {
+            text: text,
+            userName: currentUserData.name,
+            createdAt: new Date().toISOString()
+        });
+        input.value = '';
+        window.showToast(window.t('success'));
+    } catch (e) {
+        alert(window.t('error_network'));
+    }
+    btn.disabled = false;
+};
+
+window.deleteSuggestion = async (id) => {
+    if (confirm("Удалить это предложение?")) {
+        await deleteDoc(doc(db, "suggestions", id));
+    }
+};
+
+onSnapshot(query(collection(db, "suggestions"), orderBy("createdAt", "desc")), (snap) => {
+    const list = document.getElementById('suggestions-list');
+    if (!list) return;
+    let html = '';
+    snap.forEach(docSnap => {
+        const data = docSnap.data();
+        const d = new Date(data.createdAt);
+        const dateStr = `${d.getDate()}.${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        
+        let delBtn = '';
+        if (currentUserData && currentUserData.roles && (currentUserData.roles.includes('Админ') || currentUserData.roles.includes('Владелец'))) {
+            delBtn = `<button onclick="deleteSuggestion('${docSnap.id}')" class="text-slate-300 hover:text-red-500 outline-none ml-2 transition-colors">✖</button>`;
+        }
+
+        html += `
+            <div class="bg-slate-50 p-3 rounded-md border border-slate-100 flex flex-col mb-2">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="font-black text-xs text-indigo-600">${data.userName}</span>
+                    <div class="flex items-center">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${dateStr}</span>
+                        ${delBtn}
+                    </div>
+                </div>
+                <p class="text-sm font-medium text-slate-700 whitespace-pre-wrap">${data.text}</p>
+            </div>
+        `;
+    });
+    list.innerHTML = html || `<p class="text-slate-400 text-sm italic text-center py-2">${window.t('suggest_empty')}</p>`;
+});
+// ----------------------------------------------------
+
 async function loadProfileData() {
     const pName = document.getElementById('profile-name');
     const pGroup = document.getElementById('profile-group');
@@ -599,7 +662,6 @@ function loadPersonalData() {
                     localizedDateRange = `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
                 }
 
-                // 🔥 ИСПРАВЛЕННЫЙ БЛОК: Группа СЛЕВА, Текст СПРАВА
                 container.innerHTML = `
                     <div class="flex items-center w-full h-full gap-3 pl-2">
                         <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-md border ${badgeClass} shrink-0 bg-slate-50 shadow-inner">
@@ -882,8 +944,8 @@ function loadPersonalData() {
                     if (now - itemTime < oneWeek) {
                         const isNew = (now - itemTime) < oneDay;
                         
-                        // 🔥 КНОПКА УДАЛЕНИЯ ТЕПЕРЬ СТРОГО ВНИЗУ
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 font-bold uppercase tracking-widest bg-red-50 hover:bg-red-100 border border-red-100 px-2 py-1.5 w-full transition-colors outline-none flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>${window.t('delete')}</button>` : '';
+                        // 🔥 КНОПКА УДАЛЕНИЯ ВНИЗУ КАК СТРОКА
+                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 font-bold uppercase tracking-widest bg-red-50 hover:bg-red-100 border-t border-red-100 px-2 py-1.5 w-full transition-colors outline-none flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>${window.t('delete')}</button>` : '';
                         
                         let displayText = ''; let shouldShow = false;
                         const hasRu = !!item.text_ru; const hasCs = !!item.text_cs;
@@ -903,21 +965,19 @@ function loadPersonalData() {
                         if (!displayText && !item.imageUrl) {
                             contentHtml = `<div class="flex flex-col items-center justify-center flex-grow py-6 text-slate-300"><svg class="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="text-[10px] font-black uppercase tracking-widest opacity-50">${window.t('no_translation')}</span></div>`;
                         } else {
-                            // 🔥 УБРАНЫ ОТСТУПЫ ВОКРУГ КАРТИНКИ. Если есть текст - картинка фиксированной высоты, если текста нет - картинка заполняет всё
-                            const imgClass = displayText ? "h-20 md:h-24" : "flex-grow";
+                            const imgClass = displayText ? "h-20 md:h-24" : "flex-grow h-full";
                             const textPadding = item.imageUrl ? "p-3 pb-4" : "p-4";
                             
                             const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="w-full ${imgClass} object-cover shrink-0 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
-                            const textHtml = displayText ? `<div class="${textPadding} flex-grow overflow-y-auto custom-scrollbar"><p class="text-slate-700 whitespace-pre-wrap text-[10px] md:text-[11px] leading-snug font-medium">${displayText}</p></div>` : '';
+                            const textHtml = displayText ? `<div class="${textPadding} flex-grow overflow-y-auto custom-scrollbar flex flex-col justify-start"><p class="text-slate-800 whitespace-pre-wrap text-xs md:text-sm leading-snug font-black">${displayText}</p></div>` : '';
                             
                             contentHtml = imgHtml + textHtml;
                         }
 
-                        // 🔥 КАРТОЧКА БЕЗ ВНУТРЕННИХ PADDING (чтобы картинка прилегала к краям)
                         newsHTML += `
                         <div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center rounded-md border transition-all flex flex-col overflow-hidden relative ${bgCardClass}">
                             ${newBadge}
-                            <div class="flex-grow flex flex-col overflow-hidden w-full">
+                            <div class="flex-grow flex flex-col overflow-hidden w-full justify-start items-start">
                                 ${contentHtml}
                             </div>
                             ${deleteBtn}
@@ -930,10 +990,10 @@ function loadPersonalData() {
 
             if (isNewsAdmin) {
                 let textAreaHtml = '';
-                if (currentLang === 'ru') textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-white rounded-t-md border border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
-                else textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-slate-50 rounded-b-md border-x border-b border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
+                if (currentLang === 'ru') textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-white border-b border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
+                else textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-slate-50 border-b border-slate-200 p-2 text-[10px] outline-none focus:border-indigo-400 resize-none font-medium text-slate-700 flex-grow custom-scrollbar"></textarea>`;
 
-                newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center p-3 rounded-md border border-dashed border-slate-400 bg-slate-100/50 flex flex-col relative overflow-hidden"><p class="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 text-center flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>${window.t('create_announcement')}</p>${textAreaHtml}<div class="flex items-center justify-between mt-2 gap-1.5 shrink-0"><label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded transition-colors flex items-center justify-center w-8 h-6 shrink-0 shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)"></label><button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[8px] font-bold px-2 rounded flex-grow transition-colors h-6 outline-none shadow-sm">${window.t('publish')}</button></div><div id="image-preview-container" class="hidden mt-2 relative inline-block w-full shrink-0"><img id="image-preview" src="" class="rounded h-10 w-full object-cover border border-slate-200"><button onclick="removeImage()" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center outline-none"><svg class="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button></div></div>`;
+                newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center rounded-md border border-dashed border-slate-400 bg-slate-100/50 flex flex-col relative overflow-hidden"><p class="p-2 text-[8px] font-bold text-slate-500 uppercase tracking-widest text-center flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>${window.t('create_announcement')}</p>${textAreaHtml}<div class="flex items-center justify-between p-2 gap-1.5 shrink-0"><label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded transition-colors flex items-center justify-center w-8 h-6 shrink-0 shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)"></label><button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[8px] font-bold px-2 rounded flex-grow transition-colors h-6 outline-none shadow-sm">${window.t('publish')}</button></div><div id="image-preview-container" class="hidden absolute inset-x-0 bottom-0 top-8 bg-white z-20 shrink-0"><img id="image-preview" src="" class="h-full w-full object-cover border-t border-slate-200"><button onclick="removeImage()" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center outline-none"><svg class="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button></div></div>`;
             }
 
             const contentNews = document.getElementById('content-news');
