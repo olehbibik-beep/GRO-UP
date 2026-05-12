@@ -87,7 +87,10 @@
                         <div class="flex items-end gap-3 bg-slate-50 p-2 rounded border border-slate-100">
                             <input type="text" id="mw-treasure-time" list="time-list" class="jw-time shrink-0" value="10" placeholder="мин">
                             <div class="w-full flex flex-col gap-1">
-                                <input type="text" id="mw-treasure-title" class="text-xs font-bold text-jw-treasure bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" placeholder="Тема главной речи...">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs font-black text-jw-treasure">1.</span>
+                                    <input type="text" id="mw-treasure-title" class="text-xs font-bold text-jw-treasure bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" placeholder="Тема главной речи...">
+                                </div>
                                 <input type="text" id="mw-treasure-name" list="list-brothers" class="jw-input mt-1" placeholder="Имя брата">
                             </div>
                         </div>
@@ -95,7 +98,7 @@
                         <div class="flex items-end gap-3 px-2">
                             <input type="text" id="mw-gems-time" list="time-list" class="jw-time shrink-0" value="10" placeholder="мин">
                             <div class="w-full flex flex-col">
-                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Духовные жемчужины</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1"><span class="text-slate-600">2.</span> Духовные жемчужины</span>
                                 <input type="text" id="mw-gems-name" list="list-brothers" class="jw-input" placeholder="Имя брата">
                             </div>
                         </div>
@@ -103,7 +106,7 @@
                         <div class="flex items-end gap-3 px-2">
                             <input type="text" id="mw-reading-time" list="time-list" class="jw-time shrink-0" value="4" placeholder="мин">
                             <div class="w-full flex flex-col">
-                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Чтение Библии</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1"><span class="text-slate-600">3.</span> Чтение Библии</span>
                                 <input type="text" id="mw-reading-name" list="list-school" class="jw-input" placeholder="Участник школы">
                             </div>
                         </div>
@@ -135,7 +138,6 @@
                     </div>
                     
                     <div class="space-y-4">
-                        
                         <div id="living-parts-container" class="space-y-4">
                             </div>
 
@@ -143,7 +145,9 @@
                             <input type="text" id="mw-cbs-time" list="time-list" class="jw-time shrink-0 mt-3" value="30" placeholder="мин">
                             <div class="w-full flex flex-col gap-2">
                                 <div class="flex items-center justify-between border-b border-slate-200 pb-1">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Изучение Библии</span>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                        <span id="cbs-number" class="text-slate-600 font-black">X.</span> Изучение Библии
+                                    </span>
                                     <input type="text" id="mw-cbs-material" class="text-[10px] font-bold text-slate-600 bg-transparent text-right outline-none border-b border-transparent focus:border-slate-300 w-1/2" placeholder="Материал (Урок X)...">
                                 </div>
                                 <div class="flex gap-2 w-full">
@@ -220,6 +224,6 @@
     </main>
 
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
-    <script type="module" src="schedule-admin.js?v=5"></script>
+    <script type="module" src="schedule-admin.js?v=6"></script>
 </body>
 </html>
