@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy, updateDoc, enableIndexedDbPersistence, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
@@ -122,7 +122,7 @@ const db = getFirestore(app);
 const storage = getStorage(app); 
 
 let messaging = null;
-try { messaging = getMessaging(app); } catch (e) { console.warn("Push unsupported."); }
+try { messaging = getMessaging(app); } catch (e) {}
 try { enableIndexedDbPersistence(db).catch(() => {}); } catch (e) {}
 
 const userId = localStorage.getItem('userId');
@@ -550,7 +550,7 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-// 🔥 ПОЛНОСТЬЮ ПЕРЕРАБОТАННАЯ ФУНКЦИЯ ДЛЯ ВЫВОДА ПРОГРАММЫ ВСТРЕЧ
+// 🔥 ПРОГРАММА СОБРАНИЯ
 function weekToDateString(weekId) {
     if(!weekId) return "";
     const [year, weekStr] = weekId.split('-W');
@@ -576,15 +576,15 @@ function weekToDateString(weekId) {
 function buildScheduleCard(d, myName) {
     const weekLabel = weekToDateString(d.weekId);
 
-    const row = (title, person, highlightColor) => {
+    // Только имя выделяется цветом
+    const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const bg = isMe ? `bg-${highlightColor}-50 border-${highlightColor}-200 shadow-inner` : 'bg-slate-50 border-slate-100';
-        const nameColor = isMe ? `text-${highlightColor}-700` : 'text-slate-800';
-        const badge = isMe ? `<span class="bg-${highlightColor}-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ml-2 shadow-sm shrink-0">Моё задание</span>` : '';
+        const nameColor = isMe ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
+        const badge = isMe ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">Моё задание</span>` : '';
 
         return `
-            <div class="flex items-center justify-between p-2 rounded-md border ${bg} mb-1 transition-colors">
+            <div class="flex items-center justify-between p-2 rounded-md border bg-slate-50 border-slate-100 mb-1">
                 <span class="text-[10px] md:text-xs font-bold text-slate-500 w-1/2 truncate pr-2">${title}</span>
                 <div class="w-1/2 flex items-center justify-end text-right truncate">
                     <span class="text-xs md:text-sm font-black ${nameColor} truncate">${person || '-'}</span>
@@ -594,21 +594,20 @@ function buildScheduleCard(d, myName) {
         `;
     };
 
-    const minRows = (d.ministry || []).map((m, idx) => {
+    const minRows = (d.ministryParts || []).map((m, idx) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
-        const bg = isMe ? 'bg-amber-50 border-amber-200 shadow-inner' : 'bg-slate-50 border-slate-100';
-        const studentCol = m.student === myName ? 'text-amber-700' : 'text-slate-800';
-        const assistCol = m.assistant === myName ? 'text-amber-700' : 'text-slate-500';
-        const badge = isMe ? `<span class="bg-amber-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">Моё задание</span>` : '';
+        const studentCol = m.student === myName ? 'text-rose-600 bg-rose-100 px-1.5 rounded' : 'text-slate-800';
+        const assistCol = m.assistant === myName ? 'text-rose-600 bg-rose-100 px-1 rounded' : 'text-slate-500';
+        const badge = isMe ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">Моё задание</span>` : '';
 
         const names = `<div class="flex flex-col text-right truncate w-full items-end">
             <span class="text-xs md:text-sm font-black ${studentCol} truncate leading-tight">${m.student || '-'}</span>
-            ${m.assistant ? `<span class="text-[9px] font-bold ${assistCol} truncate">Пом: ${m.assistant}</span>` : ''}
+            ${m.assistant ? `<span class="text-[9px] font-bold ${assistCol} truncate mt-0.5">Пом: ${m.assistant}</span>` : ''}
         </div>`;
 
         return `
-            <div class="flex items-center justify-between p-2 rounded-md border ${bg} mb-1 transition-colors">
+            <div class="flex items-center justify-between p-2 rounded-md border bg-slate-50 border-slate-100 mb-1">
                 <span class="text-[10px] md:text-xs font-bold text-slate-500 w-1/2 pr-2 leading-tight">${idx+1}. ${m.type || 'Задание'}</span>
                 <div class="w-1/2 flex items-center justify-end">
                     ${names}
@@ -618,7 +617,14 @@ function buildScheduleCard(d, myName) {
         `;
     }).join('');
 
+    const livRows = (d.livingParts || []).map((m) => {
+        if(!m.title && !m.name) return '';
+        return row(m.title, m.name);
+    }).join('');
+
     const cbsIsMe = (d.cbs_conductor===myName || d.cbs_reader===myName);
+    const condCol = d.cbs_conductor === myName ? 'text-rose-600 bg-rose-100 px-1.5 rounded' : 'text-slate-800';
+    const readCol = d.cbs_reader === myName ? 'text-rose-600 bg-rose-100 px-1 rounded' : 'text-slate-500';
 
     return `
         <div class="border border-slate-200 rounded-md overflow-hidden shadow-sm mb-6 last:mb-0">
@@ -627,46 +633,37 @@ function buildScheduleCard(d, myName) {
             </div>
 
             <div class="p-3 md:p-4 space-y-5 bg-white">
-                <div>${row('Председатель', d.chairman, 'slate')}</div>
+                <div>${row('Председатель', d.chairman)}</div>
 
                 <div>
-                    <h5 class="text-[10px] font-black text-teal-600 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2 flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                        Сокровища из слова бога
-                    </h5>
-                    ${row(d.treasure_title || 'Речь 10 мин.', d.treasure_name, 'teal')}
-                    ${row('Духовные жемчужины', d.gems_name, 'teal')}
-                    ${row('Чтение Библии', d.reading_name, 'teal')}
+                    <h5 class="text-[10px] font-black text-teal-600 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Сокровища из слова бога</h5>
+                    ${row(d.treasure_title || 'Речь 10 мин.', d.treasure_name)}
+                    ${row('Духовные жемчужины', d.gems_name)}
+                    ${row('Чтение Библии', d.reading_name)}
                 </div>
 
                 <div>
-                    <h5 class="text-[10px] font-black text-amber-600 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2 flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
-                        Оттачиваем навыки служения
-                    </h5>
+                    <h5 class="text-[10px] font-black text-amber-600 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Оттачиваем навыки служения</h5>
                     ${minRows}
                 </div>
 
                 <div>
-                    <h5 class="text-[10px] font-black text-red-700 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2 flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                        Христианская жизнь
-                    </h5>
-                    ${row('Местные потребности', d.local_name, 'red')}
-                    <div class="flex items-center justify-between p-2 rounded-md border ${cbsIsMe ? 'bg-red-50 border-red-200 shadow-inner' : 'bg-slate-50 border-slate-100'} mb-1 transition-colors">
+                    <h5 class="text-[10px] font-black text-red-700 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Христианская жизнь</h5>
+                    ${livRows}
+                    <div class="flex items-center justify-between p-2 rounded-md border bg-slate-50 border-slate-100 mb-1">
                         <div class="flex flex-col w-1/2 pr-2">
                             <span class="text-[10px] md:text-xs font-bold text-slate-500 leading-tight">Изучение Библии</span>
                             ${d.cbs_material ? `<span class="text-[8px] font-bold text-slate-400 truncate mt-0.5">${d.cbs_material}</span>` : ''}
                         </div>
                         <div class="w-1/2 flex items-center justify-end text-right">
                             <div class="flex flex-col items-end truncate">
-                                <span class="text-xs md:text-sm font-black ${d.cbs_conductor===myName?'text-red-700':'text-slate-800'} truncate leading-tight">${d.cbs_conductor || '-'}</span>
-                                ${d.cbs_reader ? `<span class="text-[9px] font-bold ${d.cbs_reader===myName?'text-red-700':'text-slate-500'} truncate">Чтец: ${d.cbs_reader}</span>` : ''}
+                                <span class="text-xs md:text-sm font-black ${condCol} truncate leading-tight">${d.cbs_conductor || '-'}</span>
+                                ${d.cbs_reader ? `<span class="text-[9px] font-bold ${readCol} truncate mt-0.5">Чтец: ${d.cbs_reader}</span>` : ''}
                             </div>
-                            ${cbsIsMe ? `<span class="bg-red-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">Моё задание</span>` : ''}
+                            ${cbsIsMe ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">Моё задание</span>` : ''}
                         </div>
                     </div>
-                    ${row('Заключительная молитва', d.prayer, 'red')}
+                    ${row('Заключительная молитва', d.prayer)}
                 </div>
             </div>
         </div>
@@ -689,9 +686,8 @@ function loadPersonalData() {
         }
     });
 
-    // 🔥 СЛУШАТЕЛЬ РАСПИСАНИЯ ВСТРЕЧ (НОВОЕ)
     try {
-        onSnapshot(collection(db, "meeting_schedules"), (snapshot) => {
+        onSnapshot(query(collection(db, "meeting_schedules"), where("isPublished", "==", true)), (snapshot) => {
             const container = document.getElementById('meeting-program-list');
             if(!container) return;
 
@@ -703,7 +699,7 @@ function loadPersonalData() {
             const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
             const pastDaysOfYear = (today - firstDayOfYear) / 86400000;
             const currentWeekNum = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-            const currentWeekStr = `${today.getFullYear()}-W${String(currentWeekNum - 1).padStart(2, '0')}`; // Берем с прошлой недели, чтобы не пропадало сразу
+            const currentWeekStr = `${today.getFullYear()}-W${String(currentWeekNum - 1).padStart(2, '0')}`; 
 
             const upcomingSchedules = schedules.filter(s => s.weekId >= currentWeekStr);
 
@@ -768,7 +764,7 @@ function loadPersonalData() {
                 }
 
                 container.innerHTML = `
-                    <div class="flex items-center justify-between w-full h-full gap-2 pl-2">
+                    <div class="flex items-center w-full h-full gap-3 pl-2">
                         <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-md border ${badgeClass} shrink-0 bg-slate-50 shadow-inner">
                             <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
                             <span class="text-lg md:text-xl font-black leading-none">${groupStr}</span>
@@ -925,6 +921,7 @@ function loadPersonalData() {
     } catch(e){}
 
     try {
+        // 🔥 КАЛЕНДАРЬ НА ГЛАВНОЙ: ПОКАЗЫВАЕТ ТОЛЬКО СЕГОДНЯ
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
             const container = document.getElementById('calendar-events');
@@ -935,36 +932,23 @@ function loadPersonalData() {
             const todayStr = new Date(now.getTime() - tzOffset).toISOString().split('T')[0];
 
             let todayEvents = [];
-            let futureEvents = [];
 
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 ev.id = docSnap.id;
+                // Только события на сегодня
                 if (ev.date === todayStr) {
                     todayEvents.push(ev);
-                } else if (ev.date > todayStr) {
-                    futureEvents.push(ev);
                 }
             });
 
-            let eventsToRender = [];
-            let isShowingFuture = false;
-
-            if (todayEvents.length > 0) {
-                eventsToRender = todayEvents;
-            } else if (futureEvents.length > 0) {
-                isShowingFuture = true;
-                const nextDate = futureEvents[0].date;
-                eventsToRender = futureEvents.filter(e => e.date === nextDate);
-            }
-
             let html = '';
-            if (eventsToRender.length > 0) {
-                eventsToRender.forEach(ev => {
+            if (todayEvents.length > 0) {
+                todayEvents.forEach(ev => {
                     let isPastEvent = false;
                     let displayTime = ev.time || "";
                     
-                    if (!isShowingFuture && displayTime) {
+                    if (displayTime) {
                         let hours = 0, minutes = 0;
                         if (!displayTime.includes(':') && displayTime.length >= 3) {
                             if (displayTime.length === 4) displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
@@ -983,26 +967,19 @@ function loadPersonalData() {
                     const hasGroup = evGroup !== window.t('no_group');
                     
                     const activeClass = isPastEvent ? "bg-slate-50 border-b border-slate-200 opacity-60 grayscale" : "bg-white border-b border-slate-100";
-                    const timeColor = isPastEvent ? "text-slate-400" : (isShowingFuture ? "text-indigo-500" : "text-rose-500");
+                    const timeColor = isPastEvent ? "text-slate-400" : "text-rose-500";
                     const leaderColor = isPastEvent ? "text-slate-400" : "text-indigo-600";
                     const titleColor = isPastEvent ? "text-slate-500" : "text-slate-800";
                     
                     const dateObj = new Date(ev.date);
                     const dayNum = dateObj.getDate();
-                    const monthIndex = dateObj.getMonth();
-                    
-                    const monthNameArr = window.t('months');
-                    const badgeText = isShowingFuture 
-                        ? ((Array.isArray(monthNameArr) && monthNameArr[monthIndex]) ? monthNameArr[monthIndex] : ev.date.split('-')[1])
-                        : window.t('today_badge');
-
-                    const badgeBg = isShowingFuture ? "bg-indigo-600 text-white" : "bg-slate-800 text-white";
+                    const badgeBg = "bg-slate-800 text-white";
 
                     html += `
                         <div class="flex items-center p-3 w-full cursor-default ${activeClass}">
                             <div class="flex items-center gap-1.5 shrink-0 mr-3">
                                 <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 ${badgeBg} rounded-md shadow-inner shrink-0">
-                                    <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-300 leading-none mb-0.5 tracking-widest">${badgeText}</span>
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-300 leading-none mb-0.5 tracking-widest">${window.t('today_badge')}</span>
                                     <span class="text-lg md:text-xl font-black leading-none">${dayNum}</span>
                                 </div>
                                 ${hasGroup ? `
@@ -1021,7 +998,7 @@ function loadPersonalData() {
                         </div>
                     `;
 
-                    if (!isPastEvent && !isShowingFuture && !sessionStorage.getItem('event_toast_' + ev.id)) {
+                    if (!isPastEvent && !sessionStorage.getItem('event_toast_' + ev.id)) {
                         window.showToast(`${window.t('today_event_toast')} ${ev.title} ${displayTime ? ' ' + displayTime : ''}`, 'info');
                         sessionStorage.setItem('event_toast_' + ev.id, 'true');
                     }
@@ -1076,15 +1053,7 @@ function loadPersonalData() {
                             contentHtml = imgHtml + textHtml;
                         }
 
-                        newsHTML += `
-                        <div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center rounded-md border transition-all flex flex-col overflow-hidden relative ${bgCardClass}">
-                            ${newBadge}
-                            <div class="flex-grow flex flex-col overflow-hidden w-full bg-white">
-                                ${contentHtml}
-                            </div>
-                            ${deleteBtn}
-                        </div>`;
-
+                        newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center rounded-md border transition-all flex flex-col overflow-hidden relative ${bgCardClass}">${newBadge}<div class="flex-grow flex flex-col overflow-hidden w-full bg-white">${contentHtml}</div>${deleteBtn}</div>`;
                         if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) { window.showToast(window.t('new_announcement_toast'), 'info'); sessionStorage.setItem('news_toast_' + docSnap.id, 'true'); }
                     }
                 }
