@@ -22,6 +22,9 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
+        .jw-input-line { width: 100%; border: none; border-bottom: 1px solid #cbd5e1; background: transparent; font-size: 13px; font-weight: 700; color: #1e293b; padding: 4px 0; outline: none; transition: border-color 0.2s; }
+        .jw-input-line:focus { border-bottom-color: #d97706; }
+
         /* СПЕЦИАЛЬНЫЕ СТИЛИ ДЛЯ ПЕЧАТИ БЛАНКОВ */
         .print-only { display: none; }
         @media print {
@@ -44,7 +47,7 @@
     <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0 no-print">
         <a href="index.html" data-lang-title="back_home" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
             <div class="nav-icon-container text-indigo-300 hover:text-white p-2.5 rounded-full transition-colors flex flex-col items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
                 <span class="text-[8px] font-black uppercase tracking-widest hidden md:block" data-lang="btn_back">Назад</span>
             </div>
         </a>
@@ -69,83 +72,92 @@
             </a>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+        <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+            <h2 class="text-sm font-black text-jw-ministry mb-4 flex items-center justify-between uppercase tracking-widest border-b border-slate-100 pb-3">
+                <span data-lang="assign_title">Назначить задание</span>
+            </h2>
             
-            <div class="md:col-span-1">
-                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm sticky top-6">
-                    <h2 class="text-sm font-black text-jw-ministry mb-5 flex items-center gap-2 uppercase tracking-widest border-b border-slate-100 pb-2">
-                        <span data-lang="ministry_skills">Навыки служения</span>
-                    </h2>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 md:p-5 relative shadow-inner">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-4">
                     
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="task_date">Дата выступления</label>
-                            <input type="date" id="task-date" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-bold text-slate-700 outline-none focus:border-jw-ministry shadow-sm cursor-pointer">
-                        </div>
-
-                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 relative shadow-inner">
-                            <div class="flex items-center gap-1.5 mb-4 pr-8">
-                                <select id="task-number" class="bg-transparent text-sm md:text-base font-black text-jw-ministry outline-none cursor-pointer">
-                                    <option value="" disabled selected>№</option>
-                                </select>
-                                <span class="text-sm md:text-base font-black text-jw-ministry">.</span>
-                                <select id="task-category" class="bg-transparent border-b border-transparent focus:border-slate-300 text-sm md:text-base font-black text-jw-ministry w-full outline-none cursor-pointer pb-0.5">
-                                    <option value="" disabled selected data-lang="opt_select">Тип задания...</option>
-                                    <option value="ЧТЕНИЕ БИБЛИИ" id="cat-reading">Чтение Библии</option>
-                                    <option value="НАЧИНАЙТЕ РАЗГОВОР" data-lang="cat_conversation">Начинайте разговор</option>
-                                    <option value="РАЗВИВАЙТЕ ИНТЕРЕС" data-lang="cat_interest">Развивайте интерес</option>
-                                    <option value="ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ" data-lang="cat_disciples">Подготавливайте учеников</option>
-                                    <option value="ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ" data-lang="cat_beliefs">Объясняйте свои взгляды</option>
-                                    <option value="РЕЧЬ" id="cat-talk">Речь</option>
-                                </select>
-                            </div>
-
-                            <div class="flex gap-3 items-end mb-2">
-                                <div class="w-12 shrink-0">
-                                    <select id="task-lesson" class="w-full bg-white border border-slate-200 rounded text-sm font-bold text-slate-700 p-1.5 outline-none text-center shadow-sm cursor-pointer" title="Урок">
-                                        <option value="" disabled selected>Урок</option>
-                                    </select>
-                                </div>
-                                <div class="flex-grow flex gap-3">
-                                    <select id="student-select" class="w-1/2 bg-transparent border-b border-slate-300 focus:border-jw-ministry text-xs md:text-sm font-bold text-slate-800 outline-none pb-1 cursor-pointer">
-                                        <option value="" disabled selected data-lang="loading_students">Ученик...</option>
-                                    </select>
-                                    <select id="assistant-select" disabled class="w-1/2 bg-transparent border-b border-slate-300 focus:border-jw-ministry text-[10px] md:text-xs font-bold text-slate-500 outline-none pb-1 cursor-pointer disabled:opacity-50">
-                                        <option value="" disabled selected>Помощник...</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div id="student-history-hint" class="mt-4 text-[9px] font-bold text-slate-500 hidden"></div>
-
-                            <button id="assign-btn" class="absolute top-2 right-2 w-8 h-8 flex items-center justify-center bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-md transition-all active:scale-90 outline-none shadow-sm border border-indigo-100" title="Добавить">
-                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                            </button>
-                        </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="task_date">Дата</label>
+                        <input type="date" id="task-date" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs font-bold text-slate-700 outline-none focus:border-jw-ministry shadow-sm cursor-pointer">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="task_num">№</label>
+                        <select id="task-number" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs font-bold text-slate-700 outline-none focus:border-jw-ministry shadow-sm cursor-pointer">
+                            <option value="" disabled selected>-</option>
+                        </select>
+                    </div>
+                    
+                    <div class="md:col-span-7">
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="task_type">Тип</label>
+                        <select id="task-category" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs font-bold text-slate-700 outline-none focus:border-jw-ministry shadow-sm cursor-pointer">
+                            <option value="" disabled selected data-lang="opt_select">Выберите...</option>
+                            <option value="ЧТЕНИЕ БИБЛИИ" id="cat-reading">Чтение Библии</option>
+                            <option value="НАЧИНАЙТЕ РАЗГОВОР" data-lang="cat_conversation">Начинайте разговор</option>
+                            <option value="РАЗВИВАЙТЕ ИНТЕРЕС" data-lang="cat_interest">Развивайте интерес</option>
+                            <option value="ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ" data-lang="cat_disciples">Подготавливайте учеников</option>
+                            <option value="ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ" data-lang="cat_beliefs">Объясняйте свои взгляды</option>
+                            <option value="РЕЧЬ" id="cat-talk">Речь</option>
+                        </select>
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="task_lesson">Урок</label>
+                        <select id="task-lesson" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs font-bold text-slate-700 outline-none focus:border-jw-ministry shadow-sm cursor-pointer">
+                            <option value="" disabled selected>-</option>
+                        </select>
+                    </div>
+                    
+                    <div class="md:col-span-5">
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="student_label">Ученик</label>
+                        <select id="student-select" class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs font-bold text-slate-700 outline-none focus:border-jw-ministry shadow-sm cursor-pointer">
+                            <option value="" disabled selected data-lang="loading_students">Загрузка...</option>
+                        </select>
+                        <div id="student-history-hint" class="mt-1.5 text-[9px] font-bold text-slate-500 hidden px-1"></div>
+                    </div>
+                    
+                    <div class="md:col-span-5">
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="assistant_label">Помощник</label>
+                        <select id="assistant-select" disabled class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs font-bold text-slate-700 outline-none focus:border-jw-ministry disabled:opacity-50 shadow-sm cursor-pointer">
+                            <option value="" selected data-lang="select_student_first">Сначала выберите ученика</option>
+                        </select>
                     </div>
                 </div>
-            </div>
-
-            <div class="md:col-span-2">
-                <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-xl shadow-sm border border-slate-200">
-                    <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest pl-2" data-lang="schedule_title">Назначенные задания</h2>
-                    <button onclick="window.print()" class="bg-slate-50 hover:bg-slate-100 text-slate-700 p-2 rounded-lg font-bold transition-colors outline-none shadow-sm border border-slate-200" title="Распечатать бланки">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                
+                <div class="mt-6 flex justify-end">
+                    <button id="assign-btn" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-8 rounded-lg text-[10px] md:text-xs uppercase tracking-widest shadow-sm transition-all active:scale-95 outline-none flex items-center gap-2">
+                        <span data-lang="btn_assign">Назначить</span>
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
                     </button>
                 </div>
-                
-                <div id="tasks-list" class="space-y-3">
+            </div>
+        </div>
+
+        <div>
+            <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest pl-2" data-lang="schedule_title">Назначенные задания</h2>
+                <button onclick="window.print()" class="bg-slate-50 hover:bg-slate-100 text-slate-700 p-2 rounded-lg font-bold transition-colors outline-none shadow-sm border border-slate-200" title="Распечатать бланки">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                </button>
+            </div>
+            
+            <div id="tasks-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
                     <p class="text-slate-500 italic p-6 text-center text-sm bg-white rounded-xl border border-slate-200" data-lang="loading">Загрузка...</p>
                 </div>
             </div>
-
         </div>
+
     </main>
 
     <div id="print-area" class="print-only"></div>
 
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
-    <script type="module" src="school.js?v=140"></script>
+    <script type="module" src="school.js?v=150"></script>
 </body>
 </html>
