@@ -56,6 +56,11 @@
             <option value="Объясняйте свои взгляды"></option>
             <option value="Речь"></option>
         </datalist>
+        <datalist id="living-types">
+            <option value="Местные потребности"></option>
+            <option value="Организационные достижения"></option>
+            <option value="Пункт"></option>
+        </datalist>
 
         <div id="schedule-form" class="grid grid-cols-1 lg:grid-cols-2 gap-8 hidden">
             
@@ -74,8 +79,7 @@
                 </div>
 
                 <div class="mb-8">
-                    <h3 class="flex items-center gap-2 font-black text-jw-treasure uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    <h3 class="font-black text-jw-treasure uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">
                         Сокровища из слова бога
                     </h3>
                     
@@ -108,11 +112,10 @@
 
                 <div class="mb-8">
                     <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
-                        <h3 class="flex items-center gap-2 font-black text-jw-ministry uppercase tracking-widest">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+                        <h3 class="font-black text-jw-ministry uppercase tracking-widest">
                             Навыки служения
                         </h3>
-                        <button onclick="addMinistryPart()" class="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest transition-colors outline-none shadow-sm flex items-center gap-1">
+                        <button onclick="addMinistryPart()" class="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest transition-colors outline-none shadow-sm flex items-center gap-1 shrink-0">
                             <span>+ Добавить</span>
                         </button>
                     </div>
@@ -122,19 +125,19 @@
                 </div>
 
                 <div>
-                    <h3 class="flex items-center gap-2 font-black text-jw-living uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                        Христианская жизнь
-                    </h3>
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
+                        <h3 class="font-black text-jw-living uppercase tracking-widest">
+                            Христианская жизнь
+                        </h3>
+                        <button onclick="addLivingPart()" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest transition-colors outline-none shadow-sm flex items-center gap-1 shrink-0">
+                            <span>+ Добавить</span>
+                        </button>
+                    </div>
                     
                     <div class="space-y-4">
-                        <div class="flex items-end gap-3 px-2">
-                            <input type="text" id="mw-local-time" list="time-list" class="jw-time shrink-0" value="15" placeholder="мин">
-                            <div class="w-full flex flex-col gap-1">
-                                <input type="text" id="mw-local-title" class="text-xs font-bold text-jw-living bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="Местные потребности" placeholder="Тема пункта...">
-                                <input type="text" id="mw-local-name" list="list-brothers" class="jw-input mt-1" placeholder="Имя брата">
+                        
+                        <div id="living-parts-container" class="space-y-4">
                             </div>
-                        </div>
 
                         <div class="flex items-start gap-3 bg-slate-50 p-2 rounded border border-slate-100">
                             <input type="text" id="mw-cbs-time" list="time-list" class="jw-time shrink-0 mt-3" value="30" placeholder="мин">
@@ -217,6 +220,6 @@
     </main>
 
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
-    <script type="module" src="schedule-admin.js?v=2"></script>
+    <script type="module" src="schedule-admin.js?v=5"></script>
 </body>
 </html>
