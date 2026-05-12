@@ -9,17 +9,17 @@ const dict = {
         "assistant_short": "Пом:", "slip_header": "НАША ХРИСТИАНСКАЯ ЖИЗНЬ И СЛУЖЕНИЕ", 
         "slip_name": "Имя:", "slip_partner": "Помощник:", "slip_date": "Дата:", 
         "slip_notes": "Примечания для учащегося: Материал для задания и номер урока находятся в рабочей тетради.",
-        "btn_back": "Назад", "back_home": "На главную", "assign_title": "Назначить",
-        "student_label": "Ученик", "loading_students": "Загрузка учеников...", "assistant_label": "Помощник (Напарник)",
-        "select_student_first": "Сначала выберите ученика", "task_num": "№ Зад.", "task_type": "Тип",
-        "opt_select": "Выберите...", "cat_reading_db": "Чтение Библии", "cat_conversation": "Начинайте разговор",
+        "btn_back": "Назад", "back_home": "На главную", "assign_title": "Назначить", "ministry_skills": "Навыки служения",
+        "student_label": "Ученик", "loading_students": "Ученик...", "assistant_label": "Помощник",
+        "select_student_first": "Помощник...", "task_num": "№ Зад.", "task_type": "Тип",
+        "opt_select": "Тип задания...", "cat_reading_db": "Чтение Библии", "cat_conversation": "Начинайте разговор",
         "cat_interest": "Развивайте интерес", "cat_disciples": "Подготавливайте учеников", "cat_beliefs": "Объясняйте свои взгляды",
-        "cat_talk_db": "Речь", "task_lesson": "Урок", "task_date": "Дата", "btn_assign": "Назначить",
+        "cat_talk_db": "Речь", "task_lesson": "Урок", "task_date": "Дата выступления", "btn_assign": "Назначить",
         "no_students_found": "Нет участников школы", "no_assistant": "Без помощника",
         "err_talk_girls": "❌ Речь (Только братья)", "err_reading_girls": "❌ Чтение Библии (Братья)",
         "not_performed_yet": "⚠️ <span class='text-rose-500'>Еще не выступал(а)</span>", "last_performance": "💡 Последнее:",
-        "alert_fill_all": "Пожалуйста, заполните все обязательные поля!", "success_assigned": "Успешно назначено! ✔️",
-        "error_save": "Ошибка сохранения!", "saving": "Сохранение...", "delete": "Удалить", "confirm_delete_task": "Точно удалить это задание?"
+        "alert_fill_all": "Пожалуйста, заполните все поля (Дата, Номер, Тип, Урок, Ученик)!", "success_assigned": "Добавлено!",
+        "error_save": "Ошибка сохранения!", "saving": "...", "delete": "Удалить", "confirm_delete_task": "Точно удалить это задание?"
     },
     cs: {
         "school_title": "Správa školy - GRO-UP", "school_h1": "Škola", "manage_tasks": "Správa úkolů", 
@@ -28,17 +28,17 @@ const dict = {
         "assistant_short": "Pom:", "slip_header": "ÚKOL NA SHROMÁŽDĚNÍ NÁŠ KŘESŤANSKÝ ŽIVOT A SLUŽBA", 
         "slip_name": "Jméno:", "slip_partner": "Partner:", "slip_date": "Datum:", 
         "slip_notes": "Poznámky pro studenta: Podklady pro svůj úkol a číslo studijní lekce najdeš v Pracovním sešitě.",
-        "btn_back": "Zpět", "back_home": "Na hlavní stránku", "assign_title": "Přiřadit",
-        "student_label": "Student", "loading_students": "Načítání studentů...", "assistant_label": "Pomocník",
-        "select_student_first": "Nejprve vyberte studenta", "task_num": "Úkol č.", "task_type": "Typ",
-        "opt_select": "Vyberte...", "cat_reading_db": "Čtení Bible", "cat_conversation": "Zahájení rozhovoru",
+        "btn_back": "Zpět", "back_home": "Na hlavní stránku", "assign_title": "Přiřadit", "ministry_skills": "Zlepšujme se ve službě",
+        "student_label": "Student", "loading_students": "Student...", "assistant_label": "Pomocník",
+        "select_student_first": "Pomocník...", "task_num": "Úkol č.", "task_type": "Typ",
+        "opt_select": "Typ úkolu...", "cat_reading_db": "Čtení Bible", "cat_conversation": "Zahájení rozhovoru",
         "cat_interest": "Rozvíjení zájmu", "cat_disciples": "Čiňte učedníky", "cat_beliefs": "Vysvětlování své víry",
         "cat_talk_db": "Proslov", "task_lesson": "Lekce", "task_date": "Datum", "btn_assign": "Přiřadit",
         "no_students_found": "Žádní studenti", "no_assistant": "Bez pomocníka",
         "err_talk_girls": "❌ Proslov (Pouze bratři)", "err_reading_girls": "❌ Čtení Bible (Bratři)",
         "not_performed_yet": "⚠️ <span class='text-rose-500'>Zatím nevystupoval(a)</span>", "last_performance": "💡 Poslední:",
-        "alert_fill_all": "Prosím, vyplňte všechna povinná pole!", "success_assigned": "Úspěšně přiřazeno! ✔️",
-        "error_save": "Chyba při ukládání!", "saving": "Ukládání...", "delete": "Smazat", "confirm_delete_task": "Opravdu smazat tento úkol?"
+        "alert_fill_all": "Prosím, vyplňte všechna pole!", "success_assigned": "Přidáno!",
+        "error_save": "Chyba při ukládání!", "saving": "...", "delete": "Smazat", "confirm_delete_task": "Opravdu smazat tento úkol?"
     }
 };
 
@@ -102,7 +102,6 @@ const currentUserId = localStorage.getItem('userId');
 
 if (!currentUserId) window.location.href = 'login.html';
 
-// Проверка прав
 getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     const roles = docSnap.data().roles || [];
@@ -111,7 +110,6 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!isSchool) window.location.href = 'index.html';
 });
 
-// Заполнение селектов номеров заданий и уроков
 const taskNumSelect = document.getElementById('task-number');
 if (taskNumSelect) {
     for (let i = 1; i <= 20; i++) taskNumSelect.innerHTML += `<option value="${i}">${i}</option>`;
@@ -193,7 +191,6 @@ if (studentSelectEl) {
     });
 }
 
-// 🔥 ФУНКЦИЯ ДЛЯ ВЫЧИСЛЕНИЯ WEEK ID (ИСО 8601) - ЧТОБЫ СВЯЗАТЬ С ГРАФИКОМ
 function getISOWeekString(dateString) {
     const dateObj = new Date(dateString);
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
@@ -203,7 +200,6 @@ function getISOWeekString(dateString) {
     return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 }
 
-// НАЗНАЧИТЬ ЗАДАНИЕ
 const assignBtn = document.getElementById('assign-btn');
 if (assignBtn) {
     assignBtn.addEventListener('click', async (e) => {
@@ -219,7 +215,9 @@ if (assignBtn) {
         }
 
         const btn = e.target;
-        btn.innerText = window.t('saving'); btn.disabled = true;
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = `<span class="animate-spin mr-1">↻</span> ${window.t('saving')}`; 
+        btn.disabled = true;
 
         const [userId, userName, userGender] = studentData.split('|');
 
@@ -232,7 +230,7 @@ if (assignBtn) {
                 category: tCat,
                 lesson: tLes,
                 date: tDate,
-                weekId: getISOWeekString(tDate), // 🔥 Сохраняем WeekID для связки с Расписанием
+                weekId: getISOWeekString(tDate), // 🔥 МАГИЯ СВЯЗИ С РАСПИСАНИЕМ
                 createdAt: new Date().toISOString()
             });
 
@@ -242,25 +240,28 @@ if (assignBtn) {
             document.getElementById('task-number').value = '';
             document.getElementById('task-category').value = '';
             document.getElementById('task-lesson').value = '';
-            document.getElementById('task-date').value = '';
             document.getElementById('student-history-hint').classList.add('hidden');
             
-            btn.classList.replace('bg-slate-800', 'bg-emerald-500');
-            btn.innerText = window.t('success_assigned');
+            btn.classList.replace('bg-indigo-50', 'bg-emerald-50');
+            btn.classList.replace('text-indigo-600', 'text-emerald-600');
+            btn.classList.replace('border-indigo-100', 'border-emerald-200');
+            btn.innerHTML = `✅ ${window.t('success_assigned')}`;
+            
             setTimeout(() => { 
-                btn.classList.replace('bg-emerald-500', 'bg-slate-800');
-                btn.innerText = window.t('btn_assign'); 
+                btn.classList.replace('bg-emerald-50', 'bg-indigo-50');
+                btn.classList.replace('text-emerald-600', 'text-indigo-600');
+                btn.classList.replace('border-emerald-200', 'border-indigo-100');
+                btn.innerHTML = oldHtml; 
                 btn.disabled = false; 
             }, 2000);
         } catch (error) { 
             alert(window.t('error_save')); 
             btn.disabled = false; 
-            btn.innerText = window.t('btn_assign'); 
+            btn.innerHTML = oldHtml; 
         }
     });
 }
 
-// ВЫВОД СПИСКА ЗАДАНИЙ И БЛАНКОВ ПЕЧАТИ
 const q = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
 onSnapshot(q, (snapshot) => {
     const list = document.getElementById('tasks-list');
@@ -287,10 +288,8 @@ onSnapshot(q, (snapshot) => {
 
         const astHtml = t.assistant && t.assistant !== "Без помощника" ? `<span class="text-[10px] md:text-xs text-slate-500 font-bold block mt-0.5">${window.t('assistant_short')} <span class="text-jw-ministry">${t.assistant}</span></span>` : '';
 
-        // Перевод категории
         let catStr = translateDbString(t.category);
 
-        // Карточка просмотра (ПЛОСКАЯ, КРАСИВАЯ)
         html += `
             <div class="p-3 md:p-4 rounded-xl border relative overflow-hidden transition-all ${opacityClass}">
                 <button onclick="deleteTask('${docSnap.id}')" class="absolute top-3 right-3 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors z-10 outline-none" title="${window.t('delete')}">
