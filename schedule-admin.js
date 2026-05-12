@@ -108,17 +108,7 @@ function updateNumeration() {
     });
 }
 
-window.addMinistryPart = () => {
-    saveMinistryState(); 
-    ministryParts.push({ time: "5", type: "", student: "", assistant: "" });
-    renderMinistryParts();
-};
-
-window.removeMinistryPart = (index) => {
-    saveMinistryState();
-    ministryParts.splice(index, 1);
-    renderMinistryParts();
-};
+// =================== НАВЫКИ СЛУЖЕНИЯ (БЕЗ ДОБАВЛЕНИЯ/УДАЛЕНИЯ) ===================
 
 function saveMinistryState() {
     const container = document.getElementById('ministry-parts-container');
@@ -141,7 +131,7 @@ function renderMinistryParts() {
     let html = '';
     ministryParts.forEach((part, index) => {
         html += `
-            <div class="flex items-end gap-3 bg-slate-50 p-2 rounded border border-slate-100 relative pr-8">
+            <div class="flex items-end gap-3 bg-slate-50 p-2 rounded border border-slate-100 relative pr-2">
                 <input type="text" id="part-min-${index}-time" list="time-list" class="jw-time shrink-0 mb-1" value="${part.time || ''}" placeholder="мин">
                 <div class="w-full flex flex-col gap-1">
                     <div class="flex items-center gap-1.5">
@@ -153,7 +143,6 @@ function renderMinistryParts() {
                         <input type="text" id="part-min-${index}-assistant" list="list-school" class="jw-input w-1/2 text-[10px]" value="${part.assistant || ''}" placeholder="Помощник">
                     </div>
                 </div>
-                <button onclick="removeMinistryPart(${index})" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 font-black outline-none transition-colors" title="Удалить">✖</button>
             </div>
         `;
     });
@@ -161,6 +150,7 @@ function renderMinistryParts() {
     updateNumeration();
 }
 
+// =================== ХРИСТИАНСКАЯ ЖИЗНЬ ===================
 window.addLivingPart = () => {
     saveLivingState();
     livingParts.push({ time: "15", title: "", name: "" });
@@ -284,11 +274,10 @@ window.loadSchedule = async () => {
             
             document.getElementById('we-prayer-name').value = d.we_prayer_name || '';
         } else {
-            // 🔥 ЕСЛИ ГРАФИК ПУСТОЙ - ИДЕМ ИСКАТЬ В ШКОЛУ!
+            // 🔥 ЕСЛИ ГРАФИК ПУСТОЙ - ИДЕМ ИСКАТЬ В ШКОЛУ
             document.getElementById('save-status').innerText = "НОВЫЙ ГРАФИК";
             document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
             
-            // Пытаемся подтянуть данные из personal_tasks
             const q = query(collection(db, "personal_tasks"), where("weekId", "==", weekIdRaw));
             const tasksSnap = await getDocs(q);
             
@@ -298,8 +287,6 @@ window.loadSchedule = async () => {
             if (!tasksSnap.empty) {
                 let tasksForThisWeek = [];
                 tasksSnap.forEach(doc => tasksForThisWeek.push(doc.data()));
-                
-                // Сортируем по номеру задания
                 tasksForThisWeek.sort((a,b) => parseInt(a.taskNumber) - parseInt(b.taskNumber));
 
                 tasksForThisWeek.forEach(t => {
@@ -307,7 +294,6 @@ window.loadSchedule = async () => {
                     if (cat === 'ЧТЕНИЕ БИБЛИИ' || cat === 'Čtení Bible' || cat === 'Чтение Библии') {
                         fetchedReadingName = t.userName;
                     } else {
-                        // Переводим категорию в красивый вид
                         if (cat === 'НАЧИНАЙТЕ РАЗГОВОР') cat = 'Начинайте разговор';
                         if (cat === 'РАЗВИВАЙТЕ ИНТЕРЕС') cat = 'Развивайте интерес';
                         if (cat === 'ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ') cat = 'Подготавливайте учеников';
@@ -315,7 +301,7 @@ window.loadSchedule = async () => {
                         if (cat === 'РЕЧЬ') cat = 'Речь';
 
                         fetchedMinistryParts.push({
-                            time: "5", // по умолчанию
+                            time: "5",
                             type: cat,
                             student: t.userName,
                             assistant: t.assistant && t.assistant !== "Без помощника" ? t.assistant : ""
