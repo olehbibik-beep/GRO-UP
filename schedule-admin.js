@@ -40,7 +40,6 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
     }
 });
 
-// ГЛОБАЛЬНЫЕ МАССИВЫ
 let ministryParts = [];
 let livingParts = [];
 
@@ -61,14 +60,11 @@ function getDateFromWeekString(weekStr) {
     return new Date(simpleDate.setDate(diff));
 }
 
-// ПЕРЕЛИСТЫВАНИЕ НЕДЕЛЬ
 window.changeWeek = (offset) => {
     const input = document.getElementById('week-selector');
     if (!input.value) return;
-    
     const currentDate = getDateFromWeekString(input.value);
     currentDate.setDate(currentDate.getDate() + (offset * 7));
-    
     input.value = getWeekString(currentDate);
     loadSchedule();
 };
@@ -99,28 +95,16 @@ function loadUsersForDatalists() {
     });
 }
 
-// 🔥 ФУНКЦИЯ ПЕРЕСЧЕТА НОМЕРОВ (Сквозная нумерация от 4 до Изучения Библии)
+// 🔥 СКВОЗНАЯ НУМЕРАЦИЯ
 function updateNumeration() {
-    let currentNumber = 4; // 1-3 зарезервированы под Сокровища
-    
-    // Обновляем нумерацию в Навыках Служения
-    document.querySelectorAll('.ministry-number').forEach(el => {
+    let currentNumber = 1;
+    document.querySelectorAll('.part-number').forEach(el => {
         el.innerText = `${currentNumber}.`;
         currentNumber++;
     });
-
-    // Обновляем нумерацию в Христианской Жизни
-    document.querySelectorAll('.living-number').forEach(el => {
-        el.innerText = `${currentNumber}.`;
-        currentNumber++;
-    });
-
-    // Номер для Изучения Библии
-    const cbsNumEl = document.getElementById('cbs-number');
-    if(cbsNumEl) cbsNumEl.innerText = `${currentNumber}.`;
 }
 
-// =================== ЛОГИКА НАВЫКОВ СЛУЖЕНИЯ ===================
+// =================== НАВЫКИ СЛУЖЕНИЯ ===================
 window.addMinistryPart = () => {
     saveMinistryState(); 
     ministryParts.push({ time: "5", type: "", student: "", assistant: "" });
@@ -158,7 +142,7 @@ function renderMinistryParts() {
                 <input type="text" id="part-min-${index}-time" list="time-list" class="jw-time shrink-0 mb-1" value="${part.time || ''}" placeholder="мин">
                 <div class="w-full flex flex-col gap-1">
                     <div class="flex items-center gap-1.5">
-                        <span class="ministry-number text-[10px] font-black text-jw-ministry"></span>
+                        <span class="part-number text-[10px] font-black text-jw-ministry"></span>
                         <input type="text" id="part-min-${index}-type" list="part-types" class="text-[11px] font-bold text-jw-ministry bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="${part.type || ''}" placeholder="Название (Начинайте разговор...)">
                     </div>
                     <div class="flex gap-2 w-full mt-1">
@@ -171,10 +155,10 @@ function renderMinistryParts() {
         `;
     });
     container.innerHTML = html;
-    updateNumeration(); // Пересчитываем номера
+    updateNumeration();
 }
 
-// =================== ЛОГИКА ХРИСТИАНСКОЙ ЖИЗНИ ===================
+// =================== ХРИСТИАНСКАЯ ЖИЗНЬ ===================
 window.addLivingPart = () => {
     saveLivingState();
     livingParts.push({ time: "15", title: "", name: "" });
@@ -210,7 +194,7 @@ function renderLivingParts() {
                 <input type="text" id="part-liv-${index}-time" list="time-list" class="jw-time shrink-0 mb-1" value="${part.time || ''}" placeholder="мин">
                 <div class="w-full flex flex-col gap-1">
                     <div class="flex items-center gap-1.5">
-                        <span class="living-number text-[10px] font-black text-jw-living"></span>
+                        <span class="part-number text-[10px] font-black text-jw-living"></span>
                         <input type="text" id="part-liv-${index}-title" list="living-types" class="text-xs font-bold text-jw-living bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="${part.title || ''}" placeholder="Тема пункта (Местные потребности...)">
                     </div>
                     <input type="text" id="part-liv-${index}-name" list="list-brothers" class="jw-input mt-1" value="${part.name || ''}" placeholder="Имя брата">
@@ -220,7 +204,7 @@ function renderLivingParts() {
         `;
     });
     container.innerHTML = html;
-    updateNumeration(); // Пересчитываем номера
+    updateNumeration();
 }
 // ===============================================================
 
@@ -262,7 +246,6 @@ window.loadSchedule = async () => {
 
             ministryParts = d.ministryParts || [];
             
-            // Загрузка динамических пунктов Христианской жизни (Совместимость со старыми данными)
             if (d.livingParts && d.livingParts.length > 0) {
                 livingParts = d.livingParts;
             } else if (d.mw_local_name || d.mw_local_title) {
@@ -310,6 +293,7 @@ window.loadSchedule = async () => {
         }
         renderMinistryParts();
         renderLivingParts();
+        updateNumeration(); // Итоговый пересчет после загрузки
     } catch(e) { console.error(e); }
 };
 
@@ -330,7 +314,6 @@ window.saveSchedule = async (isPublished) => {
         isPublished: isPublished,
         updatedAt: new Date().toISOString(),
 
-        // БУДНИ
         mw_chairman_time: document.getElementById('mw-chairman-time').value,
         mw_chairman_name: document.getElementById('mw-chairman-name').value.trim(),
         
@@ -354,7 +337,6 @@ window.saveSchedule = async (isPublished) => {
         
         mw_prayer_name: document.getElementById('mw-prayer-name').value.trim(),
 
-        // ВЫХОДНЫЕ
         we_opening_time: document.getElementById('we-opening-time').value,
         we_opening_name: document.getElementById('we-opening-name').value.trim(),
         
@@ -375,9 +357,7 @@ window.saveSchedule = async (isPublished) => {
         document.getElementById('save-status').innerText = isPublished ? "ОПУБЛИКОВАНО" : "ЧЕРНОВИК";
         if(isPublished) document.getElementById('save-status').classList.replace('text-slate-400', 'text-emerald-500');
         else document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
-    } catch (e) {
-        alert("Ошибка сохранения!");
-    }
+    } catch (e) { alert("Ошибка сохранения!"); }
     
     btn.innerText = originalText;
     btn.disabled = false;
