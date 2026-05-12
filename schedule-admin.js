@@ -43,6 +43,7 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
 let ministryParts = [];
 let livingParts = [];
 
+// СТРОГИЕ ФУНКЦИИ ИСЧИСЛЕНИЯ НЕДЕЛЬ ISO 8601
 function getWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); 
@@ -73,6 +74,12 @@ function setCurrentWeek() {
     const today = new Date();
     document.getElementById('week-selector').value = getWeekString(today);
     document.getElementById('schedule-form').classList.remove('hidden');
+    
+    // Подставляем текущий язык в селектор (чтобы по умолчанию админ редактировал свой язык)
+    const currentAppLang = localStorage.getItem('app_lang') || 'ru';
+    const langSelector = document.getElementById('schedule-lang');
+    if (langSelector) langSelector.value = currentAppLang;
+
     loadSchedule();
 }
 
@@ -95,7 +102,6 @@ function loadUsersForDatalists() {
     });
 }
 
-// 🔥 СКВОЗНАЯ НУМЕРАЦИЯ
 function updateNumeration() {
     let currentNumber = 1;
     document.querySelectorAll('.part-number').forEach(el => {
@@ -104,7 +110,6 @@ function updateNumeration() {
     });
 }
 
-// =================== НАВЫКИ СЛУЖЕНИЯ ===================
 window.addMinistryPart = () => {
     saveMinistryState(); 
     ministryParts.push({ time: "5", type: "", student: "", assistant: "" });
@@ -158,7 +163,6 @@ function renderMinistryParts() {
     updateNumeration();
 }
 
-// =================== ХРИСТИАНСКАЯ ЖИЗНЬ ===================
 window.addLivingPart = () => {
     saveLivingState();
     livingParts.push({ time: "15", title: "", name: "" });
@@ -206,11 +210,14 @@ function renderLivingParts() {
     container.innerHTML = html;
     updateNumeration();
 }
-// ===============================================================
 
 window.loadSchedule = async () => {
-    const weekId = document.getElementById('week-selector').value;
-    if(!weekId) return;
+    const weekIdRaw = document.getElementById('week-selector').value;
+    const scheduleLang = document.getElementById('schedule-lang').value || 'ru';
+    if(!weekIdRaw) return;
+
+    // ДОКУМЕНТ В БД ИЩЕМ ПО ID НЕДЕЛИ + ЯЗЫК (например 2026-W20-ru)
+    const weekId = `${weekIdRaw}-${scheduleLang}`;
 
     document.querySelectorAll('.jw-input, .jw-title-input').forEach(input => input.value = '');
     document.querySelectorAll('.jw-time').forEach(input => input.value = '');
@@ -293,13 +300,16 @@ window.loadSchedule = async () => {
         }
         renderMinistryParts();
         renderLivingParts();
-        updateNumeration(); // Итоговый пересчет после загрузки
+        updateNumeration(); 
     } catch(e) { console.error(e); }
 };
 
 window.saveSchedule = async (isPublished) => {
-    const weekId = document.getElementById('week-selector').value;
-    if(!weekId) return;
+    const weekIdRaw = document.getElementById('week-selector').value;
+    const scheduleLang = document.getElementById('schedule-lang').value || 'ru';
+    if(!weekIdRaw) return;
+
+    const weekId = `${weekIdRaw}-${scheduleLang}`; // Сохраняем с привязкой к языку
 
     saveMinistryState(); 
     saveLivingState();
@@ -310,7 +320,9 @@ window.saveSchedule = async (isPublished) => {
     btn.disabled = true;
 
     const scheduleData = {
-        weekId: weekId,
+        weekId: weekId, // 2026-W20-ru
+        realWeekId: weekIdRaw, // 2026-W20 (Для сортировки в приложении)
+        lang: scheduleLang, // ru или cs
         isPublished: isPublished,
         updatedAt: new Date().toISOString(),
 
