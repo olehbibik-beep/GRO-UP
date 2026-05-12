@@ -49,7 +49,8 @@ const dict = {
         "christian_living": "Христианская жизнь", "congregation_bible_study": "Изучение Библии", "reader": "Чтец",
         "closing_prayer": "Заключительная молитва", "part": "Задание", "start_conversation": "Начинайте разговор",
         "develop_interest": "Развивайте интерес", "make_disciples": "Подготавливайте учеников", "explain_beliefs": "Объясняйте свои взгляды",
-        "local_needs": "Местные потребности", "current_week": "АКТУАЛЬНАЯ", "future_week": "БУДУЩАЯ"
+        "local_needs": "Местные потребности", "current_week": "АКТУАЛЬНАЯ", "future_week": "БУДУЩАЯ",
+        "public_talk": "Публичная речь", "weekend_meeting": "Выходные (Публичная речь)", "watchtower_study": "Изучение Сторожевой Башни", "opening_song": "Вступительные слова / Песня"
     },
     cs: {
         "loading_data": "Načítání dat...", "pending_title": "Žádost se vyřizuje", "pending_desc": "Čekejte na potvrzení administrátorem.",
@@ -96,7 +97,8 @@ const dict = {
         "christian_living": "Křesťanský život", "congregation_bible_study": "Sborové studium Bible", "reader": "Čte",
         "closing_prayer": "Závěrečná modlitba", "part": "Úkol", "start_conversation": "Zahájení rozhovoru",
         "develop_interest": "Rozvíjení zájmu", "make_disciples": "Činění učedníků", "explain_beliefs": "Vysvětlování své víry",
-        "local_needs": "Místní potřeby", "current_week": "AKTUÁLNÍ", "future_week": "BUDOUCÍ"
+        "local_needs": "Místní potřeby", "current_week": "AKTUÁLNÍ", "future_week": "BUDOUCÍ",
+        "public_talk": "Veřejná přednáška", "weekend_meeting": "Víkend (Veřejná přednáška)", "watchtower_study": "Studium Strážné věže", "opening_song": "Úvodní slova / Píseň"
     }
 };
 
@@ -167,6 +169,7 @@ window.hideGlobalLoader = () => {
 setTimeout(window.hideGlobalLoader, 2500);
 
 window.scrollNews = (offset) => { document.getElementById('content-news')?.scrollBy({ left: offset, behavior: 'smooth' }); };
+window.scrollProgram = (offset) => { document.getElementById('meeting-program-list')?.scrollBy({ left: offset, behavior: 'smooth' }); };
 
 window.showToast = (message, type = 'info') => {
     const container = document.getElementById('toast-container');
@@ -572,7 +575,15 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-// 🔥 ПРОГРАММА СОБРАНИЯ - ДИЗАЙН РАБОЧЕЙ ТЕТРАДИ (БЕЗ РАМОК, ШИРОКИЙ, СКВОЗНАЯ НУМЕРАЦИЯ)
+// 🔥 ПРОГРАММА СОБРАНИЯ (БЕЗ РАМОК, ШИРОКИЙ, ВЫХОДНЫЕ ДОБАВЛЕНЫ)
+function getWeekString(dateObj) {
+    const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); 
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+    const weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
 function weekToDateString(weekId) {
     if(!weekId) return "";
     const [year, weekStr] = weekId.split('-W');
@@ -601,10 +612,8 @@ function buildScheduleCard(d, myName, currentWeekStr) {
     const weekStatus = isCurrentWeek ? window.t('current_week') : window.t('future_week');
     const statusColor = isCurrentWeek ? 'text-emerald-400' : 'text-slate-400';
     
-    // Глобальный счетчик для всех пунктов на этой неделе
     let partCounter = 1;
 
-    // Обычная строка
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
@@ -620,7 +629,6 @@ function buildScheduleCard(d, myName, currentWeekStr) {
         `;
     };
 
-    // Строка без номера (Серый фон: Председатель, Молитва)
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
@@ -635,7 +643,6 @@ function buildScheduleCard(d, myName, currentWeekStr) {
         `;
     };
 
-    // Чтобы сквозная нумерация работала корректно, генерируем блоки по порядку
     const treasure1 = row(d.mw_treasure_title || window.t('talk_10_min'), d.mw_treasure_name);
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
@@ -666,20 +673,24 @@ function buildScheduleCard(d, myName, currentWeekStr) {
         return row(m.title, m.name);
     }).join('');
 
-    // Изучение Библии (последний номерной пункт)
     const cbsNum = partCounter++;
     const condCol = d.mw_cbs_conductor === myName ? 'text-rose-600 bg-rose-100 px-1.5 rounded shadow-sm' : 'text-slate-800';
     const readCol = d.mw_cbs_reader === myName ? 'text-rose-600 bg-rose-100 px-1 rounded shadow-sm' : 'text-slate-500';
 
+    // ВЫХОДНЫЕ
+    const we_talk = rowUnnumbered(d.we_talk_title || window.t('public_talk'), d.we_talk_speaker);
+    const we_wt_cond = d.we_wt_conductor === myName ? 'text-rose-600 bg-rose-100 px-1.5 rounded shadow-sm' : 'text-slate-800';
+    const we_wt_read = d.we_wt_reader === myName ? 'text-rose-600 bg-rose-100 px-1 rounded shadow-sm' : 'text-slate-500';
+
     return `
-        <div class="w-[92%] md:w-full shrink-0 snap-center flex flex-col bg-transparent">
+        <div class="w-[90vw] md:w-[400px] shrink-0 snap-center flex flex-col bg-transparent mb-2">
             
             <div class="bg-slate-800 p-2 md:p-3 text-center rounded-t-md shrink-0">
                 <span class="text-[8px] md:text-[9px] font-bold ${statusColor} uppercase tracking-widest block mb-0.5">${weekStatus}</span>
                 <h4 class="text-white font-black text-xs md:text-sm uppercase tracking-widest">${weekLabel}</h4>
             </div>
 
-            <div class="flex-grow flex flex-col pb-2 bg-slate-50/50 rounded-b-md border border-t-0 border-slate-200">
+            <div class="flex-grow flex flex-col bg-slate-50/50 rounded-b-md border border-t-0 border-slate-200 shadow-sm overflow-hidden">
                 
                 ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
 
@@ -714,6 +725,25 @@ function buildScheduleCard(d, myName, currentWeekStr) {
                 </div>
 
                 ${rowUnnumbered(window.t('closing_prayer'), d.mw_prayer_name)}
+
+                <div class="bg-[#475569] text-white p-1.5 md:p-2 pl-3 flex items-center shadow-sm mt-4 border-t border-slate-300">
+                    <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('weekend_meeting')}</span>
+                </div>
+                ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
+                ${we_talk}
+                <div class="flex items-center justify-between p-2.5 border-b border-slate-100 bg-white">
+                    <div class="flex flex-col flex-1 pr-2">
+                        <span class="text-[10px] md:text-xs font-bold text-slate-600 leading-tight">${window.t('watchtower_study')}</span>
+                    </div>
+                    <div class="shrink-0 max-w-[55%] flex items-center justify-end text-right">
+                        <div class="flex flex-col items-end truncate w-full">
+                            <span class="text-xs md:text-sm font-black ${we_wt_cond} truncate leading-tight w-full">${d.we_wt_conductor || '-'}</span>
+                            ${d.we_wt_reader ? `<span class="text-[9px] font-bold ${we_wt_read} truncate mt-0.5 w-full">${window.t('reader')} ${d.we_wt_reader}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                ${rowUnnumbered(window.t('closing_prayer'), d.we_prayer_name)}
+
             </div>
         </div>
     `;
@@ -739,17 +769,12 @@ function loadPersonalData() {
         onSnapshot(query(collection(db, "meeting_schedules"), where("isPublished", "==", true)), (snapshot) => {
             const container = document.getElementById('meeting-program-list');
             if(!container) return;
-            container.className = "flex flex-nowrap overflow-x-auto gap-4 pb-4 snap-x snap-mandatory custom-scrollbar items-stretch scroll-smooth w-full";
 
             let schedules = [];
             snapshot.forEach(doc => schedules.push(doc.data()));
             schedules.sort((a,b) => a.weekId.localeCompare(b.weekId));
 
-            const today = new Date();
-            const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
-            const pastDaysOfYear = (today - firstDayOfYear) / 86400000;
-            const currentWeekNum = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-            const currentWeekStr = `${today.getFullYear()}-W${String(currentWeekNum - 1).padStart(2, '0')}`; 
+            const currentWeekStr = getWeekString(new Date()); 
 
             const upcomingSchedules = schedules.filter(s => s.weekId >= currentWeekStr);
 
