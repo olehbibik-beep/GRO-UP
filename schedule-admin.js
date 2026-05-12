@@ -27,7 +27,6 @@ const userId = localStorage.getItem('userId');
 
 if (!userId) window.location.href = 'login.html';
 
-// ПРОВЕРКА ПРАВ
 getDoc(doc(db, "users", userId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     const roles = docSnap.data().roles || [];
@@ -40,38 +39,52 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
     }
 });
 
-// ГЕНЕРАЦИЯ БЛОКОВ СЛУЖЕНИЯ (4 пункта по умолчанию)
-function initMinistryParts() {
-    const container = document.getElementById('ministry-parts');
-    let html = '';
-    
-    for(let i = 1; i <= 4; i++) {
-        html += `
-            <div class="flex items-end gap-4">
-                <div class="w-1/3 shrink-0 flex flex-col gap-2">
-                    <input type="text" id="part-min-${i}-student" list="list-school" class="jw-input text-sm" placeholder="Участник">
-                    <input type="text" id="part-min-${i}-assistant" list="list-school" class="jw-input text-xs text-slate-500" placeholder="Помощник">
-                </div>
-                <div class="w-2/3 flex flex-col justify-end pb-1">
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-black text-jw-ministry">${i}.</span>
-                        <input type="text" id="part-min-${i}-type" class="jw-title-input text-jw-ministry" placeholder="Вид задания (Разговор, Интерес...)">
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    container.innerHTML = html;
+// ГЛОБАЛЬНЫЙ МАССИВ ДЛЯ НАВЫКОВ СЛУЖЕНИЯ
+let ministryParts = [];
+
+// ФУНКЦИЯ ДЛЯ ВЫСЧИТЫВАНИЯ СТРОКИ YYYY-Wxx ИЗ ДАТЫ
+function getWeekString(dateObj) {
+    const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); // Устанавливаем на четверг
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+    const weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 }
 
-// ЗАГРУЗКА БРАТЬЕВ И УЧАСТНИКОВ ШКОЛЫ В DATALIST
+// ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ ДАТЫ ИЗ СТРОКИ YYYY-Wxx
+function getDateFromWeekString(weekStr) {
+    if (!weekStr) return new Date();
+    const [year, week] = weekStr.split('-W');
+    const simpleDate = new Date(year, 0, 1 + (week - 1) * 7);
+    const day = simpleDate.getDay();
+    const diff = simpleDate.getDate() - day + (day === 0 ? -6 : 1); // Понедельник
+    return new Date(simpleDate.setDate(diff));
+}
+
+// ПЕРЕЛИСТЫВАНИЕ НЕДЕЛЬ СТРЕЛОЧКАМИ
+window.changeWeek = (offset) => {
+    const input = document.getElementById('week-selector');
+    if (!input.value) return;
+    
+    const currentDate = getDateFromWeekString(input.value);
+    currentDate.setDate(currentDate.getDate() + (offset * 7));
+    
+    input.value = getWeekString(currentDate);
+    loadSchedule();
+};
+
+function setCurrentWeek() {
+    const today = new Date();
+    document.getElementById('week-selector').value = getWeekString(today);
+    document.getElementById('schedule-form').classList.remove('hidden');
+    loadSchedule();
+}
+
 function loadUsersForDatalists() {
     onSnapshot(collection(db, "users"), (snapshot) => {
         const listBrothers = document.getElementById('list-brothers');
         const listSchool = document.getElementById('list-school');
-        
-        let brothersHtml = '';
-        let schoolHtml = '';
+        let brothersHtml = ''; let schoolHtml = '';
         
         let allUsers = [];
         snapshot.forEach(docSnap => allUsers.push(docSnap.data()));
@@ -79,123 +92,216 @@ function loadUsersForDatalists() {
 
         allUsers.forEach(u => {
             if (u.status !== 'active') return;
-            
-            // Братья (для проведения пунктов)
-            if (u.gender === 'boy') {
-                brothersHtml += `<option value="${u.name}">`;
-            }
-            
-            // Участники школы (братья и сестры)
-            if (u.roles && u.roles.includes('Участник школы')) {
-                schoolHtml += `<option value="${u.name}">`;
-            }
+            if (u.gender === 'boy') brothersHtml += `<option value="${u.name}">`;
+            if (u.roles && u.roles.includes('Участник школы')) schoolHtml += `<option value="${u.name}">`;
         });
-
-        listBrothers.innerHTML = brothersHtml;
-        listSchool.innerHTML = schoolHtml;
+        listBrothers.innerHTML = brothersHtml; listSchool.innerHTML = schoolHtml;
     });
 }
 
-function setCurrentWeek() {
-    initMinistryParts();
+// =================== ЛОГИКА НАВЫКОВ СЛУЖЕНИЯ ===================
+window.addMinistryPart = () => {
+    saveMinistryState(); // Сохраняем введенный текст перед рендером
+    ministryParts.push({ time: "5", type: "", student: "", assistant: "" });
+    renderMinistryParts();
+};
+
+window.removeMinistryPart = (index) => {
+    saveMinistryState();
+    ministryParts.splice(index, 1);
+    renderMinistryParts();
+};
+
+function saveMinistryState() {
+    const container = document.getElementById('ministry-parts-container');
+    if(!container) return;
     
-    // Устанавливаем текущую неделю в input type="week"
-    const today = new Date();
-    const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
-    const pastDaysOfYear = (today - firstDayOfYear) / 86400000;
-    const weekNum = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-    
-    const weekInput = document.getElementById('week-selector');
-    weekInput.value = `${today.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-    
-    document.getElementById('schedule-form').classList.remove('hidden');
-    loadSchedule();
+    ministryParts.forEach((part, index) => {
+        const tEl = document.getElementById(`part-min-${index}-time`);
+        const typeEl = document.getElementById(`part-min-${index}-type`);
+        const stEl = document.getElementById(`part-min-${index}-student`);
+        const asEl = document.getElementById(`part-min-${index}-assistant`);
+        
+        if(tEl) part.time = tEl.value;
+        if(typeEl) part.type = typeEl.value;
+        if(stEl) part.student = stEl.value;
+        if(asEl) part.assistant = asEl.value;
+    });
 }
+
+function renderMinistryParts() {
+    const container = document.getElementById('ministry-parts-container');
+    if(!container) return;
+    
+    let html = '';
+    ministryParts.forEach((part, index) => {
+        html += `
+            <div class="flex items-end gap-3 bg-slate-50 p-2 rounded border border-slate-100 relative pr-8">
+                <input type="text" id="part-min-${index}-time" list="time-list" class="jw-time shrink-0 mb-1" value="${part.time || ''}" placeholder="мин">
+                
+                <div class="w-full flex flex-col gap-1">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] font-black text-jw-ministry">${index+1}.</span>
+                        <input type="text" id="part-min-${index}-type" list="part-types" class="text-[11px] font-bold text-jw-ministry bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="${part.type || ''}" placeholder="Название (Начинайте разговор...)">
+                    </div>
+                    <div class="flex gap-2 w-full mt-1">
+                        <input type="text" id="part-min-${index}-student" list="list-school" class="jw-input w-1/2 text-xs" value="${part.student || ''}" placeholder="Участник">
+                        <input type="text" id="part-min-${index}-assistant" list="list-school" class="jw-input w-1/2 text-[10px]" value="${part.assistant || ''}" placeholder="Помощник">
+                    </div>
+                </div>
+                
+                <button onclick="removeMinistryPart(${index})" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 font-black outline-none transition-colors" title="Удалить">✖</button>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+// ===============================================================
 
 window.loadSchedule = async () => {
     const weekId = document.getElementById('week-selector').value;
     if(!weekId) return;
 
-    // Очистка формы
-    document.querySelectorAll('input[type="text"]').forEach(input => input.value = '');
+    // Сброс всех полей
+    document.querySelectorAll('.jw-input, .jw-title-input').forEach(input => input.value = '');
+    document.querySelectorAll('.jw-time').forEach(input => input.value = '');
+    ministryParts = [];
+    document.getElementById('publish-btn').classList.replace('bg-emerald-700', 'bg-emerald-600');
+    document.getElementById('save-status').innerText = "...";
 
     try {
         const docSnap = await getDoc(doc(db, "meeting_schedules", weekId));
         if (docSnap.exists()) {
             const d = docSnap.data();
             
-            // Заполнение данных
-            document.getElementById('part-chairman').value = d.chairman || '';
-            document.getElementById('part-prayer').value = d.prayer || '';
-            
-            document.getElementById('part-treasure-name').value = d.treasure_name || '';
-            document.getElementById('part-treasure-title').value = d.treasure_title || '';
-            document.getElementById('part-gems-name').value = d.gems_name || '';
-            document.getElementById('part-reading-name').value = d.reading_name || '';
-            
-            for(let i = 1; i <= 4; i++) {
-                if(d.ministry && d.ministry[i-1]) {
-                    document.getElementById(`part-min-${i}-student`).value = d.ministry[i-1].student || '';
-                    document.getElementById(`part-min-${i}-assistant`).value = d.ministry[i-1].assistant || '';
-                    document.getElementById(`part-min-${i}-type`).value = d.ministry[i-1].type || '';
-                }
+            // Статус
+            if(d.isPublished) {
+                document.getElementById('save-status').innerText = "ОПУБЛИКОВАНО";
+                document.getElementById('save-status').classList.replace('text-slate-400', 'text-emerald-500');
+            } else {
+                document.getElementById('save-status').innerText = "ЧЕРНОВИК";
+                document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
             }
+
+            // БУДНИ
+            document.getElementById('mw-chairman-time').value = d.mw_chairman_time || '3';
+            document.getElementById('mw-chairman-name').value = d.mw_chairman_name || '';
+
+            document.getElementById('mw-treasure-time').value = d.mw_treasure_time || '10';
+            document.getElementById('mw-treasure-title').value = d.mw_treasure_title || '';
+            document.getElementById('mw-treasure-name').value = d.mw_treasure_name || '';
+            document.getElementById('mw-gems-time').value = d.mw_gems_time || '10';
+            document.getElementById('mw-gems-name').value = d.mw_gems_name || '';
+            document.getElementById('mw-reading-time').value = d.mw_reading_time || '4';
+            document.getElementById('mw-reading-name').value = d.mw_reading_name || '';
+
+            ministryParts = d.ministryParts || [];
+
+            document.getElementById('mw-local-time').value = d.mw_local_time || '15';
+            document.getElementById('mw-local-title').value = d.mw_local_title || 'Местные потребности';
+            document.getElementById('mw-local-name').value = d.mw_local_name || '';
+            document.getElementById('mw-cbs-time').value = d.mw_cbs_time || '30';
+            document.getElementById('mw-cbs-material').value = d.mw_cbs_material || '';
+            document.getElementById('mw-cbs-conductor').value = d.mw_cbs_conductor || '';
+            document.getElementById('mw-cbs-reader').value = d.mw_cbs_reader || '';
+
+            document.getElementById('mw-prayer-name').value = d.mw_prayer_name || '';
+
+            // ВЫХОДНЫЕ
+            document.getElementById('we-opening-time').value = d.we_opening_time || '5';
+            document.getElementById('we-opening-name').value = d.we_opening_name || '';
             
-            document.getElementById('part-local-name').value = d.local_name || '';
-            document.getElementById('part-cbs-conductor').value = d.cbs_conductor || '';
-            document.getElementById('part-cbs-reader').value = d.cbs_reader || '';
-            document.getElementById('part-cbs-material').value = d.cbs_material || '';
+            document.getElementById('we-talk-time').value = d.we_talk_time || '30';
+            document.getElementById('we-talk-title').value = d.we_talk_title || '';
+            document.getElementById('we-talk-speaker').value = d.we_talk_speaker || '';
+            
+            document.getElementById('we-wt-time').value = d.we_wt_time || '60';
+            document.getElementById('we-wt-conductor').value = d.we_wt_conductor || '';
+            document.getElementById('we-wt-reader').value = d.we_wt_reader || '';
+            
+            document.getElementById('we-prayer-name').value = d.we_prayer_name || '';
+        } else {
+            document.getElementById('save-status').innerText = "НОВЫЙ ГРАФИК";
+            document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
+            // Дефолтные 3 задания служения если пусто
+            ministryParts = [
+                {time: "3", type: "Начинайте разговор", student: "", assistant: ""},
+                {time: "4", type: "Развивайте интерес", student: "", assistant: ""},
+                {time: "5", type: "Подготавливайте учеников", student: "", assistant: ""}
+            ];
         }
-    } catch(e) {
-        console.error(e);
-    }
+        renderMinistryParts();
+    } catch(e) { console.error(e); }
 };
 
-window.saveSchedule = async () => {
+window.saveSchedule = async (isPublished) => {
     const weekId = document.getElementById('week-selector').value;
     if(!weekId) return;
 
-    const btn = document.getElementById('save-btn');
-    btn.innerText = "Сохранение...";
-    btn.disabled = true;
+    saveMinistryState(); // Фиксируем вводы навыков служения
 
-    // Сбор данных из Навыков Служения
-    let ministryArray = [];
-    for(let i = 1; i <= 4; i++) {
-        ministryArray.push({
-            student: document.getElementById(`part-min-${i}-student`).value.trim(),
-            assistant: document.getElementById(`part-min-${i}-assistant`).value.trim(),
-            type: document.getElementById(`part-min-${i}-type`).value.trim()
-        });
-    }
+    const btn = isPublished ? document.getElementById('publish-btn') : document.getElementById('save-draft-btn');
+    const originalText = btn.innerText;
+    btn.innerText = "Загрузка...";
+    btn.disabled = true;
 
     const scheduleData = {
         weekId: weekId,
-        chairman: document.getElementById('part-chairman').value.trim(),
-        prayer: document.getElementById('part-prayer').value.trim(),
+        isPublished: isPublished,
+        updatedAt: new Date().toISOString(),
+
+        // БУДНИ
+        mw_chairman_time: document.getElementById('mw-chairman-time').value,
+        mw_chairman_name: document.getElementById('mw-chairman-name').value.trim(),
         
-        treasure_name: document.getElementById('part-treasure-name').value.trim(),
-        treasure_title: document.getElementById('part-treasure-title').value.trim(),
-        gems_name: document.getElementById('part-gems-name').value.trim(),
-        reading_name: document.getElementById('part-reading-name').value.trim(),
+        mw_treasure_time: document.getElementById('mw-treasure-time').value,
+        mw_treasure_title: document.getElementById('mw-treasure-title').value.trim(),
+        mw_treasure_name: document.getElementById('mw-treasure-name').value.trim(),
         
-        ministry: ministryArray,
+        mw_gems_time: document.getElementById('mw-gems-time').value,
+        mw_gems_name: document.getElementById('mw-gems-name').value.trim(),
         
-        local_name: document.getElementById('part-local-name').value.trim(),
-        cbs_conductor: document.getElementById('part-cbs-conductor').value.trim(),
-        cbs_reader: document.getElementById('part-cbs-reader').value.trim(),
-        cbs_material: document.getElementById('part-cbs-material').value.trim(),
+        mw_reading_time: document.getElementById('mw-reading-time').value,
+        mw_reading_name: document.getElementById('mw-reading-name').value.trim(),
+
+        ministryParts: ministryParts,
+
+        mw_local_time: document.getElementById('mw-local-time').value,
+        mw_local_title: document.getElementById('mw-local-title').value.trim(),
+        mw_local_name: document.getElementById('mw-local-name').value.trim(),
         
-        updatedAt: new Date().toISOString()
+        mw_cbs_time: document.getElementById('mw-cbs-time').value,
+        mw_cbs_material: document.getElementById('mw-cbs-material').value.trim(),
+        mw_cbs_conductor: document.getElementById('mw-cbs-conductor').value.trim(),
+        mw_cbs_reader: document.getElementById('mw-cbs-reader').value.trim(),
+        
+        mw_prayer_name: document.getElementById('mw-prayer-name').value.trim(),
+
+        // ВЫХОДНЫЕ
+        we_opening_time: document.getElementById('we-opening-time').value,
+        we_opening_name: document.getElementById('we-opening-name').value.trim(),
+        
+        we_talk_time: document.getElementById('we-talk-time').value,
+        we_talk_title: document.getElementById('we-talk-title').value.trim(),
+        we_talk_speaker: document.getElementById('we-talk-speaker').value.trim(),
+        
+        we_wt_time: document.getElementById('we-wt-time').value,
+        we_wt_conductor: document.getElementById('we-wt-conductor').value.trim(),
+        we_wt_reader: document.getElementById('we-wt-reader').value.trim(),
+        
+        we_prayer_name: document.getElementById('we-prayer-name').value.trim(),
     };
 
     try {
         await setDoc(doc(db, "meeting_schedules", weekId), scheduleData);
-        window.showToast("Сохранено!");
-        btn.innerText = "Сохранить";
+        window.showToast(isPublished ? "График опубликован!" : "Черновик сохранен");
+        document.getElementById('save-status').innerText = isPublished ? "ОПУБЛИКОВАНО" : "ЧЕРНОВИК";
+        if(isPublished) document.getElementById('save-status').classList.replace('text-slate-400', 'text-emerald-500');
+        else document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
     } catch (e) {
         alert("Ошибка сохранения!");
-        btn.innerText = "Сохранить";
     }
+    
+    btn.innerText = originalText;
     btn.disabled = false;
 };
