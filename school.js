@@ -9,12 +9,12 @@ const dict = {
         "assistant_short": "Пом:", "slip_header": "НАША ХРИСТИАНСКАЯ ЖИЗНЬ И СЛУЖЕНИЕ", 
         "slip_name": "Имя:", "slip_partner": "Помощник:", "slip_date": "Дата:", 
         "slip_notes": "Примечания для учащегося: Материал для задания и номер урока находятся в рабочей тетради.",
-        "btn_back": "Назад", "back_home": "На главную", "assign_title": "Назначить", "ministry_skills": "Навыки служения",
+        "btn_back": "Назад", "back_home": "На главную", "assign_title": "Назначить задание", "ministry_skills": "Навыки служения",
         "student_label": "Ученик", "loading_students": "Ученик...", "assistant_label": "Помощник",
-        "select_student_first": "Помощник...", "task_num": "№ Зад.", "task_type": "Тип",
+        "select_student_first": "Помощник...", "task_num": "№", "task_type": "Тип",
         "opt_select": "Тип задания...", "cat_reading_db": "Чтение Библии", "cat_conversation": "Начинайте разговор",
         "cat_interest": "Развивайте интерес", "cat_disciples": "Подготавливайте учеников", "cat_beliefs": "Объясняйте свои взгляды",
-        "cat_talk_db": "Речь", "task_lesson": "Урок", "task_date": "Дата выступления", "btn_assign": "Назначить",
+        "cat_talk_db": "Речь", "task_lesson": "Урок", "task_date": "Дата", "btn_assign": "Назначить",
         "no_students_found": "Нет участников школы", "no_assistant": "Без помощника",
         "err_talk_girls": "❌ Речь (Только братья)", "err_reading_girls": "❌ Чтение Библии (Братья)",
         "not_performed_yet": "⚠️ <span class='text-rose-500'>Еще не выступал(а)</span>", "last_performance": "💡 Последнее:",
@@ -28,9 +28,9 @@ const dict = {
         "assistant_short": "Pom:", "slip_header": "ÚKOL NA SHROMÁŽDĚNÍ NÁŠ KŘESŤANSKÝ ŽIVOT A SLUŽBA", 
         "slip_name": "Jméno:", "slip_partner": "Partner:", "slip_date": "Datum:", 
         "slip_notes": "Poznámky pro studenta: Podklady pro svůj úkol a číslo studijní lekce najdeš v Pracovním sešitě.",
-        "btn_back": "Zpět", "back_home": "Na hlavní stránku", "assign_title": "Přiřadit", "ministry_skills": "Zlepšujme se ve službě",
+        "btn_back": "Zpět", "back_home": "Na hlavní stránku", "assign_title": "Přiřadit úkol", "ministry_skills": "Zlepšujme se ve službě",
         "student_label": "Student", "loading_students": "Student...", "assistant_label": "Pomocník",
-        "select_student_first": "Pomocník...", "task_num": "Úkol č.", "task_type": "Typ",
+        "select_student_first": "Pomocník...", "task_num": "č.", "task_type": "Typ",
         "opt_select": "Typ úkolu...", "cat_reading_db": "Čtení Bible", "cat_conversation": "Zahájení rozhovoru",
         "cat_interest": "Rozvíjení zájmu", "cat_disciples": "Čiňte učedníky", "cat_beliefs": "Vysvětlování své víry",
         "cat_talk_db": "Proslov", "task_lesson": "Lekce", "task_date": "Datum", "btn_assign": "Přiřadit",
@@ -102,6 +102,7 @@ const currentUserId = localStorage.getItem('userId');
 
 if (!currentUserId) window.location.href = 'login.html';
 
+// Проверка прав
 getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     const roles = docSnap.data().roles || [];
@@ -110,6 +111,7 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!isSchool) window.location.href = 'index.html';
 });
 
+// Заполнение селектов
 const taskNumSelect = document.getElementById('task-number');
 if (taskNumSelect) {
     for (let i = 1; i <= 20; i++) taskNumSelect.innerHTML += `<option value="${i}">${i}</option>`;
@@ -183,9 +185,7 @@ if (studentSelectEl) {
             userTasks.sort((a, b) => new Date(b.date) - new Date(a.date));
             const lastTask = userTasks[0];
             const lastDate = new Date(lastTask.date).toLocaleDateString(localeFormat, { day: 'numeric', month: 'short' });
-            
             let catStr = translateDbString(lastTask.category);
-
             hintBox.innerHTML = `${window.t('last_performance')} <span class="text-emerald-600">${lastDate} (${catStr})</span>`;
         }
     });
@@ -230,7 +230,7 @@ if (assignBtn) {
                 category: tCat,
                 lesson: tLes,
                 date: tDate,
-                weekId: getISOWeekString(tDate), // 🔥 МАГИЯ СВЯЗИ С РАСПИСАНИЕМ
+                weekId: getISOWeekString(tDate), // Связь с расписанием
                 createdAt: new Date().toISOString()
             });
 
@@ -240,17 +240,14 @@ if (assignBtn) {
             document.getElementById('task-number').value = '';
             document.getElementById('task-category').value = '';
             document.getElementById('task-lesson').value = '';
+            document.getElementById('task-date').value = '';
             document.getElementById('student-history-hint').classList.add('hidden');
             
-            btn.classList.replace('bg-indigo-50', 'bg-emerald-50');
-            btn.classList.replace('text-indigo-600', 'text-emerald-600');
-            btn.classList.replace('border-indigo-100', 'border-emerald-200');
+            btn.classList.replace('bg-slate-800', 'bg-emerald-500');
             btn.innerHTML = `✅ ${window.t('success_assigned')}`;
             
             setTimeout(() => { 
-                btn.classList.replace('bg-emerald-50', 'bg-indigo-50');
-                btn.classList.replace('text-emerald-600', 'text-indigo-600');
-                btn.classList.replace('border-emerald-200', 'border-indigo-100');
+                btn.classList.replace('bg-emerald-500', 'bg-slate-800');
                 btn.innerHTML = oldHtml; 
                 btn.disabled = false; 
             }, 2000);
@@ -262,6 +259,7 @@ if (assignBtn) {
     });
 }
 
+// ВЫВОД СПИСКА ЗАДАНИЙ (В СЕТКУ)
 const q = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
 onSnapshot(q, (snapshot) => {
     const list = document.getElementById('tasks-list');
@@ -269,7 +267,7 @@ onSnapshot(q, (snapshot) => {
     allTasksCache = []; 
     
     if (snapshot.empty) {
-        if(list) list.innerHTML = `<p class="text-slate-400 italic p-6 text-center text-sm bg-white rounded-xl border border-slate-200 shadow-sm">${window.t('no_assigned_tasks')}</p>`;
+        if(list) list.innerHTML = `<div class="md:col-span-2"><p class="text-slate-400 italic p-6 text-center text-sm bg-white rounded-xl border border-slate-200 shadow-sm">${window.t('no_assigned_tasks')}</p></div>`;
         if(printArea) printArea.innerHTML = '';
         return;
     }
@@ -287,21 +285,21 @@ onSnapshot(q, (snapshot) => {
         const opacityClass = isPast ? "opacity-60 grayscale bg-slate-50 border-slate-200" : "bg-white border-slate-200 shadow-sm";
 
         const astHtml = t.assistant && t.assistant !== "Без помощника" ? `<span class="text-[10px] md:text-xs text-slate-500 font-bold block mt-0.5">${window.t('assistant_short')} <span class="text-jw-ministry">${t.assistant}</span></span>` : '';
-
         let catStr = translateDbString(t.category);
 
+        // Карточка просмотра (ПЛОСКАЯ, ПОД СЕТКУ)
         html += `
-            <div class="p-3 md:p-4 rounded-xl border relative overflow-hidden transition-all ${opacityClass}">
+            <div class="p-3 md:p-4 rounded-xl border relative overflow-hidden transition-all ${opacityClass} flex flex-col justify-between">
                 <button onclick="deleteTask('${docSnap.id}')" class="absolute top-3 right-3 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors z-10 outline-none" title="${window.t('delete')}">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
                 
-                <div class="flex items-center justify-between mb-2 pr-8 border-b border-slate-100 pb-2">
+                <div class="flex items-center justify-between mb-3 pr-8 border-b border-slate-100 pb-2">
                     <span class="font-black text-slate-800 text-sm md:text-base leading-tight truncate w-full">${t.userName}</span>
                     <span class="text-[9px] font-bold text-jw-ministry bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap">${window.t('lesson')} ${t.lesson}</span>
                 </div>
                 
-                <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center justify-between gap-2 mt-auto">
                     <div class="flex flex-col min-w-0">
                         <div class="flex items-center gap-1.5">
                             <span class="font-black text-slate-400 text-xs">${t.taskNumber}.</span>
