@@ -43,7 +43,7 @@ const dict = {
         "stand_upcoming": "Твои ближайшие записи", "stand_no_records": "Нет записей", "zoom_error": "Zoom не настроен", "zoom_click_hint": "Нажми<br>на ZOOM",
         "zoom_launch": "ЗАПУСК", "months": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"],
         "days": ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"], "info_title": "Информация", "in_development": "Раздел в разработке",
-        "meeting_program": "Программа собрания", "no_schedule": "Нет опубликованных программ",
+        "meeting_program": "Программа", "no_schedule": "Нет опубликованных программ",
         "chairman": "Председатель", "treasures_title": "Сокровища из слова бога", "talk_10_min": "Речь 10 мин.",
         "spiritual_gems": "Духовные жемчужины", "bible_reading": "Чтение Библии", "ministry_skills": "Оттачиваем навыки служения",
         "christian_living": "Христианская жизнь", "congregation_bible_study": "Изучение Библии", "reader": "Чтец",
@@ -91,7 +91,7 @@ const dict = {
         "stand_upcoming": "Tvé nejbližší služby", "stand_no_records": "Žádné zápisy", "zoom_error": "Zoom není nastaven", "zoom_click_hint": "Klikni<br>na ZOOM",
         "zoom_launch": "SPUSTIT", "months": ["Led", "Úno", "Bře", "Dub", "Kvě", "Čvn", "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro"],
         "days": ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"], "info_title": "Informace", "in_development": "Sekce ve vývoji",
-        "meeting_program": "Program schůze", "no_schedule": "Žádné publikované programy",
+        "meeting_program": "Program", "no_schedule": "Žádné publikované programy",
         "chairman": "Předsedající", "treasures_title": "Poklady z Božího slova", "talk_10_min": "Proslov 10 min.",
         "spiritual_gems": "Hledání duchovních drahokamů", "bible_reading": "Čtení Bible", "ministry_skills": "Zlepšujme se ve službě",
         "christian_living": "Křesťanský život", "congregation_bible_study": "Sborové studium Bible", "reader": "Čte",
@@ -576,9 +576,11 @@ window.requestStand = async (btn) => {
 };
 
 // 🔥 ПРОГРАММА СОБРАНИЯ (БЕЗ РАМОК, ШИРОКИЙ, ВЫХОДНЫЕ ДОБАВЛЕНЫ)
-function getWeekString(dateObj) {
+
+// Исправленная ISO функция для недели
+function getISOWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
-    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); 
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
     const weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
     return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
@@ -606,9 +608,12 @@ function weekToDateString(weekId) {
     }
 }
 
-function buildScheduleCard(d, myName, currentWeekStr) {
-    const weekLabel = weekToDateString(d.weekId);
-    const isCurrentWeek = d.weekId === currentWeekStr;
+function buildScheduleCards(d, myName, currentWeekStr) {
+    // d - это данные ОДНОЙ недели. Мы возвращаем HTML сразу для двух колонок (двух карточек).
+    const weekLabel = weekToDateString(d.realWeekId || d.weekId);
+    
+    // Статус только по реальной неделе (без учета -ru или -cs)
+    const isCurrentWeek = (d.realWeekId || d.weekId.split('-')[0]+'-'+d.weekId.split('-')[1]) === currentWeekStr;
     const weekStatus = isCurrentWeek ? window.t('current_week') : window.t('future_week');
     const statusColor = isCurrentWeek ? 'text-emerald-400' : 'text-slate-400';
     
@@ -617,10 +622,10 @@ function buildScheduleCard(d, myName, currentWeekStr) {
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const nameColor = isMe ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
+        const nameColor = isMe ? `text-rose-600 bg-rose-50 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
 
         return `
-            <div class="flex items-center justify-between p-2.5 border-b border-slate-100 last:border-0 bg-white">
+            <div class="flex items-center justify-between p-2.5 border-b border-slate-100 last:border-0 bg-white hover:bg-slate-50 transition-colors">
                 <span class="text-[10px] md:text-xs font-bold text-slate-600 flex-1 pr-2 leading-tight">${partCounter++}. ${translateDbString(title)}</span>
                 <div class="shrink-0 max-w-[55%] flex items-center justify-end text-right">
                     <span class="text-xs md:text-sm font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
@@ -632,9 +637,9 @@ function buildScheduleCard(d, myName, currentWeekStr) {
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const nameColor = isMe ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
+        const nameColor = isMe ? `text-rose-600 bg-rose-50 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
         return `
-            <div class="flex items-center justify-between p-2.5 bg-slate-200/60 border-y border-slate-300">
+            <div class="flex items-center justify-between p-2.5 bg-slate-100/50 border-y border-slate-200">
                 <span class="text-[10px] md:text-xs font-black text-slate-600 flex-1 pr-2">${translateDbString(title)}</span>
                 <div class="shrink-0 max-w-[55%] flex items-center justify-end text-right">
                     <span class="text-xs md:text-sm font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
@@ -650,8 +655,8 @@ function buildScheduleCard(d, myName, currentWeekStr) {
     const minRows = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
-        const studentCol = m.student === myName ? 'text-rose-600 bg-rose-100 px-1.5 rounded shadow-sm' : 'text-slate-800';
-        const assistCol = m.assistant === myName ? 'text-rose-600 bg-rose-100 px-1 rounded shadow-sm' : 'text-slate-500';
+        const studentCol = m.student === myName ? 'text-rose-600 bg-rose-50 px-1.5 rounded shadow-sm' : 'text-slate-800';
+        const assistCol = m.assistant === myName ? 'text-rose-600 bg-rose-50 px-1 rounded shadow-sm' : 'text-slate-500';
 
         const names = `<div class="flex flex-col text-right truncate w-full items-end">
             <span class="text-xs md:text-sm font-black ${studentCol} truncate leading-tight w-full">${m.student || '-'}</span>
@@ -659,7 +664,7 @@ function buildScheduleCard(d, myName, currentWeekStr) {
         </div>`;
 
         return `
-            <div class="flex items-center justify-between p-2.5 border-b border-slate-100 last:border-0 bg-white">
+            <div class="flex items-center justify-between p-2.5 border-b border-slate-100 last:border-0 bg-white hover:bg-slate-50 transition-colors">
                 <span class="text-[10px] md:text-xs font-bold text-slate-600 flex-1 pr-2 leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
                 <div class="shrink-0 max-w-[55%] flex items-center justify-end">
                     ${names}
@@ -674,44 +679,41 @@ function buildScheduleCard(d, myName, currentWeekStr) {
     }).join('');
 
     const cbsNum = partCounter++;
-    const condCol = d.mw_cbs_conductor === myName ? 'text-rose-600 bg-rose-100 px-1.5 rounded shadow-sm' : 'text-slate-800';
-    const readCol = d.mw_cbs_reader === myName ? 'text-rose-600 bg-rose-100 px-1 rounded shadow-sm' : 'text-slate-500';
+    const condCol = d.mw_cbs_conductor === myName ? 'text-rose-600 bg-rose-50 px-1.5 rounded shadow-sm' : 'text-slate-800';
+    const readCol = d.mw_cbs_reader === myName ? 'text-rose-600 bg-rose-50 px-1 rounded shadow-sm' : 'text-slate-500';
 
-    // ВЫХОДНЫЕ
     const we_talk = rowUnnumbered(d.we_talk_title || window.t('public_talk'), d.we_talk_speaker);
-    const we_wt_cond = d.we_wt_conductor === myName ? 'text-rose-600 bg-rose-100 px-1.5 rounded shadow-sm' : 'text-slate-800';
-    const we_wt_read = d.we_wt_reader === myName ? 'text-rose-600 bg-rose-100 px-1 rounded shadow-sm' : 'text-slate-500';
+    const we_wt_cond = d.we_wt_conductor === myName ? 'text-rose-600 bg-rose-50 px-1.5 rounded shadow-sm' : 'text-slate-800';
+    const we_wt_read = d.we_wt_reader === myName ? 'text-rose-600 bg-rose-50 px-1 rounded shadow-sm' : 'text-slate-500';
 
+    // ВЫВОДИМ ДВЕ КАРТОЧКИ (Будни и Выходные)
     return `
-        <div class="w-[90vw] md:w-[400px] shrink-0 snap-center flex flex-col bg-transparent mb-2">
-            
-            <div class="bg-slate-800 p-2 md:p-3 text-center rounded-t-md shrink-0">
+        <div class="w-[92vw] md:w-[calc(50%-0.5rem)] shrink-0 snap-center flex flex-col bg-transparent mb-2">
+            <div class="bg-slate-800 p-2 md:p-3 text-center rounded-t-md shrink-0 border-b border-slate-900">
                 <span class="text-[8px] md:text-[9px] font-bold ${statusColor} uppercase tracking-widest block mb-0.5">${weekStatus}</span>
                 <h4 class="text-white font-black text-xs md:text-sm uppercase tracking-widest">${weekLabel}</h4>
             </div>
-
-            <div class="flex-grow flex flex-col bg-slate-50/50 rounded-b-md border border-t-0 border-slate-200 shadow-sm overflow-hidden">
-                
+            <div class="flex-grow flex flex-col bg-white rounded-b-md shadow-sm overflow-hidden">
                 ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
 
-                <div class="bg-[#0d9488] text-white p-1.5 md:p-2 pl-3 flex items-center shadow-sm">
+                <div class="bg-[#0d9488] text-white p-1.5 md:p-2 pl-3 flex items-center">
                     <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('treasures_title')}</span>
                 </div>
                 ${treasure1}
                 ${treasure2}
                 ${treasure3}
 
-                <div class="bg-[#d97706] text-white p-1.5 md:p-2 pl-3 flex items-center shadow-sm">
+                <div class="bg-[#d97706] text-white p-1.5 md:p-2 pl-3 flex items-center">
                     <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('ministry_skills')}</span>
                 </div>
                 ${minRows}
 
-                <div class="bg-[#b91c1c] text-white p-1.5 md:p-2 pl-3 flex items-center shadow-sm">
+                <div class="bg-[#b91c1c] text-white p-1.5 md:p-2 pl-3 flex items-center">
                     <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('christian_living')}</span>
                 </div>
                 ${livRows}
                 
-                <div class="flex items-center justify-between p-2.5 border-b border-slate-100 bg-white">
+                <div class="flex items-center justify-between p-2.5 border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
                     <div class="flex flex-col flex-1 pr-2">
                         <span class="text-[10px] md:text-xs font-bold text-slate-600 leading-tight">${cbsNum}. ${window.t('congregation_bible_study')}</span>
                         ${d.mw_cbs_material ? `<span class="text-[8px] font-bold text-slate-400 truncate mt-0.5">${d.mw_cbs_material}</span>` : ''}
@@ -725,13 +727,20 @@ function buildScheduleCard(d, myName, currentWeekStr) {
                 </div>
 
                 ${rowUnnumbered(window.t('closing_prayer'), d.mw_prayer_name)}
+            </div>
+        </div>
 
-                <div class="bg-[#475569] text-white p-1.5 md:p-2 pl-3 flex items-center shadow-sm mt-4 border-t border-slate-300">
-                    <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('weekend_meeting')}</span>
-                </div>
+        <div class="w-[92vw] md:w-[calc(50%-0.5rem)] shrink-0 snap-center flex flex-col bg-transparent mb-2">
+            <div class="bg-[#475569] p-2 md:p-3 text-center rounded-t-md shrink-0 border-b border-slate-700">
+                <span class="text-[8px] md:text-[9px] font-bold text-slate-300 uppercase tracking-widest block mb-0.5">${window.t('weekend_meeting')}</span>
+                <h4 class="text-white font-black text-xs md:text-sm uppercase tracking-widest">${weekLabel}</h4>
+            </div>
+            <div class="flex-grow flex flex-col bg-white rounded-b-md shadow-sm overflow-hidden border border-t-0 border-slate-200">
+                
                 ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
                 ${we_talk}
-                <div class="flex items-center justify-between p-2.5 border-b border-slate-100 bg-white">
+                
+                <div class="flex items-center justify-between p-2.5 border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
                     <div class="flex flex-col flex-1 pr-2">
                         <span class="text-[10px] md:text-xs font-bold text-slate-600 leading-tight">${window.t('watchtower_study')}</span>
                     </div>
@@ -743,7 +752,6 @@ function buildScheduleCard(d, myName, currentWeekStr) {
                     </div>
                 </div>
                 ${rowUnnumbered(window.t('closing_prayer'), d.we_prayer_name)}
-
             </div>
         </div>
     `;
@@ -771,16 +779,26 @@ function loadPersonalData() {
             if(!container) return;
 
             let schedules = [];
-            snapshot.forEach(doc => schedules.push(doc.data()));
-            schedules.sort((a,b) => a.weekId.localeCompare(b.weekId));
+            snapshot.forEach(doc => {
+                let id = doc.id;
+                let data = doc.data();
+                
+                // Фильтруем графики по текущему языку приложения
+                if (id.endsWith('-' + currentLang) || (!id.includes('-ru') && !id.includes('-cs') && currentLang === 'ru')) {
+                    data.id = id;
+                    // Если это новый формат с дефисом, берем для сортировки только часть с датой (2026-W20)
+                    data.realWeekId = id.length > 8 ? id.substring(0, 8) : id; 
+                    schedules.push(data);
+                }
+            });
+            schedules.sort((a,b) => a.realWeekId.localeCompare(b.realWeekId));
 
-            const currentWeekStr = getWeekString(new Date()); 
-
-            const upcomingSchedules = schedules.filter(s => s.weekId >= currentWeekStr);
+            const currentWeekStr = getISOWeekString(new Date()); 
+            const upcomingSchedules = schedules.filter(s => s.realWeekId >= currentWeekStr);
 
             let html = '';
             upcomingSchedules.forEach(s => {
-                html += buildScheduleCard(s, currentUserData.name, currentWeekStr);
+                html += buildScheduleCards(s, currentUserData.name, currentWeekStr);
             });
 
             container.innerHTML = html || `<p class="text-slate-400 text-sm italic text-center py-4 w-full">${window.t('no_schedule')}</p>`;
