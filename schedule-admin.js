@@ -108,20 +108,15 @@ function updateNumeration() {
     });
 }
 
-// =================== НАВЫКИ СЛУЖЕНИЯ (БЕЗ ДОБАВЛЕНИЯ/УДАЛЕНИЯ) ===================
+// =================== НАВЫКИ СЛУЖЕНИЯ (БЕЗ ФОРМ ВВОДА) ===================
 
 function saveMinistryState() {
+    // Теперь мы сохраняем только время, имена и тип остаются неизменными из массива
     const container = document.getElementById('ministry-parts-container');
     if(!container) return;
     ministryParts.forEach((part, index) => {
         const tEl = document.getElementById(`part-min-${index}-time`);
-        const typeEl = document.getElementById(`part-min-${index}-type`);
-        const stEl = document.getElementById(`part-min-${index}-student`);
-        const asEl = document.getElementById(`part-min-${index}-assistant`);
         if(tEl) part.time = tEl.value;
-        if(typeEl) part.type = typeEl.value;
-        if(stEl) part.student = stEl.value;
-        if(asEl) part.assistant = asEl.value;
     });
 }
 
@@ -129,23 +124,32 @@ function renderMinistryParts() {
     const container = document.getElementById('ministry-parts-container');
     if(!container) return;
     let html = '';
-    ministryParts.forEach((part, index) => {
-        html += `
-            <div class="flex items-end gap-3 bg-slate-50 p-2 rounded border border-slate-100 relative pr-2">
-                <input type="text" id="part-min-${index}-time" list="time-list" class="jw-time shrink-0 mb-1" value="${part.time || ''}" placeholder="мин">
-                <div class="w-full flex flex-col gap-1">
-                    <div class="flex items-center gap-1.5">
-                        <span class="part-number text-[10px] font-black text-jw-ministry"></span>
-                        <input type="text" id="part-min-${index}-type" list="part-types" class="text-[11px] font-bold text-jw-ministry bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="${part.type || ''}" placeholder="Название (Начинайте разговор...)">
-                    </div>
-                    <div class="flex gap-2 w-full mt-1">
-                        <input type="text" id="part-min-${index}-student" list="list-school" class="jw-input w-1/2 text-xs" value="${part.student || ''}" placeholder="Участник">
-                        <input type="text" id="part-min-${index}-assistant" list="list-school" class="jw-input w-1/2 text-[10px]" value="${part.assistant || ''}" placeholder="Помощник">
+    
+    if (ministryParts.length === 0) {
+        html = `<p class="text-slate-400 text-[10px] italic py-3 text-center border border-slate-200 border-dashed rounded-lg bg-slate-50">Задания подтягиваются из вкладки Школа</p>`;
+    } else {
+        ministryParts.forEach((part, index) => {
+            const assistText = part.assistant ? `<span class="text-slate-400 font-normal mr-1">${window.t('assistant_short')}</span> ${part.assistant}` : `<span class="opacity-50">${window.t('no_assistant')}</span>`;
+            
+            // Теперь это просто текст (span и div), а не input!
+            html += `
+                <div class="flex items-end gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 relative">
+                    <input type="text" id="part-min-${index}-time" list="time-list" class="jw-time shrink-0 mb-1 bg-white shadow-sm" value="${part.time || ''}" placeholder="мин">
+                    <div class="w-full flex flex-col gap-1">
+                        <div class="flex items-center gap-1.5 pb-1 border-b border-slate-200">
+                            <span class="part-number text-[11px] font-black text-jw-ministry"></span>
+                            <span class="text-[12px] font-bold text-jw-ministry w-full truncate">${part.type || window.t('part')}</span>
+                        </div>
+                        <div class="flex gap-2 w-full mt-1 items-end">
+                            <span class="w-1/2 text-[13px] font-black text-slate-800 border-b border-slate-200 pb-0.5 truncate">${part.student || '-'}</span>
+                            <span class="w-1/2 text-[10px] font-bold text-slate-600 border-b border-slate-200 pb-0.5 truncate">${assistText}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
-    });
+            `;
+        });
+    }
+    
     container.innerHTML = html;
     updateNumeration();
 }
@@ -183,7 +187,7 @@ function renderLivingParts() {
     livingParts.forEach((part, index) => {
         html += `
             <div class="flex items-end gap-3 px-2 relative pr-8 pb-2 border-b border-slate-100 last:border-0">
-                <input type="text" id="part-liv-${index}-time" list="time-list" class="jw-time shrink-0 mb-1" value="${part.time || ''}" placeholder="мин">
+                <input type="text" id="part-liv-${index}-time" list="time-list" class="jw-time shrink-0 mb-1 shadow-sm" value="${part.time || ''}" placeholder="мин">
                 <div class="w-full flex flex-col gap-1">
                     <div class="flex items-center gap-1.5">
                         <span class="part-number text-[10px] font-black text-jw-living"></span>
@@ -274,7 +278,7 @@ window.loadSchedule = async () => {
             
             document.getElementById('we-prayer-name').value = d.we_prayer_name || '';
         } else {
-            // 🔥 ЕСЛИ ГРАФИК ПУСТОЙ - ИДЕМ ИСКАТЬ В ШКОЛУ
+            // ЕСЛИ ГРАФИК ПУСТОЙ - ИДЕМ ИСКАТЬ В ШКОЛУ
             document.getElementById('save-status').innerText = "НОВЫЙ ГРАФИК";
             document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
             
@@ -314,16 +318,7 @@ window.loadSchedule = async () => {
                 document.getElementById('mw-reading-name').value = fetchedReadingName;
             }
 
-            if (fetchedMinistryParts.length > 0) {
-                ministryParts = fetchedMinistryParts;
-                window.showToast("Задания из Школы загружены!");
-            } else {
-                ministryParts = [
-                    {time: "3", type: "Начинайте разговор", student: "", assistant: ""},
-                    {time: "4", type: "Развивайте интерес", student: "", assistant: ""},
-                    {time: "5", type: "Подготавливайте учеников", student: "", assistant: ""}
-                ];
-            }
+            ministryParts = fetchedMinistryParts; // Если пусто, то просто будет пусто, без лишних окон ввода
 
             livingParts = [
                 {time: "15", title: "Местные потребности", name: ""}
