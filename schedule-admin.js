@@ -99,6 +99,27 @@ function loadUsersForDatalists() {
     });
 }
 
+// 🔥 ФУНКЦИЯ ПЕРЕСЧЕТА НОМЕРОВ (Сквозная нумерация от 4 до Изучения Библии)
+function updateNumeration() {
+    let currentNumber = 4; // 1-3 зарезервированы под Сокровища
+    
+    // Обновляем нумерацию в Навыках Служения
+    document.querySelectorAll('.ministry-number').forEach(el => {
+        el.innerText = `${currentNumber}.`;
+        currentNumber++;
+    });
+
+    // Обновляем нумерацию в Христианской Жизни
+    document.querySelectorAll('.living-number').forEach(el => {
+        el.innerText = `${currentNumber}.`;
+        currentNumber++;
+    });
+
+    // Номер для Изучения Библии
+    const cbsNumEl = document.getElementById('cbs-number');
+    if(cbsNumEl) cbsNumEl.innerText = `${currentNumber}.`;
+}
+
 // =================== ЛОГИКА НАВЫКОВ СЛУЖЕНИЯ ===================
 window.addMinistryPart = () => {
     saveMinistryState(); 
@@ -137,7 +158,7 @@ function renderMinistryParts() {
                 <input type="text" id="part-min-${index}-time" list="time-list" class="jw-time shrink-0 mb-1" value="${part.time || ''}" placeholder="мин">
                 <div class="w-full flex flex-col gap-1">
                     <div class="flex items-center gap-1.5">
-                        <span class="text-[10px] font-black text-jw-ministry">${index+1}.</span>
+                        <span class="ministry-number text-[10px] font-black text-jw-ministry"></span>
                         <input type="text" id="part-min-${index}-type" list="part-types" class="text-[11px] font-bold text-jw-ministry bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="${part.type || ''}" placeholder="Название (Начинайте разговор...)">
                     </div>
                     <div class="flex gap-2 w-full mt-1">
@@ -150,6 +171,7 @@ function renderMinistryParts() {
         `;
     });
     container.innerHTML = html;
+    updateNumeration(); // Пересчитываем номера
 }
 
 // =================== ЛОГИКА ХРИСТИАНСКОЙ ЖИЗНИ ===================
@@ -187,7 +209,10 @@ function renderLivingParts() {
             <div class="flex items-end gap-3 px-2 relative pr-8 pb-2 border-b border-slate-100 last:border-0">
                 <input type="text" id="part-liv-${index}-time" list="time-list" class="jw-time shrink-0 mb-1" value="${part.time || ''}" placeholder="мин">
                 <div class="w-full flex flex-col gap-1">
-                    <input type="text" id="part-liv-${index}-title" list="living-types" class="text-xs font-bold text-jw-living bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="${part.title || ''}" placeholder="Тема пункта (Местные потребности...)">
+                    <div class="flex items-center gap-1.5">
+                        <span class="living-number text-[10px] font-black text-jw-living"></span>
+                        <input type="text" id="part-liv-${index}-title" list="living-types" class="text-xs font-bold text-jw-living bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="${part.title || ''}" placeholder="Тема пункта (Местные потребности...)">
+                    </div>
                     <input type="text" id="part-liv-${index}-name" list="list-brothers" class="jw-input mt-1" value="${part.name || ''}" placeholder="Имя брата">
                 </div>
                 <button onclick="removeLivingPart(${index})" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 font-black outline-none transition-colors" title="Удалить">✖</button>
@@ -195,6 +220,7 @@ function renderLivingParts() {
         `;
     });
     container.innerHTML = html;
+    updateNumeration(); // Пересчитываем номера
 }
 // ===============================================================
 
@@ -240,7 +266,6 @@ window.loadSchedule = async () => {
             if (d.livingParts && d.livingParts.length > 0) {
                 livingParts = d.livingParts;
             } else if (d.mw_local_name || d.mw_local_title) {
-                // Если есть старые данные Местных потребностей, конвертируем их в новый массив
                 livingParts = [{
                     time: d.mw_local_time || '15',
                     title: d.mw_local_title || 'Местные потребности',
