@@ -43,13 +43,13 @@ const dict = {
         "stand_upcoming": "Твои ближайшие записи", "stand_no_records": "Нет записей", "zoom_error": "Zoom не настроен", "zoom_click_hint": "Нажми<br>на ZOOM",
         "zoom_launch": "ЗАПУСК", "months": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"],
         "days": ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"], "info_title": "Информация", "in_development": "Раздел в разработке",
-        "meeting_program": "Программа собрания", "no_schedule": "Нет опубликованных программ", "my_part": "Моё задание",
+        "meeting_program": "Программа собрания", "no_schedule": "Нет опубликованных программ",
         "chairman": "Председатель", "treasures_title": "Сокровища из слова бога", "talk_10_min": "Речь 10 мин.",
         "spiritual_gems": "Духовные жемчужины", "bible_reading": "Чтение Библии", "ministry_skills": "Оттачиваем навыки служения",
         "christian_living": "Христианская жизнь", "congregation_bible_study": "Изучение Библии", "reader": "Чтец",
         "closing_prayer": "Заключительная молитва", "part": "Задание", "start_conversation": "Начинайте разговор",
         "develop_interest": "Развивайте интерес", "make_disciples": "Подготавливайте учеников", "explain_beliefs": "Объясняйте свои взгляды",
-        "local_needs": "Местные потребности"
+        "local_needs": "Местные потребности", "current_week": "АКТУАЛЬНАЯ", "future_week": "БУДУЩАЯ"
     },
     cs: {
         "loading_data": "Načítání dat...", "pending_title": "Žádost se vyřizuje", "pending_desc": "Čekejte na potvrzení administrátorem.",
@@ -90,13 +90,13 @@ const dict = {
         "stand_upcoming": "Tvé nejbližší služby", "stand_no_records": "Žádné zápisy", "zoom_error": "Zoom není nastaven", "zoom_click_hint": "Klikni<br>na ZOOM",
         "zoom_launch": "SPUSTIT", "months": ["Led", "Úno", "Bře", "Dub", "Kvě", "Čvn", "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro"],
         "days": ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"], "info_title": "Informace", "in_development": "Sekce ve vývoji",
-        "meeting_program": "Program schůze", "no_schedule": "Žádné publikované programy", "my_part": "Moje",
+        "meeting_program": "Program schůze", "no_schedule": "Žádné publikované programy",
         "chairman": "Předsedající", "treasures_title": "Poklady z Božího slova", "talk_10_min": "Proslov 10 min.",
         "spiritual_gems": "Hledání duchovních drahokamů", "bible_reading": "Čtení Bible", "ministry_skills": "Zlepšujme se ve službě",
         "christian_living": "Křesťanský život", "congregation_bible_study": "Sborové studium Bible", "reader": "Čte",
         "closing_prayer": "Závěrečná modlitba", "part": "Úkol", "start_conversation": "Zahájení rozhovoru",
         "develop_interest": "Rozvíjení zájmu", "make_disciples": "Činění učedníků", "explain_beliefs": "Vysvětlování své víry",
-        "local_needs": "Místní potřeby"
+        "local_needs": "Místní potřeby", "current_week": "AKTUÁLNÍ", "future_week": "BUDOUCÍ"
     }
 };
 
@@ -573,7 +573,7 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-// 🔥 ПРОГРАММА СОБРАНИЯ
+// 🔥 ПРОГРАММА СОБРАНИЯ - ДИЗАЙН РАБОЧЕЙ ТЕТРАДИ (БЕЗ РАМОК, ШИРОКИЙ)
 function weekToDateString(weekId) {
     if(!weekId) return "";
     const [year, weekStr] = weekId.split('-W');
@@ -596,38 +596,39 @@ function weekToDateString(weekId) {
     }
 }
 
-function buildScheduleCard(d, myName) {
+function buildScheduleCard(d, myName, currentWeekStr) {
     const weekLabel = weekToDateString(d.weekId);
+    const isCurrentWeek = d.weekId === currentWeekStr;
+    const weekStatus = isCurrentWeek ? window.t('current_week') : window.t('future_week');
+    const statusColor = isCurrentWeek ? 'text-emerald-400' : 'text-slate-400';
     let partCounter = 1;
 
+    // Обычная строка
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
         const nameColor = isMe ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
-        const badge = isMe ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">${window.t('my_part')}</span>` : '';
 
         return `
             <div class="flex items-center justify-between p-2.5 border-b border-slate-100 last:border-0 bg-white">
-                <span class="text-[10px] md:text-xs font-bold text-slate-600 w-1/2 pr-2 leading-tight">${partCounter++}. ${translateDbString(title)}</span>
-                <div class="w-1/2 flex items-center justify-end text-right truncate">
+                <span class="text-[10px] md:text-xs font-bold text-slate-600 flex-1 pr-2 leading-tight">${partCounter++}. ${translateDbString(title)}</span>
+                <div class="shrink-0 max-w-[55%] flex items-center justify-end text-right">
                     <span class="text-xs md:text-sm font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
-                    ${badge}
                 </div>
             </div>
         `;
     };
 
+    // Строка без номера (Серый фон: Председатель, Молитва)
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
         const nameColor = isMe ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
-        const badge = isMe ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">${window.t('my_part')}</span>` : '';
         return `
             <div class="flex items-center justify-between p-2.5 bg-slate-200/60 border-y border-slate-300">
-                <span class="text-[10px] md:text-xs font-black text-slate-600 w-1/2 pr-2">${translateDbString(title)}</span>
-                <div class="w-1/2 flex items-center justify-end text-right truncate">
-                    <span class="text-xs md:text-sm font-black ${nameColor} truncate">${person || '-'}</span>
-                    ${badge}
+                <span class="text-[10px] md:text-xs font-black text-slate-600 flex-1 pr-2">${translateDbString(title)}</span>
+                <div class="shrink-0 max-w-[55%] flex items-center justify-end text-right">
+                    <span class="text-xs md:text-sm font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
                 </div>
             </div>
         `;
@@ -638,19 +639,17 @@ function buildScheduleCard(d, myName) {
         const isMe = (m.student === myName || m.assistant === myName);
         const studentCol = m.student === myName ? 'text-rose-600 bg-rose-100 px-1.5 rounded shadow-sm' : 'text-slate-800';
         const assistCol = m.assistant === myName ? 'text-rose-600 bg-rose-100 px-1 rounded shadow-sm' : 'text-slate-500';
-        const badge = isMe ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">${window.t('my_part')}</span>` : '';
 
         const names = `<div class="flex flex-col text-right truncate w-full items-end">
-            <span class="text-xs md:text-sm font-black ${studentCol} truncate leading-tight">${m.student || '-'}</span>
-            ${m.assistant ? `<span class="text-[9px] font-bold ${assistCol} truncate mt-0.5">${window.t('assistant_short')} ${m.assistant}</span>` : ''}
+            <span class="text-xs md:text-sm font-black ${studentCol} truncate leading-tight w-full">${m.student || '-'}</span>
+            ${m.assistant ? `<span class="text-[9px] font-bold ${assistCol} truncate mt-0.5 w-full">${window.t('assistant_short')} ${m.assistant}</span>` : ''}
         </div>`;
 
         return `
             <div class="flex items-center justify-between p-2.5 border-b border-slate-100 last:border-0 bg-white">
-                <span class="text-[10px] md:text-xs font-bold text-slate-600 w-1/2 pr-2 leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
-                <div class="w-1/2 flex items-center justify-end">
+                <span class="text-[10px] md:text-xs font-bold text-slate-600 flex-1 pr-2 leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
+                <div class="shrink-0 max-w-[55%] flex items-center justify-end">
                     ${names}
-                    ${badge}
                 </div>
             </div>
         `;
@@ -661,18 +660,18 @@ function buildScheduleCard(d, myName) {
         return row(m.title, m.name);
     }).join('');
 
-    const cbsIsMe = (d.mw_cbs_conductor===myName || d.mw_cbs_reader===myName);
     const condCol = d.mw_cbs_conductor === myName ? 'text-rose-600 bg-rose-100 px-1.5 rounded shadow-sm' : 'text-slate-800';
     const readCol = d.mw_cbs_reader === myName ? 'text-rose-600 bg-rose-100 px-1 rounded shadow-sm' : 'text-slate-500';
-    const cbsBadge = cbsIsMe ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">${window.t('my_part')}</span>` : '';
 
     return `
-        <div class="w-[280px] md:w-[320px] shrink-0 snap-center border border-slate-300 rounded-lg overflow-hidden shadow-sm flex flex-col bg-white">
-            <div class="bg-slate-800 p-2 md:p-3 text-center border-b border-slate-900 shrink-0">
+        <div class="w-[92%] md:w-full shrink-0 snap-center flex flex-col bg-transparent">
+            
+            <div class="bg-slate-800 p-2 md:p-3 text-center rounded-t-md shrink-0">
+                <span class="text-[8px] md:text-[9px] font-bold ${statusColor} uppercase tracking-widest block mb-0.5">${weekStatus}</span>
                 <h4 class="text-white font-black text-xs md:text-sm uppercase tracking-widest">${weekLabel}</h4>
             </div>
 
-            <div class="flex-grow overflow-y-auto custom-scrollbar flex flex-col pb-2">
+            <div class="flex-grow flex flex-col pb-2 bg-slate-50/50 rounded-b-md border border-t-0 border-slate-200">
                 
                 ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
 
@@ -694,16 +693,15 @@ function buildScheduleCard(d, myName) {
                 ${livRows}
                 
                 <div class="flex items-center justify-between p-2.5 border-b border-slate-100 bg-white">
-                    <div class="flex flex-col w-1/2 pr-2">
+                    <div class="flex flex-col flex-1 pr-2">
                         <span class="text-[10px] md:text-xs font-bold text-slate-600 leading-tight">${partCounter++}. ${window.t('congregation_bible_study')}</span>
                         ${d.mw_cbs_material ? `<span class="text-[8px] font-bold text-slate-400 truncate mt-0.5">${d.mw_cbs_material}</span>` : ''}
                     </div>
-                    <div class="w-1/2 flex items-center justify-end text-right">
+                    <div class="shrink-0 max-w-[55%] flex items-center justify-end text-right">
                         <div class="flex flex-col items-end truncate w-full">
-                            <span class="text-xs md:text-sm font-black ${condCol} truncate leading-tight">${d.mw_cbs_conductor || '-'}</span>
-                            ${d.mw_cbs_reader ? `<span class="text-[9px] font-bold ${readCol} truncate mt-0.5">${window.t('reader')} ${d.mw_cbs_reader}</span>` : ''}
+                            <span class="text-xs md:text-sm font-black ${condCol} truncate leading-tight w-full">${d.mw_cbs_conductor || '-'}</span>
+                            ${d.mw_cbs_reader ? `<span class="text-[9px] font-bold ${readCol} truncate mt-0.5 w-full">${window.t('reader')} ${d.mw_cbs_reader}</span>` : ''}
                         </div>
-                        ${cbsBadge}
                     </div>
                 </div>
 
@@ -733,7 +731,7 @@ function loadPersonalData() {
         onSnapshot(query(collection(db, "meeting_schedules"), where("isPublished", "==", true)), (snapshot) => {
             const container = document.getElementById('meeting-program-list');
             if(!container) return;
-            container.className = "flex flex-nowrap overflow-x-auto gap-4 pb-4 px-1 snap-x snap-mandatory custom-scrollbar items-stretch scroll-smooth w-full";
+            container.className = "flex flex-nowrap overflow-x-auto gap-4 pb-4 snap-x snap-mandatory custom-scrollbar items-stretch scroll-smooth w-full";
 
             let schedules = [];
             snapshot.forEach(doc => schedules.push(doc.data()));
@@ -749,7 +747,7 @@ function loadPersonalData() {
 
             let html = '';
             upcomingSchedules.forEach(s => {
-                html += buildScheduleCard(s, currentUserData.name);
+                html += buildScheduleCard(s, currentUserData.name, currentWeekStr);
             });
 
             container.innerHTML = html || `<p class="text-slate-400 text-sm italic text-center py-4 w-full">${window.t('no_schedule')}</p>`;
@@ -965,6 +963,7 @@ function loadPersonalData() {
     } catch(e){}
 
     try {
+        // 🔥 КАЛЕНДАРЬ НА ГЛАВНОЙ (Только сегодня)
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
             const container = document.getElementById('calendar-events');
