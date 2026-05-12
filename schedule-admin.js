@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 window.showToast = (message) => {
     const container = document.getElementById('toast-container');
@@ -43,8 +43,7 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
 let ministryParts = [];
 let livingParts = [];
 
-// СТРОГИЕ ФУНКЦИИ ИСЧИСЛЕНИЯ НЕДЕЛЬ ISO 8601
-function getWeekString(dateObj) {
+function getISOWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); 
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
@@ -66,16 +65,15 @@ window.changeWeek = (offset) => {
     if (!input.value) return;
     const currentDate = getDateFromWeekString(input.value);
     currentDate.setDate(currentDate.getDate() + (offset * 7));
-    input.value = getWeekString(currentDate);
+    input.value = getISOWeekString(currentDate);
     loadSchedule();
 };
 
 function setCurrentWeek() {
     const today = new Date();
-    document.getElementById('week-selector').value = getWeekString(today);
+    document.getElementById('week-selector').value = getISOWeekString(today);
     document.getElementById('schedule-form').classList.remove('hidden');
     
-    // Подставляем текущий язык в селектор (чтобы по умолчанию админ редактировал свой язык)
     const currentAppLang = localStorage.getItem('app_lang') || 'ru';
     const langSelector = document.getElementById('schedule-lang');
     if (langSelector) langSelector.value = currentAppLang;
@@ -216,8 +214,7 @@ window.loadSchedule = async () => {
     const scheduleLang = document.getElementById('schedule-lang').value || 'ru';
     if(!weekIdRaw) return;
 
-    // ДОКУМЕНТ В БД ИЩЕМ ПО ID НЕДЕЛИ + ЯЗЫК (например 2026-W20-ru)
-    const weekId = `${weekIdRaw}-${scheduleLang}`;
+    const weekId = `${weekIdRaw}-${scheduleLang}`; 
 
     document.querySelectorAll('.jw-input, .jw-title-input').forEach(input => input.value = '');
     document.querySelectorAll('.jw-time').forEach(input => input.value = '');
@@ -228,6 +225,7 @@ window.loadSchedule = async () => {
 
     try {
         const docSnap = await getDoc(doc(db, "meeting_schedules", weekId));
+        
         if (docSnap.exists()) {
             const d = docSnap.data();
             
@@ -286,14 +284,61 @@ window.loadSchedule = async () => {
             
             document.getElementById('we-prayer-name').value = d.we_prayer_name || '';
         } else {
+            // 🔥 ЕСЛИ ГРАФИК ПУСТОЙ - ИДЕМ ИСКАТЬ В ШКОЛУ!
             document.getElementById('save-status').innerText = "НОВЫЙ ГРАФИК";
             document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
             
-            ministryParts = [
-                {time: "3", type: "Начинайте разговор", student: "", assistant: ""},
-                {time: "4", type: "Развивайте интерес", student: "", assistant: ""},
-                {time: "5", type: "Подготавливайте учеников", student: "", assistant: ""}
-            ];
+            // Пытаемся подтянуть данные из personal_tasks
+            const q = query(collection(db, "personal_tasks"), where("weekId", "==", weekIdRaw));
+            const tasksSnap = await getDocs(q);
+            
+            let fetchedMinistryParts = [];
+            let fetchedReadingName = '';
+
+            if (!tasksSnap.empty) {
+                let tasksForThisWeek = [];
+                tasksSnap.forEach(doc => tasksForThisWeek.push(doc.data()));
+                
+                // Сортируем по номеру задания
+                tasksForThisWeek.sort((a,b) => parseInt(a.taskNumber) - parseInt(b.taskNumber));
+
+                tasksForThisWeek.forEach(t => {
+                    let cat = t.category;
+                    if (cat === 'ЧТЕНИЕ БИБЛИИ' || cat === 'Čtení Bible' || cat === 'Чтение Библии') {
+                        fetchedReadingName = t.userName;
+                    } else {
+                        // Переводим категорию в красивый вид
+                        if (cat === 'НАЧИНАЙТЕ РАЗГОВОР') cat = 'Начинайте разговор';
+                        if (cat === 'РАЗВИВАЙТЕ ИНТЕРЕС') cat = 'Развивайте интерес';
+                        if (cat === 'ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ') cat = 'Подготавливайте учеников';
+                        if (cat === 'ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ') cat = 'Объясняйте свои взгляды';
+                        if (cat === 'РЕЧЬ') cat = 'Речь';
+
+                        fetchedMinistryParts.push({
+                            time: "5", // по умолчанию
+                            type: cat,
+                            student: t.userName,
+                            assistant: t.assistant && t.assistant !== "Без помощника" ? t.assistant : ""
+                        });
+                    }
+                });
+            }
+
+            if (fetchedReadingName) {
+                document.getElementById('mw-reading-name').value = fetchedReadingName;
+            }
+
+            if (fetchedMinistryParts.length > 0) {
+                ministryParts = fetchedMinistryParts;
+                window.showToast("Задания из Школы загружены!");
+            } else {
+                ministryParts = [
+                    {time: "3", type: "Начинайте разговор", student: "", assistant: ""},
+                    {time: "4", type: "Развивайте интерес", student: "", assistant: ""},
+                    {time: "5", type: "Подготавливайте учеников", student: "", assistant: ""}
+                ];
+            }
+
             livingParts = [
                 {time: "15", title: "Местные потребности", name: ""}
             ];
@@ -309,7 +354,7 @@ window.saveSchedule = async (isPublished) => {
     const scheduleLang = document.getElementById('schedule-lang').value || 'ru';
     if(!weekIdRaw) return;
 
-    const weekId = `${weekIdRaw}-${scheduleLang}`; // Сохраняем с привязкой к языку
+    const weekId = `${weekIdRaw}-${scheduleLang}`; 
 
     saveMinistryState(); 
     saveLivingState();
@@ -320,9 +365,9 @@ window.saveSchedule = async (isPublished) => {
     btn.disabled = true;
 
     const scheduleData = {
-        weekId: weekId, // 2026-W20-ru
-        realWeekId: weekIdRaw, // 2026-W20 (Для сортировки в приложении)
-        lang: scheduleLang, // ru или cs
+        weekId: weekId, 
+        realWeekId: weekIdRaw, 
+        lang: scheduleLang, 
         isPublished: isPublished,
         updatedAt: new Date().toISOString(),
 
