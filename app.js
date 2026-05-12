@@ -169,7 +169,15 @@ window.hideGlobalLoader = () => {
 setTimeout(window.hideGlobalLoader, 2500);
 
 window.scrollNews = (offset) => { document.getElementById('content-news')?.scrollBy({ left: offset, behavior: 'smooth' }); };
-window.scrollProgram = (offset) => { document.getElementById('meeting-program-list')?.scrollBy({ left: offset, behavior: 'smooth' }); };
+
+// 🔥 УМНАЯ КАРУСЕЛЬ ПРОГРАММЫ (Листает ровно на ширину контейнера)
+window.scrollProgram = (dir) => { 
+    const container = document.getElementById('meeting-program-list');
+    if(container) {
+        const scrollAmount = container.clientWidth * dir;
+        container.scrollBy({ left: scrollAmount, behavior: 'smooth' }); 
+    }
+};
 
 window.showToast = (message, type = 'info') => {
     const container = document.getElementById('toast-container');
@@ -577,7 +585,6 @@ window.requestStand = async (btn) => {
 
 // 🔥 ПРОГРАММА СОБРАНИЯ (БЕЗ РАМОК, ШИРОКИЙ, ВЫХОДНЫЕ ДОБАВЛЕНЫ)
 
-// Исправленная ISO функция для недели
 function getISOWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -609,10 +616,8 @@ function weekToDateString(weekId) {
 }
 
 function buildScheduleCards(d, myName, currentWeekStr) {
-    // d - это данные ОДНОЙ недели. Мы возвращаем HTML сразу для двух колонок (двух карточек).
     const weekLabel = weekToDateString(d.realWeekId || d.weekId);
     
-    // Статус только по реальной неделе (без учета -ru или -cs)
     const isCurrentWeek = (d.realWeekId || d.weekId.split('-')[0]+'-'+d.weekId.split('-')[1]) === currentWeekStr;
     const weekStatus = isCurrentWeek ? window.t('current_week') : window.t('future_week');
     const statusColor = isCurrentWeek ? 'text-emerald-400' : 'text-slate-400';
@@ -622,13 +627,13 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const nameColor = isMe ? `text-rose-600 bg-rose-50 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
+        const nameColor = isMe ? `text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded shadow-sm` : 'text-slate-800';
 
         return `
-            <div class="flex items-center justify-between p-2.5 border-b border-slate-100 last:border-0 bg-white hover:bg-slate-50 transition-colors">
-                <span class="text-[10px] md:text-xs font-bold text-slate-600 flex-1 pr-2 leading-tight">${partCounter++}. ${translateDbString(title)}</span>
-                <div class="shrink-0 max-w-[55%] flex items-center justify-end text-right">
-                    <span class="text-xs md:text-sm font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
+            <div class="flex items-center justify-between py-1.5 px-2 border-b border-slate-100 last:border-0 bg-white hover:bg-slate-50 transition-colors">
+                <span class="text-[9px] md:text-[10px] font-bold text-slate-600 flex-1 pr-1 leading-tight">${partCounter++}. ${translateDbString(title)}</span>
+                <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
+                    <span class="text-[10px] md:text-[11px] font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
                 </div>
             </div>
         `;
@@ -637,12 +642,12 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const nameColor = isMe ? `text-rose-600 bg-rose-50 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
+        const nameColor = isMe ? `text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded shadow-sm` : 'text-slate-800';
         return `
-            <div class="flex items-center justify-between p-2.5 bg-slate-100/50 border-y border-slate-200">
-                <span class="text-[10px] md:text-xs font-black text-slate-600 flex-1 pr-2">${translateDbString(title)}</span>
-                <div class="shrink-0 max-w-[55%] flex items-center justify-end text-right">
-                    <span class="text-xs md:text-sm font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
+            <div class="flex items-center justify-between py-1.5 px-2 bg-slate-100/50 border-y border-slate-200">
+                <span class="text-[9px] md:text-[10px] font-black text-slate-600 flex-1 pr-1">${translateDbString(title)}</span>
+                <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
+                    <span class="text-[10px] md:text-[11px] font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
                 </div>
             </div>
         `;
@@ -659,14 +664,14 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         const assistCol = m.assistant === myName ? 'text-rose-600 bg-rose-50 px-1 rounded shadow-sm' : 'text-slate-500';
 
         const names = `<div class="flex flex-col text-right truncate w-full items-end">
-            <span class="text-xs md:text-sm font-black ${studentCol} truncate leading-tight w-full">${m.student || '-'}</span>
-            ${m.assistant ? `<span class="text-[9px] font-bold ${assistCol} truncate mt-0.5 w-full">${window.t('assistant_short')} ${m.assistant}</span>` : ''}
+            <span class="text-[10px] md:text-[11px] font-black ${studentCol} truncate leading-tight w-full">${m.student || '-'}</span>
+            ${m.assistant ? `<span class="text-[8px] font-bold ${assistCol} truncate mt-0.5 w-full">${window.t('assistant_short')} ${m.assistant}</span>` : ''}
         </div>`;
 
         return `
-            <div class="flex items-center justify-between p-2.5 border-b border-slate-100 last:border-0 bg-white hover:bg-slate-50 transition-colors">
-                <span class="text-[10px] md:text-xs font-bold text-slate-600 flex-1 pr-2 leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
-                <div class="shrink-0 max-w-[55%] flex items-center justify-end">
+            <div class="flex items-center justify-between py-1.5 px-2 border-b border-slate-100 last:border-0 bg-white hover:bg-slate-50 transition-colors">
+                <span class="text-[9px] md:text-[10px] font-bold text-slate-600 flex-1 pr-1 leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
+                <div class="shrink-0 max-w-[60%] flex items-center justify-end">
                     ${names}
                 </div>
             </div>
@@ -686,42 +691,41 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const we_wt_cond = d.we_wt_conductor === myName ? 'text-rose-600 bg-rose-50 px-1.5 rounded shadow-sm' : 'text-slate-800';
     const we_wt_read = d.we_wt_reader === myName ? 'text-rose-600 bg-rose-50 px-1 rounded shadow-sm' : 'text-slate-500';
 
-    // ВЫВОДИМ ДВЕ КАРТОЧКИ (Будни и Выходные)
     return `
-        <div class="w-[92vw] md:w-[calc(50%-0.5rem)] shrink-0 snap-center flex flex-col bg-transparent mb-2">
-            <div class="bg-slate-800 p-2 md:p-3 text-center rounded-t-md shrink-0 border-b border-slate-900">
-                <span class="text-[8px] md:text-[9px] font-bold ${statusColor} uppercase tracking-widest block mb-0.5">${weekStatus}</span>
-                <h4 class="text-white font-black text-xs md:text-sm uppercase tracking-widest">${weekLabel}</h4>
+        <div class="w-[88vw] md:w-[calc(50%-0.5rem)] shrink-0 snap-start flex flex-col bg-transparent mb-2">
+            <div class="bg-slate-800 p-1.5 md:p-2 text-center rounded-t-md shrink-0 border-b border-slate-900">
+                <span class="text-[7px] md:text-[8px] font-black ${statusColor} uppercase tracking-widest block">${weekStatus}</span>
+                <h4 class="text-white font-black text-xs uppercase tracking-widest leading-tight">${weekLabel}</h4>
             </div>
             <div class="flex-grow flex flex-col bg-white rounded-b-md shadow-sm overflow-hidden">
                 ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
 
-                <div class="bg-[#0d9488] text-white p-1.5 md:p-2 pl-3 flex items-center">
-                    <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('treasures_title')}</span>
+                <div class="bg-[#0d9488] text-white py-1 px-2 flex items-center">
+                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest leading-none">${window.t('treasures_title')}</span>
                 </div>
                 ${treasure1}
                 ${treasure2}
                 ${treasure3}
 
-                <div class="bg-[#d97706] text-white p-1.5 md:p-2 pl-3 flex items-center">
-                    <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('ministry_skills')}</span>
+                <div class="bg-[#d97706] text-white py-1 px-2 flex items-center">
+                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest leading-none">${window.t('ministry_skills')}</span>
                 </div>
                 ${minRows}
 
-                <div class="bg-[#b91c1c] text-white p-1.5 md:p-2 pl-3 flex items-center">
-                    <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('christian_living')}</span>
+                <div class="bg-[#b91c1c] text-white py-1 px-2 flex items-center">
+                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest leading-none">${window.t('christian_living')}</span>
                 </div>
                 ${livRows}
                 
-                <div class="flex items-center justify-between p-2.5 border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
-                    <div class="flex flex-col flex-1 pr-2">
-                        <span class="text-[10px] md:text-xs font-bold text-slate-600 leading-tight">${cbsNum}. ${window.t('congregation_bible_study')}</span>
-                        ${d.mw_cbs_material ? `<span class="text-[8px] font-bold text-slate-400 truncate mt-0.5">${d.mw_cbs_material}</span>` : ''}
+                <div class="flex items-center justify-between py-1.5 px-2 border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
+                    <div class="flex flex-col flex-1 pr-1">
+                        <span class="text-[9px] md:text-[10px] font-bold text-slate-600 leading-tight">${cbsNum}. ${window.t('congregation_bible_study')}</span>
+                        ${d.mw_cbs_material ? `<span class="text-[7px] font-bold text-slate-400 truncate mt-0.5">${d.mw_cbs_material}</span>` : ''}
                     </div>
-                    <div class="shrink-0 max-w-[55%] flex items-center justify-end text-right">
+                    <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
                         <div class="flex flex-col items-end truncate w-full">
-                            <span class="text-xs md:text-sm font-black ${condCol} truncate leading-tight w-full">${d.mw_cbs_conductor || '-'}</span>
-                            ${d.mw_cbs_reader ? `<span class="text-[9px] font-bold ${readCol} truncate mt-0.5 w-full">${window.t('reader')} ${d.mw_cbs_reader}</span>` : ''}
+                            <span class="text-[10px] md:text-[11px] font-black ${condCol} truncate leading-tight w-full">${d.mw_cbs_conductor || '-'}</span>
+                            ${d.mw_cbs_reader ? `<span class="text-[8px] font-bold ${readCol} truncate mt-0.5 w-full">${window.t('reader')} ${d.mw_cbs_reader}</span>` : ''}
                         </div>
                     </div>
                 </div>
@@ -730,24 +734,25 @@ function buildScheduleCards(d, myName, currentWeekStr) {
             </div>
         </div>
 
-        <div class="w-[92vw] md:w-[calc(50%-0.5rem)] shrink-0 snap-center flex flex-col bg-transparent mb-2">
-            <div class="bg-[#475569] p-2 md:p-3 text-center rounded-t-md shrink-0 border-b border-slate-700">
-                <span class="text-[8px] md:text-[9px] font-bold text-slate-300 uppercase tracking-widest block mb-0.5">${window.t('weekend_meeting')}</span>
-                <h4 class="text-white font-black text-xs md:text-sm uppercase tracking-widest">${weekLabel}</h4>
+        <div class="w-[88vw] md:w-[calc(50%-0.5rem)] shrink-0 snap-start flex flex-col bg-transparent mb-2">
+            <div class="bg-[#475569] p-1.5 md:p-2 text-center rounded-t-md shrink-0 border-b border-slate-700">
+                <span class="text-[7px] md:text-[8px] font-black ${statusColor} uppercase tracking-widest block">${weekStatus}</span>
+                <h4 class="text-white font-black text-xs uppercase tracking-widest leading-tight">${weekLabel}</h4>
+                <span class="text-[7px] text-slate-300 font-bold uppercase tracking-widest block mt-0.5">${window.t('weekend_meeting')}</span>
             </div>
             <div class="flex-grow flex flex-col bg-white rounded-b-md shadow-sm overflow-hidden border border-t-0 border-slate-200">
                 
                 ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
                 ${we_talk}
                 
-                <div class="flex items-center justify-between p-2.5 border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
-                    <div class="flex flex-col flex-1 pr-2">
-                        <span class="text-[10px] md:text-xs font-bold text-slate-600 leading-tight">${window.t('watchtower_study')}</span>
+                <div class="flex items-center justify-between py-1.5 px-2 border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
+                    <div class="flex flex-col flex-1 pr-1">
+                        <span class="text-[9px] md:text-[10px] font-bold text-slate-600 leading-tight">${window.t('watchtower_study')}</span>
                     </div>
-                    <div class="shrink-0 max-w-[55%] flex items-center justify-end text-right">
+                    <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
                         <div class="flex flex-col items-end truncate w-full">
-                            <span class="text-xs md:text-sm font-black ${we_wt_cond} truncate leading-tight w-full">${d.we_wt_conductor || '-'}</span>
-                            ${d.we_wt_reader ? `<span class="text-[9px] font-bold ${we_wt_read} truncate mt-0.5 w-full">${window.t('reader')} ${d.we_wt_reader}</span>` : ''}
+                            <span class="text-[10px] md:text-[11px] font-black ${we_wt_cond} truncate leading-tight w-full">${d.we_wt_conductor || '-'}</span>
+                            ${d.we_wt_reader ? `<span class="text-[8px] font-bold ${we_wt_read} truncate mt-0.5 w-full">${window.t('reader')} ${d.we_wt_reader}</span>` : ''}
                         </div>
                     </div>
                 </div>
@@ -783,10 +788,8 @@ function loadPersonalData() {
                 let id = doc.id;
                 let data = doc.data();
                 
-                // Фильтруем графики по текущему языку приложения
                 if (id.endsWith('-' + currentLang) || (!id.includes('-ru') && !id.includes('-cs') && currentLang === 'ru')) {
                     data.id = id;
-                    // Если это новый формат с дефисом, берем для сортировки только часть с датой (2026-W20)
                     data.realWeekId = id.length > 8 ? id.substring(0, 8) : id; 
                     schedules.push(data);
                 }
