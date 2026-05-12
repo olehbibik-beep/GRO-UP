@@ -105,7 +105,6 @@ const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU';
 
 window.t = (key) => dict[currentLang][key] || key;
 
-// Умный переводчик БД
 function translateDbString(str) {
     if (!str) return '';
     const map = {
@@ -573,7 +572,7 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-// 🔥 ПРОГРАММА СОБРАНИЯ - ДИЗАЙН РАБОЧЕЙ ТЕТРАДИ (БЕЗ РАМОК, ШИРОКИЙ)
+// 🔥 ПРОГРАММА СОБРАНИЯ - ДИЗАЙН РАБОЧЕЙ ТЕТРАДИ (БЕЗ РАМОК, ШИРОКИЙ, СКВОЗНАЯ НУМЕРАЦИЯ)
 function weekToDateString(weekId) {
     if(!weekId) return "";
     const [year, weekStr] = weekId.split('-W');
@@ -601,6 +600,8 @@ function buildScheduleCard(d, myName, currentWeekStr) {
     const isCurrentWeek = d.weekId === currentWeekStr;
     const weekStatus = isCurrentWeek ? window.t('current_week') : window.t('future_week');
     const statusColor = isCurrentWeek ? 'text-emerald-400' : 'text-slate-400';
+    
+    // Глобальный счетчик для всех пунктов на этой неделе
     let partCounter = 1;
 
     // Обычная строка
@@ -634,6 +635,11 @@ function buildScheduleCard(d, myName, currentWeekStr) {
         `;
     };
 
+    // Чтобы сквозная нумерация работала корректно, генерируем блоки по порядку
+    const treasure1 = row(d.mw_treasure_title || window.t('talk_10_min'), d.mw_treasure_name);
+    const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
+    const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
+
     const minRows = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
@@ -660,6 +666,8 @@ function buildScheduleCard(d, myName, currentWeekStr) {
         return row(m.title, m.name);
     }).join('');
 
+    // Изучение Библии (последний номерной пункт)
+    const cbsNum = partCounter++;
     const condCol = d.mw_cbs_conductor === myName ? 'text-rose-600 bg-rose-100 px-1.5 rounded shadow-sm' : 'text-slate-800';
     const readCol = d.mw_cbs_reader === myName ? 'text-rose-600 bg-rose-100 px-1 rounded shadow-sm' : 'text-slate-500';
 
@@ -678,9 +686,9 @@ function buildScheduleCard(d, myName, currentWeekStr) {
                 <div class="bg-[#0d9488] text-white p-1.5 md:p-2 pl-3 flex items-center shadow-sm">
                     <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('treasures_title')}</span>
                 </div>
-                ${row(d.mw_treasure_title || window.t('talk_10_min'), d.mw_treasure_name)}
-                ${row(window.t('spiritual_gems'), d.mw_gems_name)}
-                ${row(window.t('bible_reading'), d.mw_reading_name)}
+                ${treasure1}
+                ${treasure2}
+                ${treasure3}
 
                 <div class="bg-[#d97706] text-white p-1.5 md:p-2 pl-3 flex items-center shadow-sm">
                     <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('ministry_skills')}</span>
@@ -694,7 +702,7 @@ function buildScheduleCard(d, myName, currentWeekStr) {
                 
                 <div class="flex items-center justify-between p-2.5 border-b border-slate-100 bg-white">
                     <div class="flex flex-col flex-1 pr-2">
-                        <span class="text-[10px] md:text-xs font-bold text-slate-600 leading-tight">${partCounter++}. ${window.t('congregation_bible_study')}</span>
+                        <span class="text-[10px] md:text-xs font-bold text-slate-600 leading-tight">${cbsNum}. ${window.t('congregation_bible_study')}</span>
                         ${d.mw_cbs_material ? `<span class="text-[8px] font-bold text-slate-400 truncate mt-0.5">${d.mw_cbs_material}</span>` : ''}
                     </div>
                     <div class="shrink-0 max-w-[55%] flex items-center justify-end text-right">
@@ -978,6 +986,7 @@ function loadPersonalData() {
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 ev.id = docSnap.id;
+                // ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
                 if (ev.date === todayStr) {
                     todayEvents.push(ev);
                 }
