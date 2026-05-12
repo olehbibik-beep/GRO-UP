@@ -27,6 +27,7 @@ const userId = localStorage.getItem('userId');
 
 if (!userId) window.location.href = 'login.html';
 
+// ПРОВЕРКА ПРАВ
 getDoc(doc(db, "users", userId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     const roles = docSnap.data().roles || [];
@@ -39,29 +40,28 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
     }
 });
 
-// ГЛОБАЛЬНЫЙ МАССИВ ДЛЯ НАВЫКОВ СЛУЖЕНИЯ
+// ГЛОБАЛЬНЫЕ МАССИВЫ
 let ministryParts = [];
+let livingParts = [];
 
-// ФУНКЦИЯ ДЛЯ ВЫСЧИТЫВАНИЯ СТРОКИ YYYY-Wxx ИЗ ДАТЫ
 function getWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
-    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); // Устанавливаем на четверг
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); 
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
     const weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
     return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 }
 
-// ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ ДАТЫ ИЗ СТРОКИ YYYY-Wxx
 function getDateFromWeekString(weekStr) {
     if (!weekStr) return new Date();
     const [year, week] = weekStr.split('-W');
     const simpleDate = new Date(year, 0, 1 + (week - 1) * 7);
     const day = simpleDate.getDay();
-    const diff = simpleDate.getDate() - day + (day === 0 ? -6 : 1); // Понедельник
+    const diff = simpleDate.getDate() - day + (day === 0 ? -6 : 1); 
     return new Date(simpleDate.setDate(diff));
 }
 
-// ПЕРЕЛИСТЫВАНИЕ НЕДЕЛЬ СТРЕЛОЧКАМИ
+// ПЕРЕЛИСТЫВАНИЕ НЕДЕЛЬ
 window.changeWeek = (offset) => {
     const input = document.getElementById('week-selector');
     if (!input.value) return;
@@ -101,7 +101,7 @@ function loadUsersForDatalists() {
 
 // =================== ЛОГИКА НАВЫКОВ СЛУЖЕНИЯ ===================
 window.addMinistryPart = () => {
-    saveMinistryState(); // Сохраняем введенный текст перед рендером
+    saveMinistryState(); 
     ministryParts.push({ time: "5", type: "", student: "", assistant: "" });
     renderMinistryParts();
 };
@@ -115,13 +115,11 @@ window.removeMinistryPart = (index) => {
 function saveMinistryState() {
     const container = document.getElementById('ministry-parts-container');
     if(!container) return;
-    
     ministryParts.forEach((part, index) => {
         const tEl = document.getElementById(`part-min-${index}-time`);
         const typeEl = document.getElementById(`part-min-${index}-type`);
         const stEl = document.getElementById(`part-min-${index}-student`);
         const asEl = document.getElementById(`part-min-${index}-assistant`);
-        
         if(tEl) part.time = tEl.value;
         if(typeEl) part.type = typeEl.value;
         if(stEl) part.student = stEl.value;
@@ -132,13 +130,11 @@ function saveMinistryState() {
 function renderMinistryParts() {
     const container = document.getElementById('ministry-parts-container');
     if(!container) return;
-    
     let html = '';
     ministryParts.forEach((part, index) => {
         html += `
             <div class="flex items-end gap-3 bg-slate-50 p-2 rounded border border-slate-100 relative pr-8">
                 <input type="text" id="part-min-${index}-time" list="time-list" class="jw-time shrink-0 mb-1" value="${part.time || ''}" placeholder="мин">
-                
                 <div class="w-full flex flex-col gap-1">
                     <div class="flex items-center gap-1.5">
                         <span class="text-[10px] font-black text-jw-ministry">${index+1}.</span>
@@ -149,8 +145,52 @@ function renderMinistryParts() {
                         <input type="text" id="part-min-${index}-assistant" list="list-school" class="jw-input w-1/2 text-[10px]" value="${part.assistant || ''}" placeholder="Помощник">
                     </div>
                 </div>
-                
                 <button onclick="removeMinistryPart(${index})" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 font-black outline-none transition-colors" title="Удалить">✖</button>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+// =================== ЛОГИКА ХРИСТИАНСКОЙ ЖИЗНИ ===================
+window.addLivingPart = () => {
+    saveLivingState();
+    livingParts.push({ time: "15", title: "", name: "" });
+    renderLivingParts();
+};
+
+window.removeLivingPart = (index) => {
+    saveLivingState();
+    livingParts.splice(index, 1);
+    renderLivingParts();
+};
+
+function saveLivingState() {
+    const container = document.getElementById('living-parts-container');
+    if(!container) return;
+    livingParts.forEach((part, index) => {
+        const tEl = document.getElementById(`part-liv-${index}-time`);
+        const titleEl = document.getElementById(`part-liv-${index}-title`);
+        const nameEl = document.getElementById(`part-liv-${index}-name`);
+        if(tEl) part.time = tEl.value;
+        if(titleEl) part.title = titleEl.value;
+        if(nameEl) part.name = nameEl.value;
+    });
+}
+
+function renderLivingParts() {
+    const container = document.getElementById('living-parts-container');
+    if(!container) return;
+    let html = '';
+    livingParts.forEach((part, index) => {
+        html += `
+            <div class="flex items-end gap-3 px-2 relative pr-8 pb-2 border-b border-slate-100 last:border-0">
+                <input type="text" id="part-liv-${index}-time" list="time-list" class="jw-time shrink-0 mb-1" value="${part.time || ''}" placeholder="мин">
+                <div class="w-full flex flex-col gap-1">
+                    <input type="text" id="part-liv-${index}-title" list="living-types" class="text-xs font-bold text-jw-living bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="${part.title || ''}" placeholder="Тема пункта (Местные потребности...)">
+                    <input type="text" id="part-liv-${index}-name" list="list-brothers" class="jw-input mt-1" value="${part.name || ''}" placeholder="Имя брата">
+                </div>
+                <button onclick="removeLivingPart(${index})" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 font-black outline-none transition-colors" title="Удалить">✖</button>
             </div>
         `;
     });
@@ -162,10 +202,10 @@ window.loadSchedule = async () => {
     const weekId = document.getElementById('week-selector').value;
     if(!weekId) return;
 
-    // Сброс всех полей
     document.querySelectorAll('.jw-input, .jw-title-input').forEach(input => input.value = '');
     document.querySelectorAll('.jw-time').forEach(input => input.value = '');
     ministryParts = [];
+    livingParts = [];
     document.getElementById('publish-btn').classList.replace('bg-emerald-700', 'bg-emerald-600');
     document.getElementById('save-status').innerText = "...";
 
@@ -174,7 +214,6 @@ window.loadSchedule = async () => {
         if (docSnap.exists()) {
             const d = docSnap.data();
             
-            // Статус
             if(d.isPublished) {
                 document.getElementById('save-status').innerText = "ОПУБЛИКОВАНО";
                 document.getElementById('save-status').classList.replace('text-slate-400', 'text-emerald-500');
@@ -196,10 +235,21 @@ window.loadSchedule = async () => {
             document.getElementById('mw-reading-name').value = d.mw_reading_name || '';
 
             ministryParts = d.ministryParts || [];
+            
+            // Загрузка динамических пунктов Христианской жизни (Совместимость со старыми данными)
+            if (d.livingParts && d.livingParts.length > 0) {
+                livingParts = d.livingParts;
+            } else if (d.mw_local_name || d.mw_local_title) {
+                // Если есть старые данные Местных потребностей, конвертируем их в новый массив
+                livingParts = [{
+                    time: d.mw_local_time || '15',
+                    title: d.mw_local_title || 'Местные потребности',
+                    name: d.mw_local_name || ''
+                }];
+            } else {
+                livingParts = [{time: "15", title: "Местные потребности", name: ""}];
+            }
 
-            document.getElementById('mw-local-time').value = d.mw_local_time || '15';
-            document.getElementById('mw-local-title').value = d.mw_local_title || 'Местные потребности';
-            document.getElementById('mw-local-name').value = d.mw_local_name || '';
             document.getElementById('mw-cbs-time').value = d.mw_cbs_time || '30';
             document.getElementById('mw-cbs-material').value = d.mw_cbs_material || '';
             document.getElementById('mw-cbs-conductor').value = d.mw_cbs_conductor || '';
@@ -223,14 +273,18 @@ window.loadSchedule = async () => {
         } else {
             document.getElementById('save-status').innerText = "НОВЫЙ ГРАФИК";
             document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
-            // Дефолтные 3 задания служения если пусто
+            
             ministryParts = [
                 {time: "3", type: "Начинайте разговор", student: "", assistant: ""},
                 {time: "4", type: "Развивайте интерес", student: "", assistant: ""},
                 {time: "5", type: "Подготавливайте учеников", student: "", assistant: ""}
             ];
+            livingParts = [
+                {time: "15", title: "Местные потребности", name: ""}
+            ];
         }
         renderMinistryParts();
+        renderLivingParts();
     } catch(e) { console.error(e); }
 };
 
@@ -238,7 +292,8 @@ window.saveSchedule = async (isPublished) => {
     const weekId = document.getElementById('week-selector').value;
     if(!weekId) return;
 
-    saveMinistryState(); // Фиксируем вводы навыков служения
+    saveMinistryState(); 
+    saveLivingState();
 
     const btn = isPublished ? document.getElementById('publish-btn') : document.getElementById('save-draft-btn');
     const originalText = btn.innerText;
@@ -265,10 +320,7 @@ window.saveSchedule = async (isPublished) => {
         mw_reading_name: document.getElementById('mw-reading-name').value.trim(),
 
         ministryParts: ministryParts,
-
-        mw_local_time: document.getElementById('mw-local-time').value,
-        mw_local_title: document.getElementById('mw-local-title').value.trim(),
-        mw_local_name: document.getElementById('mw-local-name').value.trim(),
+        livingParts: livingParts,
         
         mw_cbs_time: document.getElementById('mw-cbs-time').value,
         mw_cbs_material: document.getElementById('mw-cbs-material').value.trim(),
