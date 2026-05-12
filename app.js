@@ -15,8 +15,8 @@ const dict = {
         "alert_no_notifications": "Уведомления не поддерживаются на этом устройстве.", "alert_notifications_blocked": "Уведомления заблокированы браузером!\n\nРазрешите их в настройках.",
         "toast_notifications_enabled": "Уведомления успешно включены!", "submit_report": "Отправить отчет", "alert_report_empty": "Отметьте галочку 'Служил(а)' или введите часы!",
         "saving": "Сохранение...", "saved": "Сохранено:", "success": "Успешно", "change": "Изменить", "error_network": "Ошибка сети!",
-        "access_denied": "ДОСТУП ЗАКРЫТ", "no_group": "Без группы", "no_duties": "Нет дежурств", "duty_reminder": "Напоминание: Ваша группа дежурит в эти выходные!",
-        "cleaning_weekend": "Уборка", "no_active_territories": "У вас пока нет активных участков", "territory_num": "Участок №",
+        "access_denied": "ДОСТУП ЗАКРЫТ", "no_group": "Без группы", "no_duties": "На этой неделе дежурств нет", "duty_reminder": "Напоминание: Ваша группа дежурит в эти выходные!",
+        "cleaning_weekend": "Уборка в эти выходные!", "no_active_territories": "У вас пока нет активных участков", "territory_num": "Участок №",
         "active": "Активен", "assistant_for": "Помощник у", "speech": "Выступление", "assistant_short": "Пом:", "lesson": "Урок",
         "no_tasks_upcoming": "У тебя пока нет активных заданий", "new_task_toast": "У вас новое задание", "delete": "Удалить",
         "new_badge": "Новое", "new_announcement_toast": "📢 Новое объявление в ленте!", "create_announcement": "Создать объявление",
@@ -63,8 +63,9 @@ const dict = {
         "alert_no_notifications": "Oznámení nejsou na tomto zařízení podporována.", "alert_notifications_blocked": "Oznámení jsou blokována prohlížečem!\n\nPovolte je v nastavení.",
         "toast_notifications_enabled": "Oznámení byla úspěšně zapnuta!", "submit_report": "Odeslat zprávu", "alert_report_empty": "Zaškrtněte 'Ve službě' nebo zadejte hodiny!",
         "saving": "Ukládání...", "saved": "Uloženo:", "success": "Úspěšně", "change": "Změnit", "error_network": "Chyba sítě!",
-        "access_denied": "PŘÍSTUP ODEPŘEN", "no_group": "Bez skupiny", "no_duties": "Žádné služby", "duty_reminder": "Připomenutí: Vaše skupina má tento víkend službu!",
-        "cleaning_weekend": "Úklid", "no_active_territories": "Zatím nemáte žádné aktivní obvody", "territory_num": "Obvod č.",
+        "access_denied": "PŘÍSTUP ODEPŘEN", "no_group": "Bez skupiny", "no_duties": "Tento týden nejsou žádné služby",
+        "duty_reminder": "Připomenutí: Vaše skupina má tento víkend službu!", "cleaning_weekend": "Úklid tento víkend!",
+        "no_active_territories": "Zatím nemáte žádné aktivní obvody", "territory_num": "Obvod č.",
         "active": "Aktivní", "assistant_for": "Pomocník u", "speech": "Proslov", "assistant_short": "Pom:", "lesson": "Lekce",
         "no_tasks_upcoming": "Zatím nemáte žádné aktivní úkoly", "new_task_toast": "Máte nový úkol", "delete": "Smazat",
         "new_badge": "Nové", "new_announcement_toast": "📢 Nové oznámení v kanálu!", "create_announcement": "Vytvořit oznámení",
@@ -73,16 +74,18 @@ const dict = {
         "loading": "Načítání...", "archive_empty": "Archiv je prázdný", "unknown": "Neznámé", "error_loading": "Chyba načítání",
         "alert_add_text_photo": "Přidejte text nebo fotku!", "alert_publish_error": "Chyba publikování! Zkontrolujte pravidla Storage.",
         "confirm_delete_news": "Smazat toto oznámení?", "confirm_delete_task": "Opravdu smazat tento úkol?", "admin_title": "Panel administrátora",
-        "back_home": "Na hlavní stránku", "users_title": "Uživatelé", "autosave_data": "Automatické ukládání dat", "cong_name_label": "Název sboru (Uvidí všichni)",
-        "cong_name_placeholder": "Například: Centrální", "requests_title": "Žádosti", "active_users": "Aktivní", "search_placeholder": "Hledat...",
-        "th_name_gender": "Jméno a Pohlaví", "th_pin": "PIN", "th_group": "Skupina", "th_school": "Škola", "th_status": "Status ve sboru",
-        "th_responsible": "Zodpovědný za", "th_manage": "Správa", "error_save": "Chyba při ukládání!", "alert_pin_length": "PIN kód musí mít přesně 6 číslic!",
+        "back_home": "Na hlavní stránku", "btn_back": "Zpět", "users_title": "Uživatelé", "autosave_data": "Automatické ukládání dat",
+        "cong_name_label": "Název sboru (Uvidí všichni)", "cong_name_placeholder": "Například: Centrální", "requests_title": "Žádosti",
+        "active_users": "Aktivní", "search_placeholder": "Hledat...", "th_name_gender": "Jméno a Pohlaví", "th_pin": "PIN",
+        "th_group": "Skupina", "th_school": "Škola", "th_status": "Status ve sboru", "th_responsible": "Zodpovědný za",
+        "th_manage": "Správa", "error_save": "Chyba při ukládání!", "alert_pin_length": "PIN kód musí mít přesně 6 číslic!",
         "error_save_pin": "Chyba při ukládání PIN kódu!", "error_update_role": "Chyba při aktualizaci role!", "confirm_block": "Zablokovat uživatele?",
         "confirm_delete_profile": "POZOR! Smazat profil?", "error_general": "Chyba!", "confirm_reject": "Opravdu zamítnout žádost a smazat data?",
-        "error_delete": "Chyba při mazání", "status_pending": "Čeká", "btn_approve": "Schválit", "btn_reject": "Zamítnout", "btn_unblock": "Odblokovat",
-        "btn_block": "Zablokovat", "btn_delete": "Smazat", "gender_boy": "Bratr", "gender_girl": "Sestra", "role_publisher": "Zvěstovatel",
-        "role_pioneer": "Průkopník", "role_ms": "Služební pom.", "role_elder": "Starší", "role_admin": "Admin", "role_group": "Skupina",
-        "role_terr": "Obvody", "role_school": "Škola", "no_new_requests": "Žádné nové žádosti", "no_active_users": "Žádní aktivní uživatelé",
+        "error_delete": "Chyba při mazání", "status_pending": "Čeká", "btn_approve": "Schválit", "btn_reject": "Zamítnout",
+        "btn_unblock": "Odblokovat", "btn_block": "Zablokovat", "btn_delete": "Smazat", "gender_boy": "Bratr", "gender_girl": "Sestra",
+        "role_publisher": "Zvěstovatel", "role_pioneer": "Průkopník", "role_ms": "Služební pom.", "role_elder": "Starší",
+        "role_admin": "Admin", "role_group": "Skupina", "role_terr": "Obvody", "role_school": "Škola", "no_new_requests": "Žádné nové žádosti",
+        "no_active_users": "Žádní aktivní uživatelé",
         "cat_reading_db": "📖 Čtení Bible", "cat_conversation": "🗣️ Rozhovor", "cat_interest": "🌱 Zájem", "cat_disciples": "👥 Čiňte učedníky",
         "cat_beliefs": "💡 Přesvědčení", "cat_talk_db": "🎙️ Proslov", "open_map": "Otevřít mapu", "no_map": "Bez mapy", "opt_cleaning": "🧹 Úklid sálu",
         "opt_special_event": "⭐ Zvláštní událost", "all_groups": "Společné", "congregation_label": "Sbor", "scan_qr": "Naskenujte kód",
@@ -170,7 +173,7 @@ setTimeout(window.hideGlobalLoader, 2500);
 
 window.scrollNews = (offset) => { document.getElementById('content-news')?.scrollBy({ left: offset, behavior: 'smooth' }); };
 
-// 🔥 УМНАЯ КАРУСЕЛЬ ПРОГРАММЫ (Листает ровно на ширину контейнера)
+// 🔥 ИДЕАЛЬНАЯ КАРУСЕЛЬ: ПРОКРУТКА РОВНО НА ШИРИНУ КОНТЕЙНЕРА (2 КАРТОЧКИ НА ПК, 1 НА ТЕЛЕФОНЕ)
 window.scrollProgram = (dir) => { 
     const container = document.getElementById('meeting-program-list');
     if(container) {
@@ -627,13 +630,13 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const nameColor = isMe ? `text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded shadow-sm` : 'text-slate-800';
+        const nameColor = isMe ? `text-rose-600 bg-rose-50 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
 
         return `
-            <div class="flex items-center justify-between py-1.5 px-2 border-b border-slate-100 last:border-0 bg-white hover:bg-slate-50 transition-colors">
-                <span class="text-[9px] md:text-[10px] font-bold text-slate-600 flex-1 pr-1 leading-tight">${partCounter++}. ${translateDbString(title)}</span>
+            <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-100 last:border-0 bg-white hover:bg-slate-50 transition-colors">
+                <span class="text-xs md:text-sm font-bold text-slate-600 flex-1 pr-2 leading-snug">${partCounter++}. ${translateDbString(title)}</span>
                 <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
-                    <span class="text-[10px] md:text-[11px] font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
+                    <span class="text-sm md:text-base font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
                 </div>
             </div>
         `;
@@ -642,12 +645,12 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const nameColor = isMe ? `text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded shadow-sm` : 'text-slate-800';
+        const nameColor = isMe ? `text-rose-600 bg-rose-50 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
         return `
-            <div class="flex items-center justify-between py-1.5 px-2 bg-slate-100/50 border-y border-slate-200">
-                <span class="text-[9px] md:text-[10px] font-black text-slate-600 flex-1 pr-1">${translateDbString(title)}</span>
+            <div class="flex items-center justify-between py-2.5 px-3 bg-slate-100/50 border-y border-slate-200">
+                <span class="text-xs md:text-sm font-black text-slate-600 flex-1 pr-2">${translateDbString(title)}</span>
                 <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
-                    <span class="text-[10px] md:text-[11px] font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
+                    <span class="text-sm md:text-base font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
                 </div>
             </div>
         `;
@@ -660,17 +663,17 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const minRows = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
-        const studentCol = m.student === myName ? 'text-rose-600 bg-rose-50 px-1.5 rounded shadow-sm' : 'text-slate-800';
-        const assistCol = m.assistant === myName ? 'text-rose-600 bg-rose-50 px-1 rounded shadow-sm' : 'text-slate-500';
+        const studentCol = m.student === myName ? 'text-rose-600 bg-rose-50 px-2 rounded shadow-sm' : 'text-slate-800';
+        const assistCol = m.assistant === myName ? 'text-rose-600 bg-rose-50 px-1.5 rounded shadow-sm' : 'text-slate-500';
 
         const names = `<div class="flex flex-col text-right truncate w-full items-end">
-            <span class="text-[10px] md:text-[11px] font-black ${studentCol} truncate leading-tight w-full">${m.student || '-'}</span>
-            ${m.assistant ? `<span class="text-[8px] font-bold ${assistCol} truncate mt-0.5 w-full">${window.t('assistant_short')} ${m.assistant}</span>` : ''}
+            <span class="text-sm md:text-base font-black ${studentCol} truncate leading-tight w-full">${m.student || '-'}</span>
+            ${m.assistant ? `<span class="text-[10px] md:text-xs font-bold ${assistCol} truncate mt-0.5 w-full">${window.t('assistant_short')} ${m.assistant}</span>` : ''}
         </div>`;
 
         return `
-            <div class="flex items-center justify-between py-1.5 px-2 border-b border-slate-100 last:border-0 bg-white hover:bg-slate-50 transition-colors">
-                <span class="text-[9px] md:text-[10px] font-bold text-slate-600 flex-1 pr-1 leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
+            <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-100 last:border-0 bg-white hover:bg-slate-50 transition-colors">
+                <span class="text-xs md:text-sm font-bold text-slate-600 flex-1 pr-2 leading-snug">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
                 <div class="shrink-0 max-w-[60%] flex items-center justify-end">
                     ${names}
                 </div>
@@ -684,48 +687,48 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     }).join('');
 
     const cbsNum = partCounter++;
-    const condCol = d.mw_cbs_conductor === myName ? 'text-rose-600 bg-rose-50 px-1.5 rounded shadow-sm' : 'text-slate-800';
-    const readCol = d.mw_cbs_reader === myName ? 'text-rose-600 bg-rose-50 px-1 rounded shadow-sm' : 'text-slate-500';
+    const condCol = d.mw_cbs_conductor === myName ? 'text-rose-600 bg-rose-50 px-2 rounded shadow-sm' : 'text-slate-800';
+    const readCol = d.mw_cbs_reader === myName ? 'text-rose-600 bg-rose-50 px-1.5 rounded shadow-sm' : 'text-slate-500';
 
     const we_talk = rowUnnumbered(d.we_talk_title || window.t('public_talk'), d.we_talk_speaker);
-    const we_wt_cond = d.we_wt_conductor === myName ? 'text-rose-600 bg-rose-50 px-1.5 rounded shadow-sm' : 'text-slate-800';
-    const we_wt_read = d.we_wt_reader === myName ? 'text-rose-600 bg-rose-50 px-1 rounded shadow-sm' : 'text-slate-500';
+    const we_wt_cond = d.we_wt_conductor === myName ? 'text-rose-600 bg-rose-50 px-2 rounded shadow-sm' : 'text-slate-800';
+    const we_wt_read = d.we_wt_reader === myName ? 'text-rose-600 bg-rose-50 px-1.5 rounded shadow-sm' : 'text-slate-500';
 
     return `
-        <div class="w-[88vw] md:w-[calc(50%-0.5rem)] shrink-0 snap-start flex flex-col bg-transparent mb-2">
-            <div class="bg-slate-800 p-1.5 md:p-2 text-center rounded-t-md shrink-0 border-b border-slate-900">
-                <span class="text-[7px] md:text-[8px] font-black ${statusColor} uppercase tracking-widest block">${weekStatus}</span>
-                <h4 class="text-white font-black text-xs uppercase tracking-widest leading-tight">${weekLabel}</h4>
+        <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.5rem)] shrink-0 snap-start flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm mb-2 overflow-hidden">
+            <div class="bg-slate-800 p-2 md:p-3 text-center border-b border-slate-900">
+                <span class="text-[9px] md:text-[10px] font-black ${statusColor} uppercase tracking-widest block">${weekStatus}</span>
+                <h4 class="text-white font-black text-sm md:text-base uppercase tracking-widest leading-tight">${weekLabel}</h4>
             </div>
-            <div class="flex-grow flex flex-col bg-white rounded-b-md shadow-sm overflow-hidden">
+            <div class="flex-grow flex flex-col">
                 ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
 
-                <div class="bg-[#0d9488] text-white py-1 px-2 flex items-center">
-                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest leading-none">${window.t('treasures_title')}</span>
+                <div class="bg-[#0d9488] text-white py-1.5 px-3 flex items-center shadow-sm">
+                    <span class="text-[10px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('treasures_title')}</span>
                 </div>
                 ${treasure1}
                 ${treasure2}
                 ${treasure3}
 
-                <div class="bg-[#d97706] text-white py-1 px-2 flex items-center">
-                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest leading-none">${window.t('ministry_skills')}</span>
+                <div class="bg-[#d97706] text-white py-1.5 px-3 flex items-center shadow-sm">
+                    <span class="text-[10px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('ministry_skills')}</span>
                 </div>
                 ${minRows}
 
-                <div class="bg-[#b91c1c] text-white py-1 px-2 flex items-center">
-                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest leading-none">${window.t('christian_living')}</span>
+                <div class="bg-[#b91c1c] text-white py-1.5 px-3 flex items-center shadow-sm">
+                    <span class="text-[10px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('christian_living')}</span>
                 </div>
                 ${livRows}
                 
-                <div class="flex items-center justify-between py-1.5 px-2 border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
-                    <div class="flex flex-col flex-1 pr-1">
-                        <span class="text-[9px] md:text-[10px] font-bold text-slate-600 leading-tight">${cbsNum}. ${window.t('congregation_bible_study')}</span>
-                        ${d.mw_cbs_material ? `<span class="text-[7px] font-bold text-slate-400 truncate mt-0.5">${d.mw_cbs_material}</span>` : ''}
+                <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
+                    <div class="flex flex-col flex-1 pr-2">
+                        <span class="text-xs md:text-sm font-bold text-slate-600 leading-snug">${cbsNum}. ${window.t('congregation_bible_study')}</span>
+                        ${d.mw_cbs_material ? `<span class="text-[9px] md:text-[10px] font-bold text-slate-400 truncate mt-0.5">${d.mw_cbs_material}</span>` : ''}
                     </div>
                     <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
                         <div class="flex flex-col items-end truncate w-full">
-                            <span class="text-[10px] md:text-[11px] font-black ${condCol} truncate leading-tight w-full">${d.mw_cbs_conductor || '-'}</span>
-                            ${d.mw_cbs_reader ? `<span class="text-[8px] font-bold ${readCol} truncate mt-0.5 w-full">${window.t('reader')} ${d.mw_cbs_reader}</span>` : ''}
+                            <span class="text-sm md:text-base font-black ${condCol} truncate leading-tight w-full">${d.mw_cbs_conductor || '-'}</span>
+                            ${d.mw_cbs_reader ? `<span class="text-[10px] md:text-xs font-bold ${readCol} truncate mt-0.5 w-full">${window.t('reader')} ${d.mw_cbs_reader}</span>` : ''}
                         </div>
                     </div>
                 </div>
@@ -734,25 +737,25 @@ function buildScheduleCards(d, myName, currentWeekStr) {
             </div>
         </div>
 
-        <div class="w-[88vw] md:w-[calc(50%-0.5rem)] shrink-0 snap-start flex flex-col bg-transparent mb-2">
-            <div class="bg-[#475569] p-1.5 md:p-2 text-center rounded-t-md shrink-0 border-b border-slate-700">
-                <span class="text-[7px] md:text-[8px] font-black ${statusColor} uppercase tracking-widest block">${weekStatus}</span>
-                <h4 class="text-white font-black text-xs uppercase tracking-widest leading-tight">${weekLabel}</h4>
-                <span class="text-[7px] text-slate-300 font-bold uppercase tracking-widest block mt-0.5">${window.t('weekend_meeting')}</span>
+        <div class="w-[88vw] md:w-[calc(50%-0.5rem)] shrink-0 snap-start flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm mb-2 overflow-hidden">
+            <div class="bg-[#475569] p-2 md:p-3 text-center border-b border-slate-700">
+                <span class="text-[9px] md:text-[10px] font-black ${statusColor} uppercase tracking-widest block">${weekStatus}</span>
+                <h4 class="text-white font-black text-sm md:text-base uppercase tracking-widest leading-tight">${weekLabel}</h4>
+                <span class="text-[8px] md:text-[9px] text-slate-300 font-bold uppercase tracking-widest block mt-0.5">${window.t('weekend_meeting')}</span>
             </div>
-            <div class="flex-grow flex flex-col bg-white rounded-b-md shadow-sm overflow-hidden border border-t-0 border-slate-200">
+            <div class="flex-grow flex flex-col">
                 
                 ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
                 ${we_talk}
                 
-                <div class="flex items-center justify-between py-1.5 px-2 border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
-                    <div class="flex flex-col flex-1 pr-1">
-                        <span class="text-[9px] md:text-[10px] font-bold text-slate-600 leading-tight">${window.t('watchtower_study')}</span>
+                <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
+                    <div class="flex flex-col flex-1 pr-2">
+                        <span class="text-xs md:text-sm font-bold text-slate-600 leading-snug">${window.t('watchtower_study')}</span>
                     </div>
                     <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
                         <div class="flex flex-col items-end truncate w-full">
-                            <span class="text-[10px] md:text-[11px] font-black ${we_wt_cond} truncate leading-tight w-full">${d.we_wt_conductor || '-'}</span>
-                            ${d.we_wt_reader ? `<span class="text-[8px] font-bold ${we_wt_read} truncate mt-0.5 w-full">${window.t('reader')} ${d.we_wt_reader}</span>` : ''}
+                            <span class="text-sm md:text-base font-black ${we_wt_cond} truncate leading-tight w-full">${d.we_wt_conductor || '-'}</span>
+                            ${d.we_wt_reader ? `<span class="text-[10px] md:text-xs font-bold ${we_wt_read} truncate mt-0.5 w-full">${window.t('reader')} ${d.we_wt_reader}</span>` : ''}
                         </div>
                     </div>
                 </div>
@@ -788,6 +791,7 @@ function loadPersonalData() {
                 let id = doc.id;
                 let data = doc.data();
                 
+                // Фильтруем графики по текущему языку приложения
                 if (id.endsWith('-' + currentLang) || (!id.includes('-ru') && !id.includes('-cs') && currentLang === 'ru')) {
                     data.id = id;
                     data.realWeekId = id.length > 8 ? id.substring(0, 8) : id; 
@@ -1017,7 +1021,6 @@ function loadPersonalData() {
     } catch(e){}
 
     try {
-        // 🔥 КАЛЕНДАРЬ НА ГЛАВНОЙ (Только сегодня)
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
             const container = document.getElementById('calendar-events');
@@ -1032,7 +1035,6 @@ function loadPersonalData() {
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 ev.id = docSnap.id;
-                // ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
                 if (ev.date === todayStr) {
                     todayEvents.push(ev);
                 }
