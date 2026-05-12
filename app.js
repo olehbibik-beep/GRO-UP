@@ -164,12 +164,10 @@ window.setupNotifications = async () => {
         
         let permission = Notification.permission;
         if (permission === 'denied') throw new Error("Уведомления заблокированы! Разрешите их в настройках телефона (браузера).");
-        
         if (permission !== 'granted') {
             const req = Notification.requestPermission();
             permission = (req instanceof Promise) ? await req : await new Promise(res => Notification.requestPermission(res));
         }
-        
         if (permission !== 'granted') throw new Error("Нет разрешения на пуши");
         
         let registration = await navigator.serviceWorker.getRegistration();
@@ -204,9 +202,7 @@ if (messaging) {
             const title = payload.notification?.title || payload.data?.title || "Уведомление";
             const body = payload.notification?.body || payload.data?.body || "";
             window.showToast(`🔔 ${title}\n${body}`, 'info'); 
-            if (Notification.permission === 'granted') {
-                new Notification(title, { body: body, icon: 'icon-512.png' });
-            }
+            if (Notification.permission === 'granted') new Notification(title, { body: body, icon: 'icon-512.png' });
         }); 
     } catch (e) {}
 }
@@ -550,7 +546,7 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-// 🔥 ПРОГРАММА СОБРАНИЯ
+// 🔥 ПРОГРАММА СОБРАНИЯ - ДИЗАЙН РАБОЧЕЙ ТЕТРАДИ + КАРУСЕЛЬ + НУМЕРАЦИЯ
 function weekToDateString(weekId) {
     if(!weekId) return "";
     const [year, weekStr] = weekId.split('-W');
@@ -575,17 +571,34 @@ function weekToDateString(weekId) {
 
 function buildScheduleCard(d, myName) {
     const weekLabel = weekToDateString(d.weekId);
+    let partCounter = 1;
 
-    // Только имя выделяется цветом
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
         const nameColor = isMe ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
-        const badge = isMe ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">Моё задание</span>` : '';
+        const badge = isMe ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">Моё</span>` : '';
 
         return `
-            <div class="flex items-center justify-between p-2 rounded-md border bg-slate-50 border-slate-100 mb-1">
-                <span class="text-[10px] md:text-xs font-bold text-slate-500 w-1/2 truncate pr-2">${title}</span>
+            <div class="flex items-center justify-between p-2.5 border-b border-slate-100 last:border-0 bg-white">
+                <span class="text-[10px] md:text-xs font-bold text-slate-600 w-1/2 pr-2 leading-tight">${partCounter++}. ${title}</span>
+                <div class="w-1/2 flex items-center justify-end text-right truncate">
+                    <span class="text-xs md:text-sm font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
+                    ${badge}
+                </div>
+            </div>
+        `;
+    };
+
+    // Строки без номеров (Председатель, Молитва)
+    const rowUnnumbered = (title, person) => {
+        if(!person && !title) return '';
+        const isMe = person === myName;
+        const nameColor = isMe ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
+        const badge = isMe ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">Моё</span>` : '';
+        return `
+            <div class="flex items-center justify-between p-2.5 bg-slate-200/60 border-y border-slate-300">
+                <span class="text-[10px] md:text-xs font-black text-slate-600 w-1/2 pr-2">${title}</span>
                 <div class="w-1/2 flex items-center justify-end text-right truncate">
                     <span class="text-xs md:text-sm font-black ${nameColor} truncate">${person || '-'}</span>
                     ${badge}
@@ -594,12 +607,12 @@ function buildScheduleCard(d, myName) {
         `;
     };
 
-    const minRows = (d.ministryParts || []).map((m, idx) => {
+    const minRows = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
-        const studentCol = m.student === myName ? 'text-rose-600 bg-rose-100 px-1.5 rounded' : 'text-slate-800';
-        const assistCol = m.assistant === myName ? 'text-rose-600 bg-rose-100 px-1 rounded' : 'text-slate-500';
-        const badge = isMe ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">Моё задание</span>` : '';
+        const studentCol = m.student === myName ? 'text-rose-600 bg-rose-100 px-1.5 rounded shadow-sm' : 'text-slate-800';
+        const assistCol = m.assistant === myName ? 'text-rose-600 bg-rose-100 px-1 rounded shadow-sm' : 'text-slate-500';
+        const badge = isMe ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">Моё</span>` : '';
 
         const names = `<div class="flex flex-col text-right truncate w-full items-end">
             <span class="text-xs md:text-sm font-black ${studentCol} truncate leading-tight">${m.student || '-'}</span>
@@ -607,8 +620,8 @@ function buildScheduleCard(d, myName) {
         </div>`;
 
         return `
-            <div class="flex items-center justify-between p-2 rounded-md border bg-slate-50 border-slate-100 mb-1">
-                <span class="text-[10px] md:text-xs font-bold text-slate-500 w-1/2 pr-2 leading-tight">${idx+1}. ${m.type || 'Задание'}</span>
+            <div class="flex items-center justify-between p-2.5 border-b border-slate-100 last:border-0 bg-white">
+                <span class="text-[10px] md:text-xs font-bold text-slate-600 w-1/2 pr-2 leading-tight">${partCounter++}. ${m.type || 'Задание'}</span>
                 <div class="w-1/2 flex items-center justify-end">
                     ${names}
                     ${badge}
@@ -622,49 +635,53 @@ function buildScheduleCard(d, myName) {
         return row(m.title, m.name);
     }).join('');
 
-    const cbsIsMe = (d.cbs_conductor===myName || d.cbs_reader===myName);
-    const condCol = d.cbs_conductor === myName ? 'text-rose-600 bg-rose-100 px-1.5 rounded' : 'text-slate-800';
-    const readCol = d.cbs_reader === myName ? 'text-rose-600 bg-rose-100 px-1 rounded' : 'text-slate-500';
+    const cbsIsMe = (d.mw_cbs_conductor===myName || d.mw_cbs_reader===myName);
+    const condCol = d.mw_cbs_conductor === myName ? 'text-rose-600 bg-rose-100 px-1.5 rounded shadow-sm' : 'text-slate-800';
+    const readCol = d.mw_cbs_reader === myName ? 'text-rose-600 bg-rose-100 px-1 rounded shadow-sm' : 'text-slate-500';
+    const cbsBadge = cbsIsMe ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">Моё</span>` : '';
 
     return `
-        <div class="border border-slate-200 rounded-md overflow-hidden shadow-sm mb-6 last:mb-0">
-            <div class="bg-slate-800 p-3 text-center border-b border-slate-900">
-                <h4 class="text-white font-black text-sm uppercase tracking-widest">${weekLabel}</h4>
+        <div class="w-[280px] md:w-[320px] shrink-0 snap-center border border-slate-300 rounded-lg overflow-hidden shadow-sm flex flex-col bg-white">
+            <div class="bg-slate-800 p-2 md:p-3 text-center border-b border-slate-900 shrink-0">
+                <h4 class="text-white font-black text-xs md:text-sm uppercase tracking-widest">${weekLabel}</h4>
             </div>
 
-            <div class="p-3 md:p-4 space-y-5 bg-white">
-                <div>${row('Председатель', d.chairman)}</div>
+            <div class="flex-grow overflow-y-auto custom-scrollbar flex flex-col pb-2">
+                
+                ${rowUnnumbered('Председатель', d.mw_chairman_name)}
 
-                <div>
-                    <h5 class="text-[10px] font-black text-teal-600 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Сокровища из слова бога</h5>
-                    ${row(d.treasure_title || 'Речь 10 мин.', d.treasure_name)}
-                    ${row('Духовные жемчужины', d.gems_name)}
-                    ${row('Чтение Библии', d.reading_name)}
+                <div class="bg-[#0d9488] text-white p-1.5 md:p-2 pl-3 flex items-center shadow-sm">
+                    <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">Сокровища из слова бога</span>
                 </div>
+                ${row(d.mw_treasure_title || 'Речь 10 мин.', d.mw_treasure_name)}
+                ${row('Духовные жемчужины', d.mw_gems_name)}
+                ${row('Чтение Библии', d.mw_reading_name)}
 
-                <div>
-                    <h5 class="text-[10px] font-black text-amber-600 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Оттачиваем навыки служения</h5>
-                    ${minRows}
+                <div class="bg-[#d97706] text-white p-1.5 md:p-2 pl-3 flex items-center shadow-sm">
+                    <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">Оттачиваем навыки служения</span>
                 </div>
+                ${minRows}
 
-                <div>
-                    <h5 class="text-[10px] font-black text-red-700 uppercase tracking-widest border-b border-slate-100 pb-1.5 mb-2">Христианская жизнь</h5>
-                    ${livRows}
-                    <div class="flex items-center justify-between p-2 rounded-md border bg-slate-50 border-slate-100 mb-1">
-                        <div class="flex flex-col w-1/2 pr-2">
-                            <span class="text-[10px] md:text-xs font-bold text-slate-500 leading-tight">Изучение Библии</span>
-                            ${d.cbs_material ? `<span class="text-[8px] font-bold text-slate-400 truncate mt-0.5">${d.cbs_material}</span>` : ''}
-                        </div>
-                        <div class="w-1/2 flex items-center justify-end text-right">
-                            <div class="flex flex-col items-end truncate">
-                                <span class="text-xs md:text-sm font-black ${condCol} truncate leading-tight">${d.cbs_conductor || '-'}</span>
-                                ${d.cbs_reader ? `<span class="text-[9px] font-bold ${readCol} truncate mt-0.5">Чтец: ${d.cbs_reader}</span>` : ''}
-                            </div>
-                            ${cbsIsMe ? `<span class="bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shrink-0 ml-2">Моё задание</span>` : ''}
-                        </div>
+                <div class="bg-[#b91c1c] text-white p-1.5 md:p-2 pl-3 flex items-center shadow-sm">
+                    <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">Христианская жизнь</span>
+                </div>
+                ${livRows}
+                
+                <div class="flex items-center justify-between p-2.5 border-b border-slate-100 bg-white">
+                    <div class="flex flex-col w-1/2 pr-2">
+                        <span class="text-[10px] md:text-xs font-bold text-slate-600 leading-tight">${partCounter++}. Изучение Библии</span>
+                        ${d.mw_cbs_material ? `<span class="text-[8px] font-bold text-slate-400 truncate mt-0.5">${d.mw_cbs_material}</span>` : ''}
                     </div>
-                    ${row('Заключительная молитва', d.prayer)}
+                    <div class="w-1/2 flex items-center justify-end text-right">
+                        <div class="flex flex-col items-end truncate w-full">
+                            <span class="text-xs md:text-sm font-black ${condCol} truncate leading-tight">${d.mw_cbs_conductor || '-'}</span>
+                            ${d.mw_cbs_reader ? `<span class="text-[9px] font-bold ${readCol} truncate mt-0.5">Чтец: ${d.mw_cbs_reader}</span>` : ''}
+                        </div>
+                        ${cbsBadge}
+                    </div>
                 </div>
+
+                ${rowUnnumbered('Заключительная молитва', d.mw_prayer_name)}
             </div>
         </div>
     `;
@@ -690,6 +707,8 @@ function loadPersonalData() {
         onSnapshot(query(collection(db, "meeting_schedules"), where("isPublished", "==", true)), (snapshot) => {
             const container = document.getElementById('meeting-program-list');
             if(!container) return;
+            // Делаем контейнер каруселью
+            container.className = "flex flex-nowrap overflow-x-auto gap-4 pb-4 px-1 snap-x snap-mandatory custom-scrollbar items-stretch scroll-smooth w-full";
 
             let schedules = [];
             snapshot.forEach(doc => schedules.push(doc.data()));
@@ -708,7 +727,7 @@ function loadPersonalData() {
                 html += buildScheduleCard(s, currentUserData.name);
             });
 
-            container.innerHTML = html || `<p class="text-slate-400 text-sm italic text-center py-4">Нет опубликованных программ</p>`;
+            container.innerHTML = html || `<p class="text-slate-400 text-sm italic text-center py-4 w-full">Нет опубликованных программ</p>`;
         });
     } catch(e) { console.error(e); }
 
@@ -921,7 +940,6 @@ function loadPersonalData() {
     } catch(e){}
 
     try {
-        // 🔥 КАЛЕНДАРЬ НА ГЛАВНОЙ: ПОКАЗЫВАЕТ ТОЛЬКО СЕГОДНЯ
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
             const container = document.getElementById('calendar-events');
@@ -936,7 +954,7 @@ function loadPersonalData() {
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 ev.id = docSnap.id;
-                // Только события на сегодня
+                // ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
                 if (ev.date === todayStr) {
                     todayEvents.push(ev);
                 }
