@@ -1,424 +1,229 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Планировка графика</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f3f4f6', nav: '#0f172a' }, jw: { treasure: '#0d9488', ministry: '#d97706', living: '#b91c1c', weekend: '#475569' } } } } }
+    </script>
+    <style>
+        ::-webkit-scrollbar { display: none; }
+        body { -ms-overflow-style: none; scrollbar-width: none; }
+        .jw-input { width: 100%; border: none; border-bottom: 1px solid #cbd5e1; background: transparent; font-size: 13px; font-weight: 700; color: #1e293b; padding: 4px 0; outline: none; transition: border-color 0.2s; }
+        .jw-input:focus { border-bottom-color: #0f172a; }
+        .jw-time { width: 50px; text-align: center; font-size: 11px; color: #64748b; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; outline: none; background: white; }
+        .jw-time:focus { border-color: #94a3b8; }
+        .custom-scrollbar::-webkit-scrollbar { display: block; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-ui-bg text-slate-800 font-sans pb-24 md:pb-6 relative">
 
-window.showToast = (message) => {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    const toast = document.createElement('div');
-    toast.className = `bg-slate-800 text-white px-4 py-3 rounded-md shadow-lg text-xs font-bold text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
-    toast.innerText = message;
-    container.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.remove('-translate-y-10', 'opacity-0'));
-    setTimeout(() => { toast.classList.add('-translate-y-10', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
-};
+    <nav class="fixed bottom-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-slate-800 md:border-t-0 no-print">
+        <a href="index.html" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-slate-400 hover:text-white">
+            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+        </a>
+    </nav>
 
-const firebaseConfig = {
-    apiKey: "AIzaSyCwflIUs2AnBRIIxrssVpbpykHwG2436q0",
-    authDomain: "gro-uping.firebaseapp.com",
-    projectId: "gro-uping",
-    storageBucket: "gro-uping.firebasestorage.app",
-    messagingSenderId: "819938349545",
-    appId: "1:819938349545:web:a00c3bef66d99f5b6cfb78"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const userId = localStorage.getItem('userId');
-
-if (!userId) window.location.href = 'login.html';
-
-// ПРОВЕРКА ПРАВ
-getDoc(doc(db, "users", userId)).then(docSnap => {
-    if (!docSnap.exists()) return window.location.href = 'login.html';
-    const roles = docSnap.data().roles || [];
-    const canAccess = roles.includes("Ответственный за график") || roles.includes("Владелец") || roles.includes("Админ");
-    
-    if (!canAccess) window.location.href = 'index.html';
-    else {
-        loadUsersForDatalists();
-        setCurrentWeek();
-    }
-});
-
-let ministryParts = [];
-let livingParts = [];
-
-function getISOWeekString(dateObj) {
-    const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
-    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); 
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-    const weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
-    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-}
-
-function getDateFromWeekString(weekStr) {
-    if (!weekStr) return new Date();
-    const [year, week] = weekStr.split('-W');
-    const simpleDate = new Date(year, 0, 1 + (week - 1) * 7);
-    const day = simpleDate.getDay();
-    const diff = simpleDate.getDate() - day + (day === 0 ? -6 : 1); 
-    return new Date(simpleDate.setDate(diff));
-}
-
-window.changeWeek = (offset) => {
-    const input = document.getElementById('week-selector');
-    if (!input.value) return;
-    const currentDate = getDateFromWeekString(input.value);
-    currentDate.setDate(currentDate.getDate() + (offset * 7));
-    input.value = getISOWeekString(currentDate);
-    loadSchedule();
-};
-
-function setCurrentWeek() {
-    const today = new Date();
-    document.getElementById('week-selector').value = getISOWeekString(today);
-    document.getElementById('schedule-form').classList.remove('hidden');
-    
-    const currentAppLang = localStorage.getItem('app_lang') || 'ru';
-    const langSelector = document.getElementById('schedule-lang');
-    if (langSelector) langSelector.value = currentAppLang;
-
-    loadSchedule();
-}
-
-function loadUsersForDatalists() {
-    onSnapshot(collection(db, "users"), (snapshot) => {
-        const listBrothers = document.getElementById('list-brothers');
-        const listSchool = document.getElementById('list-school');
-        let brothersHtml = ''; let schoolHtml = '';
+    <main class="w-full max-w-6xl mx-auto px-4 py-6 md:pl-28 md:pr-6">
         
-        let allUsers = [];
-        snapshot.forEach(docSnap => allUsers.push(docSnap.data()));
-        allUsers.sort((a,b) => a.name.localeCompare(b.name));
-
-        allUsers.forEach(u => {
-            if (u.status !== 'active') return;
-            if (u.gender === 'boy') brothersHtml += `<option value="${u.name}">`;
-            if (u.roles && u.roles.includes('Участник школы')) schoolHtml += `<option value="${u.name}">`;
-        });
-        listBrothers.innerHTML = brothersHtml; listSchool.innerHTML = schoolHtml;
-    });
-}
-
-function updateNumeration() {
-    let currentNumber = 1;
-    document.querySelectorAll('.part-number').forEach(el => {
-        el.innerText = `${currentNumber}.`;
-        currentNumber++;
-    });
-}
-
-function saveMinistryState() {
-    const container = document.getElementById('ministry-parts-container');
-    if(!container) return;
-    ministryParts.forEach((part, index) => {
-        const tEl = document.getElementById(`part-min-${index}-time`);
-        if(tEl) part.time = tEl.value;
-    });
-}
-
-function renderMinistryParts() {
-    const container = document.getElementById('ministry-parts-container');
-    if(!container) return;
-    let html = '';
-    
-    if (ministryParts.length === 0) {
-        html = `<p class="text-slate-400 text-[10px] italic py-3 text-center border border-slate-200 border-dashed rounded-lg bg-slate-50">${window.t('pulled_from_school')}</p>`;
-    } else {
-        ministryParts.forEach((part, index) => {
-            const assistText = part.assistant ? `<span class="text-slate-400 font-normal mr-1">Пом:</span> ${part.assistant}` : `<span class="opacity-50">Без помощника</span>`;
+        <div class="flex flex-col bg-white border border-slate-200 p-4 rounded-xl mb-6 shadow-sm gap-4">
             
-            html += `
-                <div class="flex items-end gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 relative">
-                    <input type="text" id="part-min-${index}-time" list="time-list" class="jw-time shrink-0 mb-1 bg-white shadow-sm" value="${part.time || ''}" placeholder="мин">
-                    <div class="w-full flex flex-col gap-1">
-                        <div class="flex items-center gap-1.5 pb-1 border-b border-slate-200">
-                            <span class="part-number text-[11px] font-black text-jw-ministry"></span>
-                            <span class="text-[12px] font-bold text-jw-ministry w-full truncate">${part.type || window.t('part')}</span>
-                        </div>
-                        <div class="flex gap-2 w-full mt-1 items-end">
-                            <span class="w-1/2 text-[13px] font-black text-slate-800 border-b border-slate-200 pb-0.5 truncate">${part.student || '-'}</span>
-                            <span class="w-1/2 text-[10px] font-bold text-slate-600 border-b border-slate-200 pb-0.5 truncate">${assistText}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-    }
-    
-    container.innerHTML = html;
-    updateNumeration();
-}
-
-window.addLivingPart = () => {
-    saveLivingState();
-    livingParts.push({ time: "15", title: "", name: "" });
-    renderLivingParts();
-};
-
-window.removeLivingPart = (index) => {
-    saveLivingState();
-    livingParts.splice(index, 1);
-    renderLivingParts();
-};
-
-function saveLivingState() {
-    const container = document.getElementById('living-parts-container');
-    if(!container) return;
-    livingParts.forEach((part, index) => {
-        const tEl = document.getElementById(`part-liv-${index}-time`);
-        const titleEl = document.getElementById(`part-liv-${index}-title`);
-        const nameEl = document.getElementById(`part-liv-${index}-name`);
-        if(tEl) part.time = tEl.value;
-        if(titleEl) part.title = titleEl.value;
-        if(nameEl) part.name = nameEl.value;
-    });
-}
-
-function renderLivingParts() {
-    const container = document.getElementById('living-parts-container');
-    if(!container) return;
-    let html = '';
-    livingParts.forEach((part, index) => {
-        html += `
-            <div class="flex items-end gap-3 px-2 relative pr-8 pb-2 border-b border-slate-100 last:border-0">
-                <input type="text" id="part-liv-${index}-time" list="time-list" class="jw-time shrink-0 mb-1 shadow-sm" value="${part.time || ''}" placeholder="мин">
-                <div class="w-full flex flex-col gap-1">
-                    <div class="flex items-center gap-1.5">
-                        <span class="part-number text-[10px] font-black text-jw-living"></span>
-                        <input type="text" id="part-liv-${index}-title" list="living-types" class="text-xs font-bold text-jw-living bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="${part.title || ''}" placeholder="Тема пункта...">
-                    </div>
-                    <input type="text" id="part-liv-${index}-name" list="list-brothers" class="jw-input mt-1" value="${part.name || ''}" placeholder="Имя брата">
-                </div>
-                <button onclick="removeLivingPart(${index})" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 font-black outline-none transition-colors" title="Удалить">✖</button>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <span class="text-xs font-black uppercase tracking-widest text-slate-500" data-lang="schedule_for">График для:</span>
+                <select id="schedule-lang" onchange="loadSchedule()" class="bg-indigo-50 border border-indigo-200 text-indigo-700 font-black text-sm px-4 py-2 rounded-lg outline-none cursor-pointer shadow-sm">
+                    <option value="ru">RU</option>
+                    <option value="cs">CZ</option>
+                </select>
             </div>
-        `;
-    });
-    container.innerHTML = html;
-    updateNumeration();
-}
 
-window.loadSchedule = async () => {
-    const weekIdRaw = document.getElementById('week-selector').value;
-    const scheduleLang = document.getElementById('schedule-lang').value || 'ru';
-    if(!weekIdRaw) return;
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
+                <div class="flex items-center gap-3 md:w-1/3">
+                    <button onclick="changeWeek(-1)" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg font-black flex items-center justify-center transition-colors outline-none shrink-0">&larr;</button>
+                    <input type="week" id="week-selector" onchange="loadSchedule()" class="bg-transparent font-black text-slate-800 text-lg outline-none cursor-pointer text-center w-full">
+                    <button onclick="changeWeek(1)" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg font-black flex items-center justify-center transition-colors outline-none shrink-0">&rarr;</button>
+                </div>
+                
+                <div class="flex items-center justify-end gap-2 md:w-2/3">
+                    <span id="save-status" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2 hidden md:block">...</span>
+                    
+                    <button onclick="deleteSchedule()" id="delete-btn" class="hidden bg-red-50 text-red-600 border border-red-200 text-[10px] md:text-xs font-bold uppercase tracking-widest px-3 py-2.5 rounded-lg hover:bg-red-100 transition-colors outline-none shadow-sm flex-none whitespace-nowrap" title="Удалить">
+                        <svg class="w-4 h-4 md:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        <span class="hidden md:inline" data-lang="btn_delete">Удалить</span>
+                    </button>
 
-    const weekId = `${weekIdRaw}-${scheduleLang}`; 
+                    <button onclick="saveSchedule(false)" id="save-draft-btn" class="bg-slate-100 text-slate-700 border border-slate-200 text-[10px] md:text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg hover:bg-slate-200 transition-colors outline-none shadow-sm flex-1 md:flex-none whitespace-nowrap" data-lang="btn_draft">Сохранить черновик</button>
+                    <button onclick="saveSchedule(true)" id="publish-btn" class="bg-emerald-600 text-white text-[10px] md:text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors outline-none shadow-sm flex-1 md:flex-none whitespace-nowrap" data-lang="btn_publish">Опубликовать</button>
+                </div>
+            </div>
+        </div>
 
-    document.querySelectorAll('.jw-input, .jw-title-input').forEach(input => input.value = '');
-    document.querySelectorAll('.jw-time').forEach(input => input.value = '');
-    ministryParts = [];
-    livingParts = [];
-    document.getElementById('publish-btn').classList.replace('bg-emerald-700', 'bg-emerald-600');
-    document.getElementById('save-status').innerText = "...";
+        <datalist id="list-brothers"></datalist>
+        <datalist id="list-school"></datalist>
+        <datalist id="time-list">
+            <option value="1"></option><option value="3"></option><option value="4"></option><option value="5"></option>
+            <option value="10"></option><option value="15"></option><option value="30"></option><option value="45"></option>
+        </datalist>
+        <datalist id="part-types">
+            <option value="Начинайте разговор"></option>
+            <option value="Развивайте интерес"></option>
+            <option value="Подготавливайте учеников"></option>
+            <option value="Объясняйте свои взгляды"></option>
+            <option value="Речь"></option>
+        </datalist>
+        <datalist id="living-types">
+            <option value="Местные потребности"></option>
+            <option value="Организационные достижения"></option>
+            <option value="Пункт"></option>
+        </datalist>
 
-    try {
-        const docSnap = await getDoc(doc(db, "meeting_schedules", weekId));
-        
-        if (docSnap.exists()) {
-            const d = docSnap.data();
+        <div id="schedule-form" class="grid grid-cols-1 lg:grid-cols-2 gap-8 hidden">
             
-            document.getElementById('delete-btn').classList.remove('hidden');
-            document.getElementById('delete-btn').classList.add('flex');
+            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                <h2 class="text-center font-black text-slate-800 uppercase tracking-widest mb-6 border-b border-slate-200 pb-3" data-lang="midweek_meeting">Будние дни (Христианская жизнь и служение)</h2>
 
-            if(d.isPublished) {
-                document.getElementById('save-status').innerText = window.t('published');
-                document.getElementById('save-status').classList.replace('text-slate-400', 'text-emerald-500');
-            } else {
-                document.getElementById('save-status').innerText = window.t('draft');
-                document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
-            }
+                <div class="flex items-end gap-3 mb-8">
+                    <div class="w-1/2 flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-500 uppercase" data-lang="min_label">Мин:</span>
+                        <input type="text" id="mw-chairman-time" list="time-list" class="jw-time" value="3" placeholder="мин">
+                    </div>
+                    <div class="w-full flex flex-col">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-lang="chairman_intro">Председатель / Вступление</span>
+                        <input type="text" id="mw-chairman-name" list="list-brothers" class="jw-input" placeholder="Имя...">
+                    </div>
+                </div>
 
-            document.getElementById('mw-chairman-time').value = d.mw_chairman_time || '3';
-            document.getElementById('mw-chairman-name').value = d.mw_chairman_name || '';
+                <div class="mb-8">
+                    <h3 class="font-black text-jw-treasure uppercase tracking-widest mb-4 border-b border-slate-100 pb-2" data-lang="treasures_title">Сокровища из слова бога</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-end gap-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            <input type="text" id="mw-treasure-time" list="time-list" class="jw-time shrink-0" value="10" placeholder="мин">
+                            <div class="w-full flex flex-col gap-1">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="part-number text-xs font-black text-jw-treasure"></span>
+                                    <input type="text" id="mw-treasure-title" class="text-xs font-bold text-jw-treasure bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" placeholder="Тема главной речи...">
+                                </div>
+                                <input type="text" id="mw-treasure-name" list="list-brothers" class="jw-input mt-1" placeholder="Имя...">
+                            </div>
+                        </div>
+                        <div class="flex items-end gap-3 px-2">
+                            <input type="text" id="mw-gems-time" list="time-list" class="jw-time shrink-0" value="10" placeholder="мин">
+                            <div class="w-full flex flex-col">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1"><span class="part-number text-slate-600"></span> <span data-lang="spiritual_gems">Духовные жемчужины</span></span>
+                                <input type="text" id="mw-gems-name" list="list-brothers" class="jw-input" placeholder="Имя...">
+                            </div>
+                        </div>
+                        <div class="flex items-end gap-3 px-2">
+                            <input type="text" id="mw-reading-time" list="time-list" class="jw-time shrink-0" value="4" placeholder="мин">
+                            <div class="w-full flex flex-col">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1"><span class="part-number text-slate-600"></span> <span data-lang="bible_reading">Чтение Библии</span></span>
+                                <input type="text" id="mw-reading-name" list="list-school" class="jw-input" placeholder="Участник школы">
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            document.getElementById('mw-treasure-time').value = d.mw_treasure_time || '10';
-            document.getElementById('mw-treasure-title').value = d.mw_treasure_title || '';
-            document.getElementById('mw-treasure-name').value = d.mw_treasure_name || '';
-            document.getElementById('mw-gems-time').value = d.mw_gems_time || '10';
-            document.getElementById('mw-gems-name').value = d.mw_gems_name || '';
-            document.getElementById('mw-reading-time').value = d.mw_reading_time || '4';
-            document.getElementById('mw-reading-name').value = d.mw_reading_name || '';
+                <div class="mb-8">
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
+                        <h3 class="font-black text-jw-ministry uppercase tracking-widest" data-lang="ministry_skills">Навыки служения</h3>
+                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest" data-lang="pulled_from_school">Подтягивается из школы</span>
+                    </div>
+                    <div id="ministry-parts-container" class="space-y-4"></div>
+                </div>
 
-            ministryParts = d.ministryParts || [];
-            
-            if (d.livingParts && d.livingParts.length > 0) {
-                livingParts = d.livingParts;
-            } else if (d.mw_local_name || d.mw_local_title) {
-                livingParts = [{
-                    time: d.mw_local_time || '15',
-                    title: d.mw_local_title || 'Местные потребности',
-                    name: d.mw_local_name || ''
-                }];
-            } else {
-                livingParts = [{time: "15", title: "Местные потребности", name: ""}];
-            }
+                <div>
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
+                        <h3 class="font-black text-jw-living uppercase tracking-widest" data-lang="christian_living">Христианская жизнь</h3>
+                        <button onclick="addLivingPart()" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-colors outline-none shadow-sm flex items-center gap-1 shrink-0">
+                            <span data-lang="add_btn">+ Добавить</span>
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <div id="living-parts-container" class="space-y-4"></div>
+                        <div class="flex items-start gap-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            <input type="text" id="mw-cbs-time" list="time-list" class="jw-time shrink-0 mt-3" value="30" placeholder="мин">
+                            <div class="w-full flex flex-col gap-2">
+                                <div class="flex items-center justify-between border-b border-slate-200 pb-1">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                        <span id="cbs-number" class="text-slate-600 font-black">X.</span> <span data-lang="congregation_bible_study">Изучение Библии</span>
+                                    </span>
+                                    <input type="text" id="mw-cbs-material" class="text-[10px] font-bold text-slate-600 bg-transparent text-right outline-none border-b border-transparent focus:border-slate-300 w-1/2" placeholder="Материал...">
+                                </div>
+                                <div class="flex gap-2 w-full">
+                                    <input type="text" id="mw-cbs-conductor" list="list-brothers" class="jw-input w-1/2" placeholder="Проводит (Имя)">
+                                    <input type="text" id="mw-cbs-reader" list="list-brothers" class="jw-input w-1/2" placeholder="Читает (Имя)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            document.getElementById('mw-cbs-time').value = d.mw_cbs_time || '30';
-            document.getElementById('mw-cbs-material').value = d.mw_cbs_material || '';
-            document.getElementById('mw-cbs-conductor').value = d.mw_cbs_conductor || '';
-            document.getElementById('mw-cbs-reader').value = d.mw_cbs_reader || '';
+                <div class="flex items-end gap-3 mt-8 border-t border-slate-100 pt-4">
+                    <div class="w-full flex flex-col px-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-lang="closing_prayer">Заключительная молитва</span>
+                        <input type="text" id="mw-prayer-name" list="list-brothers" class="jw-input" placeholder="Имя брата">
+                    </div>
+                </div>
 
-            document.getElementById('mw-prayer-name').value = d.mw_prayer_name || '';
+            </div>
 
-            document.getElementById('we-opening-time').value = d.we_opening_time || '5';
-            document.getElementById('we-opening-name').value = d.we_opening_name || '';
-            
-            document.getElementById('we-talk-time').value = d.we_talk_time || '30';
-            document.getElementById('we-talk-title').value = d.we_talk_title || '';
-            document.getElementById('we-talk-speaker').value = d.we_talk_speaker || '';
-            
-            document.getElementById('we-wt-time').value = d.we_wt_time || '60';
-            document.getElementById('we-wt-conductor').value = d.we_wt_conductor || '';
-            document.getElementById('we-wt-reader').value = d.we_wt_reader || '';
-            
-            document.getElementById('we-prayer-name').value = d.we_prayer_name || '';
-        } else {
-            document.getElementById('delete-btn').classList.add('hidden');
-            document.getElementById('delete-btn').classList.remove('flex');
+            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col">
+                <h2 class="text-center font-black text-slate-800 uppercase tracking-widest mb-6 border-b border-slate-200 pb-3" data-lang="weekend_meeting">Выходные (Публичная речь)</h2>
 
-            document.getElementById('save-status').innerText = window.t('new_schedule');
-            document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
-            
-            const q = query(collection(db, "personal_tasks"), where("weekId", "==", weekIdRaw));
-            const tasksSnap = await getDocs(q);
-            
-            let fetchedMinistryParts = [];
-            let fetchedReadingName = '';
+                <div class="flex-grow space-y-8">
+                    <div class="flex items-end gap-3">
+                        <input type="text" id="we-opening-time" list="time-list" class="jw-time shrink-0" value="5" placeholder="мин">
+                        <div class="w-full flex flex-col">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-lang="opening_song">Вступительные слова / Песня</span>
+                            <input type="text" id="we-opening-name" list="list-brothers" class="jw-input" placeholder="Имя брата">
+                        </div>
+                    </div>
 
-            if (!tasksSnap.empty) {
-                let tasksForThisWeek = [];
-                tasksSnap.forEach(doc => tasksForThisWeek.push(doc.data()));
-                tasksForThisWeek.sort((a,b) => parseInt(a.taskNumber) - parseInt(b.taskNumber));
+                    <div>
+                        <h3 class="font-black text-jw-weekend uppercase tracking-widest mb-3 border-b border-slate-100 pb-1" data-lang="public_talk">Публичная речь</h3>
+                        <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <input type="text" id="we-talk-time" list="time-list" class="jw-time shrink-0 mt-3" value="30" placeholder="мин">
+                            <div class="w-full flex flex-col gap-2">
+                                <input type="text" id="we-talk-title" class="text-xs font-bold text-slate-700 bg-transparent outline-none border-b border-slate-200 focus:border-slate-400 w-full pb-1" placeholder="Тема публичной речи...">
+                                <input type="text" id="we-talk-speaker" list="list-brothers" class="jw-input" placeholder="Докладчик (Имя / Собрание)">
+                            </div>
+                        </div>
+                    </div>
 
-                tasksForThisWeek.forEach(t => {
-                    let cat = t.category;
-                    if (cat === 'ЧТЕНИЕ БИБЛИИ' || cat === 'Čtení Bible' || cat === 'Чтение Библии') {
-                        fetchedReadingName = t.userName;
-                    } else {
-                        if (cat === 'НАЧИНАЙТЕ РАЗГОВОР') cat = 'Начинайте разговор';
-                        if (cat === 'РАЗВИВАЙТЕ ИНТЕРЕС') cat = 'Развивайте интерес';
-                        if (cat === 'ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ') cat = 'Подготавливайте учеников';
-                        if (cat === 'ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ') cat = 'Объясняйте свои взгляды';
-                        if (cat === 'РЕЧЬ') cat = 'Речь';
+                    <div>
+                        <h3 class="font-black text-jw-weekend uppercase tracking-widest mb-3 border-b border-slate-100 pb-1" data-lang="watchtower_study">Изучение Сторожевой Башни</h3>
+                        <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <input type="text" id="we-wt-time" list="time-list" class="jw-time shrink-0 mt-3" value="60" placeholder="мин">
+                            <div class="w-full flex flex-col gap-2">
+                                <div class="flex gap-2 w-full">
+                                    <div class="w-1/2 flex flex-col">
+                                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Проводит</span>
+                                        <input type="text" id="we-wt-conductor" list="list-brothers" class="jw-input" placeholder="Имя">
+                                    </div>
+                                    <div class="w-1/2 flex flex-col">
+                                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Читает</span>
+                                        <input type="text" id="we-wt-reader" list="list-brothers" class="jw-input" placeholder="Имя">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                        fetchedMinistryParts.push({
-                            time: "5",
-                            type: cat,
-                            student: t.userName,
-                            assistant: t.assistant && t.assistant !== "Без помощника" ? t.assistant : ""
-                        });
-                    }
-                });
-            }
+                <div class="flex items-end gap-3 mt-8 border-t border-slate-100 pt-4 shrink-0">
+                    <div class="w-full flex flex-col px-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-lang="closing_prayer">Заключительная молитва</span>
+                        <input type="text" id="we-prayer-name" list="list-brothers" class="jw-input" placeholder="Имя брата">
+                    </div>
+                </div>
+            </div>
 
-            if (fetchedReadingName) {
-                document.getElementById('mw-reading-name').value = fetchedReadingName;
-            }
+        </div>
+    </main>
 
-            ministryParts = fetchedMinistryParts; 
-
-            livingParts = [
-                {time: "15", title: "Местные потребности", name: ""}
-            ];
-        }
-        renderMinistryParts();
-        renderLivingParts();
-        updateNumeration(); 
-    } catch(e) { console.error(e); }
-};
-
-window.saveSchedule = async (isPublished) => {
-    const weekIdRaw = document.getElementById('week-selector').value;
-    const scheduleLang = document.getElementById('schedule-lang').value || 'ru';
-    if(!weekIdRaw) return;
-
-    const weekId = `${weekIdRaw}-${scheduleLang}`; 
-
-    saveMinistryState(); 
-    saveLivingState();
-
-    const btn = isPublished ? document.getElementById('publish-btn') : document.getElementById('save-draft-btn');
-    const originalText = btn.innerText;
-    btn.innerText = window.t('saving');
-    btn.disabled = true;
-
-    const scheduleData = {
-        weekId: weekId, 
-        realWeekId: weekIdRaw, 
-        lang: scheduleLang, 
-        isPublished: isPublished,
-        updatedAt: new Date().toISOString(),
-
-        mw_chairman_time: document.getElementById('mw-chairman-time').value,
-        mw_chairman_name: document.getElementById('mw-chairman-name').value.trim(),
-        
-        mw_treasure_time: document.getElementById('mw-treasure-time').value,
-        mw_treasure_title: document.getElementById('mw-treasure-title').value.trim(),
-        mw_treasure_name: document.getElementById('mw-treasure-name').value.trim(),
-        
-        mw_gems_time: document.getElementById('mw-gems-time').value,
-        mw_gems_name: document.getElementById('mw-gems-name').value.trim(),
-        
-        mw_reading_time: document.getElementById('mw-reading-time').value,
-        mw_reading_name: document.getElementById('mw-reading-name').value.trim(),
-
-        ministryParts: ministryParts,
-        livingParts: livingParts,
-        
-        mw_cbs_time: document.getElementById('mw-cbs-time').value,
-        mw_cbs_material: document.getElementById('mw-cbs-material').value.trim(),
-        mw_cbs_conductor: document.getElementById('mw-cbs-conductor').value.trim(),
-        mw_cbs_reader: document.getElementById('mw-cbs-reader').value.trim(),
-        
-        mw_prayer_name: document.getElementById('mw-prayer-name').value.trim(),
-
-        we_opening_time: document.getElementById('we-opening-time').value,
-        we_opening_name: document.getElementById('we-opening-name').value.trim(),
-        
-        we_talk_time: document.getElementById('we-talk-time').value,
-        we_talk_title: document.getElementById('we-talk-title').value.trim(),
-        we_talk_speaker: document.getElementById('we-talk-speaker').value.trim(),
-        
-        we_wt_time: document.getElementById('we-wt-time').value,
-        we_wt_conductor: document.getElementById('we-wt-conductor').value.trim(),
-        we_wt_reader: document.getElementById('we-wt-reader').value.trim(),
-        
-        we_prayer_name: document.getElementById('we-prayer-name').value.trim(),
-    };
-
-    try {
-        await setDoc(doc(db, "meeting_schedules", weekId), scheduleData);
-        window.showToast(isPublished ? window.t('success_pub') : window.t('success_draft'));
-        document.getElementById('save-status').innerText = isPublished ? window.t('published') : window.t('draft');
-        if(isPublished) document.getElementById('save-status').classList.replace('text-slate-400', 'text-emerald-500');
-        else document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
-        
-        document.getElementById('delete-btn').classList.remove('hidden');
-        document.getElementById('delete-btn').classList.add('flex');
-    } catch (e) { alert(window.t('error_save')); }
-    
-    btn.innerText = originalText;
-    btn.disabled = false;
-};
-
-// 🔥 ФУНКЦИЯ УДАЛЕНИЯ: Стирает и новый, и старый застрявший график
-window.deleteSchedule = async () => {
-    const weekIdRaw = document.getElementById('week-selector').value;
-    const scheduleLang = document.getElementById('schedule-lang').value || 'ru';
-    if(!weekIdRaw) return;
-    const weekId = `${weekIdRaw}-${scheduleLang}`;
-
-    if(confirm(window.t('confirm_del'))) {
-        try {
-            await deleteDoc(doc(db, "meeting_schedules", weekId));
-            // Подчищаем старый/ошибочный график (если он там есть)
-            await deleteDoc(doc(db, "meeting_schedules", weekIdRaw));
-            
-            window.showToast(window.t('success_del'));
-            window.loadSchedule(); 
-        } catch(e) {
-            alert(window.t('error_del'));
-        }
-    }
-};
+    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
+    <script type="module" src="schedule-admin.js?v=15"></script>
+</body>
+</html>
