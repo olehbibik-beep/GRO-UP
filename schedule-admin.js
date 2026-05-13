@@ -1,6 +1,45 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+const dict = {
+    ru: {
+        "schedule_for": "График для:", "btn_draft": "Сохранить черновик", "btn_publish": "Опубликовать", "btn_delete": "Удалить",
+        "midweek_meeting": "Будние дни (Христианская жизнь и служение)", "min_label": "Мин:", "chairman_intro": "Председатель / Вступление",
+        "treasures_title": "Сокровища из слова бога", "spiritual_gems": "Духовные жемчужины", "bible_reading": "Чтение Библии",
+        "ministry_skills": "Навыки служения", "pulled_from_school": "Подтягивается из школы", "christian_living": "Христианская жизнь",
+        "congregation_bible_study": "Изучение Библии", "closing_prayer": "Заключительная молитва", "weekend_meeting": "Выходные (Публичная речь)",
+        "opening_song": "Вступительные слова / Песня", "public_talk": "Публичная речь", "watchtower_study": "Изучение Сторожевой Башни",
+        "add_btn": "+ Добавить", "saving": "Сохранение...", "published": "ОПУБЛИКОВАНО", "draft": "ЧЕРНОВИК", "new_schedule": "НОВЫЙ ГРАФИК",
+        "success_pub": "График опубликован!", "success_draft": "Черновик сохранен", "error_save": "Ошибка сохранения!",
+        "confirm_del": "Точно удалить этот график навсегда?", "success_del": "График успешно удален!", "error_del": "Ошибка удаления!",
+        "part": "Задание"
+    },
+    cs: {
+        "schedule_for": "Rozvrh pro:", "btn_draft": "Uložit koncept", "btn_publish": "Publikovat", "btn_delete": "Smazat",
+        "midweek_meeting": "Všední dny (Náš křesťanský život a služba)", "min_label": "Min:", "chairman_intro": "Předsedající / Úvod",
+        "treasures_title": "Poklady z Božího slova", "spiritual_gems": "Hledání duchovních drahokamů", "bible_reading": "Čtení Bible",
+        "ministry_skills": "Zlepšujme se ve službě", "pulled_from_school": "Načítá se ze školy", "christian_living": "Křesťanský život",
+        "congregation_bible_study": "Sborové studium Bible", "closing_prayer": "Závěrečná modlitba", "weekend_meeting": "Víkend (Veřejná přednáška)",
+        "opening_song": "Úvodní slova / Píseň", "public_talk": "Veřejná přednáška", "watchtower_study": "Studium Strážné věže",
+        "add_btn": "+ Přidat", "saving": "Ukládání...", "published": "PUBLIKOVÁNO", "draft": "KONCEPT", "new_schedule": "NOVÝ ROZVRH",
+        "success_pub": "Rozvrh byl publikován!", "success_draft": "Koncept byl uložen", "error_save": "Chyba při ukládání!",
+        "confirm_del": "Opravdu chcete tento rozvrh trvale smazat?", "success_del": "Rozvrh byl úspěšně smazán!", "error_del": "Chyba při mazání!",
+        "part": "Úkol"
+    }
+};
+
+const currentLang = localStorage.getItem('app_lang') || 'ru';
+
+window.t = (key) => dict[currentLang][key] || key;
+
+const applyTranslations = () => {
+    document.querySelectorAll('[data-lang]').forEach(el => {
+        el.innerHTML = window.t(el.getAttribute('data-lang'));
+    });
+};
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', applyTranslations); } 
+else { applyTranslations(); }
+
 window.showToast = (message) => {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -27,7 +66,6 @@ const userId = localStorage.getItem('userId');
 
 if (!userId) window.location.href = 'login.html';
 
-// ПРОВЕРКА ПРАВ
 getDoc(doc(db, "users", userId)).then(docSnap => {
     if (!docSnap.exists()) return window.location.href = 'login.html';
     const roles = docSnap.data().roles || [];
@@ -74,9 +112,8 @@ function setCurrentWeek() {
     document.getElementById('week-selector').value = getISOWeekString(today);
     document.getElementById('schedule-form').classList.remove('hidden');
     
-    const currentAppLang = localStorage.getItem('app_lang') || 'ru';
     const langSelector = document.getElementById('schedule-lang');
-    if (langSelector) langSelector.value = currentAppLang;
+    if (langSelector) langSelector.value = currentLang;
 
     loadSchedule();
 }
@@ -108,7 +145,6 @@ function updateNumeration() {
     });
 }
 
-// =================== НАВЫКИ СЛУЖЕНИЯ (ТОЛЬКО ЧТЕНИЕ ДАННЫХ) ===================
 function saveMinistryState() {
     const container = document.getElementById('ministry-parts-container');
     if(!container) return;
@@ -124,7 +160,7 @@ function renderMinistryParts() {
     let html = '';
     
     if (ministryParts.length === 0) {
-        html = `<p class="text-slate-400 text-[10px] italic py-3 text-center border border-slate-200 border-dashed rounded-lg bg-slate-50">Задания подтягиваются из вкладки Школа</p>`;
+        html = `<p class="text-slate-400 text-[10px] italic py-3 text-center border border-slate-200 border-dashed rounded-lg bg-slate-50">${window.t('pulled_from_school')}</p>`;
     } else {
         ministryParts.forEach((part, index) => {
             const assistText = part.assistant ? `<span class="text-slate-400 font-normal mr-1">Пом:</span> ${part.assistant}` : `<span class="opacity-50">Без помощника</span>`;
@@ -135,7 +171,7 @@ function renderMinistryParts() {
                     <div class="w-full flex flex-col gap-1">
                         <div class="flex items-center gap-1.5 pb-1 border-b border-slate-200">
                             <span class="part-number text-[11px] font-black text-jw-ministry"></span>
-                            <span class="text-[12px] font-bold text-jw-ministry w-full truncate">${part.type || 'Задание'}</span>
+                            <span class="text-[12px] font-bold text-jw-ministry w-full truncate">${part.type || window.t('part')}</span>
                         </div>
                         <div class="flex gap-2 w-full mt-1 items-end">
                             <span class="w-1/2 text-[13px] font-black text-slate-800 border-b border-slate-200 pb-0.5 truncate">${part.student || '-'}</span>
@@ -151,7 +187,6 @@ function renderMinistryParts() {
     updateNumeration();
 }
 
-// =================== ХРИСТИАНСКАЯ ЖИЗНЬ ===================
 window.addLivingPart = () => {
     saveLivingState();
     livingParts.push({ time: "15", title: "", name: "" });
@@ -188,7 +223,7 @@ function renderLivingParts() {
                 <div class="w-full flex flex-col gap-1">
                     <div class="flex items-center gap-1.5">
                         <span class="part-number text-[10px] font-black text-jw-living"></span>
-                        <input type="text" id="part-liv-${index}-title" list="living-types" class="text-xs font-bold text-jw-living bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="${part.title || ''}" placeholder="Тема пункта (Местные потребности...)">
+                        <input type="text" id="part-liv-${index}-title" list="living-types" class="text-xs font-bold text-jw-living bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="${part.title || ''}" placeholder="Тема пункта...">
                     </div>
                     <input type="text" id="part-liv-${index}-name" list="list-brothers" class="jw-input mt-1" value="${part.name || ''}" placeholder="Имя брата">
                 </div>
@@ -220,19 +255,17 @@ window.loadSchedule = async () => {
         if (docSnap.exists()) {
             const d = docSnap.data();
             
-            // Включаем кнопку удаления
             document.getElementById('delete-btn').classList.remove('hidden');
             document.getElementById('delete-btn').classList.add('flex');
 
             if(d.isPublished) {
-                document.getElementById('save-status').innerText = "ОПУБЛИКОВАНО";
+                document.getElementById('save-status').innerText = window.t('published');
                 document.getElementById('save-status').classList.replace('text-slate-400', 'text-emerald-500');
             } else {
-                document.getElementById('save-status').innerText = "ЧЕРНОВИК";
+                document.getElementById('save-status').innerText = window.t('draft');
                 document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
             }
 
-            // БУДНИ
             document.getElementById('mw-chairman-time').value = d.mw_chairman_time || '3';
             document.getElementById('mw-chairman-name').value = d.mw_chairman_name || '';
 
@@ -265,7 +298,6 @@ window.loadSchedule = async () => {
 
             document.getElementById('mw-prayer-name').value = d.mw_prayer_name || '';
 
-            // ВЫХОДНЫЕ
             document.getElementById('we-opening-time').value = d.we_opening_time || '5';
             document.getElementById('we-opening-name').value = d.we_opening_name || '';
             
@@ -279,11 +311,10 @@ window.loadSchedule = async () => {
             
             document.getElementById('we-prayer-name').value = d.we_prayer_name || '';
         } else {
-            // Прячем кнопку удаления (нечего удалять)
             document.getElementById('delete-btn').classList.add('hidden');
             document.getElementById('delete-btn').classList.remove('flex');
 
-            document.getElementById('save-status').innerText = "НОВЫЙ ГРАФИК";
+            document.getElementById('save-status').innerText = window.t('new_schedule');
             document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
             
             const q = query(collection(db, "personal_tasks"), where("weekId", "==", weekIdRaw));
@@ -346,7 +377,7 @@ window.saveSchedule = async (isPublished) => {
 
     const btn = isPublished ? document.getElementById('publish-btn') : document.getElementById('save-draft-btn');
     const originalText = btn.innerText;
-    btn.innerText = "Загрузка...";
+    btn.innerText = window.t('saving');
     btn.disabled = true;
 
     const scheduleData = {
@@ -395,34 +426,32 @@ window.saveSchedule = async (isPublished) => {
 
     try {
         await setDoc(doc(db, "meeting_schedules", weekId), scheduleData);
-        window.showToast(isPublished ? "График опубликован!" : "Черновик сохранен");
-        document.getElementById('save-status').innerText = isPublished ? "ОПУБЛИКОВАНО" : "ЧЕРНОВИК";
+        window.showToast(isPublished ? window.t('success_pub') : window.t('success_draft'));
+        document.getElementById('save-status').innerText = isPublished ? window.t('published') : window.t('draft');
         if(isPublished) document.getElementById('save-status').classList.replace('text-slate-400', 'text-emerald-500');
         else document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
         
-        // Показываем кнопку удаления
         document.getElementById('delete-btn').classList.remove('hidden');
         document.getElementById('delete-btn').classList.add('flex');
-    } catch (e) { alert("Ошибка сохранения!"); }
+    } catch (e) { alert(window.t('error_save')); }
     
     btn.innerText = originalText;
     btn.disabled = false;
 };
 
-// Функция удаления графика
 window.deleteSchedule = async () => {
     const weekIdRaw = document.getElementById('week-selector').value;
     const scheduleLang = document.getElementById('schedule-lang').value || 'ru';
     if(!weekIdRaw) return;
     const weekId = `${weekIdRaw}-${scheduleLang}`;
 
-    if(confirm('Точно удалить этот график навсегда?')) {
+    if(confirm(window.t('confirm_del'))) {
         try {
             await deleteDoc(doc(db, "meeting_schedules", weekId));
-            window.showToast("График успешно удален!");
+            window.showToast(window.t('success_del'));
             window.loadSchedule(); 
         } catch(e) {
-            alert("Ошибка удаления!");
+            alert(window.t('error_del'));
         }
     }
 };
