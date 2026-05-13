@@ -12,7 +12,7 @@ const dict = {
         "add_btn": "+ Добавить", "saving": "Сохранение...", "published": "ОПУБЛИКОВАНО", "draft": "ЧЕРНОВИК", "new_schedule": "НОВЫЙ ГРАФИК",
         "success_pub": "График опубликован!", "success_draft": "Черновик сохранен", "error_save": "Ошибка сохранения!",
         "confirm_del": "Точно удалить этот график навсегда?", "success_del": "График успешно удален!", "error_del": "Ошибка удаления!",
-        "part": "Задание"
+        "part": "Задание", "assistant_short": "Пом:"
     },
     cs: {
         "schedule_for": "Rozvrh pro:", "btn_draft": "Uložit koncept", "btn_publish": "Publikovat", "btn_delete": "Smazat",
@@ -24,18 +24,15 @@ const dict = {
         "add_btn": "+ Přidat", "saving": "Ukládání...", "published": "PUBLIKOVÁNO", "draft": "KONCEPT", "new_schedule": "NOVÝ ROZVRH",
         "success_pub": "Rozvrh byl publikován!", "success_draft": "Koncept byl uložen", "error_save": "Chyba při ukládání!",
         "confirm_del": "Opravdu chcete tento rozvrh trvale smazat?", "success_del": "Rozvrh byl úspěšně smazán!", "error_del": "Chyba při mazání!",
-        "part": "Úkol"
+        "part": "Úkol", "assistant_short": "Pom:"
     }
 };
 
 const currentLang = localStorage.getItem('app_lang') || 'ru';
-
 window.t = (key) => dict[currentLang][key] || key;
 
 const applyTranslations = () => {
-    document.querySelectorAll('[data-lang]').forEach(el => {
-        el.innerHTML = window.t(el.getAttribute('data-lang'));
-    });
+    document.querySelectorAll('[data-lang]').forEach(el => { el.innerHTML = window.t(el.getAttribute('data-lang')); });
 };
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', applyTranslations); } 
 else { applyTranslations(); }
@@ -163,7 +160,7 @@ function renderMinistryParts() {
         html = `<p class="text-slate-400 text-[10px] italic py-3 text-center border border-slate-200 border-dashed rounded-lg bg-slate-50">${window.t('pulled_from_school')}</p>`;
     } else {
         ministryParts.forEach((part, index) => {
-            const assistText = part.assistant ? `<span class="text-slate-400 font-normal mr-1">Пом:</span> ${part.assistant}` : `<span class="opacity-50">Без помощника</span>`;
+            const assistText = part.assistant ? `<span class="text-slate-400 font-normal mr-1">${window.t('assistant_short')}</span> ${part.assistant}` : `<span class="opacity-50">Без помощника</span>`;
             
             html += `
                 <div class="flex items-end gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 relative">
@@ -439,6 +436,7 @@ window.saveSchedule = async (isPublished) => {
     btn.disabled = false;
 };
 
+// 🔥 УДАЛЕНИЕ: СТИРАЕТ НОВЫЙ И СТАРЫЙ (ОШИБОЧНЫЙ) ГРАФИК
 window.deleteSchedule = async () => {
     const weekIdRaw = document.getElementById('week-selector').value;
     const scheduleLang = document.getElementById('schedule-lang').value || 'ru';
@@ -448,6 +446,8 @@ window.deleteSchedule = async () => {
     if(confirm(window.t('confirm_del'))) {
         try {
             await deleteDoc(doc(db, "meeting_schedules", weekId));
+            await deleteDoc(doc(db, "meeting_schedules", weekIdRaw)); // Подчищаем старый системный мусор
+            
             window.showToast(window.t('success_del'));
             window.loadSchedule(); 
         } catch(e) {
