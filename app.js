@@ -144,6 +144,7 @@ const applyTranslations = () => {
     if (selector) selector.value = currentLang;
     document.querySelectorAll('[data-lang]').forEach(el => el.innerHTML = window.t(el.getAttribute('data-lang')));
     document.querySelectorAll('[data-lang-placeholder]').forEach(el => el.setAttribute('placeholder', window.t(el.getAttribute('data-lang-placeholder'))));
+    document.querySelectorAll('[data-lang-title]').forEach(el => el.setAttribute('title', window.t(el.getAttribute('data-lang-title'))));
 };
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyTranslations);
@@ -167,9 +168,13 @@ try { messaging = getMessaging(app); } catch (e) {}
 try { enableIndexedDbPersistence(db).catch(() => {}); } catch (e) {}
 
 const userId = localStorage.getItem('userId');
-if (!userId) { window.location.href = 'login.html'; }
+
+if (!userId) {
+    window.location.href = 'login.html';
+}
 
 window.scrollNews = (offset) => { document.getElementById('content-news')?.scrollBy({ left: offset, behavior: 'smooth' }); };
+
 window.scrollProgram = (dir) => { 
     const container = document.getElementById('meeting-program-list');
     if(container) {
@@ -257,8 +262,8 @@ window.handleZoomClick = (event) => {
     
     if (!window.zoomStateReady) {
         if(zoomBtn) {
-            zoomBtn.classList.remove('bg-[#10b981]', 'border-[#34d399]');
-            zoomBtn.classList.add('bg-[#34d399]', 'border-[#6ee7b7]');
+            zoomBtn.classList.remove('bg-[#10b981]');
+            zoomBtn.classList.add('bg-[#34d399]');
         }
         if(hiddenInfo) { hiddenInfo.classList.add('hidden'); hiddenInfo.classList.remove('flex'); }
         if(revealedInfo) { revealedInfo.classList.remove('hidden'); revealedInfo.classList.add('flex'); }
@@ -283,8 +288,8 @@ function resetZoomUI() {
     const revealedInfo = document.getElementById('zoom-info-revealed');
     
     if(zoomBtn) {
-        zoomBtn.classList.add('bg-[#10b981]', 'border-[#34d399]');
-        zoomBtn.classList.remove('bg-[#34d399]', 'border-[#6ee7b7]');
+        zoomBtn.classList.add('bg-[#10b981]');
+        zoomBtn.classList.remove('bg-[#34d399]');
     }
     if(hiddenInfo) { hiddenInfo.classList.remove('hidden'); hiddenInfo.classList.add('flex'); }
     if(revealedInfo) { revealedInfo.classList.add('hidden'); revealedInfo.classList.remove('flex'); }
@@ -633,61 +638,49 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     
     let partCounter = 1;
 
-    // Вспомогательная функция для пунктов (ИМЯ ПОД НАЗВАНИЕМ)
+    // Обычная строка (Будни)
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const titleColor = isMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
-        const nameColor = isMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
+        const nameColor = isMe ? 'font-black text-slate-900' : 'font-bold text-slate-600';
 
         return `
-            <div class="flex flex-col py-1 px-3 border-b border-slate-200/60 last:border-0 hover:bg-slate-300/10 transition-colors">
-                <span class="text-[11px] md:text-xs ${titleColor} leading-tight">${partCounter++}. ${translateDbString(title)}</span>
-                <span class="text-[10px] md:text-[11px] ${nameColor} mt-0.5 ml-3">${person || '-'}</span>
+            <div class="flex flex-col py-1.5 px-3 border-b border-slate-200 bg-white hover:bg-slate-50 transition-colors">
+                <span class="text-[11px] md:text-[13px] font-bold text-slate-700 leading-tight">${partCounter++}. ${translateDbString(title)}</span>
+                <span class="text-[11px] md:text-[13px] ${nameColor} mt-0.5">${person || '-'}</span>
             </div>
         `;
     };
 
+    // Строка без номера на сером фоне (Председатель, Молитва)
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const titleColor = isMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
-        const nameColor = isMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
-
+        const nameColor = isMe ? 'font-black text-slate-900' : 'font-bold text-slate-600';
         return `
-            <div class="flex flex-col py-1 px-3 border-y border-slate-200/80 hover:bg-slate-300/10 transition-colors">
-                <span class="text-[11px] md:text-xs ${titleColor} leading-tight">${translateDbString(title)}</span>
-                <span class="text-[10px] md:text-[11px] ${nameColor} mt-0.5 ml-3">${person || '-'}</span>
+            <div class="flex flex-col py-1.5 px-3 bg-slate-200/50 border-y border-slate-300 hover:bg-slate-200 transition-colors">
+                <span class="text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-wide leading-tight">${translateDbString(title)}</span>
+                <span class="text-[11px] md:text-[13px] ${nameColor} mt-0.5">${person || '-'}</span>
             </div>
         `;
     };
 
-    // Главная речь на всю ширину большими буквами
-    const treasure1Me = d.mw_treasure_name === myName;
-    const t1TitleColor = treasure1Me ? 'font-black text-slate-900' : 'font-black text-slate-800';
-    const t1NameColor = treasure1Me ? 'font-black text-slate-900' : 'font-bold text-slate-600';
-    
-    const treasure1 = `
-        <div class="flex flex-col py-1.5 px-3 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
-            <span class="text-xs md:text-sm ${t1TitleColor} uppercase leading-snug break-words mb-0.5">${partCounter++}. ${translateDbString(d.mw_treasure_title || window.t('talk_10_min'))}</span>
-            <span class="text-[11px] md:text-xs ${t1NameColor} ml-3">${d.mw_treasure_name || '-'}</span>
-        </div>
-    `;
-
+    // Главная речь 10 МИН (Теперь как обычная часть программы)
+    const treasure1 = row(d.mw_treasure_title || window.t('talk_10_min'), d.mw_treasure_name);
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
     const minRows = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
-        const titleColor = isMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
-        const nameColor = isMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
-        const assistStr = m.assistant ? ` <span class="opacity-70 ml-1">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
+        const studentCol = m.student === myName ? 'font-black text-slate-900' : 'font-bold text-slate-600';
+        const assistCol = m.assistant === myName ? 'font-black text-slate-900' : 'font-medium text-slate-500';
+        const assistStr = m.assistant ? `<span class="text-[10px] md:text-[11px] ${assistCol} block mt-0.5">${window.t('assistant_short')} ${m.assistant}</span>` : '';
 
         return `
-            <div class="flex flex-col py-1 px-3 border-b border-slate-200/60 last:border-0 hover:bg-slate-300/10 transition-colors">
-                <span class="text-[11px] md:text-xs ${titleColor} leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
-                <span class="text-[10px] md:text-[11px] ${nameColor} mt-0.5 ml-3">${m.student || '-'}${assistStr}</span>
+            <div class="flex flex-col py-1.5 px-3 border-b border-slate-200 bg-white hover:bg-slate-50 transition-colors">
+                <span class="text-[11px] md:text-[13px] font-bold text-slate-700 leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
+                <span class="text-[11px] md:text-[13px] ${studentCol} mt-0.5">${m.student || '-'}${assistStr}</span>
             </div>
         `;
     }).join('');
@@ -697,58 +690,58 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         return row(m.title, m.name);
     }).join('');
 
+    // Изучение Библии
     const cbsNum = partCounter++;
     const isCbsMe = (d.mw_cbs_conductor === myName || d.mw_cbs_reader === myName);
-    const cbsTitleColor = isCbsMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
-    const cbsNameColor = isCbsMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
-    const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
+    const cbsCondCol = isCbsMe ? 'font-black text-slate-900' : 'font-bold text-slate-600';
+    const cbsReadCol = isCbsMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
 
+    // ВЫХОДНЫЕ: Публичная речь (Белый фон, крупно)
     const weTalkMe = d.we_talk_speaker === myName;
-    const wtTitleColor = weTalkMe ? 'font-black text-slate-900' : 'font-black text-slate-800';
+    const wtTitleColor = weTalkMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
     const wtNameColor = weTalkMe ? 'font-black text-slate-900' : 'font-bold text-slate-600';
 
     const we_talk = `
-        <div class="flex flex-col py-1.5 px-3 border-y border-slate-200/60 hover:bg-slate-300/10 transition-colors">
-            <span class="text-xs md:text-sm ${wtTitleColor} uppercase leading-snug break-words mb-0.5">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
-            <span class="text-[11px] md:text-xs ${wtNameColor} ml-3">${d.we_talk_speaker || '-'}</span>
+        <div class="flex flex-col py-2 px-3 border-b border-slate-200 bg-white hover:bg-slate-50 transition-colors">
+            <span class="text-xs md:text-[14px] ${wtTitleColor} leading-tight uppercase tracking-wide">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
+            <span class="text-sm md:text-base ${wtNameColor} mt-0.5">${d.we_talk_speaker || '-'}</span>
         </div>
     `;
 
     const isWtMe = (d.we_wt_conductor === myName || d.we_wt_reader === myName);
-    const wtStudyTitleColor = isWtMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
-    const wtStudyNameColor = isWtMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
-    const we_wt_read_str = d.we_wt_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.we_wt_reader})</span>` : '';
+    const wtStudyCondColor = isWtMe ? 'font-black text-slate-900' : 'font-bold text-slate-600';
+    const wtStudyReadColor = isWtMe ? 'font-black text-slate-900' : 'font-bold text-slate-500';
 
-    // ВЫВОД КАРТОЧЕК
     return `
         <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-1">
-            <div class="text-center pb-1.5 border-b-2 border-slate-300 mb-1.5">
+            <div class="text-center pb-2 border-b-2 border-slate-300 mb-2">
                 <span class="text-sm md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel} <span class="${statusColor} ml-2">${weekStatus}</span></span>
             </div>
             
-            <div class="flex-grow flex flex-col">
+            <div class="flex-grow flex flex-col overflow-hidden rounded-md shadow-sm border border-slate-200">
                 ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
 
-                <div class="bg-[#0d9488] text-white py-1 px-3 mt-0 flex items-center shadow-sm w-full">
+                <div class="bg-[#0d9488] text-white py-1 px-3 flex items-center w-full">
                     <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('treasures_title')}</span>
                 </div>
                 ${treasure1}
                 ${treasure2}
                 ${treasure3}
 
-                <div class="bg-[#d97706] text-white py-1 px-3 mt-0 flex items-center shadow-sm w-full">
+                <div class="bg-[#d97706] text-white py-1 px-3 flex items-center w-full">
                     <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('ministry_skills')}</span>
                 </div>
                 ${minRows}
 
-                <div class="bg-[#b91c1c] text-white py-1 px-3 mt-0 flex items-center shadow-sm w-full">
+                <div class="bg-[#b91c1c] text-white py-1 px-3 flex items-center w-full">
                     <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('christian_living')}</span>
                 </div>
                 ${livRows}
                 
-                <div class="flex flex-col py-1 px-3 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
-                    <span class="text-[11px] md:text-xs ${cbsTitleColor} leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-[9px] md:text-[10px] font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
-                    <span class="text-[10px] md:text-[11px] ${cbsNameColor} mt-0.5 ml-3">${d.mw_cbs_conductor || '-'}${readStr}</span>
+                <div class="flex flex-col py-1.5 px-3 border-b border-slate-200 bg-white hover:bg-slate-50 transition-colors">
+                    <span class="text-[11px] md:text-[13px] font-bold text-slate-700 leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
+                    <span class="text-[11px] md:text-[13px] ${cbsCondCol} mt-0.5">${d.mw_cbs_conductor || '-'}</span>
+                    ${d.mw_cbs_reader ? `<span class="text-[10px] md:text-[12px] ${cbsReadCol} mt-0.5">${window.t('reader')} ${d.mw_cbs_reader}</span>` : ''}
                 </div>
 
                 ${rowUnnumbered(window.t('closing_prayer'), d.mw_prayer_name)}
@@ -756,18 +749,22 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         </div>
 
         <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-1">
-            <div class="text-center pb-1.5 border-b-2 border-slate-300 mb-1.5">
+            <div class="text-center pb-2 border-b-2 border-slate-300 mb-2">
                 <span class="text-sm md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel} <span class="${statusColor} ml-2">${weekStatus}</span></span>
-                <span class="text-[8px] md:text-[9px] text-slate-500 font-bold uppercase tracking-widest block mt-0.5">${window.t('weekend_meeting')}</span>
             </div>
-            <div class="flex-grow flex flex-col">
+            
+            <div class="flex-grow flex flex-col overflow-hidden rounded-md shadow-sm border border-slate-200">
+                <div class="bg-[#475569] text-white py-1 px-3 flex items-center w-full">
+                    <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('weekend_meeting')}</span>
+                </div>
                 
                 ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
                 ${we_talk}
                 
-                <div class="flex flex-col py-1 px-3 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
-                    <span class="text-[11px] md:text-xs ${wtStudyTitleColor} leading-tight">${window.t('watchtower_study')}</span>
-                    <span class="text-[10px] md:text-[11px] ${wtStudyNameColor} mt-0.5 ml-3">${d.we_wt_conductor || '-'}${we_wt_read_str}</span>
+                <div class="flex flex-col py-1.5 px-3 border-b border-slate-200 bg-white hover:bg-slate-50 transition-colors">
+                    <span class="text-[11px] md:text-[13px] font-bold text-slate-700 leading-tight">${window.t('watchtower_study')}</span>
+                    <span class="text-[11px] md:text-[13px] ${wtStudyCondColor} mt-0.5">${d.we_wt_conductor || '-'}</span>
+                    ${d.we_wt_reader ? `<span class="text-[10px] md:text-[12px] ${wtStudyReadColor} mt-0.5">${window.t('reader')} ${d.we_wt_reader}</span>` : ''}
                 </div>
 
                 ${rowUnnumbered(window.t('closing_prayer'), d.we_prayer_name)}
@@ -859,7 +856,7 @@ function loadPersonalData() {
                 const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
                 const isMyGroup = String(d.group) === String(myGroup);
 
-                // ПРОСТОЙ СПИСОК УБОРОК БЕЗ ЛИШНИХ ПЛИТОК
+                // СПИСОК УБОРОК (Твоя группа выделена темно-серым, как логотип)
                 let textClass = isMyGroup ? "text-slate-900 font-black" : "text-slate-600";
                 let badgeClass = isMyGroup ? "bg-slate-800 text-white shadow-sm" : "bg-slate-100 text-slate-500 border border-slate-200";
 
@@ -1087,6 +1084,7 @@ function loadPersonalData() {
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 ev.id = docSnap.id;
+                // ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
                 if (ev.date === todayStr) {
                     todayEvents.push(ev);
                 }
