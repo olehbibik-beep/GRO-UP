@@ -1,4 +1,3 @@
-// Ждем загрузки DOM
 setTimeout(() => {
     const loader = document.getElementById('global-loader');
     if (loader) {
@@ -258,8 +257,8 @@ window.handleZoomClick = (event) => {
     
     if (!window.zoomStateReady) {
         if(zoomBtn) {
-            zoomBtn.classList.remove('bg-[#dcfce7]', 'border-[#bbf7d0]');
-            zoomBtn.classList.add('bg-[#22c55e]', 'border-[#16a34a]');
+            zoomBtn.classList.remove('bg-[#10b981]', 'border-[#34d399]');
+            zoomBtn.classList.add('bg-[#34d399]', 'border-[#6ee7b7]');
         }
         if(hiddenInfo) { hiddenInfo.classList.add('hidden'); hiddenInfo.classList.remove('flex'); }
         if(revealedInfo) { revealedInfo.classList.remove('hidden'); revealedInfo.classList.add('flex'); }
@@ -284,8 +283,8 @@ function resetZoomUI() {
     const revealedInfo = document.getElementById('zoom-info-revealed');
     
     if(zoomBtn) {
-        zoomBtn.classList.add('bg-[#dcfce7]', 'border-[#bbf7d0]');
-        zoomBtn.classList.remove('bg-[#22c55e]', 'border-[#16a34a]');
+        zoomBtn.classList.add('bg-[#10b981]', 'border-[#34d399]');
+        zoomBtn.classList.remove('bg-[#34d399]', 'border-[#6ee7b7]');
     }
     if(hiddenInfo) { hiddenInfo.classList.remove('hidden'); hiddenInfo.classList.add('flex'); }
     if(revealedInfo) { revealedInfo.classList.add('hidden'); revealedInfo.classList.remove('flex'); }
@@ -412,7 +411,7 @@ if (userId) {
             try { loadProfileData(); } catch(e) {}
             renderStandCard();
             
-            // Принудительно открываем ДОМИК
+            // ПРИНУДИТЕЛЬНО ОТКРЫВАЕМ ДОМИК ПРИ ЗАГРУЗКЕ
             window.switchTab('home');
         }
     });
@@ -594,7 +593,8 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-// 🔥 ПРОГРАММА СОБРАНИЯ (БЕЗ РАМОК, КРУПНЫЕ ШРИФТЫ, ИДЕАЛЬНО ДЛЯ ПК И ТЕЛЕФОНА)
+// 🔥 ПРОГРАММА СОБРАНИЯ (БЕЗ РАМОК, КРУПНЫЕ ШРИФТЫ, ИМЕНА ПОД ПУНКТАМИ)
+
 function getISOWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -637,12 +637,13 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const nameColor = isMe ? `bg-rose-100 text-rose-600 px-1.5 rounded` : 'text-slate-800';
+        const titleColor = isMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
+        const nameColor = isMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
 
         return `
-            <div class="flex flex-col py-1.5 border-b border-slate-200/60 last:border-0 hover:bg-slate-300/10 transition-colors">
-                <span class="text-sm md:text-base font-bold text-slate-600 leading-tight">${partCounter++}. ${translateDbString(title)}</span>
-                <span class="text-base md:text-lg font-black ${nameColor} text-right mt-0.5">${person || '-'}</span>
+            <div class="flex flex-col py-1 px-3 border-b border-slate-200/60 last:border-0 hover:bg-slate-300/10 transition-colors">
+                <span class="text-[11px] md:text-xs ${titleColor} leading-tight">${partCounter++}. ${translateDbString(title)}</span>
+                <span class="text-[10px] md:text-[11px] ${nameColor} mt-0.5 ml-3">${person || '-'}</span>
             </div>
         `;
     };
@@ -650,21 +651,26 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const nameColor = isMe ? `bg-rose-100 text-rose-600 px-1.5 rounded` : 'text-slate-800';
+        const titleColor = isMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
+        const nameColor = isMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
+
         return `
-            <div class="flex flex-col py-1.5 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
-                <span class="text-sm md:text-base font-bold text-slate-600 leading-tight">${translateDbString(title)}</span>
-                <span class="text-base md:text-lg font-black ${nameColor} text-right mt-0.5">${person || '-'}</span>
+            <div class="flex flex-col py-1 px-3 border-y border-slate-200/80 hover:bg-slate-300/10 transition-colors">
+                <span class="text-[11px] md:text-xs ${titleColor} leading-tight">${translateDbString(title)}</span>
+                <span class="text-[10px] md:text-[11px] ${nameColor} mt-0.5 ml-3">${person || '-'}</span>
             </div>
         `;
     };
 
     // Главная речь на всю ширину большими буквами
-    const treasure1Color = d.mw_treasure_name === myName ? `bg-rose-100 text-rose-600 px-1.5 rounded` : 'text-slate-800';
+    const treasure1Me = d.mw_treasure_name === myName;
+    const t1TitleColor = treasure1Me ? 'font-black text-slate-900' : 'font-black text-slate-800';
+    const t1NameColor = treasure1Me ? 'font-black text-slate-900' : 'font-bold text-slate-600';
+    
     const treasure1 = `
-        <div class="flex flex-col py-2 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
-            <span class="text-base md:text-lg font-black text-slate-800 uppercase leading-snug break-words mb-1">${partCounter++}. ${translateDbString(d.mw_treasure_title || window.t('talk_10_min'))}</span>
-            <span class="text-base md:text-lg font-black ${treasure1Color} text-right">${d.mw_treasure_name || '-'}</span>
+        <div class="flex flex-col py-1.5 px-3 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
+            <span class="text-xs md:text-sm ${t1TitleColor} uppercase leading-snug break-words mb-0.5">${partCounter++}. ${translateDbString(d.mw_treasure_title || window.t('talk_10_min'))}</span>
+            <span class="text-[11px] md:text-xs ${t1NameColor} ml-3">${d.mw_treasure_name || '-'}</span>
         </div>
     `;
 
@@ -674,13 +680,14 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const minRows = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
-        const studentCol = m.student === myName ? 'bg-rose-100 text-rose-600 px-1.5 rounded' : 'text-slate-800';
-        const assistStr = m.assistant ? `<span class="text-xs md:text-sm font-bold text-slate-400 ml-1">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
+        const titleColor = isMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
+        const nameColor = isMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
+        const assistStr = m.assistant ? ` <span class="opacity-70 ml-1">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
 
         return `
-            <div class="flex flex-col py-1.5 border-b border-slate-200/60 last:border-0 hover:bg-slate-300/10 transition-colors">
-                <span class="text-sm md:text-base font-bold text-slate-600 leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
-                <span class="text-base md:text-lg font-black ${studentCol} text-right mt-0.5">${m.student || '-'}${assistStr}</span>
+            <div class="flex flex-col py-1 px-3 border-b border-slate-200/60 last:border-0 hover:bg-slate-300/10 transition-colors">
+                <span class="text-[11px] md:text-xs ${titleColor} leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
+                <span class="text-[10px] md:text-[11px] ${nameColor} mt-0.5 ml-3">${m.student || '-'}${assistStr}</span>
             </div>
         `;
     }).join('');
@@ -691,63 +698,76 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     }).join('');
 
     const cbsNum = partCounter++;
-    const condCol = d.mw_cbs_conductor === myName ? 'bg-rose-100 text-rose-600 px-1.5 rounded' : 'text-slate-800';
-    const readCol = d.mw_cbs_reader === myName ? 'bg-rose-100 text-rose-600 px-1.5 rounded' : 'text-slate-500';
-    const readStr = d.mw_cbs_reader ? `<span class="text-xs md:text-sm font-bold text-slate-400 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
+    const isCbsMe = (d.mw_cbs_conductor === myName || d.mw_cbs_reader === myName);
+    const cbsTitleColor = isCbsMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
+    const cbsNameColor = isCbsMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
+    const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
-    const weTalkColor = d.we_talk_speaker === myName ? `bg-rose-100 text-rose-600 px-1.5 rounded` : 'text-slate-800';
+    const weTalkMe = d.we_talk_speaker === myName;
+    const wtTitleColor = weTalkMe ? 'font-black text-slate-900' : 'font-black text-slate-800';
+    const wtNameColor = weTalkMe ? 'font-black text-slate-900' : 'font-bold text-slate-600';
+
     const we_talk = `
-        <div class="flex flex-col py-2 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
-            <span class="text-base md:text-lg font-black text-slate-800 uppercase leading-snug break-words mb-1">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
-            <span class="text-base md:text-lg font-black ${weTalkColor} text-right">${d.we_talk_speaker || '-'}</span>
+        <div class="flex flex-col py-1.5 px-3 border-y border-slate-200/60 hover:bg-slate-300/10 transition-colors">
+            <span class="text-xs md:text-sm ${wtTitleColor} uppercase leading-snug break-words mb-0.5">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
+            <span class="text-[11px] md:text-xs ${wtNameColor} ml-3">${d.we_talk_speaker || '-'}</span>
         </div>
     `;
 
-    const we_wt_cond = d.we_wt_conductor === myName ? 'bg-rose-100 text-rose-600 px-1.5 rounded' : 'text-slate-800';
-    const we_wt_read_str = d.we_wt_reader ? `<span class="text-xs md:text-sm font-bold text-slate-400 ml-1">(${window.t('reader')} ${d.we_wt_reader})</span>` : '';
+    const isWtMe = (d.we_wt_conductor === myName || d.we_wt_reader === myName);
+    const wtStudyTitleColor = isWtMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
+    const wtStudyNameColor = isWtMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
+    const we_wt_read_str = d.we_wt_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.we_wt_reader})</span>` : '';
 
+    // ВЫВОД КАРТОЧЕК
     return `
-        <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent mb-2 px-1">
-            <div class="text-center pb-2 border-b-2 border-slate-300 mb-2">
+        <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-1">
+            <div class="text-center pb-1.5 border-b-2 border-slate-300 mb-1.5">
                 <span class="text-sm md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel} <span class="${statusColor} ml-2">${weekStatus}</span></span>
             </div>
             
             <div class="flex-grow flex flex-col">
                 ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
 
-                <div class="text-[#0d9488] font-black text-[10px] md:text-xs uppercase tracking-widest mt-2 mb-1">${window.t('treasures_title')}</div>
+                <div class="bg-[#0d9488] text-white py-1 px-3 mt-0 flex items-center shadow-sm w-full">
+                    <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('treasures_title')}</span>
+                </div>
                 ${treasure1}
                 ${treasure2}
                 ${treasure3}
 
-                <div class="text-[#d97706] font-black text-[10px] md:text-xs uppercase tracking-widest mt-2 mb-1">${window.t('ministry_skills')}</div>
+                <div class="bg-[#d97706] text-white py-1 px-3 mt-0 flex items-center shadow-sm w-full">
+                    <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('ministry_skills')}</span>
+                </div>
                 ${minRows}
 
-                <div class="text-[#b91c1c] font-black text-[10px] md:text-xs uppercase tracking-widest mt-2 mb-1">${window.t('christian_living')}</div>
+                <div class="bg-[#b91c1c] text-white py-1 px-3 mt-0 flex items-center shadow-sm w-full">
+                    <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('christian_living')}</span>
+                </div>
                 ${livRows}
                 
-                <div class="flex flex-col py-1.5 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
-                    <span class="text-sm md:text-base font-bold text-slate-600 leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-[10px] md:text-xs font-normal text-slate-400 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
-                    <span class="text-base md:text-lg font-black ${condCol} text-right mt-0.5">${d.mw_cbs_conductor || '-'}${readStr}</span>
+                <div class="flex flex-col py-1 px-3 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
+                    <span class="text-[11px] md:text-xs ${cbsTitleColor} leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-[9px] md:text-[10px] font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
+                    <span class="text-[10px] md:text-[11px] ${cbsNameColor} mt-0.5 ml-3">${d.mw_cbs_conductor || '-'}${readStr}</span>
                 </div>
 
                 ${rowUnnumbered(window.t('closing_prayer'), d.mw_prayer_name)}
             </div>
         </div>
 
-        <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent mb-2 px-1">
-            <div class="text-center pb-2 border-b-2 border-slate-300 mb-2">
+        <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-1">
+            <div class="text-center pb-1.5 border-b-2 border-slate-300 mb-1.5">
                 <span class="text-sm md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel} <span class="${statusColor} ml-2">${weekStatus}</span></span>
-                <span class="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-widest block">${window.t('weekend_meeting')}</span>
+                <span class="text-[8px] md:text-[9px] text-slate-500 font-bold uppercase tracking-widest block mt-0.5">${window.t('weekend_meeting')}</span>
             </div>
             <div class="flex-grow flex flex-col">
                 
                 ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
                 ${we_talk}
                 
-                <div class="flex flex-col py-1.5 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
-                    <span class="text-sm md:text-base font-bold text-slate-600 leading-tight">${window.t('watchtower_study')}</span>
-                    <span class="text-base md:text-lg font-black ${we_wt_cond} text-right mt-0.5">${d.we_wt_conductor || '-'}${we_wt_read_str}</span>
+                <div class="flex flex-col py-1 px-3 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
+                    <span class="text-[11px] md:text-xs ${wtStudyTitleColor} leading-tight">${window.t('watchtower_study')}</span>
+                    <span class="text-[10px] md:text-[11px] ${wtStudyNameColor} mt-0.5 ml-3">${d.we_wt_conductor || '-'}${we_wt_read_str}</span>
                 </div>
 
                 ${rowUnnumbered(window.t('closing_prayer'), d.we_prayer_name)}
@@ -839,21 +859,19 @@ function loadPersonalData() {
                 const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
                 const isMyGroup = String(d.group) === String(myGroup);
 
-                // Отрисовка списка для модального окна
-                let itemClass = "bg-slate-50 border-slate-200 text-slate-700";
-                if (isMyGroup) {
-                    itemClass = typeStr.includes("Уборка") || typeStr.includes("Úklid") ? "bg-rose-100 border-rose-200 text-rose-700" : "bg-amber-100 border-amber-200 text-amber-800";
-                }
+                // ПРОСТОЙ СПИСОК УБОРОК БЕЗ ЛИШНИХ ПЛИТОК
+                let textClass = isMyGroup ? "text-slate-900 font-black" : "text-slate-600";
+                let badgeClass = isMyGroup ? "bg-slate-800 text-white shadow-sm" : "bg-slate-100 text-slate-500 border border-slate-200";
 
                 fullListHtml += `
-                    <div class="p-3 rounded-lg border ${itemClass} flex justify-between items-center shadow-sm">
+                    <div class="py-3 border-b border-slate-100 flex justify-between items-center last:border-0">
                         <div class="flex flex-col">
-                            <span class="text-sm font-black">${typeStr}</span>
-                            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">${dateRangeStr}</span>
+                            <span class="text-sm ${textClass}">${typeStr}</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80 ${textClass}">${dateRangeStr}</span>
                         </div>
-                        <div class="flex flex-col items-center justify-center bg-white/50 px-3 py-1 rounded shadow-inner border border-white/40">
+                        <div class="flex flex-col items-center justify-center px-3 py-1 rounded-md ${badgeClass}">
                             <span class="text-[8px] uppercase font-bold tracking-widest">${window.t('group_short')}</span>
-                            <span class="text-lg font-black leading-none">${groupStr}</span>
+                            <span class="text-base font-black leading-none">${groupStr}</span>
                         </div>
                     </div>
                 `;
@@ -962,7 +980,7 @@ function loadPersonalData() {
                 }
 
                 html += `
-                    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col shadow-sm">
+                    <div class="bg-white rounded-md border border-slate-200 overflow-hidden flex flex-col shadow-sm">
                         <div class="p-3 flex flex-col bg-white border-b border-slate-100">
                             <div class="flex justify-between items-center mb-3">
                                 <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num')} ${terr.number}</h3>
@@ -1055,7 +1073,6 @@ function loadPersonalData() {
     } catch(e){}
 
     try {
-        // 🔥 КАЛЕНДАРЬ НА ГЛАВНОЙ (Только сегодня)
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
             const container = document.getElementById('calendar-events');
@@ -1070,7 +1087,6 @@ function loadPersonalData() {
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 ev.id = docSnap.id;
-                // ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
                 if (ev.date === todayStr) {
                     todayEvents.push(ev);
                 }
@@ -1183,7 +1199,6 @@ function loadPersonalData() {
                         } else {
                             const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-32 object-cover rounded-lg mb-3 shrink-0 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
                             const textHtml = displayText ? `<p class="text-sm font-bold text-slate-800 mb-3 whitespace-pre-wrap flex-grow">${displayText}</p>` : '';
-                            // Текст СВЕРХУ, фото СНИЗУ
                             contentHtml = textHtml + imgHtml;
                         }
 
