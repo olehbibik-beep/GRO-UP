@@ -32,10 +32,10 @@
         <div class="flex flex-col bg-white border border-slate-200 p-4 rounded-xl mb-6 shadow-sm gap-4">
             
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-                <span class="text-xs font-black uppercase tracking-widest text-slate-500">График для:</span>
-                <select id="schedule-lang" onchange="loadSchedule()" class="bg-indigo-50 border border-indigo-200 text-indigo-700 font-black text-sm p-2 rounded-lg outline-none cursor-pointer shadow-sm">
-                    <option value="ru">🇷🇺 Русской группы (Суббота)</option>
-                    <option value="cs">🇨🇿 Чешского собрания (Воскресенье)</option>
+                <span class="text-xs font-black uppercase tracking-widest text-slate-500" data-lang="schedule_for">График для:</span>
+                <select id="schedule-lang" onchange="loadSchedule()" class="bg-indigo-50 border border-indigo-200 text-indigo-700 font-black text-sm px-4 py-2 rounded-lg outline-none cursor-pointer shadow-sm">
+                    <option value="ru">RU</option>
+                    <option value="cs">CZ</option>
                 </select>
             </div>
 
@@ -51,11 +51,11 @@
                     
                     <button onclick="deleteSchedule()" id="delete-btn" class="hidden bg-red-50 text-red-600 border border-red-200 text-[10px] md:text-xs font-bold uppercase tracking-widest px-3 py-2.5 rounded-lg hover:bg-red-100 transition-colors outline-none shadow-sm flex-none whitespace-nowrap" title="Удалить">
                         <svg class="w-4 h-4 md:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        <span class="hidden md:inline">Удалить</span>
+                        <span class="hidden md:inline" data-lang="btn_delete">Удалить</span>
                     </button>
 
-                    <button onclick="saveSchedule(false)" id="save-draft-btn" class="bg-slate-100 text-slate-700 border border-slate-200 text-[10px] md:text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg hover:bg-slate-200 transition-colors outline-none shadow-sm flex-1 md:flex-none whitespace-nowrap">Сохранить черновик</button>
-                    <button onclick="saveSchedule(true)" id="publish-btn" class="bg-emerald-600 text-white text-[10px] md:text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors outline-none shadow-sm flex-1 md:flex-none whitespace-nowrap">Опубликовать</button>
+                    <button onclick="saveSchedule(false)" id="save-draft-btn" class="bg-slate-100 text-slate-700 border border-slate-200 text-[10px] md:text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg hover:bg-slate-200 transition-colors outline-none shadow-sm flex-1 md:flex-none whitespace-nowrap" data-lang="btn_draft">Сохранить черновик</button>
+                    <button onclick="saveSchedule(true)" id="publish-btn" class="bg-emerald-600 text-white text-[10px] md:text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors outline-none shadow-sm flex-1 md:flex-none whitespace-nowrap" data-lang="btn_publish">Опубликовать</button>
                 </div>
             </div>
         </div>
@@ -66,37 +66,25 @@
             <option value="1"></option><option value="3"></option><option value="4"></option><option value="5"></option>
             <option value="10"></option><option value="15"></option><option value="30"></option><option value="45"></option>
         </datalist>
-        <datalist id="part-types">
-            <option value="Начинайте разговор"></option>
-            <option value="Развивайте интерес"></option>
-            <option value="Подготавливайте учеников"></option>
-            <option value="Объясняйте свои взгляды"></option>
-            <option value="Речь"></option>
-        </datalist>
-        <datalist id="living-types">
-            <option value="Местные потребности"></option>
-            <option value="Организационные достижения"></option>
-            <option value="Пункт"></option>
-        </datalist>
 
         <div id="schedule-form" class="grid grid-cols-1 lg:grid-cols-2 gap-8 hidden">
             
             <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <h2 class="text-center font-black text-slate-800 uppercase tracking-widest mb-6 border-b border-slate-200 pb-3">Будние дни (Христианская жизнь и служение)</h2>
+                <h2 class="text-center font-black text-slate-800 uppercase tracking-widest mb-6 border-b border-slate-200 pb-3" data-lang="midweek_meeting">Будние дни (Христианская жизнь и служение)</h2>
 
                 <div class="flex items-end gap-3 mb-8">
                     <div class="w-1/2 flex items-center gap-2">
-                        <span class="text-xs font-bold text-slate-500 uppercase">Мин:</span>
+                        <span class="text-xs font-bold text-slate-500 uppercase" data-lang="min_label">Мин:</span>
                         <input type="text" id="mw-chairman-time" list="time-list" class="jw-time" value="3" placeholder="мин">
                     </div>
                     <div class="w-full flex flex-col">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Председатель / Вступление</span>
-                        <input type="text" id="mw-chairman-name" list="list-brothers" class="jw-input" placeholder="Имя брата">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-lang="chairman_intro">Председатель / Вступление</span>
+                        <input type="text" id="mw-chairman-name" list="list-brothers" class="jw-input" placeholder="Имя...">
                     </div>
                 </div>
 
                 <div class="mb-8">
-                    <h3 class="font-black text-jw-treasure uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Сокровища из слова бога</h3>
+                    <h3 class="font-black text-jw-treasure uppercase tracking-widest mb-4 border-b border-slate-100 pb-2" data-lang="treasures_title">Сокровища из слова бога</h3>
                     <div class="space-y-4">
                         <div class="flex items-end gap-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
                             <input type="text" id="mw-treasure-time" list="time-list" class="jw-time shrink-0" value="10" placeholder="мин">
@@ -105,20 +93,20 @@
                                     <span class="part-number text-xs font-black text-jw-treasure"></span>
                                     <input type="text" id="mw-treasure-title" class="text-xs font-bold text-jw-treasure bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" placeholder="Тема главной речи...">
                                 </div>
-                                <input type="text" id="mw-treasure-name" list="list-brothers" class="jw-input mt-1" placeholder="Имя брата">
+                                <input type="text" id="mw-treasure-name" list="list-brothers" class="jw-input mt-1" placeholder="Имя...">
                             </div>
                         </div>
                         <div class="flex items-end gap-3 px-2">
                             <input type="text" id="mw-gems-time" list="time-list" class="jw-time shrink-0" value="10" placeholder="мин">
                             <div class="w-full flex flex-col">
-                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1"><span class="part-number text-slate-600"></span> Духовные жемчужины</span>
-                                <input type="text" id="mw-gems-name" list="list-brothers" class="jw-input" placeholder="Имя брата">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1"><span class="part-number text-slate-600"></span> <span data-lang="spiritual_gems">Духовные жемчужины</span></span>
+                                <input type="text" id="mw-gems-name" list="list-brothers" class="jw-input" placeholder="Имя...">
                             </div>
                         </div>
                         <div class="flex items-end gap-3 px-2">
                             <input type="text" id="mw-reading-time" list="time-list" class="jw-time shrink-0" value="4" placeholder="мин">
                             <div class="w-full flex flex-col">
-                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1"><span class="part-number text-slate-600"></span> Чтение Библии</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1"><span class="part-number text-slate-600"></span> <span data-lang="bible_reading">Чтение Библии</span></span>
                                 <input type="text" id="mw-reading-name" list="list-school" class="jw-input" placeholder="Участник школы">
                             </div>
                         </div>
@@ -127,17 +115,17 @@
 
                 <div class="mb-8">
                     <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
-                        <h3 class="font-black text-jw-ministry uppercase tracking-widest">Навыки служения</h3>
-                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Подтягивается из школы</span>
+                        <h3 class="font-black text-jw-ministry uppercase tracking-widest" data-lang="ministry_skills">Навыки служения</h3>
+                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest" data-lang="pulled_from_school">Подтягивается из школы</span>
                     </div>
                     <div id="ministry-parts-container" class="space-y-4"></div>
                 </div>
 
                 <div>
                     <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
-                        <h3 class="font-black text-jw-living uppercase tracking-widest">Христианская жизнь</h3>
+                        <h3 class="font-black text-jw-living uppercase tracking-widest" data-lang="christian_living">Христианская жизнь</h3>
                         <button onclick="addLivingPart()" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-colors outline-none shadow-sm flex items-center gap-1 shrink-0">
-                            <span>+ Добавить</span>
+                            <span data-lang="add_btn">+ Добавить</span>
                         </button>
                     </div>
                     <div class="space-y-4">
@@ -147,9 +135,9 @@
                             <div class="w-full flex flex-col gap-2">
                                 <div class="flex items-center justify-between border-b border-slate-200 pb-1">
                                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                                        <span id="cbs-number" class="text-slate-600 font-black">X.</span> Изучение Библии
+                                        <span id="cbs-number" class="text-slate-600 font-black">X.</span> <span data-lang="congregation_bible_study">Изучение Библии</span>
                                     </span>
-                                    <input type="text" id="mw-cbs-material" class="text-[10px] font-bold text-slate-600 bg-transparent text-right outline-none border-b border-transparent focus:border-slate-300 w-1/2" placeholder="Материал (Урок X)...">
+                                    <input type="text" id="mw-cbs-material" class="text-[10px] font-bold text-slate-600 bg-transparent text-right outline-none border-b border-transparent focus:border-slate-300 w-1/2" placeholder="Материал...">
                                 </div>
                                 <div class="flex gap-2 w-full">
                                     <input type="text" id="mw-cbs-conductor" list="list-brothers" class="jw-input w-1/2" placeholder="Проводит (Имя)">
@@ -162,7 +150,7 @@
 
                 <div class="flex items-end gap-3 mt-8 border-t border-slate-100 pt-4">
                     <div class="w-full flex flex-col px-2">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Заключительная молитва</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-lang="closing_prayer">Заключительная молитва</span>
                         <input type="text" id="mw-prayer-name" list="list-brothers" class="jw-input" placeholder="Имя брата">
                     </div>
                 </div>
@@ -170,19 +158,19 @@
             </div>
 
             <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col">
-                <h2 class="text-center font-black text-slate-800 uppercase tracking-widest mb-6 border-b border-slate-200 pb-3">Выходные (Публичная речь)</h2>
+                <h2 class="text-center font-black text-slate-800 uppercase tracking-widest mb-6 border-b border-slate-200 pb-3" data-lang="weekend_meeting">Выходные (Публичная речь)</h2>
 
                 <div class="flex-grow space-y-8">
                     <div class="flex items-end gap-3">
                         <input type="text" id="we-opening-time" list="time-list" class="jw-time shrink-0" value="5" placeholder="мин">
                         <div class="w-full flex flex-col">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Вступительные слова / Песня</span>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-lang="opening_song">Вступительные слова / Песня</span>
                             <input type="text" id="we-opening-name" list="list-brothers" class="jw-input" placeholder="Имя брата">
                         </div>
                     </div>
 
                     <div>
-                        <h3 class="font-black text-jw-weekend uppercase tracking-widest mb-3 border-b border-slate-100 pb-1">Публичная речь</h3>
+                        <h3 class="font-black text-jw-weekend uppercase tracking-widest mb-3 border-b border-slate-100 pb-1" data-lang="public_talk">Публичная речь</h3>
                         <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
                             <input type="text" id="we-talk-time" list="time-list" class="jw-time shrink-0 mt-3" value="30" placeholder="мин">
                             <div class="w-full flex flex-col gap-2">
@@ -193,7 +181,7 @@
                     </div>
 
                     <div>
-                        <h3 class="font-black text-jw-weekend uppercase tracking-widest mb-3 border-b border-slate-100 pb-1">Изучение Сторожевой Башни</h3>
+                        <h3 class="font-black text-jw-weekend uppercase tracking-widest mb-3 border-b border-slate-100 pb-1" data-lang="watchtower_study">Изучение Сторожевой Башни</h3>
                         <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
                             <input type="text" id="we-wt-time" list="time-list" class="jw-time shrink-0 mt-3" value="60" placeholder="мин">
                             <div class="w-full flex flex-col gap-2">
@@ -214,7 +202,7 @@
 
                 <div class="flex items-end gap-3 mt-8 border-t border-slate-100 pt-4 shrink-0">
                     <div class="w-full flex flex-col px-2">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Заключительная молитва</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-lang="closing_prayer">Заключительная молитва</span>
                         <input type="text" id="we-prayer-name" list="list-brothers" class="jw-input" placeholder="Имя брата">
                     </div>
                 </div>
@@ -224,6 +212,6 @@
     </main>
 
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
-    <script type="module" src="schedule-admin.js?v=11"></script>
+    <script type="module" src="schedule-admin.js?v=13"></script>
 </body>
 </html>
