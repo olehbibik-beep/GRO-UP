@@ -168,18 +168,6 @@ try { enableIndexedDbPersistence(db).catch(() => {}); } catch (e) {}
 
 const userId = localStorage.getItem('userId');
 
-// Безопасный загрузчик
-let isLoaderHidden = false;
-window.hideGlobalLoader = () => {
-    if (isLoaderHidden) return;
-    isLoaderHidden = true;
-    const loader = document.getElementById('global-loader');
-    if (loader) {
-        loader.style.opacity = '0';
-        setTimeout(() => loader.style.display = 'none', 500);
-    }
-};
-
 if (!userId) {
     window.location.href = 'login.html';
 }
@@ -600,7 +588,8 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-// 🔥 ПРОГРАММА СОБРАНИЯ (БЕЗ РАМОК, КРУПНЫЕ ШРИФТЫ, ИДЕАЛЬНО ДЛЯ ПК И ТЕЛЕФОНА)
+// 🔥 ПРОГРАММА СОБРАНИЯ (ПОЛНОСТЬЮ ПЛОСКАЯ, КРУПНЫЙ ШРИФТ)
+
 function getISOWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -640,13 +629,14 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     
     let partCounter = 1;
 
+    // Обычная строка
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const nameColor = isMe ? `text-rose-600 bg-rose-50 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
+        const nameColor = isMe ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
 
         return `
-            <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-200/60 last:border-0 hover:bg-slate-50 transition-colors">
+            <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-300/50 last:border-0 hover:bg-slate-300/20 transition-colors">
                 <span class="text-sm md:text-base font-bold text-slate-700 flex-1 pr-2 leading-tight">${partCounter++}. ${translateDbString(title)}</span>
                 <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
                     <span class="text-base md:text-lg font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
@@ -655,12 +645,13 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     };
 
+    // Строка серая (без номера)
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const nameColor = isMe ? `text-rose-600 bg-rose-50 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
+        const nameColor = isMe ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
         return `
-            <div class="flex items-center justify-between py-2.5 px-3 bg-slate-100/50 border-y border-slate-200/80">
+            <div class="flex items-center justify-between py-2.5 px-3 border-y border-slate-300/50 hover:bg-slate-300/20 transition-colors">
                 <span class="text-xs md:text-sm font-black text-slate-600 flex-1 pr-2">${translateDbString(title)}</span>
                 <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
                     <span class="text-base md:text-lg font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
@@ -669,15 +660,28 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     };
 
-    const treasure1 = row(d.mw_treasure_title || window.t('talk_10_min'), d.mw_treasure_name);
+    // ГЛАВНАЯ РЕЧЬ 10 МИН (Крупно на всю строку)
+    const treasure1Color = d.mw_treasure_name === myName ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
+    const treasure1 = `
+        <div class="flex flex-col py-3 px-3 border-b border-slate-300/50 hover:bg-slate-300/20 transition-colors">
+            <div class="flex items-start w-full mb-1.5">
+                <span class="text-sm md:text-base font-bold text-slate-700 pr-1.5">${partCounter++}.</span>
+                <span class="text-sm md:text-base font-black text-slate-800 uppercase w-full break-words whitespace-normal leading-snug">${translateDbString(d.mw_treasure_title || window.t('talk_10_min'))}</span>
+            </div>
+            <div class="flex items-center justify-end text-right w-full">
+                <span class="text-base md:text-lg font-black ${treasure1Color} truncate leading-tight">${d.mw_treasure_name || '-'}</span>
+            </div>
+        </div>
+    `;
+
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
     const minRows = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
-        const studentCol = m.student === myName ? 'text-rose-600 bg-rose-50 px-2 py-0.5 rounded shadow-sm' : 'text-slate-800';
-        const assistCol = m.assistant === myName ? 'text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded shadow-sm' : 'text-slate-500';
+        const studentCol = m.student === myName ? 'text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm' : 'text-slate-800';
+        const assistCol = m.assistant === myName ? 'text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded shadow-sm' : 'text-slate-500';
 
         const names = `<div class="flex flex-col text-right truncate w-full items-end">
             <span class="text-base md:text-lg font-black ${studentCol} truncate leading-tight w-full">${m.student || '-'}</span>
@@ -685,7 +689,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         </div>`;
 
         return `
-            <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-200/60 last:border-0 hover:bg-slate-50 transition-colors">
+            <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-300/50 last:border-0 hover:bg-slate-300/20 transition-colors">
                 <span class="text-sm md:text-base font-bold text-slate-700 flex-1 pr-2 leading-snug">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
                 <div class="shrink-0 max-w-[60%] flex items-center justify-end">
                     ${names}
@@ -700,43 +704,54 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     }).join('');
 
     const cbsNum = partCounter++;
-    const condCol = d.mw_cbs_conductor === myName ? 'text-rose-600 bg-rose-50 px-2 py-0.5 rounded shadow-sm' : 'text-slate-800';
-    const readCol = d.mw_cbs_reader === myName ? 'text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded shadow-sm' : 'text-slate-500';
+    const condCol = d.mw_cbs_conductor === myName ? 'text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm' : 'text-slate-800';
+    const readCol = d.mw_cbs_reader === myName ? 'text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded shadow-sm' : 'text-slate-500';
 
-    const we_talk = rowUnnumbered(d.we_talk_title || window.t('public_talk'), d.we_talk_speaker);
-    const we_wt_cond = d.we_wt_conductor === myName ? 'text-rose-600 bg-rose-50 px-2 py-0.5 rounded shadow-sm' : 'text-slate-800';
-    const we_wt_read = d.we_wt_reader === myName ? 'text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded shadow-sm' : 'text-slate-500';
+    // ПУБЛИЧНАЯ РЕЧЬ НА ВЫХОДНЫХ (Крупно на всю строку)
+    const weTalkColor = d.we_talk_speaker === myName ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
+    const we_talk = `
+        <div class="flex flex-col py-3 px-3 border-y border-slate-300/50 hover:bg-slate-300/20 transition-colors">
+            <span class="text-sm md:text-base font-black text-slate-800 uppercase w-full mb-1.5 break-words whitespace-normal leading-snug">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
+            <div class="flex items-center justify-end text-right w-full">
+                <span class="text-base md:text-lg font-black ${weTalkColor} truncate leading-tight">${d.we_talk_speaker || '-'}</span>
+            </div>
+        </div>
+    `;
 
+    const we_wt_cond = d.we_wt_conductor === myName ? 'text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm' : 'text-slate-800';
+    const we_wt_read = d.we_wt_reader === myName ? 'text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded shadow-sm' : 'text-slate-500';
+
+    // ВЫВОД КАРТОЧЕК БЕЗ БЕЛОГО ФОНА
     return `
-        <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm mb-2 overflow-hidden">
-            <div class="bg-slate-800 p-2 md:p-3 text-center rounded-t-lg shrink-0 border-b border-slate-900 shadow-sm">
+        <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent mb-2">
+            <div class="bg-slate-800 p-2 md:p-3 text-center rounded-t-lg shrink-0 shadow-sm border-b border-slate-900">
                 <span class="text-[9px] md:text-[10px] font-black ${statusColor} uppercase tracking-widest block mb-1">${weekStatus}</span>
                 <h4 class="text-white font-black text-sm md:text-base uppercase tracking-widest leading-tight">${weekLabel}</h4>
             </div>
             <div class="flex-grow flex flex-col pb-2">
                 ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
 
-                <div class="bg-[#0d9488] text-white py-2 px-3 mt-1 flex items-center shadow-sm">
+                <div class="bg-[#0d9488] text-white py-1.5 px-3 flex items-center shadow-sm">
                     <span class="text-[10px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('treasures_title')}</span>
                 </div>
                 ${treasure1}
                 ${treasure2}
                 ${treasure3}
 
-                <div class="bg-[#d97706] text-white py-2 px-3 mt-1 flex items-center shadow-sm">
+                <div class="bg-[#d97706] text-white py-1.5 px-3 flex items-center shadow-sm">
                     <span class="text-[10px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('ministry_skills')}</span>
                 </div>
                 ${minRows}
 
-                <div class="bg-[#b91c1c] text-white py-2 px-3 mt-1 flex items-center shadow-sm">
+                <div class="bg-[#b91c1c] text-white py-1.5 px-3 flex items-center shadow-sm">
                     <span class="text-[10px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('christian_living')}</span>
                 </div>
                 ${livRows}
                 
-                <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-200/60 hover:bg-slate-50 transition-colors">
+                <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-300/50 hover:bg-slate-300/20 transition-colors">
                     <div class="flex flex-col flex-1 pr-2">
                         <span class="text-sm md:text-base font-bold text-slate-700 leading-snug">${cbsNum}. ${window.t('congregation_bible_study')}</span>
-                        ${d.mw_cbs_material ? `<span class="text-[10px] md:text-xs font-bold text-slate-400 truncate mt-0.5">${d.mw_cbs_material}</span>` : ''}
+                        ${d.mw_cbs_material ? `<span class="text-[9px] md:text-[10px] font-bold text-slate-500 truncate mt-0.5">${d.mw_cbs_material}</span>` : ''}
                     </div>
                     <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
                         <div class="flex flex-col items-end truncate w-full">
@@ -750,8 +765,8 @@ function buildScheduleCards(d, myName, currentWeekStr) {
             </div>
         </div>
 
-        <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm mb-2 overflow-hidden">
-            <div class="bg-[#475569] p-2 md:p-3 text-center rounded-t-lg shrink-0 border-b border-slate-700 shadow-sm">
+        <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent mb-2">
+            <div class="bg-[#475569] p-2 md:p-3 text-center rounded-t-lg shrink-0 shadow-sm border-b border-slate-700">
                 <span class="text-[9px] md:text-[10px] font-black ${statusColor} uppercase tracking-widest block mb-1">${weekStatus}</span>
                 <h4 class="text-white font-black text-sm md:text-base uppercase tracking-widest leading-tight">${weekLabel}</h4>
                 <span class="text-[8px] md:text-[9px] text-slate-300 font-bold uppercase tracking-widest block mt-0.5">${window.t('weekend_meeting')}</span>
@@ -761,7 +776,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
                 ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
                 ${we_talk}
                 
-                <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-200/60 hover:bg-slate-50 transition-colors">
+                <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-300/50 hover:bg-slate-300/20 transition-colors">
                     <div class="flex flex-col flex-1 pr-2">
                         <span class="text-sm md:text-base font-bold text-slate-700 leading-snug">${window.t('watchtower_study')}</span>
                     </div>
@@ -807,7 +822,7 @@ function loadPersonalData() {
                 // Фильтруем графики по текущему языку приложения
                 if (id.endsWith('-' + currentLang) || (!id.includes('-ru') && !id.includes('-cs') && currentLang === 'ru')) {
                     data.id = id;
-                    // Берем для сортировки только часть с датой (2026-W20)
+                    // Если это новый формат с дефисом, берем для сортировки только часть с датой (2026-W20)
                     data.realWeekId = id.length > 8 ? id.substring(0, 8) : id; 
                     schedules.push(data);
                 }
