@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 window.showToast = (message) => {
     const container = document.getElementById('toast-container');
@@ -108,10 +108,8 @@ function updateNumeration() {
     });
 }
 
-// =================== НАВЫКИ СЛУЖЕНИЯ (БЕЗ ФОРМ ВВОДА) ===================
-
+// =================== НАВЫКИ СЛУЖЕНИЯ (ТОЛЬКО ЧТЕНИЕ ДАННЫХ) ===================
 function saveMinistryState() {
-    // Теперь мы сохраняем только время, имена и тип остаются неизменными из массива
     const container = document.getElementById('ministry-parts-container');
     if(!container) return;
     ministryParts.forEach((part, index) => {
@@ -129,16 +127,15 @@ function renderMinistryParts() {
         html = `<p class="text-slate-400 text-[10px] italic py-3 text-center border border-slate-200 border-dashed rounded-lg bg-slate-50">Задания подтягиваются из вкладки Школа</p>`;
     } else {
         ministryParts.forEach((part, index) => {
-            const assistText = part.assistant ? `<span class="text-slate-400 font-normal mr-1">${window.t('assistant_short')}</span> ${part.assistant}` : `<span class="opacity-50">${window.t('no_assistant')}</span>`;
+            const assistText = part.assistant ? `<span class="text-slate-400 font-normal mr-1">Пом:</span> ${part.assistant}` : `<span class="opacity-50">Без помощника</span>`;
             
-            // Теперь это просто текст (span и div), а не input!
             html += `
                 <div class="flex items-end gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 relative">
                     <input type="text" id="part-min-${index}-time" list="time-list" class="jw-time shrink-0 mb-1 bg-white shadow-sm" value="${part.time || ''}" placeholder="мин">
                     <div class="w-full flex flex-col gap-1">
                         <div class="flex items-center gap-1.5 pb-1 border-b border-slate-200">
                             <span class="part-number text-[11px] font-black text-jw-ministry"></span>
-                            <span class="text-[12px] font-bold text-jw-ministry w-full truncate">${part.type || window.t('part')}</span>
+                            <span class="text-[12px] font-bold text-jw-ministry w-full truncate">${part.type || 'Задание'}</span>
                         </div>
                         <div class="flex gap-2 w-full mt-1 items-end">
                             <span class="w-1/2 text-[13px] font-black text-slate-800 border-b border-slate-200 pb-0.5 truncate">${part.student || '-'}</span>
@@ -223,6 +220,10 @@ window.loadSchedule = async () => {
         if (docSnap.exists()) {
             const d = docSnap.data();
             
+            // Включаем кнопку удаления
+            document.getElementById('delete-btn').classList.remove('hidden');
+            document.getElementById('delete-btn').classList.add('flex');
+
             if(d.isPublished) {
                 document.getElementById('save-status').innerText = "ОПУБЛИКОВАНО";
                 document.getElementById('save-status').classList.replace('text-slate-400', 'text-emerald-500');
@@ -278,7 +279,10 @@ window.loadSchedule = async () => {
             
             document.getElementById('we-prayer-name').value = d.we_prayer_name || '';
         } else {
-            // ЕСЛИ ГРАФИК ПУСТОЙ - ИДЕМ ИСКАТЬ В ШКОЛУ
+            // Прячем кнопку удаления (нечего удалять)
+            document.getElementById('delete-btn').classList.add('hidden');
+            document.getElementById('delete-btn').classList.remove('flex');
+
             document.getElementById('save-status').innerText = "НОВЫЙ ГРАФИК";
             document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
             
@@ -318,7 +322,7 @@ window.loadSchedule = async () => {
                 document.getElementById('mw-reading-name').value = fetchedReadingName;
             }
 
-            ministryParts = fetchedMinistryParts; // Если пусто, то просто будет пусто, без лишних окон ввода
+            ministryParts = fetchedMinistryParts; 
 
             livingParts = [
                 {time: "15", title: "Местные потребности", name: ""}
@@ -395,8 +399,30 @@ window.saveSchedule = async (isPublished) => {
         document.getElementById('save-status').innerText = isPublished ? "ОПУБЛИКОВАНО" : "ЧЕРНОВИК";
         if(isPublished) document.getElementById('save-status').classList.replace('text-slate-400', 'text-emerald-500');
         else document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
+        
+        // Показываем кнопку удаления
+        document.getElementById('delete-btn').classList.remove('hidden');
+        document.getElementById('delete-btn').classList.add('flex');
     } catch (e) { alert("Ошибка сохранения!"); }
     
     btn.innerText = originalText;
     btn.disabled = false;
+};
+
+// Функция удаления графика
+window.deleteSchedule = async () => {
+    const weekIdRaw = document.getElementById('week-selector').value;
+    const scheduleLang = document.getElementById('schedule-lang').value || 'ru';
+    if(!weekIdRaw) return;
+    const weekId = `${weekIdRaw}-${scheduleLang}`;
+
+    if(confirm('Точно удалить этот график навсегда?')) {
+        try {
+            await deleteDoc(doc(db, "meeting_schedules", weekId));
+            window.showToast("График успешно удален!");
+            window.loadSchedule(); 
+        } catch(e) {
+            alert("Ошибка удаления!");
+        }
+    }
 };
