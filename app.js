@@ -1,4 +1,4 @@
-// Ждем загрузки DOM, чтобы точно скрыть лоадер, даже если база еще грузится
+// Ждем загрузки DOM
 setTimeout(() => {
     const loader = document.getElementById('global-loader');
     if (loader) {
@@ -50,7 +50,7 @@ const dict = {
         "days_short": "дн.", "return_terr_btn": "Сдать", "no_translation": "Нет перевода", "stand_title": "Служение со стендом",
         "stand_apply": "Подать заявку", "stand_signup": "Записаться", "stand_pending": "Заявка отправлена", "stand_month_shifts": "Смен в этом месяце",
         "stand_upcoming": "Твои ближайшие записи", "stand_no_records": "Нет записей", "zoom_error": "Zoom не настроен", "zoom_click_hint": "Нажми<br>на ZOOM",
-        "zoom_launch": "ЗАПУСК", "months": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"],
+        "zoom_launch": "ЗАПУСТИТЬ", "months": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"],
         "days": ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"], "info_title": "Информация", "in_development": "Раздел в разработке",
         "meeting_program": "Программа", "no_schedule": "Нет опубликованных программ",
         "chairman": "Председатель", "treasures_title": "Сокровища из слова бога", "talk_10_min": "Речь 10 мин.",
@@ -59,7 +59,8 @@ const dict = {
         "closing_prayer": "Заключительная молитва", "part": "Задание", "start_conversation": "Начинайте разговор",
         "develop_interest": "Развивайте интерес", "make_disciples": "Подготавливайте учеников", "explain_beliefs": "Объясняйте свои взгляды",
         "local_needs": "Местные потребности", "current_week": "АКТУАЛЬНАЯ", "future_week": "БУДУЩАЯ",
-        "public_talk": "Публичная речь", "weekend_meeting": "Выходные (Публичная речь)", "watchtower_study": "Изучение Сторожевой Башни", "opening_song": "Вступительные слова / Песня"
+        "public_talk": "Публичная речь", "weekend_meeting": "Выходные (Публичная речь)", "watchtower_study": "Изучение Сторожевой Башни", "opening_song": "Вступительные слова / Песня",
+        "duties_schedule": "График дежурств"
     },
     cs: {
         "loading_data": "Načítání dat...", "pending_title": "Žádost se vyřizuje", "pending_desc": "Čekejte na potvrzení administrátorem.",
@@ -110,14 +111,14 @@ const dict = {
         "closing_prayer": "Závěrečná modlitba", "part": "Úkol", "start_conversation": "Zahájení rozhovoru",
         "develop_interest": "Rozvíjení zájmu", "make_disciples": "Činění učedníků", "explain_beliefs": "Vysvětlování své víry",
         "local_needs": "Místní potřeby", "current_week": "AKTUÁLNÍ", "future_week": "BUDOUCÍ",
-        "public_talk": "Veřejná přednáška", "weekend_meeting": "Víkend (Veřejná přednáška)", "watchtower_study": "Studium Strážné věže", "opening_song": "Úvodní slova / Píseň"
+        "public_talk": "Veřejná přednáška", "weekend_meeting": "Víkend (Veřejná přednáška)", "watchtower_study": "Studium Strážné věže", "opening_song": "Úvodní slova / Píseň",
+        "duties_schedule": "Rozpis služeb"
     }
 };
 
 const currentLang = localStorage.getItem('app_lang') || 'ru';
 const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU';
 
-// Безопасный перевод (защита от ошибок)
 window.t = (key) => (dict[currentLang] && dict[currentLang][key]) ? dict[currentLang][key] : key;
 
 function translateDbString(str) {
@@ -167,13 +168,9 @@ try { messaging = getMessaging(app); } catch (e) {}
 try { enableIndexedDbPersistence(db).catch(() => {}); } catch (e) {}
 
 const userId = localStorage.getItem('userId');
-
-if (!userId) {
-    window.location.href = 'login.html';
-}
+if (!userId) { window.location.href = 'login.html'; }
 
 window.scrollNews = (offset) => { document.getElementById('content-news')?.scrollBy({ left: offset, behavior: 'smooth' }); };
-
 window.scrollProgram = (dir) => { 
     const container = document.getElementById('meeting-program-list');
     if(container) {
@@ -187,7 +184,7 @@ window.showToast = (message, type = 'info') => {
     if (!container) return;
     const toast = document.createElement('div');
     const bgColor = type === 'warning' ? 'bg-amber-500' : 'bg-slate-800';
-    toast.className = `${bgColor} text-white px-4 py-3 rounded-md shadow-lg text-xs font-bold text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
+    toast.className = `${bgColor} text-white px-5 py-4 rounded-xl shadow-2xl text-base font-black text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
     toast.innerText = message;
     container.appendChild(toast);
     requestAnimationFrame(() => toast.classList.remove('-translate-y-10', 'opacity-0'));
@@ -255,11 +252,18 @@ let currentZoomData = { id: "", pass: "" };
 window.zoomStateReady = false;
 window.handleZoomClick = (event) => {
     event.preventDefault();
+    const zoomBtn = document.getElementById('zoom-btn-element');
+    const hiddenInfo = document.getElementById('zoom-info-hidden');
+    const revealedInfo = document.getElementById('zoom-info-revealed');
+    
     if (!window.zoomStateReady) {
-        document.getElementById('zoom-info-hidden').classList.add('hidden');
-        document.getElementById('zoom-info-hidden').classList.remove('flex');
-        document.getElementById('zoom-info-revealed').classList.remove('hidden');
-        document.getElementById('zoom-info-revealed').classList.add('flex');
+        if(zoomBtn) {
+            zoomBtn.classList.remove('bg-[#dcfce7]', 'border-[#bbf7d0]');
+            zoomBtn.classList.add('bg-[#22c55e]', 'border-[#16a34a]');
+        }
+        if(hiddenInfo) { hiddenInfo.classList.add('hidden'); hiddenInfo.classList.remove('flex'); }
+        if(revealedInfo) { revealedInfo.classList.remove('hidden'); revealedInfo.classList.add('flex'); }
+        
         window.zoomStateReady = true;
         setTimeout(resetZoomUI, 10000);
     } else {
@@ -275,10 +279,16 @@ window.handleZoomClick = (event) => {
 
 function resetZoomUI() {
     window.zoomStateReady = false;
-    const hidden = document.getElementById('zoom-info-hidden');
-    const revealed = document.getElementById('zoom-info-revealed');
-    if(hidden) { hidden.classList.remove('hidden'); hidden.classList.add('flex'); }
-    if(revealed) { revealed.classList.add('hidden'); revealed.classList.remove('flex'); }
+    const zoomBtn = document.getElementById('zoom-btn-element');
+    const hiddenInfo = document.getElementById('zoom-info-hidden');
+    const revealedInfo = document.getElementById('zoom-info-revealed');
+    
+    if(zoomBtn) {
+        zoomBtn.classList.add('bg-[#dcfce7]', 'border-[#bbf7d0]');
+        zoomBtn.classList.remove('bg-[#22c55e]', 'border-[#16a34a]');
+    }
+    if(hiddenInfo) { hiddenInfo.classList.remove('hidden'); hiddenInfo.classList.add('flex'); }
+    if(revealedInfo) { revealedInfo.classList.add('hidden'); revealedInfo.classList.remove('flex'); }
 }
 
 const d = new Date();
@@ -289,7 +299,6 @@ const monthLabel = document.getElementById('current-month-label');
 if (monthLabel) monthLabel.innerText = currentMonthStr;
 
 window.switchTab = (tabId, btnElement) => {
-    localStorage.setItem('activeTab', tabId);
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tabId}`);
     if(targetTab) targetTab.classList.add('active');
@@ -359,10 +368,8 @@ if (userId) {
         if (currentUserData.status === 'pending') {
             if(pendingScreen) { pendingScreen.classList.remove('hidden'); pendingScreen.classList.add('flex'); }
             if(mainDashboard) { mainDashboard.style.display = 'none'; }
-            window.hideGlobalLoader();
         } else if (currentUserData.status === 'blocked') {
             document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">${window.t('access_denied')}</h1></div>`;
-            window.hideGlobalLoader();
         } else {
             if(pendingScreen) { pendingScreen.classList.add('hidden'); pendingScreen.classList.remove('flex'); }
             if(mainDashboard) { mainDashboard.style.display = 'block'; }
@@ -405,9 +412,8 @@ if (userId) {
             try { loadProfileData(); } catch(e) {}
             renderStandCard();
             
-            const savedTab = localStorage.getItem('activeTab') || 'home';
-            window.switchTab(savedTab);
-            window.hideGlobalLoader();
+            // Принудительно открываем ДОМИК
+            window.switchTab('home');
         }
     });
 }
@@ -588,8 +594,7 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-// 🔥 ПРОГРАММА СОБРАНИЯ (ПОЛНОСТЬЮ ПЛОСКАЯ, КРУПНЫЙ ШРИФТ)
-
+// 🔥 ПРОГРАММА СОБРАНИЯ (БЕЗ РАМОК, КРУПНЫЕ ШРИФТЫ, ИДЕАЛЬНО ДЛЯ ПК И ТЕЛЕФОНА)
 function getISOWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -622,55 +627,44 @@ function weekToDateString(weekId) {
 
 function buildScheduleCards(d, myName, currentWeekStr) {
     const weekLabel = weekToDateString(d.realWeekId || d.weekId);
-    
     const isCurrentWeek = (d.realWeekId || d.weekId.split('-')[0]+'-'+d.weekId.split('-')[1]) === currentWeekStr;
     const weekStatus = isCurrentWeek ? window.t('current_week') : window.t('future_week');
-    const statusColor = isCurrentWeek ? 'text-emerald-400' : 'text-slate-400';
+    const statusColor = isCurrentWeek ? 'text-emerald-500' : 'text-slate-400';
     
     let partCounter = 1;
 
-    // Обычная строка
+    // Вспомогательная функция для пунктов (ИМЯ ПОД НАЗВАНИЕМ)
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const nameColor = isMe ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
+        const nameColor = isMe ? `bg-rose-100 text-rose-600 px-1.5 rounded` : 'text-slate-800';
 
         return `
-            <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-300/50 last:border-0 hover:bg-slate-300/20 transition-colors">
-                <span class="text-sm md:text-base font-bold text-slate-700 flex-1 pr-2 leading-tight">${partCounter++}. ${translateDbString(title)}</span>
-                <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
-                    <span class="text-base md:text-lg font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
-                </div>
+            <div class="flex flex-col py-1.5 border-b border-slate-200/60 last:border-0 hover:bg-slate-300/10 transition-colors">
+                <span class="text-sm md:text-base font-bold text-slate-600 leading-tight">${partCounter++}. ${translateDbString(title)}</span>
+                <span class="text-base md:text-lg font-black ${nameColor} text-right mt-0.5">${person || '-'}</span>
             </div>
         `;
     };
 
-    // Строка серая (без номера)
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const nameColor = isMe ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
+        const nameColor = isMe ? `bg-rose-100 text-rose-600 px-1.5 rounded` : 'text-slate-800';
         return `
-            <div class="flex items-center justify-between py-2.5 px-3 border-y border-slate-300/50 hover:bg-slate-300/20 transition-colors">
-                <span class="text-xs md:text-sm font-black text-slate-600 flex-1 pr-2">${translateDbString(title)}</span>
-                <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
-                    <span class="text-base md:text-lg font-black ${nameColor} truncate leading-tight">${person || '-'}</span>
-                </div>
+            <div class="flex flex-col py-1.5 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
+                <span class="text-sm md:text-base font-bold text-slate-600 leading-tight">${translateDbString(title)}</span>
+                <span class="text-base md:text-lg font-black ${nameColor} text-right mt-0.5">${person || '-'}</span>
             </div>
         `;
     };
 
-    // ГЛАВНАЯ РЕЧЬ 10 МИН (Крупно на всю строку)
-    const treasure1Color = d.mw_treasure_name === myName ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
+    // Главная речь на всю ширину большими буквами
+    const treasure1Color = d.mw_treasure_name === myName ? `bg-rose-100 text-rose-600 px-1.5 rounded` : 'text-slate-800';
     const treasure1 = `
-        <div class="flex flex-col py-3 px-3 border-b border-slate-300/50 hover:bg-slate-300/20 transition-colors">
-            <div class="flex items-start w-full mb-1.5">
-                <span class="text-sm md:text-base font-bold text-slate-700 pr-1.5">${partCounter++}.</span>
-                <span class="text-sm md:text-base font-black text-slate-800 uppercase w-full break-words whitespace-normal leading-snug">${translateDbString(d.mw_treasure_title || window.t('talk_10_min'))}</span>
-            </div>
-            <div class="flex items-center justify-end text-right w-full">
-                <span class="text-base md:text-lg font-black ${treasure1Color} truncate leading-tight">${d.mw_treasure_name || '-'}</span>
-            </div>
+        <div class="flex flex-col py-2 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
+            <span class="text-base md:text-lg font-black text-slate-800 uppercase leading-snug break-words mb-1">${partCounter++}. ${translateDbString(d.mw_treasure_title || window.t('talk_10_min'))}</span>
+            <span class="text-base md:text-lg font-black ${treasure1Color} text-right">${d.mw_treasure_name || '-'}</span>
         </div>
     `;
 
@@ -680,20 +674,13 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const minRows = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
-        const studentCol = m.student === myName ? 'text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm' : 'text-slate-800';
-        const assistCol = m.assistant === myName ? 'text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded shadow-sm' : 'text-slate-500';
-
-        const names = `<div class="flex flex-col text-right truncate w-full items-end">
-            <span class="text-base md:text-lg font-black ${studentCol} truncate leading-tight w-full">${m.student || '-'}</span>
-            ${m.assistant ? `<span class="text-xs md:text-sm font-bold ${assistCol} truncate mt-1 w-full">${window.t('assistant_short')} ${m.assistant}</span>` : ''}
-        </div>`;
+        const studentCol = m.student === myName ? 'bg-rose-100 text-rose-600 px-1.5 rounded' : 'text-slate-800';
+        const assistStr = m.assistant ? `<span class="text-xs md:text-sm font-bold text-slate-400 ml-1">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
 
         return `
-            <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-300/50 last:border-0 hover:bg-slate-300/20 transition-colors">
-                <span class="text-sm md:text-base font-bold text-slate-700 flex-1 pr-2 leading-snug">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
-                <div class="shrink-0 max-w-[60%] flex items-center justify-end">
-                    ${names}
-                </div>
+            <div class="flex flex-col py-1.5 border-b border-slate-200/60 last:border-0 hover:bg-slate-300/10 transition-colors">
+                <span class="text-sm md:text-base font-bold text-slate-600 leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
+                <span class="text-base md:text-lg font-black ${studentCol} text-right mt-0.5">${m.student || '-'}${assistStr}</span>
             </div>
         `;
     }).join('');
@@ -704,89 +691,65 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     }).join('');
 
     const cbsNum = partCounter++;
-    const condCol = d.mw_cbs_conductor === myName ? 'text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm' : 'text-slate-800';
-    const readCol = d.mw_cbs_reader === myName ? 'text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded shadow-sm' : 'text-slate-500';
+    const condCol = d.mw_cbs_conductor === myName ? 'bg-rose-100 text-rose-600 px-1.5 rounded' : 'text-slate-800';
+    const readCol = d.mw_cbs_reader === myName ? 'bg-rose-100 text-rose-600 px-1.5 rounded' : 'text-slate-500';
+    const readStr = d.mw_cbs_reader ? `<span class="text-xs md:text-sm font-bold text-slate-400 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
-    // ПУБЛИЧНАЯ РЕЧЬ НА ВЫХОДНЫХ (Крупно на всю строку)
-    const weTalkColor = d.we_talk_speaker === myName ? `text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm` : 'text-slate-800';
+    const weTalkColor = d.we_talk_speaker === myName ? `bg-rose-100 text-rose-600 px-1.5 rounded` : 'text-slate-800';
     const we_talk = `
-        <div class="flex flex-col py-3 px-3 border-y border-slate-300/50 hover:bg-slate-300/20 transition-colors">
-            <span class="text-sm md:text-base font-black text-slate-800 uppercase w-full mb-1.5 break-words whitespace-normal leading-snug">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
-            <div class="flex items-center justify-end text-right w-full">
-                <span class="text-base md:text-lg font-black ${weTalkColor} truncate leading-tight">${d.we_talk_speaker || '-'}</span>
-            </div>
+        <div class="flex flex-col py-2 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
+            <span class="text-base md:text-lg font-black text-slate-800 uppercase leading-snug break-words mb-1">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
+            <span class="text-base md:text-lg font-black ${weTalkColor} text-right">${d.we_talk_speaker || '-'}</span>
         </div>
     `;
 
-    const we_wt_cond = d.we_wt_conductor === myName ? 'text-rose-600 bg-rose-100 px-2 py-0.5 rounded shadow-sm' : 'text-slate-800';
-    const we_wt_read = d.we_wt_reader === myName ? 'text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded shadow-sm' : 'text-slate-500';
+    const we_wt_cond = d.we_wt_conductor === myName ? 'bg-rose-100 text-rose-600 px-1.5 rounded' : 'text-slate-800';
+    const we_wt_read_str = d.we_wt_reader ? `<span class="text-xs md:text-sm font-bold text-slate-400 ml-1">(${window.t('reader')} ${d.we_wt_reader})</span>` : '';
 
-    // ВЫВОД КАРТОЧЕК БЕЗ БЕЛОГО ФОНА
     return `
-        <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent mb-2">
-            <div class="bg-slate-800 p-2 md:p-3 text-center rounded-t-lg shrink-0 shadow-sm border-b border-slate-900">
-                <span class="text-[9px] md:text-[10px] font-black ${statusColor} uppercase tracking-widest block mb-1">${weekStatus}</span>
-                <h4 class="text-white font-black text-sm md:text-base uppercase tracking-widest leading-tight">${weekLabel}</h4>
+        <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent mb-2 px-1">
+            <div class="text-center pb-2 border-b-2 border-slate-300 mb-2">
+                <span class="text-sm md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel} <span class="${statusColor} ml-2">${weekStatus}</span></span>
             </div>
-            <div class="flex-grow flex flex-col pb-2">
+            
+            <div class="flex-grow flex flex-col">
                 ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
 
-                <div class="bg-[#0d9488] text-white py-1.5 px-3 flex items-center shadow-sm">
-                    <span class="text-[10px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('treasures_title')}</span>
-                </div>
+                <div class="text-[#0d9488] font-black text-[10px] md:text-xs uppercase tracking-widest mt-2 mb-1">${window.t('treasures_title')}</div>
                 ${treasure1}
                 ${treasure2}
                 ${treasure3}
 
-                <div class="bg-[#d97706] text-white py-1.5 px-3 flex items-center shadow-sm">
-                    <span class="text-[10px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('ministry_skills')}</span>
-                </div>
+                <div class="text-[#d97706] font-black text-[10px] md:text-xs uppercase tracking-widest mt-2 mb-1">${window.t('ministry_skills')}</div>
                 ${minRows}
 
-                <div class="bg-[#b91c1c] text-white py-1.5 px-3 flex items-center shadow-sm">
-                    <span class="text-[10px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('christian_living')}</span>
-                </div>
+                <div class="text-[#b91c1c] font-black text-[10px] md:text-xs uppercase tracking-widest mt-2 mb-1">${window.t('christian_living')}</div>
                 ${livRows}
                 
-                <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-300/50 hover:bg-slate-300/20 transition-colors">
-                    <div class="flex flex-col flex-1 pr-2">
-                        <span class="text-sm md:text-base font-bold text-slate-700 leading-snug">${cbsNum}. ${window.t('congregation_bible_study')}</span>
-                        ${d.mw_cbs_material ? `<span class="text-[9px] md:text-[10px] font-bold text-slate-500 truncate mt-0.5">${d.mw_cbs_material}</span>` : ''}
-                    </div>
-                    <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
-                        <div class="flex flex-col items-end truncate w-full">
-                            <span class="text-base md:text-lg font-black ${condCol} truncate leading-tight w-full">${d.mw_cbs_conductor || '-'}</span>
-                            ${d.mw_cbs_reader ? `<span class="text-xs md:text-sm font-bold ${readCol} truncate mt-1 w-full">${window.t('reader')} ${d.mw_cbs_reader}</span>` : ''}
-                        </div>
-                    </div>
+                <div class="flex flex-col py-1.5 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
+                    <span class="text-sm md:text-base font-bold text-slate-600 leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-[10px] md:text-xs font-normal text-slate-400 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
+                    <span class="text-base md:text-lg font-black ${condCol} text-right mt-0.5">${d.mw_cbs_conductor || '-'}${readStr}</span>
                 </div>
 
                 ${rowUnnumbered(window.t('closing_prayer'), d.mw_prayer_name)}
             </div>
         </div>
 
-        <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent mb-2">
-            <div class="bg-[#475569] p-2 md:p-3 text-center rounded-t-lg shrink-0 shadow-sm border-b border-slate-700">
-                <span class="text-[9px] md:text-[10px] font-black ${statusColor} uppercase tracking-widest block mb-1">${weekStatus}</span>
-                <h4 class="text-white font-black text-sm md:text-base uppercase tracking-widest leading-tight">${weekLabel}</h4>
-                <span class="text-[8px] md:text-[9px] text-slate-300 font-bold uppercase tracking-widest block mt-0.5">${window.t('weekend_meeting')}</span>
+        <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent mb-2 px-1">
+            <div class="text-center pb-2 border-b-2 border-slate-300 mb-2">
+                <span class="text-sm md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel} <span class="${statusColor} ml-2">${weekStatus}</span></span>
+                <span class="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-widest block">${window.t('weekend_meeting')}</span>
             </div>
-            <div class="flex-grow flex flex-col pb-2">
+            <div class="flex-grow flex flex-col">
                 
                 ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
                 ${we_talk}
                 
-                <div class="flex items-center justify-between py-2.5 px-3 border-b border-slate-300/50 hover:bg-slate-300/20 transition-colors">
-                    <div class="flex flex-col flex-1 pr-2">
-                        <span class="text-sm md:text-base font-bold text-slate-700 leading-snug">${window.t('watchtower_study')}</span>
-                    </div>
-                    <div class="shrink-0 max-w-[60%] flex items-center justify-end text-right">
-                        <div class="flex flex-col items-end truncate w-full">
-                            <span class="text-base md:text-lg font-black ${we_wt_cond} truncate leading-tight w-full">${d.we_wt_conductor || '-'}</span>
-                            ${d.we_wt_reader ? `<span class="text-xs md:text-sm font-bold ${we_wt_read} truncate mt-1 w-full">${window.t('reader')} ${d.we_wt_reader}</span>` : ''}
-                        </div>
-                    </div>
+                <div class="flex flex-col py-1.5 border-b border-slate-200/60 hover:bg-slate-300/10 transition-colors">
+                    <span class="text-sm md:text-base font-bold text-slate-600 leading-tight">${window.t('watchtower_study')}</span>
+                    <span class="text-base md:text-lg font-black ${we_wt_cond} text-right mt-0.5">${d.we_wt_conductor || '-'}${we_wt_read_str}</span>
                 </div>
+
                 ${rowUnnumbered(window.t('closing_prayer'), d.we_prayer_name)}
             </div>
         </div>
@@ -819,10 +782,9 @@ function loadPersonalData() {
                 let id = doc.id;
                 let data = doc.data();
                 
-                // Фильтруем графики по текущему языку приложения
+                // Фильтруем графики по текущему языку
                 if (id.endsWith('-' + currentLang) || (!id.includes('-ru') && !id.includes('-cs') && currentLang === 'ru')) {
                     data.id = id;
-                    // Если это новый формат с дефисом, берем для сортировки только часть с датой (2026-W20)
                     data.realWeekId = id.length > 8 ? id.substring(0, 8) : id; 
                     schedules.push(data);
                 }
@@ -841,25 +803,68 @@ function loadPersonalData() {
         });
     } catch(e) { console.error(e); }
 
+    window.openDutiesModal = () => document.getElementById('duties-modal').classList.replace('hidden', 'flex');
+
     try {
         const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
         onSnapshot(dutiesQuery, (snapshot) => {
             const container = document.getElementById('dashboard-duties');
+            const fullListContainer = document.getElementById('duties-full-list');
             if (!container) return;
             const today = new Date(); today.setHours(0,0,0,0);
             let currentDuty = null;
             let myDutyFound = false;
 
+            let fullListHtml = '';
+
             snapshot.forEach(docSnap => {
                 const d = docSnap.data();
                 const dutyStart = new Date(d.rawDate); dutyStart.setHours(0,0,0,0);
                 const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6); dutyEnd.setHours(23,59,59,999);
+                
+                const startDay = dutyStart.getDate();
+                const endDay = dutyEnd.getDate();
+                const endMonth = dutyEnd.toLocaleDateString(localeFormat, { month: 'long' });
+                let dateRangeStr = `${startDay} - ${endDay} ${endMonth}`;
+                if (dutyStart.getMonth() !== dutyEnd.getMonth()) {
+                    const startMonth = dutyStart.toLocaleDateString(localeFormat, { month: 'short' });
+                    dateRangeStr = `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
+                }
+
+                let typeStr = d.type;
+                if (typeStr === 'Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
+                if (typeStr === 'Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
+                const groupStr = d.group === "Все" || d.group === window.t('all_groups') ? window.t('all_groups') : d.group;
+
+                const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
+                const isMyGroup = String(d.group) === String(myGroup);
+
+                // Отрисовка списка для модального окна
+                let itemClass = "bg-slate-50 border-slate-200 text-slate-700";
+                if (isMyGroup) {
+                    itemClass = typeStr.includes("Уборка") || typeStr.includes("Úklid") ? "bg-rose-100 border-rose-200 text-rose-700" : "bg-amber-100 border-amber-200 text-amber-800";
+                }
+
+                fullListHtml += `
+                    <div class="p-3 rounded-lg border ${itemClass} flex justify-between items-center shadow-sm">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-black">${typeStr}</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">${dateRangeStr}</span>
+                        </div>
+                        <div class="flex flex-col items-center justify-center bg-white/50 px-3 py-1 rounded shadow-inner border border-white/40">
+                            <span class="text-[8px] uppercase font-bold tracking-widest">${window.t('group_short')}</span>
+                            <span class="text-lg font-black leading-none">${groupStr}</span>
+                        </div>
+                    </div>
+                `;
+
                 if (today.getTime() >= dutyStart.getTime() && today.getTime() <= dutyEnd.getTime()) {
                     currentDuty = d;
-                    const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
-                    if (String(d.group) === String(myGroup)) myDutyFound = true;
+                    if (isMyGroup) myDutyFound = true;
                 }
             });
+
+            if(fullListContainer) fullListContainer.innerHTML = fullListHtml || `<p class="text-slate-400 italic text-sm text-center">График пуст</p>`;
 
             const dayOfWeek = today.getDay();
             const isCleaningDay = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0);
@@ -894,13 +899,13 @@ function loadPersonalData() {
 
                 container.innerHTML = `
                     <div class="flex items-center w-full h-full gap-3 pl-2">
-                        <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-md border ${badgeClass} shrink-0 bg-slate-50 shadow-inner">
+                        <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-lg border ${badgeClass} shrink-0 bg-slate-50 shadow-inner">
                             <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
                             <span class="text-lg md:text-xl font-black leading-none">${groupStr}</span>
                         </div>
                         <div class="flex flex-col justify-center min-w-0 flex-grow pr-2">
                             <span class="text-xs md:text-sm font-black text-slate-800 leading-tight truncate w-full">${typeStr}</span>
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate w-full">${localizedDateRange}</span>
+                            <span class="text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-widest mt-1 truncate w-full">${localizedDateRange}</span>
                             ${alertHtml}
                         </div>
                     </div>
@@ -957,7 +962,7 @@ function loadPersonalData() {
                 }
 
                 html += `
-                    <div class="bg-white rounded-md border border-slate-200 overflow-hidden flex flex-col shadow-sm">
+                    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col shadow-sm">
                         <div class="p-3 flex flex-col bg-white border-b border-slate-100">
                             <div class="flex justify-between items-center mb-3">
                                 <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num')} ${terr.number}</h3>
@@ -974,7 +979,7 @@ function loadPersonalData() {
                     </div>
                 `;
             });
-            if (activeCount === 0) container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-md w-full">${window.t('no_active_territories')}</p>`;
+            if (activeCount === 0) container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-xl w-full">${window.t('no_active_territories')}</p>`;
             else container.innerHTML = html;
         });
     } catch(e) {}
@@ -1044,12 +1049,13 @@ function loadPersonalData() {
                     } else { pastCount++; pastList.innerHTML += cardHtml; }
                 }
             });
-            if (upCount === 0) upList.innerHTML = `<p class="text-slate-400 text-sm italic py-2 text-center border border-slate-200 rounded-md">${window.t('no_tasks_upcoming')}</p>`;
+            if (upCount === 0) upList.innerHTML = `<p class="text-slate-400 text-sm italic py-2 text-center border border-slate-200 rounded-xl">${window.t('no_tasks_upcoming')}</p>`;
             if (pastCount === 0) pastList.innerHTML = `<p class="text-slate-400 text-sm italic py-2 text-center">${window.t('history_empty')}</p>`;
         });
     } catch(e){}
 
     try {
+        // 🔥 КАЛЕНДАРЬ НА ГЛАВНОЙ (Только сегодня)
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
             const container = document.getElementById('calendar-events');
@@ -1094,7 +1100,7 @@ function loadPersonalData() {
                     if (evGroup === "Все" || evGroup === "Všechny") evGroup = window.t('all_groups');
                     const hasGroup = evGroup !== window.t('no_group');
                     
-                    const activeClass = isPastEvent ? "bg-slate-50 border-b border-slate-200 opacity-60 grayscale" : "bg-white border-b border-slate-100";
+                    const activeClass = isPastEvent ? "opacity-60 grayscale" : "";
                     const timeColor = isPastEvent ? "text-slate-400" : "text-rose-500";
                     const leaderColor = isPastEvent ? "text-slate-400" : "text-indigo-600";
                     const titleColor = isPastEvent ? "text-slate-500" : "text-slate-800";
@@ -1106,12 +1112,12 @@ function loadPersonalData() {
                     html += `
                         <div class="flex items-center p-3 w-full cursor-default ${activeClass}">
                             <div class="flex items-center gap-1.5 shrink-0 mr-3">
-                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 ${badgeBg} rounded-md shadow-inner shrink-0">
+                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 ${badgeBg} rounded-lg shadow-inner shrink-0">
                                     <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-300 leading-none mb-0.5 tracking-widest">${window.t('today_badge')}</span>
                                     <span class="text-lg md:text-xl font-black leading-none">${dayNum}</span>
                                 </div>
                                 ${hasGroup ? `
-                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-slate-100 border border-slate-200 text-slate-600 rounded-md shrink-0">
+                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-slate-100 border border-slate-200 text-slate-600 rounded-lg shrink-0">
                                     <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
                                     <span class="text-sm md:text-lg font-black leading-none">${evGroup}</span>
                                 </div>` : ''}
@@ -1153,7 +1159,9 @@ function loadPersonalData() {
                     const itemTime = new Date(item.createdAt).getTime();
                     if (now - itemTime < oneWeek) {
                         const isNew = (now - itemTime) < oneDay;
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-[9px] text-red-400 hover:text-red-600 font-bold uppercase tracking-widest bg-red-50 hover:bg-red-100 border-t border-red-100 px-2 py-1.5 w-full transition-colors outline-none flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>${window.t('delete')}</button>` : '';
+                        const dateStr = new Date(item.createdAt).toLocaleDateString(localeFormat, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-red-400 hover:text-red-600 p-1 bg-red-50 rounded-md transition-colors outline-none flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : '';
                         
                         let displayText = ''; let shouldShow = false;
                         const hasRu = !!item.text_ru; const hasCs = !!item.text_cs;
@@ -1166,22 +1174,29 @@ function loadPersonalData() {
 
                         if (!shouldShow) return; 
 
-                        const bgCardClass = isNew ? "bg-white border-slate-200 shadow-sm" : "bg-slate-50 opacity-90 border-slate-200";
-                        const newBadge = isNew ? `<span class="absolute top-2 left-2 bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-sm z-10">${window.t('new_badge')}</span>` : '';
+                        const bgCardClass = isNew ? "bg-white border-slate-200 shadow-sm" : "bg-slate-50 opacity-95 border-slate-200";
+                        const newBadge = isNew ? `<span class="absolute top-2 left-2 bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow-sm z-10">${window.t('new_badge')}</span>` : '';
 
                         let contentHtml = '';
-                        const imgClass = displayText ? "h-20 md:h-24" : "flex-grow";
-                        const textPadding = item.imageUrl ? "p-3 pb-4" : "p-4";
-
                         if (!displayText && !item.imageUrl) {
                             contentHtml = `<div class="flex flex-col items-center justify-center flex-grow py-6 text-slate-300"><svg class="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="text-[10px] font-black uppercase tracking-widest opacity-50">${window.t('no_translation')}</span></div>`;
                         } else {
-                            const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="w-full ${imgClass} object-cover shrink-0 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
-                            const textHtml = displayText ? `<div class="${textPadding} flex-grow overflow-y-auto custom-scrollbar"><p class="text-slate-700 whitespace-pre-wrap text-[10px] md:text-[11px] leading-snug font-medium">${displayText}</p></div>` : '';
-                            contentHtml = imgHtml + textHtml;
+                            const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-32 object-cover rounded-lg mb-3 shrink-0 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
+                            const textHtml = displayText ? `<p class="text-sm font-bold text-slate-800 mb-3 whitespace-pre-wrap flex-grow">${displayText}</p>` : '';
+                            // Текст СВЕРХУ, фото СНИЗУ
+                            contentHtml = textHtml + imgHtml;
                         }
 
-                        newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center rounded-md border transition-all flex flex-col overflow-hidden relative ${bgCardClass}">${newBadge}<div class="flex-grow flex flex-col overflow-hidden w-full bg-white">${contentHtml}</div>${deleteBtn}</div>`;
+                        newsHTML += `
+                            <div class="w-[240px] shrink-0 snap-center rounded-xl border transition-all flex flex-col overflow-hidden relative p-4 ${bgCardClass} min-h-[160px]">
+                                ${newBadge}
+                                ${contentHtml}
+                                <div class="flex justify-between items-center mt-auto pt-2 border-t border-slate-100">
+                                    <span class="text-[9px] text-slate-400 font-bold">${dateStr}</span>
+                                    ${deleteBtn}
+                                </div>
+                            </div>
+                        `;
                         if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) { window.showToast(window.t('new_announcement_toast'), 'info'); sessionStorage.setItem('news_toast_' + docSnap.id, 'true'); }
                     }
                 }
@@ -1189,14 +1204,30 @@ function loadPersonalData() {
 
             if (isNewsAdmin) {
                 let textAreaHtml = '';
-                if (currentLang === 'ru') textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-transparent border-0 p-2 text-[10px] outline-none resize-none font-medium text-slate-700 flex-grow custom-scrollbar mb-1"></textarea>`;
-                else textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-transparent border-0 p-2 text-[10px] outline-none resize-none font-medium text-slate-700 flex-grow custom-scrollbar mb-1"></textarea>`;
+                if (currentLang === 'ru') textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-transparent border-0 p-2 text-sm outline-none resize-none font-medium text-slate-700 flex-grow custom-scrollbar mb-1"></textarea>`;
+                else textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-transparent border-0 p-2 text-sm outline-none resize-none font-medium text-slate-700 flex-grow custom-scrollbar mb-1"></textarea>`;
 
-                newsHTML += `<div class="w-[180px] h-[180px] md:w-[220px] md:h-[220px] shrink-0 snap-center p-3 rounded-md border border-dashed border-slate-400 bg-slate-100/50 flex flex-col relative overflow-hidden"><p class="p-1 text-[8px] font-bold text-slate-500 uppercase tracking-widest text-center flex items-center justify-center gap-1 shrink-0"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>${window.t('create_announcement')}</p><div id="image-preview-container" class="hidden relative w-full shrink-0 mb-1"><img id="image-preview" src="" class="h-10 md:h-12 w-full object-cover rounded border border-slate-200"><button onclick="removeImage()" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center outline-none"><svg class="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button></div>${textAreaHtml}<div class="flex items-center justify-between gap-1.5 shrink-0 mt-auto"><label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded transition-colors flex items-center justify-center w-8 h-6 shrink-0 shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)"></label><button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[8px] font-bold px-2 rounded flex-grow transition-colors h-6 outline-none shadow-sm">${window.t('publish')}</button></div></div>`;
+                newsHTML += `
+                    <div class="w-[240px] shrink-0 snap-center p-4 rounded-xl border border-dashed border-slate-400 bg-slate-100/50 flex flex-col relative min-h-[160px]">
+                        <p class="p-1 text-[9px] font-bold text-slate-500 uppercase tracking-widest text-center flex items-center justify-center gap-1 shrink-0 border-b border-slate-200 pb-2 mb-2">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                            ${window.t('create_announcement')}
+                        </p>
+                        ${textAreaHtml}
+                        <div id="image-preview-container" class="hidden relative w-full shrink-0 mb-2 mt-2">
+                            <img id="image-preview" src="" class="h-16 w-full object-cover rounded-lg border border-slate-200">
+                            <button onclick="removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center outline-none shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                        </div>
+                        <div class="flex items-center justify-between gap-2 shrink-0 mt-auto pt-2 border-t border-slate-200">
+                            <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-md transition-colors flex items-center justify-center w-10 h-8 shrink-0 shadow-sm"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)"></label>
+                            <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-4 rounded-md flex-grow transition-colors h-8 outline-none shadow-sm uppercase tracking-widest">${window.t('publish')}</button>
+                        </div>
+                    </div>
+                `;
             }
 
             const contentNews = document.getElementById('content-news');
-            if(contentNews) contentNews.innerHTML = newsHTML || `<div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-md border border-slate-200 flex items-center justify-center mx-4 md:mx-0 shadow-sm"><p class="text-slate-400 italic text-sm text-center">${window.t('no_news')}</p></div>`;
+            if(contentNews) contentNews.innerHTML = newsHTML || `<div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center mx-4 md:mx-0 shadow-sm"><p class="text-slate-400 italic text-sm text-center">${window.t('no_news')}</p></div>`;
         });
     } catch(e) {}
 }
@@ -1207,6 +1238,7 @@ window.openQrModal = () => document.getElementById('qr-modal').classList.replace
 window.closeModals = () => {
     const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
     const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
+    const m3 = document.getElementById('duties-modal'); if(m3) m3.classList.replace('flex', 'hidden');
 };
 window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
 
