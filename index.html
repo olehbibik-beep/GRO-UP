@@ -82,12 +82,12 @@
             <div id="tab-home" class="tab-content active">
                 <div class="flex flex-col">
                     
-                    <div class="flex bg-white rounded-xl shadow-sm min-h-[80px] w-full mx-4 md:mx-0 mb-4 overflow-hidden" style="width: calc(100% - 2rem);">
+                    <div class="flex bg-slate-200/80 rounded-xl shadow-sm min-h-[90px] w-full mx-4 md:mx-0 mb-4 overflow-hidden" style="width: calc(100% - 2rem);">
                         <div id="calendar-events" class="flex-grow flex flex-col justify-center bg-transparent">
                             <p class="p-4 text-xs text-slate-500 italic text-center" data-lang="loading_events">Загрузка встреч...</p>
                         </div>
-                        <button onclick="window.location.href='full-calendar.html'" class="w-16 shrink-0 bg-gray-200 hover:bg-gray-300 flex flex-col items-center justify-center transition-colors outline-none p-2 group">
-                            <svg class="w-7 h-7 text-slate-500 group-hover:text-rose-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <button onclick="window.location.href='full-calendar.html'" class="w-16 shrink-0 flex flex-col items-center justify-center transition-colors outline-none p-2 hover:bg-slate-300/50">
+                            <svg class="w-7 h-7 text-slate-500 hover:text-rose-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                         </button>
@@ -105,6 +105,24 @@
                         <button onclick="scrollNews(-240)" class="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-slate-700 border border-slate-200 rounded-full w-10 h-10 items-center justify-center outline-none opacity-80 hover:opacity-100 transition-opacity shadow-sm -ml-4"><svg class="w-6 h-6 pr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg></button>
                         <div id="content-news" class="flex flex-nowrap overflow-x-auto gap-4 pb-2 px-4 md:px-0 snap-x snap-mandatory custom-scrollbar items-stretch scroll-smooth w-full"><p class="italic text-slate-500 w-full text-center py-4 text-sm" data-lang="loading_feed">Загрузка ленты...</p></div>
                         <button onclick="scrollNews(240)" class="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-slate-700 border border-slate-200 rounded-full w-10 h-10 items-center justify-center outline-none opacity-80 hover:opacity-100 transition-opacity shadow-sm -mr-4"><svg class="w-6 h-6 pl-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></button>
+                    </div>
+
+                    <div class="px-4 md:px-0 mb-4">
+                        <div class="w-full bg-[#10b981] rounded-xl shadow-sm flex flex-col overflow-hidden h-16 cursor-pointer hover:bg-[#34d399] transition-colors group" onclick="handleZoomClick(event)" id="zoom-btn-element">
+                            <div id="zoom-info-hidden" class="flex flex-col items-center justify-center h-full text-white">
+                                <span class="font-black text-xl tracking-widest leading-none drop-shadow-sm flex items-center gap-2">
+                                    <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4zM14 13h-3v3H9v-3H6v-2h3V8h2v3h3v2z"/></svg>
+                                    ZOOM
+                                </span>
+                            </div>
+                            <div id="zoom-info-revealed" class="hidden flex-row items-center justify-between h-full text-white px-5 bg-[#34d399]">
+                                <span class="font-black text-base uppercase tracking-widest drop-shadow-sm" data-lang="zoom_launch">ЗАПУСТИТЬ</span>
+                                <div class="text-white text-right">
+                                    <span class="block text-xs md:text-sm font-normal leading-tight">ID: <span id="dash-zoom-id" class="font-bold">...</span></span>
+                                    <span class="block text-xs md:text-sm font-normal leading-tight">Pass: <span id="dash-zoom-pass" class="font-bold">...</span></span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="bg-white p-4 md:p-6 rounded-xl border border-slate-200 flex flex-col mx-4 md:mx-0 shadow-sm mb-4">
@@ -152,32 +170,18 @@
             <div id="tab-tasks" class="tab-content pt-2 md:pt-0 px-0 md:px-0">
                 
                 <div class="mb-4 w-full">
+                    <h3 class="font-black text-slate-800 flex items-center gap-2 mb-4 text-xl border-b border-slate-300 pb-3 mx-4">
+                        <svg class="w-6 h-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <span data-lang="meeting_program">Программа</span>
+                    </h3>
                     <div class="w-full relative group flex items-center px-4 md:px-0">
                         <button onclick="scrollProgram(-1)" class="hidden md:flex absolute -left-6 z-10 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-full w-12 h-12 items-center justify-center outline-none shadow-md transition-all"><svg class="w-6 h-6 pr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg></button>
                         
-                        <div id="meeting-program-list" class="flex flex-nowrap overflow-x-auto gap-4 md:gap-6 pb-2 pt-2 snap-x snap-mandatory custom-scrollbar items-start scroll-smooth w-full -mx-4 md:mx-0 px-4 md:px-1">
+                        <div id="meeting-program-list" class="flex flex-nowrap overflow-x-auto gap-4 md:gap-6 pb-2 pt-2 snap-x snap-mandatory custom-scrollbar items-start scroll-smooth w-full px-4 md:px-1">
                             <p class="text-slate-400 text-base italic text-center py-4 w-full" data-lang="loading">Загрузка...</p>
                         </div>
                         
                         <button onclick="scrollProgram(1)" class="hidden md:flex absolute -right-6 z-10 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-full w-12 h-12 items-center justify-center outline-none shadow-md transition-all"><svg class="w-6 h-6 pl-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></button>
-                    </div>
-                </div>
-
-                <div class="px-4 md:px-0 mb-8 mt-2">
-                    <div class="w-full bg-[#dcfce7] rounded-xl border border-[#bbf7d0] shadow-sm flex flex-col overflow-hidden h-14 md:h-16 cursor-pointer hover:bg-[#22c55e] transition-colors group" onclick="handleZoomClick(event)" id="zoom-btn-element">
-                        <div id="zoom-info-hidden" class="flex flex-col items-center justify-center h-full text-[#166534] group-hover:text-white transition-colors">
-                            <span class="font-black text-xl tracking-widest leading-none drop-shadow-sm flex items-center gap-2">
-                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4zM14 13h-3v3H9v-3H6v-2h3V8h2v3h3v2z"/></svg>
-                                ZOOM
-                            </span>
-                        </div>
-                        <div id="zoom-info-revealed" class="hidden flex-row items-center justify-between h-full text-white px-5 bg-[#22c55e]">
-                            <span class="font-black text-base uppercase tracking-widest drop-shadow-sm" data-lang="zoom_launch">ЗАПУСТИТЬ</span>
-                            <div class="text-white text-right">
-                                <span class="block text-xs md:text-sm font-bold leading-tight">ID: <span id="dash-zoom-id">...</span></span>
-                                <span class="block text-xs md:text-sm font-bold leading-tight">Pass: <span id="dash-zoom-pass">...</span></span>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -288,13 +292,12 @@
 
     <div id="qr-modal" class="fixed inset-0 bg-slate-900/90 z-[80] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeQrModal()">
         <div class="bg-white p-4 rounded-xl relative max-w-xs w-full shadow-2xl" onclick="event.stopPropagation()">
-            <button onclick="closeQrModal()" class="absolute -top-10 right-0 text-white text-3xl font-black outline-none">&times;</button>
             <img src="qr.png" alt="QR Code" class="w-full h-auto rounded-lg border border-slate-200 shadow-sm">
             <p class="text-center text-sm font-bold text-slate-500 mt-4 uppercase tracking-widest" data-lang="scan_qr">Отсканируйте код</p>
         </div>
     </div>
 
-    <script type="module" src="app.js?v=490"></script>
+    <script type="module" src="app.js?v=500"></script>
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
 </body>
 </html>
