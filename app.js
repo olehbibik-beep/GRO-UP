@@ -83,7 +83,7 @@ const dict = {
         "loading": "Načítání...", "archive_empty": "Archiv je prázdný", "unknown": "Neznámé", "error_loading": "Chyba načítání",
         "alert_add_text_photo": "Přidejte text nebo fotku!", "alert_publish_error": "Chyba publikování! Zkontrolujte pravidla Storage.",
         "confirm_delete_news": "Smazat toto oznámení?", "confirm_delete_task": "Opravdu smazat tento úkol?", "admin_title": "Panel administrátora",
-        "back_home": "Na hlavní stránku", "btn_back": "Zpět", "users_title": "Uživatelé", "autosave_data": "Automatické ukládání dat",
+        "back_home": "Na hlavní stránku", "users_title": "Uživatelé", "autosave_data": "Automatické ukládání dat",
         "cong_name_label": "Název sboru (Uvidí všichni)", "cong_name_placeholder": "Například: Centrální", "requests_title": "Žádosti",
         "active_users": "Aktivní", "search_placeholder": "Hledat...", "th_name_gender": "Jméno a Pohlaví", "th_pin": "PIN",
         "th_group": "Skupina", "th_school": "Škola", "th_status": "Status ve sboru", "th_responsible": "Zodpovědný za",
@@ -174,6 +174,7 @@ if (!userId) {
 }
 
 window.scrollNews = (offset) => { document.getElementById('content-news')?.scrollBy({ left: offset, behavior: 'smooth' }); };
+
 window.scrollProgram = (dir) => { 
     const container = document.getElementById('meeting-program-list');
     if(container) {
@@ -302,7 +303,6 @@ const monthLabel = document.getElementById('current-month-label');
 if (monthLabel) monthLabel.innerText = currentMonthStr;
 
 window.switchTab = (tabId, btnElement) => {
-    localStorage.setItem('activeTab', tabId);
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tabId}`);
     if(targetTab) targetTab.classList.add('active');
@@ -387,7 +387,6 @@ if (userId) {
 
             hasFullAccess = userRoles.some(r => TOP_ROLES.includes(r));
             
-            // Восстановил ID кнопок в HTML и здесь:
             const setAdminLink = (id, condition) => {
                 const btn = document.getElementById(id);
                 if (btn) {
@@ -640,7 +639,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     
     let partCounter = 1;
 
-    // Обычная строка (Будни) - ИМЕНА ТЕПЕРЬ ПОД ПУНКТАМИ
+    // Обычная строка (Будни)
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
@@ -671,18 +670,8 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     };
 
-    // ПЕРВАЯ РЕЧЬ 10 МИН (Теперь выглядит как обычный пункт)
-    const treasure1Me = d.mw_treasure_name === myName;
-    const t1TitleColor = treasure1Me ? 'font-black text-slate-900' : 'font-bold text-slate-700';
-    const t1NameColor = treasure1Me ? 'font-black text-slate-900' : 'font-medium text-slate-500';
-    
-    const treasure1 = `
-        <div class="flex flex-col py-1.5 px-3 border-b border-slate-200/60 bg-transparent hover:bg-slate-300/10 transition-colors">
-            <span class="text-[11px] md:text-[13px] ${t1TitleColor} leading-tight">${partCounter++}. ${translateDbString(d.mw_treasure_title || window.t('talk_10_min'))}</span>
-            <span class="text-[11px] md:text-[13px] ${t1NameColor} ml-3 mt-0.5">${d.mw_treasure_name || '-'}</span>
-        </div>
-    `;
-
+    // ПЕРВАЯ РЕЧЬ 10 МИН (Как обычный пункт)
+    const treasure1 = row(d.mw_treasure_title || window.t('talk_10_min'), d.mw_treasure_name);
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
@@ -712,15 +701,15 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const cbsNameColor = isCbsMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
     const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
-    // ВЫХОДНЫЕ: Публичная речь (БЕЛЫЙ ФОН для выделения)
+    // ВЫХОДНЫЕ: Публичная речь (БЕЛЫЙ ФОН)
     const weTalkMe = d.we_talk_speaker === myName;
     const wtTitleColor = weTalkMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
     const wtNameColor = weTalkMe ? 'font-black text-slate-900' : 'font-bold text-slate-600';
 
     const we_talk = `
         <div class="flex flex-col py-2 px-3 border border-slate-200 shadow-sm bg-white rounded-lg my-1 hover:bg-slate-50 transition-colors mx-1">
-            <span class="text-xs md:text-[13px] ${wtTitleColor} uppercase leading-tight">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
-            <span class="text-sm md:text-base ${wtNameColor} mt-0.5">${d.we_talk_speaker || '-'}</span>
+            <span class="text-[11px] md:text-[13px] ${wtTitleColor} uppercase leading-tight">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
+            <span class="text-[11px] md:text-[13px] ${wtNameColor} mt-0.5">${d.we_talk_speaker || '-'}</span>
         </div>
     `;
 
@@ -730,11 +719,9 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const we_wt_read_str = d.we_wt_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.we_wt_reader})</span>` : '';
 
     return `
-        <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-1">
-            
-            <div class="flex items-center justify-between pb-1.5 border-b-2 border-slate-300 mb-1.5 mx-1">
-                <span class="text-sm md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel}</span>
-                <span class="text-[9px] md:text-[10px] font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
+        <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-1 px-1">
+            <div class="text-center pb-1 border-b-2 border-slate-300 mb-1">
+                <span class="text-xs md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel} <span class="${statusColor} ml-2">${weekStatus}</span></span>
             </div>
             
             <div class="flex-grow flex flex-col">
@@ -766,10 +753,9 @@ function buildScheduleCards(d, myName, currentWeekStr) {
             </div>
         </div>
 
-        <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-1">
-            <div class="flex items-center justify-between pb-1.5 border-b-2 border-slate-300 mb-1.5 mx-1">
-                <span class="text-sm md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel}</span>
-                <span class="text-[9px] md:text-[10px] font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
+        <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-1 px-1">
+            <div class="text-center pb-1 border-b-2 border-slate-300 mb-1">
+                <span class="text-xs md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel} <span class="${statusColor} ml-2">${weekStatus}</span></span>
             </div>
 
             <div class="flex-grow flex flex-col">
@@ -813,18 +799,27 @@ function loadPersonalData() {
             const container = document.getElementById('meeting-program-list');
             if(!container) return;
 
-            let schedules = [];
+            // ФИЛЬТР ДУБЛИКАТОВ И СТАРЫХ ГРАФИКОВ
+            let schedulesMap = {};
             snapshot.forEach(doc => {
                 let id = doc.id;
                 let data = doc.data();
+                data.id = id;
                 
-                // Фильтруем графики по текущему языку
-                if (id.endsWith('-' + currentLang) || (!id.includes('-ru') && !id.includes('-cs') && currentLang === 'ru')) {
-                    data.id = id;
-                    data.realWeekId = id.length > 8 ? id.substring(0, 8) : id; 
-                    schedules.push(data);
+                let isLegacy = /^\d{4}-W\d{2}$/.test(id);
+                let realWeekId = isLegacy ? id : (id.length > 8 ? id.substring(0, 8) : id);
+                data.realWeekId = realWeekId;
+
+                if (id.endsWith('-' + currentLang)) {
+                    schedulesMap[realWeekId] = data; // Приоритет новому формату
+                } else if (isLegacy && currentLang === 'ru') {
+                    if (!schedulesMap[realWeekId]) {
+                        schedulesMap[realWeekId] = data; // Оставляем старый, если нет нового
+                    }
                 }
             });
+            
+            let schedules = Object.values(schedulesMap);
             schedules.sort((a,b) => a.realWeekId.localeCompare(b.realWeekId));
 
             const currentWeekStr = getISOWeekString(new Date()); 
@@ -875,7 +870,6 @@ function loadPersonalData() {
                 const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
                 const isMyGroup = String(d.group) === String(myGroup);
 
-                // СПИСОК УБОРОК (Твоя группа выделена темно-серым, как логотип)
                 let textClass = isMyGroup ? "text-slate-900 font-black" : "text-slate-600";
                 let badgeClass = isMyGroup ? "bg-slate-800 text-white shadow-sm" : "bg-slate-100 text-slate-500 border border-slate-200";
 
