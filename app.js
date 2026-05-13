@@ -262,8 +262,8 @@ window.handleZoomClick = (event) => {
     
     if (!window.zoomStateReady) {
         if(zoomBtn) {
-            zoomBtn.classList.remove('bg-[#10b981]');
-            zoomBtn.classList.add('bg-[#34d399]');
+            zoomBtn.classList.remove('bg-[#10b981]', 'border-[#34d399]');
+            zoomBtn.classList.add('bg-[#34d399]', 'border-[#6ee7b7]');
         }
         if(hiddenInfo) { hiddenInfo.classList.add('hidden'); hiddenInfo.classList.remove('flex'); }
         if(revealedInfo) { revealedInfo.classList.remove('hidden'); revealedInfo.classList.add('flex'); }
@@ -288,8 +288,8 @@ function resetZoomUI() {
     const revealedInfo = document.getElementById('zoom-info-revealed');
     
     if(zoomBtn) {
-        zoomBtn.classList.add('bg-[#10b981]');
-        zoomBtn.classList.remove('bg-[#34d399]');
+        zoomBtn.classList.add('bg-[#10b981]', 'border-[#34d399]');
+        zoomBtn.classList.remove('bg-[#34d399]', 'border-[#6ee7b7]');
     }
     if(hiddenInfo) { hiddenInfo.classList.remove('hidden'); hiddenInfo.classList.add('flex'); }
     if(revealedInfo) { revealedInfo.classList.add('hidden'); revealedInfo.classList.remove('flex'); }
@@ -303,6 +303,7 @@ const monthLabel = document.getElementById('current-month-label');
 if (monthLabel) monthLabel.innerText = currentMonthStr;
 
 window.switchTab = (tabId, btnElement) => {
+    localStorage.setItem('activeTab', tabId);
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tabId}`);
     if(targetTab) targetTab.classList.add('active');
@@ -598,8 +599,7 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-// 🔥 ПРОГРАММА СОБРАНИЯ (БЕЗ РАМОК, КРУПНЫЕ ШРИФТЫ, ИМЕНА ПОД ПУНКТАМИ)
-
+// 🔥 ПРОГРАММА СОБРАНИЯ (БЕЗ РАМОК, КРУПНЫЕ ШРИФТЫ, ИДЕАЛЬНО ДЛЯ ПК И ТЕЛЕФОНА)
 function getISOWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -638,15 +638,16 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     
     let partCounter = 1;
 
-    // Обычная строка (Будни)
+    // Обычная строка (Будни) - ИМЯ ТЕПЕРЬ СТАНДАРТНО
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const nameColor = isMe ? 'font-black text-slate-900' : 'font-bold text-slate-600';
+        const titleColor = isMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
+        const nameColor = isMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
 
         return `
             <div class="flex flex-col py-1.5 px-3 border-b border-slate-200 bg-white hover:bg-slate-50 transition-colors">
-                <span class="text-[11px] md:text-[13px] font-bold text-slate-700 leading-tight">${partCounter++}. ${translateDbString(title)}</span>
+                <span class="text-[11px] md:text-[13px] ${titleColor} leading-tight">${partCounter++}. ${translateDbString(title)}</span>
                 <span class="text-[11px] md:text-[13px] ${nameColor} mt-0.5">${person || '-'}</span>
             </div>
         `;
@@ -656,7 +657,8 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const nameColor = isMe ? 'font-black text-slate-900' : 'font-bold text-slate-600';
+        const titleColor = isMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
+        const nameColor = isMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
         return `
             <div class="flex flex-col py-1.5 px-3 bg-slate-200/50 border-y border-slate-300 hover:bg-slate-200 transition-colors">
                 <span class="text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-wide leading-tight">${translateDbString(title)}</span>
@@ -673,14 +675,13 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const minRows = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
-        const studentCol = m.student === myName ? 'font-black text-slate-900' : 'font-bold text-slate-600';
-        const assistCol = m.assistant === myName ? 'font-black text-slate-900' : 'font-medium text-slate-500';
-        const assistStr = m.assistant ? `<span class="text-[10px] md:text-[11px] ${assistCol} block mt-0.5">${window.t('assistant_short')} ${m.assistant}</span>` : '';
+        const studentCol = m.student === myName ? 'font-black text-slate-900' : 'font-medium text-slate-500';
+        const assistStr = m.assistant ? `<span class="text-[10px] md:text-[11px] ${studentCol} opacity-70">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
 
         return `
             <div class="flex flex-col py-1.5 px-3 border-b border-slate-200 bg-white hover:bg-slate-50 transition-colors">
-                <span class="text-[11px] md:text-[13px] font-bold text-slate-700 leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
-                <span class="text-[11px] md:text-[13px] ${studentCol} mt-0.5">${m.student || '-'}${assistStr}</span>
+                <span class="text-[11px] md:text-[13px] ${isMe ? 'font-black text-slate-900' : 'font-bold text-slate-700'} leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
+                <span class="text-[11px] md:text-[13px] ${studentCol} mt-0.5">${m.student || '-'}${assistStr ? ' ' + assistStr : ''}</span>
             </div>
         `;
     }).join('');
@@ -693,7 +694,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     // Изучение Библии
     const cbsNum = partCounter++;
     const isCbsMe = (d.mw_cbs_conductor === myName || d.mw_cbs_reader === myName);
-    const cbsCondCol = isCbsMe ? 'font-black text-slate-900' : 'font-bold text-slate-600';
+    const cbsCondCol = isCbsMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
     const cbsReadCol = isCbsMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
 
     // ВЫХОДНЫЕ: Публичная речь (Белый фон, крупно)
@@ -709,8 +710,9 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     `;
 
     const isWtMe = (d.we_wt_conductor === myName || d.we_wt_reader === myName);
-    const wtStudyCondColor = isWtMe ? 'font-black text-slate-900' : 'font-bold text-slate-600';
-    const wtStudyReadColor = isWtMe ? 'font-black text-slate-900' : 'font-bold text-slate-500';
+    const wtStudyCondColor = isWtMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
+    const wtStudyReadColor = isWtMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
+    const we_wt_read_str = d.we_wt_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.we_wt_reader})</span>` : '';
 
     return `
         <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-1">
@@ -739,9 +741,8 @@ function buildScheduleCards(d, myName, currentWeekStr) {
                 ${livRows}
                 
                 <div class="flex flex-col py-1.5 px-3 border-b border-slate-200 bg-white hover:bg-slate-50 transition-colors">
-                    <span class="text-[11px] md:text-[13px] font-bold text-slate-700 leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
-                    <span class="text-[11px] md:text-[13px] ${cbsCondCol} mt-0.5">${d.mw_cbs_conductor || '-'}</span>
-                    ${d.mw_cbs_reader ? `<span class="text-[10px] md:text-[12px] ${cbsReadCol} mt-0.5">${window.t('reader')} ${d.mw_cbs_reader}</span>` : ''}
+                    <span class="text-[11px] md:text-[13px] ${isCbsMe ? 'font-black text-slate-900' : 'font-bold text-slate-700'} leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-[9px] md:text-[10px] font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
+                    <span class="text-[11px] md:text-[13px] ${cbsCondCol} mt-0.5">${d.mw_cbs_conductor || '-'}${we_wt_read_str}</span>
                 </div>
 
                 ${rowUnnumbered(window.t('closing_prayer'), d.mw_prayer_name)}
@@ -751,20 +752,16 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-1">
             <div class="text-center pb-2 border-b-2 border-slate-300 mb-2">
                 <span class="text-sm md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel} <span class="${statusColor} ml-2">${weekStatus}</span></span>
+                <span class="text-[8px] md:text-[9px] text-slate-500 font-bold uppercase tracking-widest block mt-0.5">${window.t('weekend_meeting')}</span>
             </div>
-            
             <div class="flex-grow flex flex-col overflow-hidden rounded-md shadow-sm border border-slate-200">
-                <div class="bg-[#475569] text-white py-1 px-3 flex items-center w-full">
-                    <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest leading-none">${window.t('weekend_meeting')}</span>
-                </div>
                 
                 ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
                 ${we_talk}
                 
                 <div class="flex flex-col py-1.5 px-3 border-b border-slate-200 bg-white hover:bg-slate-50 transition-colors">
-                    <span class="text-[11px] md:text-[13px] font-bold text-slate-700 leading-tight">${window.t('watchtower_study')}</span>
-                    <span class="text-[11px] md:text-[13px] ${wtStudyCondColor} mt-0.5">${d.we_wt_conductor || '-'}</span>
-                    ${d.we_wt_reader ? `<span class="text-[10px] md:text-[12px] ${wtStudyReadColor} mt-0.5">${window.t('reader')} ${d.we_wt_reader}</span>` : ''}
+                    <span class="text-[11px] md:text-[13px] ${isWtMe ? 'font-black text-slate-900' : 'font-bold text-slate-700'} leading-tight">${window.t('watchtower_study')}</span>
+                    <span class="text-[11px] md:text-[13px] ${wtStudyCondColor} mt-0.5">${d.we_wt_conductor || '-'}${we_wt_read_str}</span>
                 </div>
 
                 ${rowUnnumbered(window.t('closing_prayer'), d.we_prayer_name)}
@@ -1084,7 +1081,6 @@ function loadPersonalData() {
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 ev.id = docSnap.id;
-                // ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
                 if (ev.date === todayStr) {
                     todayEvents.push(ev);
                 }
