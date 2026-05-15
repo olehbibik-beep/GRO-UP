@@ -1316,23 +1316,30 @@ window.openProfileModal = () => document.getElementById('profile-modal').classLi
 window.openReportHistory = () => document.getElementById('report-history-modal').classList.replace('hidden', 'flex');
 window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
 
-// 🔥 ОТКРЫТИЕ МОДАЛКИ СВОБОДНЫХ УЧАСТКОВ
+// 🔥 ОТКРЫТИЕ МОДАЛКИ СВОБОДНЫХ УЧАСТКОВ (ПЛИТКИ С КАРТИНКАМИ)
 window.openTakeTerrModal = async () => {
     document.getElementById('take-terr-modal').classList.replace('hidden', 'flex');
     const listContainer = document.getElementById('available-terr-list');
     listContainer.innerHTML = `<p class="text-xs italic text-slate-400 text-center py-4 font-bold uppercase tracking-widest animate-pulse">${window.t('loading')}</p>`;
     
     try {
+        // 1. Узнаем какие участки заняты
         const activeQuery = query(collection(db, "territories"), where("status", "==", "active"));
         const activeSnap = await getDocs(activeQuery);
         const activeNumbers = [];
         activeSnap.forEach(doc => activeNumbers.push(Number(doc.data().number)));
 
+        // 2. Отбираем только свободные
         let availableMaps = [];
         Object.keys(window.allMapsCache).forEach(numStr => {
             const num = Number(numStr);
             if (!activeNumbers.includes(num)) {
-                availableMaps.push({ num: num, url: window.allMapsCache[numStr].url, img: window.allMapsCache[numStr].imageUrl });
+                availableMaps.push({ 
+                    num: num, 
+                    url: window.allMapsCache[numStr].url, 
+                    img: window.allMapsCache[numStr].imageUrl,
+                    city: window.allMapsCache[numStr].city || '' // На будущее, если добавим города
+                });
             }
         });
 
@@ -1343,40 +1350,34 @@ window.openTakeTerrModal = async () => {
             return;
         }
 
-        const groupedMaps = {};
+        // 3. Рисуем сетку плиточек (grid)
+        let html = '<div class="grid grid-cols-2 gap-3 pb-2">';
+        
         availableMaps.forEach(m => {
-            const groupKey = Math.floor(m.num / 10) * 10; 
-            if(!groupedMaps[groupKey]) groupedMaps[groupKey] = [];
-            groupedMaps[groupKey].push(m);
-        });
+            // Если есть картинка - показываем, если нет - ставим красивую заглушку
+            const imgHtml = m.img 
+                ? `<img src="${m.img}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />` 
+                : `<div class="w-full h-full flex flex-col items-center justify-center bg-slate-200 text-slate-400"><svg class="w-6 h-6 mb-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg><span class="text-[8px] uppercase font-bold tracking-widest opacity-50">Нет фото</span></div>`;
+            
+            const cityHtml = m.city ? `<span class="block text-[8px] text-emerald-100 font-medium truncate mt-0.5">${m.city}</span>` : '';
 
-        let html = '';
-        for (const [groupKey, groupMaps] of Object.entries(groupedMaps)) {
-            const groupTitle = `${groupKey} — ${parseInt(groupKey) + 9}`;
-            let groupHtml = `<details class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden mb-2 group">
-                <summary class="font-black text-slate-700 p-3 cursor-pointer outline-none flex justify-between items-center hover:bg-slate-100 transition-colors">
-                    <div class="flex items-center gap-2 text-sm">
-                        <svg class="w-4 h-4 text-emerald-500 group-open:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
-                        ${groupTitle}
+            html += `
+            <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow transition-all flex flex-col relative group">
+                <div class="h-24 w-full relative overflow-hidden bg-slate-100 cursor-pointer" onclick="window.open('${m.url}', '_blank')">
+                    ${imgHtml}
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"></div>
+                    <div class="absolute bottom-2 left-2 right-2 text-white">
+                        <span class="block font-black text-lg drop-shadow-md leading-none">№ ${m.num}</span>
+                        ${cityHtml}
                     </div>
-                    <span class="bg-white border border-slate-200 text-emerald-600 font-black text-[9px] uppercase tracking-widest px-2 py-0.5 rounded shadow-sm">${groupMaps.length} своб.</span>
-                </summary>
-                <div class="p-2 space-y-1.5 border-t border-slate-200 bg-white">`;
-                
-            groupMaps.forEach(m => {
-                const photoBadge = m.img ? `<span class="bg-sky-50 text-sky-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0 border border-sky-100">ФОТО</span>` : '';
-                groupHtml += `
-                <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-2 rounded-lg hover:border-emerald-200 transition-colors">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="bg-slate-800 text-white font-black font-mono text-[11px] px-2.5 py-1 rounded shrink-0 shadow-sm">${m.num}</span>
-                        ${photoBadge}
-                    </div>
-                    <button onclick="takeTerritory(${m.num}, this)" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest px-4 py-2 rounded-lg transition-colors outline-none shadow-sm active:scale-95">Взять</button>
-                </div>`;
-            });
-            groupHtml += `</div></details>`;
-            html += groupHtml;
-        }
+                </div>
+                <div class="p-2 flex justify-center items-center bg-white border-t border-slate-100">
+                    <button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white font-black text-[10px] uppercase tracking-widest py-2 rounded-xl transition-colors outline-none shadow-sm active:scale-95 border border-emerald-100 hover:border-emerald-500">Взять</button>
+                </div>
+            </div>`;
+        });
+        
+        html += '</div>';
         listContainer.innerHTML = html;
 
     } catch (e) {
