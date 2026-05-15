@@ -252,6 +252,9 @@ let currentUserData = null;
 let hasFullAccess = false;
 let currentZoomData = { id: "", pass: "" }; 
 
+// ГЛОБАЛЬНЫЙ КЭШ КАРТ (чтобы можно было достать его при выборе участка)
+window.allMapsCache = {};
+
 window.zoomStateReady = false;
 window.handleZoomClick = (event) => {
     event.preventDefault();
@@ -363,7 +366,7 @@ function listenForMessages() {
     if (unsubMessages) unsubMessages();
     unsubMessages = onSnapshot(query(collection(db, "user_messages"), where("userId", "==", userId), where("read", "==", false)), (msgSnap) => {
         if (!msgSnap.empty) {
-            const msgDoc = msgSnap.docs[0]; // Показываем первое непрочитанное
+            const msgDoc = msgSnap.docs[0]; 
             window.activeMessageId = msgDoc.id;
             const modal = document.getElementById('user-msg-modal');
             const content = document.getElementById('user-msg-content');
@@ -452,9 +455,8 @@ if (userId) {
             try { loadPersonalData(); } catch(e) {}
             try { loadProfileData(); } catch(e) {}
             renderStandCard();
-            listenForMessages(); // Включаем "уши" для получения сообщений!
+            listenForMessages(); 
             
-            // ПРИНУДИТЕЛЬНО ОТКРЫВАЕМ ДОМИК ПРИ ЗАГРУЗКЕ
             window.switchTab('home');
         }
     });
@@ -636,8 +638,7 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-// 🔥 ПРОГРАММА СОБРАНИЯ (БЕЗ РАМОК, КРУПНЫЕ ШРИФТЫ, ИМЕНА ПОД ПУНКТАМИ)
-
+// 🔥 ПРОГРАММА СОБРАНИЯ
 function getISOWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -676,7 +677,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     
     let partCounter = 1;
 
-    // Обычная строка (Будни)
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
@@ -691,7 +691,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     };
 
-    // Строка без номера
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
@@ -706,7 +705,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     };
 
-    // ПЕРВАЯ РЕЧЬ 10 МИН
     const treasure1Me = d.mw_treasure_name === myName;
     const t1TitleColor = treasure1Me ? 'font-black text-black' : 'font-bold text-slate-900';
     const t1NameColor = treasure1Me ? 'font-black text-black' : 'font-bold text-slate-800';
@@ -721,7 +719,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
-    // 🔥 ЗАДАНИЯ ШКОЛЫ: Все в одной белой карточке с выделением при нажатии
     const minRowsRaw = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
@@ -738,7 +735,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     }).join('');
 
     const minRows = minRowsRaw ? `
-        <div class="flex flex-col bg-white/60 border border-slate-200/50 shadow-sm rounded-xl mt-1.5 mb-2 mx-1 overflow-hidden">
+        <div class="flex flex-col bg-white/60 shadow-sm rounded-xl mt-1.5 mb-2 mx-1 overflow-hidden">
             ${minRowsRaw}
         </div>
     ` : '';
@@ -754,13 +751,12 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const cbsNameColor = isCbsMe ? 'font-black text-black' : 'font-bold text-slate-800';
     const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
-    // 🔥 ВЫХОДНЫЕ: Публичная речь (Тоже белая карточка)
     const weTalkMe = d.we_talk_speaker === myName;
     const wtTitleColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-900';
     const wtNameColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-800';
 
     const we_talk = `
-        <div class="flex flex-col py-2.5 px-3 bg-white/60 hover:bg-white active:bg-white border border-slate-200/50 shadow-sm transition-colors rounded-xl mt-2 mb-1 mx-1 cursor-pointer">
+        <div class="flex flex-col py-2.5 px-3 bg-white/60 hover:bg-white active:bg-white shadow-sm transition-colors rounded-xl mt-2 mb-1 mx-1 cursor-pointer">
             <span class="text-sm md:text-base ${wtTitleColor} uppercase leading-tight">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
             <span class="text-sm md:text-base ${wtNameColor} mt-1 ml-4">${d.we_talk_speaker || '-'}</span>
         </div>
@@ -774,7 +770,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     return `
         <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-4 px-1">
             
-            <div class="flex items-center justify-between pb-3 mb-2 mx-2">
+            <div class="flex items-center justify-between pb-3 mb-2 mx-2 border-b border-slate-300">
                 <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
                 <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
             </div>
@@ -811,7 +807,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 
         <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-4 px-1">
             
-            <div class="flex items-center justify-between pb-3 mb-2 mx-2">
+            <div class="flex items-center justify-between pb-3 mb-2 mx-2 border-b border-slate-300">
                 <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
                 <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
             </div>
@@ -837,6 +833,8 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 }
 
 function loadPersonalData() {
+    window.allMapsCache = {}; // Глобальная переменная для Базы Карт
+    
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
         if (docSnap.exists()) {
             const r = docSnap.data();
@@ -1004,10 +1002,9 @@ function loadPersonalData() {
     } catch(e) {}
 
     try {
-        let allMapsCache = {};
         onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
-            allMapsCache = {};
-            mapSnap.forEach(d => { allMapsCache[d.id] = { url: d.data().url, imageUrl: d.data().imageUrl }; });
+            window.allMapsCache = {};
+            mapSnap.forEach(d => { window.allMapsCache[d.id] = { url: d.data().url, imageUrl: d.data().imageUrl }; });
         });
 
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
@@ -1034,7 +1031,7 @@ function loadPersonalData() {
                 if (diffDays >= 90) { barColor = "bg-red-500"; textColor = "text-red-600"; } 
                 else if (diffDays >= 30) { barColor = "bg-amber-500"; textColor = "text-amber-600"; }
 
-                const mapData = allMapsCache[String(terr.number)];
+                const mapData = window.allMapsCache[String(terr.number)];
                 const mapUrl = mapData ? mapData.url : null;
                 const mapImg = mapData ? mapData.imageUrl : null;
                 let mapArea = '';
@@ -1318,11 +1315,108 @@ function loadPersonalData() {
 window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
 window.openReportHistory = () => document.getElementById('report-history-modal').classList.replace('hidden', 'flex');
 window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
+
+// 🔥 ОТКРЫТИЕ МОДАЛКИ СВОБОДНЫХ УЧАСТКОВ
+window.openTakeTerrModal = async () => {
+    document.getElementById('take-terr-modal').classList.replace('hidden', 'flex');
+    const listContainer = document.getElementById('available-terr-list');
+    listContainer.innerHTML = `<p class="text-xs italic text-slate-400 text-center py-4 font-bold uppercase tracking-widest animate-pulse">${window.t('loading')}</p>`;
+    
+    try {
+        const activeQuery = query(collection(db, "territories"), where("status", "==", "active"));
+        const activeSnap = await getDocs(activeQuery);
+        const activeNumbers = [];
+        activeSnap.forEach(doc => activeNumbers.push(Number(doc.data().number)));
+
+        let availableMaps = [];
+        Object.keys(window.allMapsCache).forEach(numStr => {
+            const num = Number(numStr);
+            if (!activeNumbers.includes(num)) {
+                availableMaps.push({ num: num, url: window.allMapsCache[numStr].url, img: window.allMapsCache[numStr].imageUrl });
+            }
+        });
+
+        availableMaps.sort((a,b) => a.num - b.num);
+
+        if (availableMaps.length === 0) {
+            listContainer.innerHTML = `<p class="text-xs font-bold text-amber-600 uppercase tracking-widest text-center py-6 bg-amber-50 rounded-xl border border-amber-100">Нет свободных участков</p>`;
+            return;
+        }
+
+        const groupedMaps = {};
+        availableMaps.forEach(m => {
+            const groupKey = Math.floor(m.num / 10) * 10; 
+            if(!groupedMaps[groupKey]) groupedMaps[groupKey] = [];
+            groupedMaps[groupKey].push(m);
+        });
+
+        let html = '';
+        for (const [groupKey, groupMaps] of Object.entries(groupedMaps)) {
+            const groupTitle = `${groupKey} — ${parseInt(groupKey) + 9}`;
+            let groupHtml = `<details class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden mb-2 group">
+                <summary class="font-black text-slate-700 p-3 cursor-pointer outline-none flex justify-between items-center hover:bg-slate-100 transition-colors">
+                    <div class="flex items-center gap-2 text-sm">
+                        <svg class="w-4 h-4 text-emerald-500 group-open:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                        ${groupTitle}
+                    </div>
+                    <span class="bg-white border border-slate-200 text-emerald-600 font-black text-[9px] uppercase tracking-widest px-2 py-0.5 rounded shadow-sm">${groupMaps.length} своб.</span>
+                </summary>
+                <div class="p-2 space-y-1.5 border-t border-slate-200 bg-white">`;
+                
+            groupMaps.forEach(m => {
+                const photoBadge = m.img ? `<span class="bg-sky-50 text-sky-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0 border border-sky-100">ФОТО</span>` : '';
+                groupHtml += `
+                <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-2 rounded-lg hover:border-emerald-200 transition-colors">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="bg-slate-800 text-white font-black font-mono text-[11px] px-2.5 py-1 rounded shrink-0 shadow-sm">${m.num}</span>
+                        ${photoBadge}
+                    </div>
+                    <button onclick="takeTerritory(${m.num}, this)" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest px-4 py-2 rounded-lg transition-colors outline-none shadow-sm active:scale-95">Взять</button>
+                </div>`;
+            });
+            groupHtml += `</div></details>`;
+            html += groupHtml;
+        }
+        listContainer.innerHTML = html;
+
+    } catch (e) {
+        listContainer.innerHTML = `<p class="text-xs font-bold uppercase tracking-widest text-red-500 text-center py-4">Ошибка загрузки</p>`;
+    }
+};
+
+window.closeTakeTerrModal = () => {
+    const modal = document.getElementById('take-terr-modal');
+    if(modal) modal.classList.replace('flex', 'hidden');
+};
+
+// 🔥 ФУНКЦИЯ ДЛЯ ВЗЯТИЯ УЧАСТКА
+window.takeTerritory = async (num, btn) => {
+    btn.disabled = true;
+    btn.innerText = '...';
+    try {
+        await addDoc(collection(db, "territories"), {
+            number: Number(num),
+            userId: userId,
+            userName: currentUserData.name,
+            status: "active",
+            issuedAt: new Date().toISOString()
+        });
+        window.showToast(`Участок №${num} успешно закреплен за вами! ✅`, 'success');
+        window.closeTakeTerrModal();
+    } catch (e) {
+        alert('Ошибка сети!');
+        btn.disabled = false;
+        btn.innerText = 'ВЗЯТЬ';
+    }
+};
+
+// ЗАКРЫТИЕ ВСЕХ ОКОН
 window.closeModals = () => {
     const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
     const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
     const m3 = document.getElementById('duties-modal'); if(m3) m3.classList.replace('flex', 'hidden');
     const m4 = document.getElementById('user-msg-modal'); if(m4) m4.classList.replace('flex', 'hidden');
+    const m5 = document.getElementById('take-terr-modal'); if(m5) m5.classList.replace('flex', 'hidden');
 };
 window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
 
