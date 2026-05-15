@@ -738,7 +738,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     }).join('');
 
     const minRows = minRowsRaw ? `
-        <div class="flex flex-col bg-white/60 border border-slate-200/50 shadow-sm rounded-xl mt-1.5 mb-2 mx-1 overflow-hidden">
+        <div class="flex flex-col bg-white/60 shadow-sm rounded-xl mt-1.5 mb-2 mx-1 overflow-hidden">
             ${minRowsRaw}
         </div>
     ` : '';
@@ -754,13 +754,13 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const cbsNameColor = isCbsMe ? 'font-black text-black' : 'font-bold text-slate-800';
     const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
-    // 🔥 ВЫХОДНЫЕ: Публичная речь (Тоже белая карточка)
+    // ВЫХОДНЫЕ: Публичная речь
     const weTalkMe = d.we_talk_speaker === myName;
     const wtTitleColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-900';
     const wtNameColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-800';
 
     const we_talk = `
-        <div class="flex flex-col py-2.5 px-3 bg-white/60 hover:bg-white active:bg-white border border-slate-200/50 shadow-sm transition-colors rounded-xl mt-2 mb-1 mx-1 cursor-pointer">
+        <div class="flex flex-col py-2.5 px-3 bg-white/60 hover:bg-white active:bg-white shadow-sm transition-colors rounded-xl mt-2 mb-1 mx-1 cursor-pointer">
             <span class="text-sm md:text-base ${wtTitleColor} uppercase leading-tight">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
             <span class="text-sm md:text-base ${wtNameColor} mt-1 ml-4">${d.we_talk_speaker || '-'}</span>
         </div>
@@ -774,7 +774,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     return `
         <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-4 px-1">
             
-            <div class="flex items-center justify-between pb-3 mb-2 mx-2">
+            <div class="flex items-center justify-between pb-3 mb-2 mx-2 border-b border-slate-300">
                 <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
                 <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
             </div>
@@ -811,7 +811,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 
         <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-4 px-1">
             
-            <div class="flex items-center justify-between pb-3 mb-2 mx-2">
+            <div class="flex items-center justify-between pb-3 mb-2 mx-2 border-b border-slate-300">
                 <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
                 <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
             </div>
@@ -834,7 +834,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
             </div>
         </div>
     `;
-}
+}}
 
 function loadPersonalData() {
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
