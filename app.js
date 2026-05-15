@@ -673,7 +673,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     
     let partCounter = 1;
 
-    // Обычная строка (Будни) - без линий, крупный темный текст
+    // Обычная строка (Будни)
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
@@ -718,8 +718,8 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
-    // 🔥 ЗАДАНИЯ ШКОЛЫ: БЕЛЫЙ ФОН, СТАНОВИТСЯ ЯРЧЕ ПРИ НАВЕДЕНИИ/КАСАНИИ
-    const minRows = (d.ministryParts || []).map((m) => {
+    // 🔥 ЗАДАНИЯ ШКОЛЫ: Все в одной белой карточке с выделением при нажатии
+    const minRowsRaw = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
         const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-900';
@@ -727,12 +727,18 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         const assistStr = m.assistant ? ` <span class="opacity-70 ml-1">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
 
         return `
-            <div class="flex flex-col py-2.5 px-3 bg-white/70 hover:bg-white border border-slate-200/60 shadow-sm hover:shadow transition-all rounded-xl my-1 mx-1 cursor-default">
+            <div class="flex flex-col py-2.5 px-3 border-b border-slate-200/50 last:border-0 hover:bg-white active:bg-white transition-colors cursor-pointer">
                 <span class="text-sm md:text-base ${titleColor} leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
                 <span class="text-sm md:text-base ${nameColor} mt-1 ml-4">${m.student || '-'}${assistStr}</span>
             </div>
         `;
     }).join('');
+
+    const minRows = minRowsRaw ? `
+        <div class="flex flex-col bg-white/60 border border-slate-200/50 shadow-sm rounded-xl mt-1.5 mb-2 mx-1 overflow-hidden">
+            ${minRowsRaw}
+        </div>
+    ` : '';
 
     const livRows = (d.livingParts || []).map((m) => {
         if(!m.title && !m.name) return '';
@@ -745,13 +751,13 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const cbsNameColor = isCbsMe ? 'font-black text-black' : 'font-bold text-slate-800';
     const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
-    // 🔥 ВЫХОДНЫЕ: Публичная речь (Тоже белая карточка для симметрии)
+    // 🔥 ВЫХОДНЫЕ: Публичная речь (Тоже белая карточка)
     const weTalkMe = d.we_talk_speaker === myName;
     const wtTitleColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-900';
     const wtNameColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-800';
 
     const we_talk = `
-        <div class="flex flex-col py-2.5 px-3 bg-white/70 hover:bg-white border border-slate-200/60 shadow-sm hover:shadow transition-all rounded-xl mt-2 mb-1 mx-1 cursor-default">
+        <div class="flex flex-col py-2.5 px-3 bg-white/60 hover:bg-white active:bg-white border border-slate-200/50 shadow-sm transition-colors rounded-xl mt-2 mb-1 mx-1 cursor-pointer">
             <span class="text-sm md:text-base ${wtTitleColor} uppercase leading-tight">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
             <span class="text-sm md:text-base ${wtNameColor} mt-1 ml-4">${d.we_talk_speaker || '-'}</span>
         </div>
@@ -784,9 +790,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
                     <span class="text-[11px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('ministry_skills')}</span>
                 </div>
                 
-                <div class="flex flex-col space-y-1.5 my-1">
-                    ${minRows}
-                </div>
+                ${minRows}
 
                 <div class="bg-[#b91c1c] text-white py-1.5 px-3 mt-3 mb-1 flex items-center rounded-lg shadow-sm w-full">
                     <span class="text-[11px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('christian_living')}</span>
