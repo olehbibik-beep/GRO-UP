@@ -127,7 +127,7 @@ function translateDbString(str) {
         "Развивайте интерес": "develop_interest", "Rozvíjení zájmu": "develop_interest",
         "Подготавливайте учеников": "make_disciples", "Činění učedníků": "make_disciples",
         "Объясняйте свои взгляды": "explain_beliefs", "Vysvětlování své víry": "explain_beliefs",
-        "Местные потребности": "local_needs", "Místní потребности": "local_needs",
+        "Местные потребности": "local_needs", "Místní potřeby": "local_needs",
         "Речь 10 мин.": "talk_10_min", "Proslov 10 min.": "talk_10_min"
     };
     if (map[str]) return window.t(map[str]);
@@ -251,9 +251,6 @@ const TOP_ROLES = ["Владелец", "Админ"];
 let currentUserData = null; 
 let hasFullAccess = false;
 let currentZoomData = { id: "", pass: "" }; 
-
-// ГЛОБАЛЬНЫЙ КЭШ КАРТ (чтобы можно было достать его при выборе участка)
-window.allMapsCache = {};
 
 window.zoomStateReady = false;
 window.handleZoomClick = (event) => {
@@ -457,7 +454,14 @@ if (userId) {
             renderStandCard();
             listenForMessages(); 
             
-            window.switchTab('home');
+            // ПРИНУДИТЕЛЬНО ОТКРЫВАЕМ ДОМИК ПРИ ЗАГРУЗКЕ
+            // (Убрано, чтобы не сбивало вкладки при живом обновлении)
+            // window.switchTab('home'); 
+            
+            // Если вкладка еще не активна, откроем home
+            if(!document.querySelector('.tab-content.active')) {
+                window.switchTab('home');
+            }
         }
     });
 }
@@ -611,7 +615,7 @@ function updateStandWidgetUI() {
     } else {
         if (isStandReqPending) buttonHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none mt-3 shadow-sm">${window.t('stand_pending')}</button>`;
         else buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mt-3 shadow-sm">${window.t('stand_apply')}</button>`;
-        contentHtml = `<div class="w-full h-24 bg-slate-50 border border-slate-200 flex items-center justify-center rounded-md mt-3 shadow-sm"><svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>`;
+        contentHtml = `<div class="w-full h-24 bg-slate-50 border border-slate-200 flex items-center justify-center rounded-md mt-3 shadow-sm"><svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 00-2-2H6a2 2 0 00-2-2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>`;
     }
 
     container.innerHTML = `
@@ -833,8 +837,21 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 }
 
 function loadPersonalData() {
-    window.allMapsCache = {}; // Глобальная переменная для Базы Карт
     
+    // 🔥 Глобальный кэш карт теперь сохраняет город
+    try {
+        onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
+            window.allMapsCache = {};
+            mapSnap.forEach(d => { 
+                window.allMapsCache[d.id] = { 
+                    url: d.data().url, 
+                    imageUrl: d.data().imageUrl,
+                    city: d.data().city || 'Без города'
+                }; 
+            });
+        });
+    } catch(e) {}
+
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
         if (docSnap.exists()) {
             const r = docSnap.data();
@@ -1002,11 +1019,6 @@ function loadPersonalData() {
     } catch(e) {}
 
     try {
-        onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
-            window.allMapsCache = {};
-            mapSnap.forEach(d => { window.allMapsCache[d.id] = { url: d.data().url, imageUrl: d.data().imageUrl }; });
-        });
-
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
         onSnapshot(terrQuery, (snapshot) => {
             const container = document.getElementById('territories-container');
@@ -1034,6 +1046,8 @@ function loadPersonalData() {
                 const mapData = window.allMapsCache[String(terr.number)];
                 const mapUrl = mapData ? mapData.url : null;
                 const mapImg = mapData ? mapData.imageUrl : null;
+                const cityStr = mapData && mapData.city && mapData.city !== "Без города" ? `<span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest ml-1">- ${mapData.city}</span>` : '';
+
                 let mapArea = '';
                 if (mapUrl && mapImg) {
                     mapArea = `<div class="w-full h-32 bg-slate-50 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open('${mapUrl}', '_blank')"><img src="${mapImg}" class="absolute inset-0 w-full h-full object-cover" /><div class="absolute inset-0 bg-slate-900/30 flex flex-col items-center justify-center"><svg class="w-8 h-8 text-white drop-shadow-md mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg><span class="text-[10px] font-bold text-white uppercase tracking-widest drop-shadow-md">${window.t('open_map')}</span></div></div>`;
@@ -1047,7 +1061,10 @@ function loadPersonalData() {
                     <div class="bg-white rounded-md border border-slate-200 overflow-hidden flex flex-col shadow-sm">
                         <div class="p-3 flex flex-col bg-white border-b border-slate-100">
                             <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num')} ${terr.number}</h3>
+                                <div class="flex items-center">
+                                    <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num')} ${terr.number}</h3>
+                                    ${cityStr}
+                                </div>
                                 <button onclick="markTerritoryReturned('${docSnap.id}')" class="text-[9px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-md uppercase transition-colors outline-none shadow-sm">${window.t('return_terr_btn')}</button>
                             </div>
                             <div class="flex items-center gap-3">
@@ -1312,24 +1329,6 @@ function loadPersonalData() {
     } catch(e) {}
 }
 
-window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
-window.openReportHistory = () => document.getElementById('report-history-modal').classList.replace('hidden', 'flex');
-window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
-
-// 🔥 ОТКРЫТИЕ МОДАЛКИ СВОБОДНЫХ УЧАСТКОВ (ПЛИТКИ С КАРТИНКАМИ)
-// 🔥 Глобальный кэш карт теперь сохраняет город
-try {
-    onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
-        window.allMapsCache = {};
-        mapSnap.forEach(d => { 
-            window.allMapsCache[d.id] = { 
-                url: d.data().url, 
-                imageUrl: d.data().imageUrl,
-                city: d.data().city || 'Без города'
-            }; 
-        });
-    });
-} catch(e) {}
 
 // Глобальные переменные для фильтров
 window.availableTerritoriesData = [];
@@ -1389,7 +1388,7 @@ window.openTakeTerrModal = async () => {
         window.currentTerrCityFilter = 'all';
         window.showRecommendedTerrOnly = false;
 
-        renderAvailableTerritoriesUI();
+        window.renderAvailableTerritoriesUI();
 
     } catch (e) {
         listContainer.innerHTML = `<p class="text-xs font-bold uppercase tracking-widest text-red-500 text-center py-4">Ошибка загрузки</p>`;
@@ -1499,99 +1498,9 @@ window.takeTerritory = async (num, btn) => {
     }
 };
 
-window.closeModals = () => {
-    const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
-    const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
-    const m3 = document.getElementById('duties-modal'); if(m3) m3.classList.replace('flex', 'hidden');
-    const m4 = document.getElementById('user-msg-modal'); if(m4) m4.classList.replace('flex', 'hidden');
-    const m5 = document.getElementById('take-terr-modal'); if(m5) m5.classList.replace('flex', 'hidden');
-};
-window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
-
-window.logout = async () => {
-    const uid = localStorage.getItem('userId');
-    if (uid) { try { await updateDoc(doc(db, "users", uid), { pushToken: "" }); } catch (e) {} }
-    localStorage.clear(); window.location.href = 'login.html'; 
-};
-
-let selectedImageFile = null;
-window.previewImage = (input) => {
-    if (input.files && input.files[0]) {
-        selectedImageFile = input.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            document.getElementById('image-preview').src = e.target.result;
-            document.getElementById('image-preview-container').classList.remove('hidden');
-        };
-        reader.readAsDataURL(selectedImageFile);
-    }
-};
-
-window.removeImage = () => {
-    selectedImageFile = null;
-    document.getElementById('news-image').value = '';
-    document.getElementById('image-preview-container').classList.add('hidden');
-};
-
-window.publishNews = async () => {
-    const inputRu = document.getElementById('news-input-ru'); const inputCs = document.getElementById('news-input-cs');
-    const textRu = inputRu ? inputRu.value.trim() : ''; const textCs = inputCs ? inputCs.value.trim() : '';
-    if (!textRu && !textCs && !selectedImageFile) return alert(window.t('alert_add_text_photo'));
-
-    const btn = document.getElementById('publish-news-btn');
-    if(btn) { btn.innerText = window.t('loading'); btn.disabled = true; }
-
-    try {
-        let imageUrl = "";
-        if (selectedImageFile) {
-            const fileName = Date.now() + '_' + selectedImageFile.name;
-            const storageRef = ref(storage, 'news/' + fileName);
-            await uploadBytes(storageRef, selectedImageFile);
-            imageUrl = await getDownloadURL(storageRef);
-        }
-
-        await addDoc(collection(db, "section_content"), { section: 'news', text_ru: textRu, text_cs: textCs, text: textRu || textCs, imageUrl: imageUrl, createdAt: new Date().toISOString() });
-        
-        if(inputRu) inputRu.value = ''; if(inputCs) inputCs.value = '';
-        removeImage();
-        if(btn) {
-            btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success')}`;
-            setTimeout(() => { btn.innerText = window.t('publish'); btn.disabled = false; }, 2000);
-        }
-    } catch (e) { alert(window.t('alert_publish_error')); if(btn) { btn.innerText = window.t('publish'); btn.disabled = false; } }
-};
-
-window.deleteNews = async (id) => {
-    if (confirm(window.t('confirm_delete_news'))) { try { await deleteDoc(doc(db, "section_content", id)); } catch (e) { alert(window.t('error_network')); } }
-};
-
-window.closeTakeTerrModal = () => {
-    const modal = document.getElementById('take-terr-modal');
-    if(modal) modal.classList.replace('flex', 'hidden');
-};
-
-// 🔥 ФУНКЦИЯ ДЛЯ ВЗЯТИЯ УЧАСТКА
-window.takeTerritory = async (num, btn) => {
-    btn.disabled = true;
-    btn.innerText = '...';
-    try {
-        await addDoc(collection(db, "territories"), {
-            number: Number(num),
-            userId: userId,
-            userName: currentUserData.name,
-            status: "active",
-            issuedAt: new Date().toISOString()
-        });
-        window.showToast(`Участок №${num} успешно закреплен за вами! ✅`, 'success');
-        window.closeTakeTerrModal();
-    } catch (e) {
-        alert('Ошибка сети!');
-        btn.disabled = false;
-        btn.innerText = 'ВЗЯТЬ';
-    }
-};
-
-// ЗАКРЫТИЕ ВСЕХ ОКОН
+window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
+window.openReportHistory = () => document.getElementById('report-history-modal').classList.replace('hidden', 'flex');
+window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
 window.closeModals = () => {
     const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
     const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
