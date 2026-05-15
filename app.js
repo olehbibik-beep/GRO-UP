@@ -1317,72 +1317,252 @@ window.openReportHistory = () => document.getElementById('report-history-modal')
 window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
 
 // 🔥 ОТКРЫТИЕ МОДАЛКИ СВОБОДНЫХ УЧАСТКОВ (ПЛИТКИ С КАРТИНКАМИ)
+// 🔥 Глобальный кэш карт теперь сохраняет город
+try {
+    onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
+        window.allMapsCache = {};
+        mapSnap.forEach(d => { 
+            window.allMapsCache[d.id] = { 
+                url: d.data().url, 
+                imageUrl: d.data().imageUrl,
+                city: d.data().city || 'Без города'
+            }; 
+        });
+    });
+} catch(e) {}
+
+// Глобальные переменные для фильтров
+window.availableTerritoriesData = [];
+window.currentTerrCityFilter = 'all';
+window.showRecommendedTerrOnly = false;
+
+// 🔥 ОТКРЫТИЕ МОДАЛКИ СВОБОДНЫХ УЧАСТКОВ И РАСЧЕТ ДАТ
 window.openTakeTerrModal = async () => {
     document.getElementById('take-terr-modal').classList.replace('hidden', 'flex');
     const listContainer = document.getElementById('available-terr-list');
     listContainer.innerHTML = `<p class="text-xs italic text-slate-400 text-center py-4 font-bold uppercase tracking-widest animate-pulse">${window.t('loading')}</p>`;
     
     try {
-        // 1. Узнаем какие участки заняты
-        const activeQuery = query(collection(db, "territories"), where("status", "==", "active"));
-        const activeSnap = await getDocs(activeQuery);
+        // 1. Узнаем какие участки СЕЙЧАС заняты
+        const activeSnap = await getDocs(query(collection(db, "territories"), where("status", "==", "active")));
         const activeNumbers = [];
         activeSnap.forEach(doc => activeNumbers.push(Number(doc.data().number)));
 
-        // 2. Отбираем только свободные
-        let availableMaps = [];
+        // 2. Достаем ВСЮ историю сданных участков, чтобы узнать, когда их брали в последний раз
+        const returnedSnap = await getDocs(query(collection(db, "territories"), where("status", "==", "returned")));
+        const lastWorkedMap = {};
+        returnedSnap.forEach(doc => {
+            const d = doc.data();
+            if(d.returnedAt) {
+                const dDate = new Date(d.returnedAt).getTime();
+                // Запоминаем самую свежую дату сдачи для каждого номера
+                if(!lastWorkedMap[d.number] || lastWorkedMap[d.number] < dDate) {
+                    lastWorkedMap[d.number] = dDate;
+                }
+            }
+        });
+
+        // 3. Формируем список свободных участков
+        window.availableTerritoriesData = [];
         Object.keys(window.allMapsCache).forEach(numStr => {
             const num = Number(numStr);
             if (!activeNumbers.includes(num)) {
-                availableMaps.push({ 
+                let lastW = lastWorkedMap[num] || 0; // 0 = никогда не брали
+                window.availableTerritoriesData.push({ 
                     num: num, 
                     url: window.allMapsCache[numStr].url, 
                     img: window.allMapsCache[numStr].imageUrl,
-                    city: window.allMapsCache[numStr].city || '' // На будущее, если добавим города
+                    city: window.allMapsCache[numStr].city,
+                    lastWorked: lastW
                 });
             }
         });
 
-        availableMaps.sort((a,b) => a.num - b.num);
+        // 4. Кто получает огонек 🔥 (Не брали > 90 дней или вообще никогда)
+        const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        window.availableTerritoriesData.forEach(m => {
+            m.isFire = (m.lastWorked === 0) || ((now - m.lastWorked) > ninetyDaysMs);
+        });
 
-        if (availableMaps.length === 0) {
-            listContainer.innerHTML = `<p class="text-xs font-bold text-amber-600 uppercase tracking-widest text-center py-6 bg-amber-50 rounded-xl border border-amber-100">Нет свободных участков</p>`;
-            return;
-        }
+        // Сбрасываем фильтры при открытии
+        window.currentTerrCityFilter = 'all';
+        window.showRecommendedTerrOnly = false;
 
-        // 3. Рисуем сетку плиточек (grid)
-        let html = '<div class="grid grid-cols-2 gap-3 pb-2">';
-        
-        availableMaps.forEach(m => {
-            // Если есть картинка - показываем, если нет - ставим красивую заглушку
+        renderAvailableTerritoriesUI();
+
+    } catch (e) {
+        listContainer.innerHTML = `<p class="text-xs font-bold uppercase tracking-widest text-red-500 text-center py-4">Ошибка загрузки</p>`;
+    }
+};
+
+// 🔥 ОТРИСОВКА ИНТЕРФЕЙСА УЧАСТКОВ С ФИЛЬТРАМИ
+window.renderAvailableTerritoriesUI = () => {
+    const listContainer = document.getElementById('available-terr-list');
+    let filtered = window.availableTerritoriesData;
+
+    // Применяем фильтр по Городу
+    if (window.currentTerrCityFilter !== 'all') {
+        filtered = filtered.filter(m => m.city === window.currentTerrCityFilter);
+    }
+    
+    // Применяем фильтр "Давно не брали"
+    if (window.showRecommendedTerrOnly) {
+        filtered = filtered.filter(m => m.isFire);
+        // Сортируем так, чтобы самые старые были первыми
+        filtered.sort((a,b) => a.lastWorked - b.lastWorked);
+    } else {
+        // Обычная сортировка по номерам
+        filtered.sort((a,b) => a.num - b.num);
+    }
+
+    // Собираем список уникальных городов для кнопок
+    const cities = [...new Set(window.availableTerritoriesData.map(m => m.city))].sort();
+
+    // 1. КНОПКИ ФИЛЬТРОВ
+    let filtersHtml = `<div class="flex flex-nowrap overflow-x-auto gap-2 pb-3 mb-2 custom-scrollbar shrink-0">`;
+    
+    // Кнопка Огонек 🔥
+    const fireClass = window.showRecommendedTerrOnly ? 'bg-rose-500 text-white shadow-md' : 'bg-rose-50 text-rose-600 border border-rose-200';
+    filtersHtml += `<button onclick="window.showRecommendedTerrOnly = !window.showRecommendedTerrOnly; window.renderAvailableTerritoriesUI()" class="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors outline-none ${fireClass}">🔥 Рекомендуем</button>`;
+
+    // Кнопка "Все"
+    const allClass = window.currentTerrCityFilter === 'all' ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-50 text-slate-600 border border-slate-200';
+    filtersHtml += `<button onclick="window.currentTerrCityFilter = 'all'; window.renderAvailableTerritoriesUI()" class="shrink-0 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors outline-none ${allClass}">Все</button>`;
+
+    // Кнопки городов
+    cities.forEach(city => {
+        const cityClass = window.currentTerrCityFilter === city ? 'bg-indigo-500 text-white shadow-md' : 'bg-slate-50 text-slate-600 border border-slate-200';
+        const displayCity = city === 'Без города' ? 'Прочие' : city;
+        filtersHtml += `<button onclick="window.currentTerrCityFilter = '${city}'; window.renderAvailableTerritoriesUI()" class="shrink-0 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors outline-none ${cityClass}">${displayCity}</button>`;
+    });
+    filtersHtml += `</div>`;
+
+    // 2. СЕТКА ПЛИТОЧЕК
+    let gridHtml = '';
+    if (filtered.length === 0) {
+        gridHtml = `<p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">Ничего не найдено</p>`;
+    } else {
+        gridHtml = '<div class="grid grid-cols-2 gap-3 pb-2">';
+        filtered.forEach(m => {
             const imgHtml = m.img 
                 ? `<img src="${m.img}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />` 
-                : `<div class="w-full h-full flex flex-col items-center justify-center bg-slate-200 text-slate-400"><svg class="w-6 h-6 mb-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg><span class="text-[8px] uppercase font-bold tracking-widest opacity-50">Нет фото</span></div>`;
+                : `<div class="w-full h-full flex flex-col items-center justify-center bg-slate-200 text-slate-400"><svg class="w-6 h-6 mb-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>`;
             
+            const fireBadge = m.isFire ? `<div class="absolute top-2 right-2 bg-white/95 backdrop-blur-sm p-1.5 rounded-full shadow-md z-10 animate-pulse border border-rose-100" title="Давно не брали"><span class="text-xs leading-none">🔥</span></div>` : '';
             const cityHtml = m.city ? `<span class="block text-[8px] text-emerald-100 font-medium truncate mt-0.5">${m.city}</span>` : '';
 
-            html += `
-            <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow transition-all flex flex-col relative group">
+            gridHtml += `
+            <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col relative group">
                 <div class="h-24 w-full relative overflow-hidden bg-slate-100 cursor-pointer" onclick="window.open('${m.url}', '_blank')">
+                    ${fireBadge}
                     ${imgHtml}
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"></div>
-                    <div class="absolute bottom-2 left-2 right-2 text-white">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent pointer-events-none"></div>
+                    <div class="absolute bottom-2 left-2 right-2 text-white pointer-events-none">
                         <span class="block font-black text-lg drop-shadow-md leading-none">№ ${m.num}</span>
                         ${cityHtml}
                     </div>
                 </div>
                 <div class="p-2 flex justify-center items-center bg-white border-t border-slate-100">
-                    <button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white font-black text-[10px] uppercase tracking-widest py-2 rounded-xl transition-colors outline-none shadow-sm active:scale-95 border border-emerald-100 hover:border-emerald-500">Взять</button>
+                    <button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-xl transition-colors outline-none shadow-sm active:scale-95 border border-emerald-100 hover:border-emerald-500">Взять</button>
                 </div>
             </div>`;
         });
-        
-        html += '</div>';
-        listContainer.innerHTML = html;
-
-    } catch (e) {
-        listContainer.innerHTML = `<p class="text-xs font-bold uppercase tracking-widest text-red-500 text-center py-4">Ошибка загрузки</p>`;
+        gridHtml += '</div>';
     }
+
+    listContainer.innerHTML = filtersHtml + gridHtml;
+};
+
+window.closeTakeTerrModal = () => {
+    const modal = document.getElementById('take-terr-modal');
+    if(modal) modal.classList.replace('flex', 'hidden');
+};
+
+window.takeTerritory = async (num, btn) => {
+    btn.disabled = true;
+    btn.innerText = '...';
+    try {
+        await addDoc(collection(db, "territories"), {
+            number: Number(num),
+            userId: userId,
+            userName: currentUserData.name,
+            status: "active",
+            issuedAt: new Date().toISOString()
+        });
+        window.showToast(`Участок №${num} успешно закреплен! ✅`, 'success');
+        window.closeTakeTerrModal();
+    } catch (e) {
+        alert('Ошибка сети!');
+        btn.disabled = false;
+        btn.innerText = 'ВЗЯТЬ';
+    }
+};
+
+window.closeModals = () => {
+    const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
+    const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
+    const m3 = document.getElementById('duties-modal'); if(m3) m3.classList.replace('flex', 'hidden');
+    const m4 = document.getElementById('user-msg-modal'); if(m4) m4.classList.replace('flex', 'hidden');
+    const m5 = document.getElementById('take-terr-modal'); if(m5) m5.classList.replace('flex', 'hidden');
+};
+window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
+
+window.logout = async () => {
+    const uid = localStorage.getItem('userId');
+    if (uid) { try { await updateDoc(doc(db, "users", uid), { pushToken: "" }); } catch (e) {} }
+    localStorage.clear(); window.location.href = 'login.html'; 
+};
+
+let selectedImageFile = null;
+window.previewImage = (input) => {
+    if (input.files && input.files[0]) {
+        selectedImageFile = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('image-preview').src = e.target.result;
+            document.getElementById('image-preview-container').classList.remove('hidden');
+        };
+        reader.readAsDataURL(selectedImageFile);
+    }
+};
+
+window.removeImage = () => {
+    selectedImageFile = null;
+    document.getElementById('news-image').value = '';
+    document.getElementById('image-preview-container').classList.add('hidden');
+};
+
+window.publishNews = async () => {
+    const inputRu = document.getElementById('news-input-ru'); const inputCs = document.getElementById('news-input-cs');
+    const textRu = inputRu ? inputRu.value.trim() : ''; const textCs = inputCs ? inputCs.value.trim() : '';
+    if (!textRu && !textCs && !selectedImageFile) return alert(window.t('alert_add_text_photo'));
+
+    const btn = document.getElementById('publish-news-btn');
+    if(btn) { btn.innerText = window.t('loading'); btn.disabled = true; }
+
+    try {
+        let imageUrl = "";
+        if (selectedImageFile) {
+            const fileName = Date.now() + '_' + selectedImageFile.name;
+            const storageRef = ref(storage, 'news/' + fileName);
+            await uploadBytes(storageRef, selectedImageFile);
+            imageUrl = await getDownloadURL(storageRef);
+        }
+
+        await addDoc(collection(db, "section_content"), { section: 'news', text_ru: textRu, text_cs: textCs, text: textRu || textCs, imageUrl: imageUrl, createdAt: new Date().toISOString() });
+        
+        if(inputRu) inputRu.value = ''; if(inputCs) inputCs.value = '';
+        removeImage();
+        if(btn) {
+            btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success')}`;
+            setTimeout(() => { btn.innerText = window.t('publish'); btn.disabled = false; }, 2000);
+        }
+    } catch (e) { alert(window.t('alert_publish_error')); if(btn) { btn.innerText = window.t('publish'); btn.disabled = false; } }
+};
+
+window.deleteNews = async (id) => {
+    if (confirm(window.t('confirm_delete_news'))) { try { await deleteDoc(doc(db, "section_content", id)); } catch (e) { alert(window.t('error_network')); } }
 };
 
 window.closeTakeTerrModal = () => {
