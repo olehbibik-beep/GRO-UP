@@ -187,7 +187,7 @@ window.showToast = (message, type = 'info') => {
     if (!container) return;
     const toast = document.createElement('div');
     const bgColor = type === 'warning' ? 'bg-amber-500' : 'bg-slate-800';
-    toast.className = `${bgColor} text-white px-5 py-4 rounded-xl shadow-2xl text-base font-black text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
+    toast.className = `${bgColor} text-white px-5 py-4 rounded-xl shadow-lg text-base font-black text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
     toast.innerText = message;
     container.appendChild(toast);
     requestAnimationFrame(() => toast.classList.remove('-translate-y-10', 'opacity-0'));
@@ -261,8 +261,8 @@ window.handleZoomClick = (event) => {
     
     if (!window.zoomStateReady) {
         if(zoomBtn) {
-            zoomBtn.classList.remove('bg-[#10b981]', 'border-[#34d399]');
-            zoomBtn.classList.add('bg-[#34d399]', 'border-[#6ee7b7]');
+            zoomBtn.classList.remove('bg-[#10b981]');
+            zoomBtn.classList.add('bg-[#34d399]');
         }
         if(hiddenInfo) { hiddenInfo.classList.add('hidden'); hiddenInfo.classList.remove('flex'); }
         if(revealedInfo) { revealedInfo.classList.remove('hidden'); revealedInfo.classList.add('flex'); }
@@ -287,8 +287,8 @@ function resetZoomUI() {
     const revealedInfo = document.getElementById('zoom-info-revealed');
     
     if(zoomBtn) {
-        zoomBtn.classList.add('bg-[#10b981]', 'border-[#34d399]');
-        zoomBtn.classList.remove('bg-[#34d399]', 'border-[#6ee7b7]');
+        zoomBtn.classList.add('bg-[#10b981]');
+        zoomBtn.classList.remove('bg-[#34d399]');
     }
     if(hiddenInfo) { hiddenInfo.classList.remove('hidden'); hiddenInfo.classList.add('flex'); }
     if(revealedInfo) { revealedInfo.classList.add('hidden'); revealedInfo.classList.remove('flex'); }
@@ -454,6 +454,7 @@ if (userId) {
             renderStandCard();
             listenForMessages(); // Включаем "уши" для получения сообщений!
             
+            // ПРИНУДИТЕЛЬНО ОТКРЫВАЕМ ДОМИК ПРИ ЗАГРУЗКЕ
             window.switchTab('home');
         }
     });
@@ -523,7 +524,6 @@ function renderStandCard() {
     });
 }
 
-// ЗАМЕНИТЬ ПОЛНОСТЬЮ ЭТУ ФУНКЦИЮ В app.js
 function updateStandWidgetUI() {
     const container = document.getElementById('stand-widget-container');
     if (!container) return;
@@ -554,24 +554,24 @@ function updateStandWidgetUI() {
     let contentHtml = '';
 
     if (isApprovedForStand) {
-        buttonHtml = `<button onclick="window.location.href='stands.html'" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-lg text-xs uppercase tracking-widest outline-none transition-colors mt-5 shadow-md active:scale-[0.98]">${window.t('stand_signup')}</button>`;
+        buttonHtml = `<button onclick="window.location.href='stands.html'" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mt-4 shadow-sm">${window.t('stand_signup')}</button>`;
         
         let progressColor = 'bg-emerald-500';
-        let txtColor = 'text-emerald-800';
-        if (monthCount >= 20) { progressColor = 'bg-rose-500'; txtColor = 'text-rose-800'; }
-        else if (monthCount >= 10) { progressColor = 'bg-amber-500'; txtColor = 'text-amber-800'; }
+        let txtColor = 'text-emerald-700';
+        if (monthCount >= 20) { progressColor = 'bg-rose-500'; txtColor = 'text-rose-700'; }
+        else if (monthCount >= 10) { progressColor = 'bg-amber-500'; txtColor = 'text-amber-700'; }
         
         let progressPercent = (monthCount / 50) * 100;
         if (progressPercent > 100) progressPercent = 100;
 
         const statsHtml = `
-            <div class="mt-5 pt-4 border-t border-slate-800/10 relative z-10">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-[9px] font-bold text-slate-800/70 uppercase tracking-widest">${window.t('stand_month_shifts')}</span>
-                    <span class="${txtColor} font-black text-xs bg-white/80 border border-slate-800/10 px-2.5 py-1 rounded shadow-sm">${monthCount}</span>
+            <div class="mt-4 pt-4 border-t border-slate-100">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_month_shifts')}</span>
+                    <span class="${txtColor} font-black text-xs bg-slate-50 border border-slate-200 px-2 py-0.5 rounded shadow-sm">${monthCount}</span>
                 </div>
-                <div class="w-full bg-slate-800/10 rounded-full h-1.5 overflow-hidden flex shadow-inner">
-                    <div class="${progressColor} h-1.5 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
+                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex shadow-inner">
+                    <div class="${progressColor} h-1.5 rounded-full transition-all" style="width: ${progressPercent}%"></div>
                 </div>
             </div>
         `;
@@ -585,43 +585,41 @@ function updateStandWidgetUI() {
 
                 const dayNum = parseInt(parts[2], 10);
                 const monthIndex = parseInt(parts[1], 10) - 1;
-                const locName = shift.location && shift.location !== "undefined" ? shift.location : "CupVital";
+                const locName = shift.location && shift.location !== "undefined" ? shift.location : "ML - CupVital";
                 const monthNameArr = window.t('months');
                 const monthName = (Array.isArray(monthNameArr) && monthNameArr[monthIndex]) ? monthNameArr[monthIndex] : parts[1];
 
                 shiftsListHtml += `
-                    <div class="w-full bg-white/80 border border-slate-800/10 flex items-center p-2 rounded-lg mb-2 last:mb-0 shadow-sm hover:bg-white active:bg-white transition-colors">
-                        <div class="flex flex-col items-center justify-center w-10 h-10 bg-slate-900 text-white rounded shrink-0 shadow-inner">
-                            <span class="text-[7px] uppercase font-bold leading-none mb-0.5 tracking-widest text-slate-300">${monthName}</span>
+                    <div class="w-full bg-slate-50 border border-slate-200 flex items-center p-2 rounded-md mb-2 last:mb-0 shadow-sm hover:bg-white transition-colors">
+                        <div class="flex flex-col items-center justify-center w-10 h-10 bg-slate-800 text-white rounded border border-slate-700 shrink-0 shadow-inner">
+                            <span class="text-[7px] uppercase font-bold leading-none mb-0.5 tracking-widest">${monthName}</span>
                             <span class="text-base font-black leading-none">${dayNum}</span>
                         </div>
                         <div class="ml-3 flex flex-col truncate w-full">
-                            <p class="font-black text-black text-sm truncate leading-tight">${locName}</p>
-                            <p class="text-[10px] md:text-xs font-bold text-slate-700 mt-1 font-mono tracking-tight">${shift.time}</p>
+                            <p class="font-black text-slate-800 text-xs truncate leading-tight">${locName}</p>
+                            <p class="text-[10px] font-bold text-slate-500 mt-0.5 font-mono">${shift.time}</p>
                         </div>
                     </div>
                 `;
             });
-            contentHtml = `<div class="mt-4 pt-1 relative z-10"><p class="text-[9px] font-bold text-slate-800/70 uppercase tracking-widest mb-2.5">${window.t('stand_upcoming')}</p>${shiftsListHtml}</div>${statsHtml}`;
+            contentHtml = `<div class="mt-3"><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">${window.t('stand_upcoming')}</p>${shiftsListHtml}</div>${statsHtml}`;
         } else {
-            contentHtml = `<div class="w-full p-6 bg-white/60 border border-slate-800/10 flex flex-col items-center justify-center rounded-lg mt-4 shadow-sm relative z-10"><svg class="w-8 h-8 text-slate-400 mb-2 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="text-xs font-bold text-slate-500 uppercase tracking-widest">${window.t('stand_no_records')}</p></div>${statsHtml}`;
+            contentHtml = `<div class="w-full p-6 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center rounded-md mt-3 shadow-sm"><svg class="w-8 h-8 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_no_records')}</p></div>${statsHtml}`;
         }
     } else {
-        if (isStandReqPending) buttonHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black py-3 rounded-lg text-xs uppercase tracking-widest outline-none mt-4 shadow-sm">${window.t('stand_pending')}</button>`;
-        else buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-slate-900 hover:bg-black text-white font-black py-3 rounded-lg text-xs uppercase tracking-widest outline-none transition-colors mt-4 shadow-md active:scale-[0.98]">${window.t('stand_apply')}</button>`;
-        contentHtml = `<div class="w-full h-28 bg-white/60 border border-slate-800/10 flex items-center justify-center rounded-lg mt-4 shadow-sm relative z-10"><svg class="w-10 h-10 text-slate-400 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>`;
+        if (isStandReqPending) buttonHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none mt-3 shadow-sm">${window.t('stand_pending')}</button>`;
+        else buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mt-3 shadow-sm">${window.t('stand_apply')}</button>`;
+        contentHtml = `<div class="w-full h-24 bg-slate-50 border border-slate-200 flex items-center justify-center rounded-md mt-3 shadow-sm"><svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>`;
     }
 
-    // 🔥 СТИЛИЗАЦИЯ ПЛИТОЧКИ: ПОЛУПРОЗРАЧНАЯ БЕЛАЯ С РАЗМЫТИЕМ ФОНА (СТЕКЛО)
     container.innerHTML = `
-        <div class="relative bg-white/70 backdrop-blur-sm p-5 md:p-6 rounded-3xl border border-white/50 w-full">
-            <div class="flex justify-between items-center border-b border-slate-800/10 pb-3.5 relative z-10">
-                <h3 class="font-black text-black text-base md:text-lg flex items-center gap-2.5">
-                    <svg class="w-6 h-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden p-4 w-full shadow-sm">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-black text-slate-800 text-base md:text-lg flex items-center gap-2">
+                    <svg class="w-5 h-5 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                     ${window.t('stand_title')}
                 </h3>
             </div>
-            
             ${contentHtml}
             ${buttonHtml}
         </div>
@@ -637,6 +635,8 @@ window.requestStand = async (btn) => {
         setTimeout(() => { btn.classList.replace('bg-emerald-500', 'bg-slate-100'); btn.classList.replace('text-white', 'text-slate-400'); btn.innerText = window.t('stand_pending'); }, 2000);
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
+
+// 🔥 ПРОГРАММА СОБРАНИЯ (БЕЗ РАМОК, КРУПНЫЕ ШРИФТЫ, ИМЕНА ПОД ПУНКТАМИ)
 
 function getISOWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
@@ -738,7 +738,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     }).join('');
 
     const minRows = minRowsRaw ? `
-        <div class="flex flex-col bg-white/60 shadow-sm rounded-xl mt-1.5 mb-2 mx-1 overflow-hidden">
+        <div class="flex flex-col bg-white/60 border border-slate-200/50 shadow-sm rounded-xl mt-1.5 mb-2 mx-1 overflow-hidden">
             ${minRowsRaw}
         </div>
     ` : '';
@@ -754,13 +754,13 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const cbsNameColor = isCbsMe ? 'font-black text-black' : 'font-bold text-slate-800';
     const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
-    // ВЫХОДНЫЕ: Публичная речь
+    // 🔥 ВЫХОДНЫЕ: Публичная речь (Тоже белая карточка)
     const weTalkMe = d.we_talk_speaker === myName;
     const wtTitleColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-900';
     const wtNameColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-800';
 
     const we_talk = `
-        <div class="flex flex-col py-2.5 px-3 bg-white/60 hover:bg-white active:bg-white shadow-sm transition-colors rounded-xl mt-2 mb-1 mx-1 cursor-pointer">
+        <div class="flex flex-col py-2.5 px-3 bg-white/60 hover:bg-white active:bg-white border border-slate-200/50 shadow-sm transition-colors rounded-xl mt-2 mb-1 mx-1 cursor-pointer">
             <span class="text-sm md:text-base ${wtTitleColor} uppercase leading-tight">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
             <span class="text-sm md:text-base ${wtNameColor} mt-1 ml-4">${d.we_talk_speaker || '-'}</span>
         </div>
@@ -774,7 +774,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     return `
         <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-4 px-1">
             
-            <div class="flex items-center justify-between pb-3 mb-2 mx-2 border-b border-slate-300">
+            <div class="flex items-center justify-between pb-3 mb-2 mx-2">
                 <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
                 <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
             </div>
@@ -811,7 +811,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 
         <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-4 px-1">
             
-            <div class="flex items-center justify-between pb-3 mb-2 mx-2 border-b border-slate-300">
+            <div class="flex items-center justify-between pb-3 mb-2 mx-2">
                 <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
                 <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
             </div>
@@ -834,7 +834,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
             </div>
         </div>
     `;
-}}
+}
 
 function loadPersonalData() {
     onSnapshot(doc(db, "reports", `${userId}_${strictMonthId}`), (docSnap) => {
@@ -1154,6 +1154,7 @@ function loadPersonalData() {
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 ev.id = docSnap.id;
+                // ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
                 if (ev.date === todayStr) {
                     todayEvents.push(ev);
                 }

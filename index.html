@@ -64,7 +64,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
             </div>
         </button>
-        <button onclick="window.location.href='info.html'" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
+        <button onclick="switchTab('info', this)" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
             <div class="nav-icon-container text-slate-500 hover:text-slate-300 p-2.5 rounded-full transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
             </div>
@@ -82,7 +82,7 @@
             <div id="tab-home" class="tab-content active">
                 <div class="flex flex-col">
                     
-                    <div class="flex bg-slate-200/80 rounded-xl min-h-[90px] w-full mx-4 md:mx-0 mb-4 overflow-hidden" style="width: calc(100% - 2rem);">
+                    <div class="flex bg-slate-200/80 rounded-xl shadow-sm min-h-[90px] w-full mx-4 md:mx-0 mb-4 overflow-hidden" style="width: calc(100% - 2rem);">
                         <div id="calendar-events" class="flex-grow flex flex-col justify-center bg-transparent">
                             <p class="p-4 text-xs text-slate-500 italic text-center" data-lang="loading_events">Загрузка встреч...</p>
                         </div>
@@ -94,7 +94,7 @@
                     </div>
 
                     <div class="mx-4 md:mx-0 mb-4">
-                        <div class="w-full bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden h-[80px] cursor-pointer hover:bg-slate-50 transition-colors" onclick="openDutiesModal()">
+                        <div class="w-full bg-white rounded-xl border border-slate-200 flex flex-col shadow-sm overflow-hidden h-[80px] cursor-pointer hover:bg-slate-50 transition-colors" onclick="openDutiesModal()">
                             <div id="dashboard-duties" class="flex-grow flex flex-col justify-center h-full min-h-0">
                                 <p class="text-[9px] text-slate-400 italic text-center" data-lang="loading_duties">Загрузка...</p>
                             </div>
@@ -102,21 +102,21 @@
                     </div>
 
                     <div class="w-full relative group mb-4">
-                        <button onclick="scrollNews(-240)" class="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-slate-700 border border-slate-200 rounded-full w-10 h-10 items-center justify-center outline-none opacity-80 hover:opacity-100 transition-opacity -ml-4"><svg class="w-6 h-6 pr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg></button>
+                        <button onclick="scrollNews(-240)" class="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-slate-700 border border-slate-200 rounded-full w-10 h-10 items-center justify-center outline-none opacity-80 hover:opacity-100 transition-opacity shadow-sm -ml-4"><svg class="w-6 h-6 pr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg></button>
                         <div id="content-news" class="flex flex-nowrap overflow-x-auto gap-4 pb-2 px-4 md:px-0 snap-x snap-mandatory custom-scrollbar items-stretch scroll-smooth w-full"><p class="italic text-slate-500 w-full text-center py-4 text-sm" data-lang="loading_feed">Загрузка ленты...</p></div>
-                        <button onclick="scrollNews(240)" class="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-slate-700 border border-slate-200 rounded-full w-10 h-10 items-center justify-center outline-none opacity-80 hover:opacity-100 transition-opacity -mr-4"><svg class="w-6 h-6 pl-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></button>
+                        <button onclick="scrollNews(240)" class="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-slate-700 border border-slate-200 rounded-full w-10 h-10 items-center justify-center outline-none opacity-80 hover:opacity-100 transition-opacity shadow-sm -mr-4"><svg class="w-6 h-6 pl-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></button>
                     </div>
 
                     <div class="px-4 md:px-0 mb-4">
-                        <div class="w-full bg-[#10b981] rounded-xl flex flex-col overflow-hidden h-16 cursor-pointer hover:bg-[#34d399] transition-colors group" onclick="handleZoomClick(event)" id="zoom-btn-element">
+                        <div class="w-full bg-[#10b981] rounded-xl shadow-sm flex flex-col overflow-hidden h-16 cursor-pointer hover:bg-[#34d399] transition-colors group" onclick="handleZoomClick(event)" id="zoom-btn-element">
                             <div id="zoom-info-hidden" class="flex flex-col items-center justify-center h-full text-white">
-                                <span class="font-black text-xl tracking-widest leading-none flex items-center gap-2">
+                                <span class="font-black text-xl tracking-widest leading-none drop-shadow-sm flex items-center gap-2">
                                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                                     ZOOM
                                 </span>
                             </div>
                             <div id="zoom-info-revealed" class="hidden flex-row items-center justify-between h-full text-white px-5 bg-[#34d399]">
-                                <span class="font-black text-base uppercase tracking-widest" data-lang="zoom_launch">ЗАПУСТИТЬ</span>
+                                <span class="font-black text-base uppercase tracking-widest drop-shadow-sm" data-lang="zoom_launch">ЗАПУСТИТЬ</span>
                                 <div class="text-white text-right">
                                     <span class="block text-xs md:text-sm font-normal leading-tight">ID: <span id="dash-zoom-id" class="font-bold">...</span></span>
                                     <span class="block text-xs md:text-sm font-normal leading-tight">Pass: <span id="dash-zoom-pass" class="font-bold">...</span></span>
@@ -125,7 +125,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-4 md:p-6 rounded-xl border border-slate-200 flex flex-col mx-4 md:mx-0 mb-4">
+                    <div class="bg-white p-4 md:p-6 rounded-xl border border-slate-200 flex flex-col mx-4 md:mx-0 shadow-sm mb-4">
                         <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
                             <h3 class="text-base md:text-xl font-black text-slate-800 flex items-center gap-2">
                                 <svg class="w-6 h-6 text-ui-report" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -155,11 +155,11 @@
                             <p id="last-report-log" class="text-[9px] text-slate-400 text-center font-bold mt-1 min-h-[14px]"></p>
                         </fieldset>
                         <div class="mt-4 flex gap-2 w-full h-12">
-                            <button onclick="submitReport()" id="submit-report-btn" class="w-4/5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition-colors duration-200 text-sm active:bg-slate-700 outline-none flex items-center justify-center gap-1.5">
+                            <button onclick="submitReport()" id="submit-report-btn" class="w-4/5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition-colors duration-200 text-sm active:bg-slate-700 outline-none flex items-center justify-center gap-1.5 shadow-sm">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                 <span data-lang="fill_btn">Заполнить</span>
                             </button>
-                            <button onclick="openReportHistory()" class="w-1/5 bg-purple-50 hover:bg-purple-100 text-purple-600 font-bold rounded-xl transition-colors duration-200 outline-none flex items-center justify-center border border-purple-200">
+                            <button onclick="openReportHistory()" class="w-1/5 bg-purple-50 hover:bg-purple-100 text-purple-600 font-bold rounded-xl transition-colors duration-200 outline-none flex items-center justify-center border border-purple-200 shadow-sm">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                             </button>
                         </div>
@@ -175,17 +175,17 @@
                         <span data-lang="meeting_program">Программа</span>
                     </h3>
                     <div class="w-full relative group flex items-center px-4 md:px-0">
-                        <button onclick="scrollProgram(-1)" class="hidden md:flex absolute -left-6 z-10 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-full w-12 h-12 items-center justify-center outline-none transition-all"><svg class="w-6 h-6 pr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg></button>
+                        <button onclick="scrollProgram(-1)" class="hidden md:flex absolute -left-6 z-10 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-full w-12 h-12 items-center justify-center outline-none shadow-md transition-all"><svg class="w-6 h-6 pr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg></button>
                         
                         <div id="meeting-program-list" class="flex flex-nowrap overflow-x-auto gap-4 md:gap-6 pb-2 pt-2 snap-x snap-mandatory custom-scrollbar items-start scroll-smooth w-full px-4 md:px-1 -mx-4 md:mx-0">
                             <p class="text-slate-400 text-base italic text-center py-4 w-full" data-lang="loading">Загрузка...</p>
                         </div>
                         
-                        <button onclick="scrollProgram(1)" class="hidden md:flex absolute -right-6 z-10 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-full w-12 h-12 items-center justify-center outline-none transition-all"><svg class="w-6 h-6 pl-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></button>
+                        <button onclick="scrollProgram(1)" class="hidden md:flex absolute -right-6 z-10 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-full w-12 h-12 items-center justify-center outline-none shadow-md transition-all"><svg class="w-6 h-6 pl-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></button>
                     </div>
                 </div>
 
-                <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 mx-4 md:mx-0">
+                <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm mx-4 md:mx-0">
                     <h3 class="font-black text-slate-800 flex items-center gap-2 mb-6 text-xl border-b border-slate-100 pb-3">
                         <svg class="w-6 h-6 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c-1.746 0-3.332.477-4.5 1.253" /></svg>
                         <span data-lang="active_tasks">Активные задания</span>
@@ -198,10 +198,10 @@
 
             <div id="tab-territories" class="tab-content pt-4 md:pt-0 px-4 md:px-0">
                 
-                <div class="w-full flex justify-center mb-2">
-                    <img src="STEND.png" alt="Служение со стендом" class="w-full h-auto max-h-40 md:max-w-md object-contain opacity-90 drop-shadow-sm">
+                <div class="w-full flex justify-center mb-4">
+                    <img src="STEND.png" onerror="this.onerror=null; this.src='stend.png';" alt="Служение со стендом" class="w-full h-auto max-h-40 md:max-w-md object-contain opacity-90 drop-shadow-sm">
                 </div>
-                
+
                 <div id="stand-widget-container" class="mb-6"></div>
                 
                 <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -215,11 +215,20 @@
                     <div id="territories-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"><p class="text-slate-400 text-sm italic" data-lang="no_territories">У вас пока нет участков</p></div>
                 </div>
             </div>
+
+            <div id="tab-info" class="tab-content pt-4 md:pt-0 px-4 md:px-0">
+                <div class="bg-white p-8 rounded-xl border border-slate-200 shadow-sm text-center flex flex-col items-center justify-center min-h-[50vh]">
+                    <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+                    <h3 class="font-black text-slate-800 text-xl mb-2" data-lang="info_title">Информация</h3>
+                    <p class="text-xs text-slate-500 font-bold tracking-widest uppercase" data-lang="in_development">Раздел в разработке</p>
+                </div>
+            </div>
+
         </div>
     </main>
 
     <div id="profile-modal" class="fixed inset-0 bg-slate-900/60 z-[70] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeModals()">
-        <div class="bg-white w-full max-w-xs md:max-w-sm rounded-xl p-5 md:p-6 text-center relative border border-slate-200" onclick="event.stopPropagation()">
+        <div class="bg-white w-full max-w-xs md:max-w-sm rounded-xl p-5 md:p-6 text-center relative border border-slate-200 shadow-2xl" onclick="event.stopPropagation()">
             <button id="push-btn" onclick="setupNotifications()" style="display: none;" class="absolute top-4 right-5 bg-indigo-50 border border-indigo-100 text-indigo-600 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-indigo-100 transition-colors z-50 outline-none"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg></button>
 
             <h2 id="profile-name" class="text-xl font-black text-slate-800 mt-2 mb-1">Имя</h2>
@@ -230,7 +239,7 @@
                     <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest" data-lang="congregation_label">Собрание</span>
                     <span id="profile-congregation" class="font-black text-indigo-600 text-sm truncate">Загрузка...</span>
                 </div>
-                <button onclick="openQrModal()" class="w-10 h-10 bg-white border border-slate-200 rounded-md flex items-center justify-center text-slate-500 hover:text-indigo-500 hover:border-indigo-300 transition-colors outline-none shrink-0"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg></button>
+                <button onclick="openQrModal()" class="w-10 h-10 bg-white border border-slate-200 rounded-md flex items-center justify-center text-slate-500 hover:text-indigo-500 hover:border-indigo-300 transition-colors shadow-sm outline-none shrink-0"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg></button>
             </div>
             
             <div class="bg-slate-50 rounded-lg border border-slate-200 p-3 mb-5 text-left text-xs">
@@ -245,30 +254,30 @@
             </div>
 
             <div id="profile-admin-links" class="hidden grid-cols-3 gap-3 mb-5">
-                <a id="profile-admin-btn" href="admin.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-800 p-3.5 rounded-lg transition-colors" title="Админ-панель"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></a>
-                <a id="profile-calendar-btn" href="calendar.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-600 p-3.5 rounded-lg transition-colors" title="Добавить событие"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></a>
-                <a id="profile-duties-btn" href="duties.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-amber-50 hover:text-amber-600 p-3.5 rounded-lg transition-colors" title="График дежурств"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg></a>
-                <a id="profile-reports-btn" href="reports.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-purple-50 hover:text-purple-600 p-3.5 rounded-lg transition-colors" title="Отчеты группы"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg></a>
-                <a id="profile-terr-btn" href="territories.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 p-3.5 rounded-lg transition-colors" title="Управление участками"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg></a>
-                <a id="profile-school-btn" href="school.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-sky-50 hover:text-sky-600 p-3.5 rounded-lg transition-colors" title="Управление школой"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" /></svg></a>
-                <a id="profile-stand-admin-btn" href="stand-admin.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-800 hover:text-white p-3.5 rounded-lg transition-colors" title="Управление стендами"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg></a>
-                <a id="profile-schedule-btn" href="schedule-admin.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-fuchsia-50 hover:text-fuchsia-600 p-3.5 rounded-lg transition-colors" title="Планировка графика"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg></a>
+                <a id="profile-admin-btn" href="admin.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-800 p-3.5 rounded-lg transition-colors shadow-sm" title="Админ-панель"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></a>
+                <a id="profile-calendar-btn" href="calendar.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-600 p-3.5 rounded-lg transition-colors shadow-sm" title="Добавить событие"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></a>
+                <a id="profile-duties-btn" href="duties.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-amber-50 hover:text-amber-600 p-3.5 rounded-lg transition-colors shadow-sm" title="График дежурств"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg></a>
+                <a id="profile-reports-btn" href="reports.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-purple-50 hover:text-purple-600 p-3.5 rounded-lg transition-colors shadow-sm" title="Отчеты группы"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg></a>
+                <a id="profile-terr-btn" href="territories.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 p-3.5 rounded-lg transition-colors shadow-sm" title="Управление участками"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg></a>
+                <a id="profile-school-btn" href="school.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-sky-50 hover:text-sky-600 p-3.5 rounded-lg transition-colors shadow-sm" title="Управление школой"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" /></svg></a>
+                <a id="profile-stand-admin-btn" href="stand-admin.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-800 hover:text-white p-3.5 rounded-lg transition-colors shadow-sm" title="Управление стендами"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg></a>
+                <a id="profile-schedule-btn" href="schedule-admin.html" class="hidden flex-col items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:bg-fuchsia-50 hover:text-fuchsia-600 p-3.5 rounded-lg transition-colors shadow-sm" title="Планировка графика"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg></a>
             </div>
             
             <div class="bg-slate-50 rounded-lg border border-slate-200 p-3 mb-4 text-left flex justify-between items-center">
                 <span class="font-bold text-slate-500 text-[10px] uppercase" data-lang="language">Язык / Jazyk</span>
-                <select id="lang-selector" onchange="changeLanguage(this.value)" class="bg-white border border-slate-300 text-slate-700 text-xs font-black rounded-md p-1.5 outline-none focus:border-indigo-500 cursor-pointer">
+                <select id="lang-selector" onchange="changeLanguage(this.value)" class="bg-white border border-slate-300 text-slate-700 text-xs font-black rounded-md p-1.5 outline-none focus:border-indigo-500 cursor-pointer shadow-sm">
                     <option value="ru">RU</option>
                     <option value="cs">CS</option>
                 </select>
             </div>
 
-            <button onclick="logout()" data-lang="profile_logout" class="w-full bg-red-50 text-red-500 font-bold p-3 rounded-lg border border-red-200 text-sm transition-colors hover:bg-red-100 outline-none">Выйти из аккаунта</button>
+            <button onclick="logout()" data-lang="profile_logout" class="w-full bg-red-50 text-red-500 font-bold p-3 rounded-lg border border-red-200 text-sm transition-colors hover:bg-red-100 outline-none shadow-sm">Выйти из аккаунта</button>
         </div>
     </div>
 
     <div id="report-history-modal" class="fixed inset-0 bg-slate-900/60 z-[70] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeModals()">
-        <div class="bg-white w-full max-w-sm rounded-xl p-6 text-center border border-slate-200 relative max-h-[80vh] flex flex-col" onclick="event.stopPropagation()">
+        <div class="bg-white w-full max-w-sm rounded-xl p-6 text-center border border-slate-200 relative max-h-[80vh] flex flex-col shadow-2xl" onclick="event.stopPropagation()">
             <h2 class="text-xl font-black text-slate-800 mb-6 flex items-center justify-center gap-2">
                 <svg class="w-6 h-6 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                 <span data-lang="my_archive">Мой архив</span>
@@ -280,27 +289,27 @@
     </div>
 
     <div id="duties-modal" class="fixed inset-0 bg-slate-900/60 z-[70] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeModals()">
-        <div class="bg-white w-full max-w-sm rounded-xl p-5 relative max-h-[80vh] flex flex-col" onclick="event.stopPropagation()">
+        <div class="bg-white w-full max-w-sm rounded-xl p-5 relative shadow-2xl max-h-[80vh] flex flex-col" onclick="event.stopPropagation()">
             <h2 class="text-xl font-black text-slate-800 mb-4 text-center" data-lang="duties_schedule">График дежурств</h2>
             <div id="duties-full-list" class="overflow-y-auto custom-scrollbar space-y-2 pr-2"></div>
         </div>
     </div>
 
     <div id="qr-modal" class="fixed inset-0 bg-slate-900/90 z-[80] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeQrModal()">
-        <div class="bg-white p-4 rounded-xl relative max-w-xs w-full" onclick="event.stopPropagation()">
-            <img src="qr.png" alt="QR Code" class="w-full h-auto rounded-lg border border-slate-200">
+        <div class="bg-white p-4 rounded-xl relative max-w-xs w-full shadow-2xl" onclick="event.stopPropagation()">
+            <img src="qr.png" alt="QR Code" class="w-full h-auto rounded-lg border border-slate-200 shadow-sm">
             <p class="text-center text-sm font-bold text-slate-500 mt-4 uppercase tracking-widest" data-lang="scan_qr">Отсканируйте код</p>
         </div>
     </div>
 
     <div id="user-msg-modal" class="fixed inset-0 bg-slate-900/80 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-sm rounded-xl p-6 relative flex flex-col text-center border-t-4 border-indigo-500">
-            <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div class="bg-white w-full max-w-sm rounded-xl p-6 relative shadow-2xl flex flex-col text-center border-t-4 border-indigo-500">
+            <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
             </div>
             <h2 class="text-lg font-black text-slate-800 mb-2" data-lang="new_message">Новое сообщение</h2>
             <div id="user-msg-content" class="text-sm font-medium text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6 text-left whitespace-pre-wrap max-h-64 overflow-y-auto custom-scrollbar"></div>
-            <button onclick="markMessageRead()" id="user-msg-close-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg text-xs uppercase tracking-widest outline-none transition-colors" data-lang="msg_understood">Понятно</button>
+            <button onclick="markMessageRead()" id="user-msg-close-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg text-xs uppercase tracking-widest outline-none shadow-sm transition-colors" data-lang="msg_understood">Понятно</button>
         </div>
     </div>
 
