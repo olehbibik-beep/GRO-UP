@@ -253,6 +253,7 @@ window.removeMapImage = () => {
 
 document.getElementById('save-map-btn').addEventListener('click', async (e) => {
     const num = document.getElementById('map-num').value.trim();
+    const city = document.getElementById('map-city').value.trim();
     const url = document.getElementById('map-url').value.trim();
     
     if (!num || !url) return alert(window.t('alert_fill_all'));
@@ -271,6 +272,7 @@ document.getElementById('save-map-btn').addEventListener('click', async (e) => {
 
         const mapData = { 
             url: url, 
+            city: city || "Без города",
             updatedAt: new Date().toISOString() 
         };
         if (imageUrl) mapData.imageUrl = imageUrl;
@@ -278,6 +280,7 @@ document.getElementById('save-map-btn').addEventListener('click', async (e) => {
         await setDoc(doc(db, "territory_maps", num), mapData);
         
         document.getElementById('map-num').value = '';
+        document.getElementById('map-city').value = '';
         document.getElementById('map-url').value = '';
         removeMapImage();
         
@@ -297,10 +300,9 @@ onSnapshot(collection(db, "territory_maps"), (snapshot) => {
     if (!list) return;
     
     let maps = [];
-    snapshot.forEach(d => maps.push({ num: parseInt(d.id), url: d.data().url, img: d.data().imageUrl, id: d.id }));
+    snapshot.forEach(d => maps.push({ num: parseInt(d.id), url: d.data().url, img: d.data().imageUrl, city: d.data().city || 'Без города', id: d.id }));
     maps.sort((a,b) => a.num - b.num);
 
-    // ГРУППИРОВКА ПО ДЕСЯТКАМ (например: 100-109)
     const groupedMaps = {};
     maps.forEach(m => {
         const groupKey = Math.floor(m.num / 10) * 10; 
@@ -329,12 +331,15 @@ onSnapshot(collection(db, "territory_maps"), (snapshot) => {
             <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-2 rounded-lg">
                 <div class="flex items-center gap-2 min-w-0">
                     <span class="bg-slate-800 text-white font-black font-mono text-[10px] px-2 py-1 rounded shrink-0 shadow-sm">${m.num}</span>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase ml-1 truncate max-w-[80px]">${m.city}</span>
                     ${photoBadge}
-                    <a href="${m.url}" target="_blank" class="text-xs font-medium text-sky-600 hover:text-sky-700 hover:underline truncate">${m.url}</a>
                 </div>
-                <button onclick="deleteMap('${m.id}')" class="text-slate-300 hover:text-red-500 ml-2 p-1.5 outline-none transition-colors" title="${window.t('delete')}">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                </button>
+                <div class="flex items-center gap-2">
+                    <a href="${m.url}" target="_blank" class="text-xs font-medium text-sky-600 hover:text-sky-700 hover:underline truncate w-20">Ссылка</a>
+                    <button onclick="deleteMap('${m.id}')" class="text-slate-300 hover:text-red-500 p-1.5 outline-none transition-colors" title="${window.t('delete')}">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                </div>
             </div>`;
         });
         
