@@ -59,7 +59,7 @@ const dict = {
         "develop_interest": "Развивайте интерес", "make_disciples": "Подготавливайте учеников", "explain_beliefs": "Объясняйте свои взгляды",
         "local_needs": "Местные потребности", "current_week": "АКТУАЛЬНАЯ", "future_week": "БУДУЩАЯ",
         "public_talk": "Публичная речь", "weekend_meeting": "Выходные (Публичная речь)", "watchtower_study": "Изучение Сторожевой Башни", "opening_song": "Вступительные слова / Песня",
-        "duties_schedule": "График дежурств"
+        "duties_schedule": "График дежурств", "new_message": "Новое сообщение", "msg_understood": "Понятно"
     },
     cs: {
         "loading_data": "Načítání dat...", "pending_title": "Žádost se vyřizuje", "pending_desc": "Čekejte na potvrzení administrátorem.",
@@ -111,7 +111,7 @@ const dict = {
         "develop_interest": "Rozvíjení zájmu", "make_disciples": "Činění učedníků", "explain_beliefs": "Vysvětlování své víry",
         "local_needs": "Místní potřeby", "current_week": "AKTUÁLNÍ", "future_week": "BUDOUCÍ",
         "public_talk": "Veřejná přednáška", "weekend_meeting": "Víkend (Veřejná přednáška)", "watchtower_study": "Studium Strážné věže", "opening_song": "Úvodní slova / Píseň",
-        "duties_schedule": "Rozpis služeb"
+        "duties_schedule": "Rozpis služeb", "new_message": "Nová zpráva", "msg_understood": "Rozumím"
     }
 };
 
@@ -127,7 +127,7 @@ function translateDbString(str) {
         "Развивайте интерес": "develop_interest", "Rozvíjení zájmu": "develop_interest",
         "Подготавливайте учеников": "make_disciples", "Činění učedníků": "make_disciples",
         "Объясняйте свои взгляды": "explain_beliefs", "Vysvětlování své víry": "explain_beliefs",
-        "Местные потребности": "local_needs", "Místní potřeby": "local_needs",
+        "Местные потребности": "local_needs", "Místní потребности": "local_needs",
         "Речь 10 мин.": "talk_10_min", "Proslov 10 min.": "talk_10_min"
     };
     if (map[str]) return window.t(map[str]);
@@ -174,7 +174,6 @@ if (!userId) {
 }
 
 window.scrollNews = (offset) => { document.getElementById('content-news')?.scrollBy({ left: offset, behavior: 'smooth' }); };
-
 window.scrollProgram = (dir) => { 
     const container = document.getElementById('meeting-program-list');
     if(container) {
@@ -356,6 +355,43 @@ window.submitReport = async () => {
     }
 };
 
+// 🔥 ПРОСЛУШКА ВХОДЯЩИХ СООБЩЕНИЙ ОТ АДМИНА
+let unsubMessages = null;
+window.activeMessageId = null;
+
+function listenForMessages() {
+    if (unsubMessages) unsubMessages();
+    unsubMessages = onSnapshot(query(collection(db, "user_messages"), where("userId", "==", userId), where("read", "==", false)), (msgSnap) => {
+        if (!msgSnap.empty) {
+            const msgDoc = msgSnap.docs[0]; // Показываем первое непрочитанное
+            window.activeMessageId = msgDoc.id;
+            const modal = document.getElementById('user-msg-modal');
+            const content = document.getElementById('user-msg-content');
+            if(modal && content) {
+                content.innerText = msgDoc.data().message;
+                modal.classList.replace('hidden', 'flex');
+            }
+        }
+    });
+}
+
+// ФУНКЦИЯ ПРОЧТЕНИЯ СООБЩЕНИЯ
+window.markMessageRead = async () => {
+    if(window.activeMessageId) {
+        const btn = document.getElementById('user-msg-close-btn');
+        const originalText = btn.innerText;
+        btn.innerText = "...";
+        btn.disabled = true;
+        try {
+            await updateDoc(doc(db, "user_messages", window.activeMessageId), { read: true });
+            document.getElementById('user-msg-modal').classList.replace('flex', 'hidden');
+            window.activeMessageId = null;
+        } catch(e) { console.error("Ошибка при пометке сообщения", e); }
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+};
+
 let isStandReqPending = false;
 let myStands = [];
 let unsubStandReqs = null;
@@ -416,8 +452,8 @@ if (userId) {
             try { loadPersonalData(); } catch(e) {}
             try { loadProfileData(); } catch(e) {}
             renderStandCard();
+            listenForMessages(); // Включаем "уши" для получения сообщений!
             
-            // ПРИНУДИТЕЛЬНО ОТКРЫВАЕМ ДОМИК ПРИ ЗАГРУЗКЕ
             window.switchTab('home');
         }
     });
@@ -599,8 +635,6 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-// 🔥 ПРОГРАММА СОБРАНИЯ (БЕЗ РАМОК, КРУПНЫЕ ШРИФТЫ, ИМЕНА ПОД ПУНКТАМИ)
-
 function getISOWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -639,11 +673,9 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     
     let partCounter = 1;
 
-    // Обычная строка (Будни)
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        // Если это твоя задача - делаем ЖИРНЫМ И ЧЕРНЫМ, иначе обычный шрифт
         const titleColor = isMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
         const nameColor = isMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
 
@@ -655,7 +687,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     };
 
-    // Строка без номера
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
@@ -670,7 +701,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     };
 
-    // ПЕРВАЯ РЕЧЬ 10 МИН (Как обычный пункт)
     const treasure1 = row(d.mw_treasure_title || window.t('talk_10_min'), d.mw_treasure_name);
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
@@ -701,10 +731,9 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const cbsNameColor = isCbsMe ? 'font-black text-slate-900' : 'font-medium text-slate-500';
     const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
-    // ВЫХОДНЫЕ: Публичная речь (БЕЛЫЙ ФОН)
     const weTalkMe = d.we_talk_speaker === myName;
     const wtTitleColor = weTalkMe ? 'font-black text-slate-900' : 'font-bold text-slate-700';
-    const wtNameColor = weTalkMe ? 'font-black text-slate-900' : 'font-bold text-slate-600';
+    const wtNameColor = weTalkMe ? 'font-black text-slate-900' : 'font-medium text-slate-600';
 
     const we_talk = `
         <div class="flex flex-col py-2 px-3 border border-slate-200 shadow-sm bg-white rounded-lg my-1 hover:bg-slate-50 transition-colors mx-1">
@@ -720,8 +749,10 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 
     return `
         <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-1 px-1">
-            <div class="text-center pb-1 border-b-2 border-slate-300 mb-1">
-                <span class="text-xs md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel} <span class="${statusColor} ml-2">${weekStatus}</span></span>
+            
+            <div class="flex items-center justify-between pb-1.5 border-b-2 border-slate-300 mb-1.5 mx-1">
+                <span class="text-sm md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel}</span>
+                <span class="text-[9px] md:text-[10px] font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
             </div>
             
             <div class="flex-grow flex flex-col">
@@ -754,8 +785,9 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         </div>
 
         <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-1 px-1">
-            <div class="text-center pb-1 border-b-2 border-slate-300 mb-1">
-                <span class="text-xs md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel} <span class="${statusColor} ml-2">${weekStatus}</span></span>
+            <div class="flex items-center justify-between pb-1.5 border-b-2 border-slate-300 mb-1.5 mx-1">
+                <span class="text-sm md:text-base font-black text-slate-800 uppercase tracking-widest">${weekLabel}</span>
+                <span class="text-[9px] md:text-[10px] font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
             </div>
 
             <div class="flex-grow flex flex-col">
@@ -799,7 +831,6 @@ function loadPersonalData() {
             const container = document.getElementById('meeting-program-list');
             if(!container) return;
 
-            // ФИЛЬТР ДУБЛИКАТОВ И СТАРЫХ ГРАФИКОВ
             let schedulesMap = {};
             snapshot.forEach(doc => {
                 let id = doc.id;
@@ -811,10 +842,10 @@ function loadPersonalData() {
                 data.realWeekId = realWeekId;
 
                 if (id.endsWith('-' + currentLang)) {
-                    schedulesMap[realWeekId] = data; // Приоритет новому формату
+                    schedulesMap[realWeekId] = data; 
                 } else if (isLegacy && currentLang === 'ru') {
                     if (!schedulesMap[realWeekId]) {
-                        schedulesMap[realWeekId] = data; // Оставляем старый, если нет нового
+                        schedulesMap[realWeekId] = data; 
                     }
                 }
             });
@@ -1097,7 +1128,6 @@ function loadPersonalData() {
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 ev.id = docSnap.id;
-                // ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
                 if (ev.date === todayStr) {
                     todayEvents.push(ev);
                 }
@@ -1265,6 +1295,7 @@ window.closeModals = () => {
     const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
     const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
     const m3 = document.getElementById('duties-modal'); if(m3) m3.classList.replace('flex', 'hidden');
+    const m4 = document.getElementById('user-msg-modal'); if(m4) m4.classList.replace('flex', 'hidden');
 };
 window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
 
