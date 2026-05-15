@@ -718,6 +718,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
+    // 🔥 ЗАДАНИЯ ШКОЛЫ: БЕЛЫЙ ФОН, СТАНОВИТСЯ ЯРЧЕ ПРИ НАВЕДЕНИИ/КАСАНИИ
     const minRows = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
@@ -726,7 +727,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         const assistStr = m.assistant ? ` <span class="opacity-70 ml-1">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
 
         return `
-            <div class="flex flex-col py-2 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+            <div class="flex flex-col py-2.5 px-3 bg-white/70 hover:bg-white border border-slate-200/60 shadow-sm hover:shadow transition-all rounded-xl my-1 mx-1 cursor-default">
                 <span class="text-sm md:text-base ${titleColor} leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
                 <span class="text-sm md:text-base ${nameColor} mt-1 ml-4">${m.student || '-'}${assistStr}</span>
             </div>
@@ -744,13 +745,13 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const cbsNameColor = isCbsMe ? 'font-black text-black' : 'font-bold text-slate-800';
     const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
-    // ВЫХОДНЫЕ: Публичная речь
+    // 🔥 ВЫХОДНЫЕ: Публичная речь (Тоже белая карточка для симметрии)
     const weTalkMe = d.we_talk_speaker === myName;
     const wtTitleColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-900';
     const wtNameColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-800';
 
     const we_talk = `
-        <div class="flex flex-col py-2 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg mt-1">
+        <div class="flex flex-col py-2.5 px-3 bg-white/70 hover:bg-white border border-slate-200/60 shadow-sm hover:shadow transition-all rounded-xl mt-2 mb-1 mx-1 cursor-default">
             <span class="text-sm md:text-base ${wtTitleColor} uppercase leading-tight">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
             <span class="text-sm md:text-base ${wtNameColor} mt-1 ml-4">${d.we_talk_speaker || '-'}</span>
         </div>
@@ -782,7 +783,10 @@ function buildScheduleCards(d, myName, currentWeekStr) {
                 <div class="bg-[#d97706] text-white py-1.5 px-3 mt-3 mb-1 flex items-center rounded-lg shadow-sm w-full">
                     <span class="text-[11px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('ministry_skills')}</span>
                 </div>
-                ${minRows}
+                
+                <div class="flex flex-col space-y-1.5 my-1">
+                    ${minRows}
+                </div>
 
                 <div class="bg-[#b91c1c] text-white py-1.5 px-3 mt-3 mb-1 flex items-center rounded-lg shadow-sm w-full">
                     <span class="text-[11px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('christian_living')}</span>
@@ -814,7 +818,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
                 
                 ${we_talk}
                 
-                <div class="flex flex-col py-2 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+                <div class="flex flex-col py-2 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg mt-2">
                     <span class="text-sm md:text-base ${wtStudyTitleColor} leading-tight">${window.t('watchtower_study')}</span>
                     <span class="text-sm md:text-base ${wtStudyNameColor} mt-1 ml-4">${d.we_wt_conductor || '-'}${we_wt_read_str}</span>
                 </div>
