@@ -1210,6 +1210,7 @@ try {
                             [hours, minutes] = displayTime.split(':');
                             const eventExactTime = new Date();
                             eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+                            // Если прошло более 1.5 часа - тускнеет
                             if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
                         }
                     }
@@ -1223,18 +1224,8 @@ try {
             todayEvents.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
 
             let html = '';
-            const wrapper = container.parentElement;
-            const calendarBtn = wrapper.querySelector('button');
 
             if (todayEvents.length > 0) {
-                // 🔥 ФОН БЛОКА КАК У МЕНЮ (ТЕМНЫЙ)
-                wrapper.classList.remove('bg-slate-200/80');
-                wrapper.classList.add('bg-[#0F172A]'); // Темно-синий цвет навигации
-                if (calendarBtn) {
-                    calendarBtn.classList.remove('text-slate-500', 'hover:bg-slate-300/50');
-                    calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-700/50');
-                }
-
                 todayEvents.forEach(ev => {
                     let evGroup = ev.group || window.t('no_group');
                     if (evGroup === "Все" || evGroup === "Všechny") evGroup = window.t('all_groups');
@@ -1242,22 +1233,22 @@ try {
                     
                     // ПРОШЕДШИЕ СОБЫТИЯ
                     const activeClass = ev.isPastEvent ? "opacity-30 grayscale" : "";
-                    const timeColor = ev.isPastEvent ? "text-slate-500" : "text-slate-400"; 
+                    const timeColor = ev.isPastEvent ? "text-slate-500" : "text-emerald-400"; 
                     const titleColor = ev.isPastEvent ? "text-slate-500" : "text-white";
                     
                     const dateObj = new Date(ev.date);
                     const dayNum = dateObj.getDate();
                     
-                    // 🔥 ДИЗАЙН ПРЯМО КАК НА ФОТО
+                    // 🔥 ПОЛНОСТЬЮ ПРОЗРАЧНАЯ ПЛИТКА СОБЫТИЯ С БЕЛЫМ ТЕКСТОМ И ПЕРЕНОСОМ
                     html += `
-                        <div class="flex items-center p-3 md:p-4 w-full bg-transparent cursor-default ${activeClass} border-b border-slate-700/50 last:border-0">
+                        <div class="flex items-center px-4 py-3 w-full bg-transparent cursor-default ${activeClass} border-b border-slate-700/50 last:border-0">
                             <div class="flex items-center gap-2 shrink-0 mr-3">
-                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-white/10 text-white rounded-xl shrink-0">
+                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-white/10 text-white rounded-xl shrink-0 shadow-inner">
                                     <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest opacity-70">${window.t('today_badge')}</span>
                                     <span class="text-xl font-black leading-none">${dayNum}</span>
                                 </div>
                                 ${hasGroup ? `
-                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-white/10 text-white rounded-xl shrink-0">
+                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-white/10 text-white rounded-xl shrink-0 shadow-inner">
                                     <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest opacity-70">${window.t('group_short')}</span>
                                     <span class="text-sm md:text-base font-black leading-none">${evGroup}</span>
                                 </div>` : ''}
@@ -1278,14 +1269,7 @@ try {
                 });
                 container.innerHTML = html;
             } else {
-                // Если событий нет - возвращаем обратно светлый фон
-                wrapper.classList.remove('bg-[#0f172a]', 'bg-ui-nav');
-                wrapper.classList.add('bg-slate-200/80'); 
-                if (calendarBtn) {
-                    calendarBtn.classList.remove('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-700/50');
-                    calendarBtn.classList.add('text-slate-500', 'hover:bg-slate-300/50');
-                }
-                container.innerHTML = `<p class="p-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">${window.t('no_events_today')}</p>`;
+                container.innerHTML = `<p class="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">${window.t('no_events_today')}</p>`;
             }
         });
     } catch(e) {}
