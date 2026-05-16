@@ -1278,8 +1278,9 @@ function loadPersonalData() {
                 wrapper.classList.remove('bg-[#0f172a]', 'bg-ui-nav');
                 wrapper.classList.add('bg-slate-200/80'); 
                 if (calendarBtn) {
-                    calendarBtn.classList.remove('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-700/50');
-                    calendarBtn.classList.add('text-slate-500', 'hover:bg-slate-300/50');
+                    calendarBtn.classList.remove('text-slate-500', 'hover:bg-slate-300/50');
+                    // Оставили только цвет текста и фон при наведении (без border-l)
+                    calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50');
                 }
                 container.innerHTML = `<p class="p-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">${window.t('no_events_today')}</p>`;
             }
