@@ -10,7 +10,33 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebas
 import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
+// ====== АВТООБНОВЛЕНИЕ ПРИЛОЖЕНИЯ ======
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+        reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+                // Если скачался новый Service Worker и старый уже работает
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    window.showToast("Устанавливаем обновление...", "info");
+                    setTimeout(() => {
+                        window.location.reload(true); // Принудительно перезагружаем с сервера
+                    }, 1500);
+                }
+            });
+        });
+    });
 
+    // Страховка: если Service Worker обновился в фоне, перезагружаем страницу
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+            refreshing = true;
+            window.location.reload(true);
+        }
+    });
+}
+// ========================================
 const dict = {
     ru: {
         "loading_data": "Загрузка данных...", "pending_title": "Заявка на рассмотрении", "pending_desc": "Ожидайте подтверждения администратора.",
