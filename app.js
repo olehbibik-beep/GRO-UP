@@ -1229,7 +1229,7 @@ try {
             if (todayEvents.length > 0) {
                 // 🔥 ФОН БЛОКА КАК У МЕНЮ (ТЕМНЫЙ)
                 wrapper.classList.remove('bg-slate-200/80');
-                wrapper.classList.add('bg-[#0f172a]'); // Темно-синий цвет навигации
+                wrapper.classList.add('bg-[#879ED4]'); // Темно-синий цвет навигации
                 if (calendarBtn) {
                     calendarBtn.classList.remove('text-slate-500', 'hover:bg-slate-300/50');
                     calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-700/50');
