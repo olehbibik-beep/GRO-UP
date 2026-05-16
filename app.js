@@ -1,3 +1,9 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
+
+// ====== ТАЙМЕР ЗАГРУЗКИ ======
 setTimeout(() => {
     const loader = document.getElementById('global-loader');
     if (loader) {
@@ -6,28 +12,22 @@ setTimeout(() => {
     }
 }, 2000);
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, deleteDoc, query, where, orderBy, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 // ====== АВТООБНОВЛЕНИЕ ПРИЛОЖЕНИЯ ======
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(reg => {
         reg.addEventListener('updatefound', () => {
             const newWorker = reg.installing;
             newWorker.addEventListener('statechange', () => {
-                // Если скачался новый Service Worker и старый уже работает
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                     window.showToast("Устанавливаем обновление...", "info");
                     setTimeout(() => {
-                        window.location.reload(true); // Принудительно перезагружаем с сервера
+                        window.location.reload(true);
                     }, 1500);
                 }
             });
         });
     });
 
-    // Страховка: если Service Worker обновился в фоне, перезагружаем страницу
     let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!refreshing) {
@@ -37,6 +37,7 @@ if ('serviceWorker' in navigator) {
     });
 }
 // ========================================
+
 const dict = {
     ru: {
         "loading_data": "Загрузка данных...", "pending_title": "Заявка на рассмотрении", "pending_desc": "Ожидайте подтверждения администратора.",
@@ -149,11 +150,11 @@ window.t = (key) => (dict[currentLang] && dict[currentLang][key]) ? dict[current
 function translateDbString(str) {
     if (!str) return '';
     const map = {
-        "Начинайте разговор": "start_conversation", "Zahájení rozhovoru": "start_conversation",
+        "Начинайте разговор": "start_conversation", "Zahájení разговoру": "start_conversation",
         "Развивайте интерес": "develop_interest", "Rozvíjení zájmu": "develop_interest",
         "Подготавливайте учеников": "make_disciples", "Činění učedníků": "make_disciples",
         "Объясняйте свои взгляды": "explain_beliefs", "Vysvětlování své víry": "explain_beliefs",
-        "Местные потребности": "local_needs", "Místní потребности": "local_needs",
+        "Местные потребности": "local_needs", "Místní potřeby": "local_needs",
         "Речь 10 мин.": "talk_10_min", "Proslov 10 min.": "talk_10_min"
     };
     if (map[str]) return window.t(map[str]);
@@ -381,7 +382,6 @@ window.submitReport = async () => {
     }
 };
 
-// 🔥 ПРОСЛУШКА ВХОДЯЩИХ СООБЩЕНИЙ ОТ АДМИНА
 let unsubMessages = null;
 window.activeMessageId = null;
 
@@ -401,7 +401,6 @@ function listenForMessages() {
     });
 }
 
-// ФУНКЦИЯ ПРОЧТЕНИЯ СООБЩЕНИЯ
 window.markMessageRead = async () => {
     if(window.activeMessageId) {
         const btn = document.getElementById('user-msg-close-btn');
@@ -663,7 +662,6 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-// 🔥 ПРОГРАММА СОБРАНИЯ (БЕЗ РАМОК, КРУПНЫЕ ШРИФТЫ)
 function getISOWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -744,7 +742,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
-    // 🔥 ЗАДАНИЯ ШКОЛЫ: Все в одной белой карточке
     const minRowsRaw = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
@@ -777,7 +774,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const cbsNameColor = isCbsMe ? 'font-black text-black' : 'font-bold text-slate-800';
     const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
-    // ВЫХОДНЫЕ: Публичная речь
     const weTalkMe = d.we_talk_speaker === myName;
     const wtTitleColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-900';
     const wtNameColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-800';
@@ -865,7 +861,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 
 function loadPersonalData() {
     
-    // 🔥 Глобальный кэш карт теперь сохраняет город
     try {
         onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
             window.allMapsCache = {};
@@ -935,111 +930,112 @@ function loadPersonalData() {
 
     window.openDutiesModal = () => document.getElementById('duties-modal').classList.replace('hidden', 'flex');
 
- try {
-        const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
-        onSnapshot(eventsQuery, (snapshot) => {
-            const container = document.getElementById('calendar-events');
-            if (!container) return; 
-            
-            const now = new Date();
-            const tzOffset = now.getTimezoneOffset() * 60000;
-            const todayStr = new Date(now.getTime() - tzOffset).toISOString().split('T')[0];
+    try {
+        const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
+        onSnapshot(dutiesQuery, (snapshot) => {
+            const container = document.getElementById('dashboard-duties');
+            const fullListContainer = document.getElementById('duties-full-list');
+            if (!container) return;
+            const today = new Date(); today.setHours(0,0,0,0);
+            let currentDuty = null;
+            let myDutyFound = false;
 
-            let todayEvents = [];
+            let fullListHtml = '';
 
             snapshot.forEach(docSnap => {
-                const ev = docSnap.data();
-                ev.id = docSnap.id;
-                // 🔥 ВОЗВРАЩАЕМ КАК БЫЛО: ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
-                if (ev.date === todayStr) {
-                    todayEvents.push(ev);
+                const d = docSnap.data();
+                const dutyStart = new Date(d.rawDate); dutyStart.setHours(0,0,0,0);
+                const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6); dutyEnd.setHours(23,59,59,999);
+                
+                const startDay = dutyStart.getDate();
+                const endDay = dutyEnd.getDate();
+                const endMonth = dutyEnd.toLocaleDateString(localeFormat, { month: 'long' });
+                let dateRangeStr = `${startDay} - ${endDay} ${endMonth}`;
+                if (dutyStart.getMonth() !== dutyEnd.getMonth()) {
+                    const startMonth = dutyStart.toLocaleDateString(localeFormat, { month: 'short' });
+                    dateRangeStr = `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
+                }
+
+                let typeStr = d.type;
+                if (typeStr === 'Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
+                if (typeStr === 'Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
+                const groupStr = d.group === "Все" || d.group === window.t('all_groups') ? window.t('all_groups') : d.group;
+
+                const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
+                const isMyGroup = String(d.group) === String(myGroup);
+
+                let textClass = isMyGroup ? "text-slate-900 font-black" : "text-slate-600";
+                let badgeClass = isMyGroup ? "bg-slate-800 text-white shadow-sm" : "bg-slate-100 text-slate-500 border border-slate-200";
+
+                fullListHtml += `
+                    <div class="py-3 border-b border-slate-100 flex justify-between items-center last:border-0">
+                        <div class="flex flex-col">
+                            <span class="text-sm ${textClass}">${typeStr}</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80 ${textClass}">${dateRangeStr}</span>
+                        </div>
+                        <div class="flex flex-col items-center justify-center px-3 py-1 rounded-md ${badgeClass}">
+                            <span class="text-[8px] uppercase font-bold tracking-widest">${window.t('group_short')}</span>
+                            <span class="text-base font-black leading-none">${groupStr}</span>
+                        </div>
+                    </div>
+                `;
+
+                if (today.getTime() >= dutyStart.getTime() && today.getTime() <= dutyEnd.getTime()) {
+                    currentDuty = d;
+                    if (isMyGroup) myDutyFound = true;
                 }
             });
 
-            let html = '';
-            const wrapper = container.parentElement;
-            const calendarBtn = wrapper.querySelector('button');
+            if(fullListContainer) fullListContainer.innerHTML = fullListHtml || `<p class="text-slate-400 italic text-sm text-center">График пуст</p>`;
 
-            if (todayEvents.length > 0) {
-                // 🔥 МЕНЯЕМ ФОН БЛОКА НА ТЕМНЫЙ (как в навигации)
-                wrapper.classList.remove('bg-slate-200/80');
-                wrapper.classList.add('bg-[#0f172a]'); 
-                if (calendarBtn) {
-                    calendarBtn.classList.remove('text-slate-500', 'hover:bg-slate-300/50');
-                    calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-800');
-                }
+            const dayOfWeek = today.getDay();
+            const isCleaningDay = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0);
 
-                todayEvents.forEach(ev => {
-                    let isPastEvent = false;
-                    let displayTime = ev.time || "";
-                    
-                    if (displayTime) {
-                        let hours = 0, minutes = 0;
-                        if (!displayTime.includes(':') && displayTime.length >= 3) {
-                            if (displayTime.length === 4) displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
-                            else if (displayTime.length === 3) displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
-                        }
-                        if (displayTime.includes(':')) {
-                            [hours, minutes] = displayTime.split(':');
-                            const eventExactTime = new Date();
-                            eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-                            // Событие считается прошедшим через 1.5 часа после начала
-                            if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
-                        }
-                    }
-
-                    let evGroup = ev.group || window.t('no_group');
-                    if (evGroup === "Все" || evGroup === "Všechny") evGroup = window.t('all_groups');
-                    const hasGroup = evGroup !== window.t('no_group');
-                    
-                    // ПРОШЕДШИЕ СОБЫТИЯ СТАНОВЯТСЯ СЕРЫМИ
-                    const activeClass = isPastEvent ? "opacity-40 grayscale" : "";
-                    const timeColor = isPastEvent ? "text-slate-500" : "text-emerald-400";
-                    const leaderColor = isPastEvent ? "text-slate-600" : "text-sky-400";
-                    const titleColor = isPastEvent ? "text-slate-400" : "text-white"; // На темном фоне текст белый
-                    
-                    const dateObj = new Date(ev.date);
-                    const dayNum = dateObj.getDate();
-                    const badgeBg = "bg-slate-700 text-slate-200 border border-slate-600";
-
-                    html += `
-                        <div class="flex items-center p-3 md:p-4 w-full cursor-default ${activeClass} border-b border-slate-800/50 last:border-0">
-                            <div class="flex items-center gap-2 shrink-0 mr-3">
-                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 ${badgeBg} rounded-xl shadow-inner shrink-0">
-                                    <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${window.t('today_badge')}</span>
-                                    <span class="text-xl font-black leading-none">${dayNum}</span>
-                                </div>
-                                ${hasGroup ? `
-                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-slate-800 border border-slate-700 text-slate-300 rounded-xl shrink-0">
-                                    <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
-                                    <span class="text-sm md:text-lg font-black leading-none">${evGroup}</span>
-                                </div>` : ''}
-                            </div>
-                            <div class="flex flex-col flex-grow min-w-0 pr-2">
-                                <div class="flex items-start gap-2">
-                                    ${displayTime ? `<span class="text-sm md:text-base font-black shrink-0 mt-0.5 ${timeColor}">${displayTime}</span>` : ''}
-                                    <span class="font-black text-sm md:text-base ${titleColor} whitespace-normal leading-tight break-words">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
-                                </div>
-                                ${ev.leader ? `<span class="text-[10px] md:text-[11px] uppercase font-bold text-slate-400 mt-1.5">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
-                            </div>
-                        </div>
-                    `;
-
-                    if (!isPastEvent && !sessionStorage.getItem('event_toast_' + ev.id)) {
-                        window.showToast(`${window.t('today_event_toast')} ${ev.title} ${displayTime ? ' ' + displayTime : ''}`, 'info');
-                        sessionStorage.setItem('event_toast_' + ev.id, 'true');
-                    }
-                });
-                container.innerHTML = html;
+            if (!currentDuty) {
+                container.innerHTML = `<p class="text-[9px] text-slate-400 italic text-center py-2">${window.t('no_duties')}</p>`;
             } else {
-                // Если на сегодня событий нет - возвращаем светлый фон
-                wrapper.classList.remove('bg-[#0f172a]');
-                wrapper.classList.add('bg-slate-200/80'); 
-                if (calendarBtn) {
-                    calendarBtn.classList.remove('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-800');
-                    calendarBtn.classList.add('text-slate-500', 'hover:bg-slate-300/50');
+                const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
+                const isMyGroup = String(currentDuty.group) === String(myGroup);
+                let badgeClass = isMyGroup ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200';
+                let alertHtml = '';
+                if (isMyGroup && isCleaningDay) {
+                    badgeClass = 'bg-rose-500 text-white border-rose-600 shadow-sm';
+                    alertHtml = `<p class="text-[8px] font-black text-rose-500 uppercase tracking-widest mt-1 animate-pulse flex items-center gap-1 truncate"><svg class="w-2.5 h-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="truncate">${window.t('cleaning_weekend')}</span></p>`;
                 }
-                container.innerHTML = `<p class="p-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">${window.t('no_events_today')}</p>`;
+
+                let typeStr = currentDuty.type;
+                if (typeStr === 'Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
+                if (typeStr === 'Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
+                const groupStr = currentDuty.group === "Все" || currentDuty.group === window.t('all_groups') ? window.t('all_groups') : currentDuty.group;
+
+                const dutyStart = new Date(currentDuty.rawDate); dutyStart.setHours(0,0,0,0);
+                const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6);
+                const startDay = dutyStart.getDate();
+                const endDay = dutyEnd.getDate();
+                const endMonth = dutyEnd.toLocaleDateString(localeFormat, { month: 'long' });
+                let localizedDateRange = `${startDay} - ${endDay} ${endMonth}`;
+                if (dutyStart.getMonth() !== dutyEnd.getMonth()) {
+                    const startMonth = dutyStart.toLocaleDateString(localeFormat, { month: 'short' });
+                    localizedDateRange = `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
+                }
+
+                container.innerHTML = `
+                    <div class="flex items-center w-full h-full gap-3 pl-2">
+                        <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-lg border ${badgeClass} shrink-0 bg-slate-50 shadow-inner">
+                            <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
+                            <span class="text-lg md:text-xl font-black leading-none">${groupStr}</span>
+                        </div>
+                        <div class="flex flex-col justify-center min-w-0 flex-grow pr-2">
+                            <span class="text-xs md:text-sm font-black text-slate-800 leading-tight truncate w-full">${typeStr}</span>
+                            <span class="text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-widest mt-1 truncate w-full">${localizedDateRange}</span>
+                            ${alertHtml}
+                        </div>
+                    </div>
+                `;
+            }
+            if (myDutyFound && isCleaningDay && !sessionStorage.getItem('duty_toast_shown')) {
+                window.showToast(window.t('duty_reminder'), 'warning');
+                sessionStorage.setItem('duty_toast_shown', 'true');
             }
         });
     } catch(e) {}
@@ -1179,7 +1175,7 @@ function loadPersonalData() {
         });
     } catch(e){}
 
-try {
+    try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
             const container = document.getElementById('calendar-events');
@@ -1210,7 +1206,6 @@ try {
                             [hours, minutes] = displayTime.split(':');
                             const eventExactTime = new Date();
                             eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-                            // Если прошло более 1.5 часа - тускнеет
                             if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
                         }
                     }
@@ -1224,8 +1219,18 @@ try {
             todayEvents.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
 
             let html = '';
+            const wrapper = container.parentElement;
+            const calendarBtn = wrapper.querySelector('button');
 
             if (todayEvents.length > 0) {
+                // 🔥 ФОН БЛОКА КАК У МЕНЮ (ТЕМНЫЙ)
+                wrapper.classList.remove('bg-slate-200/80');
+                wrapper.classList.add('bg-[#0f172a]'); // Темно-синий цвет навигации
+                if (calendarBtn) {
+                    calendarBtn.classList.remove('text-slate-500', 'hover:bg-slate-300/50');
+                    calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-700/50');
+                }
+
                 todayEvents.forEach(ev => {
                     let evGroup = ev.group || window.t('no_group');
                     if (evGroup === "Все" || evGroup === "Všechny") evGroup = window.t('all_groups');
@@ -1233,22 +1238,22 @@ try {
                     
                     // ПРОШЕДШИЕ СОБЫТИЯ
                     const activeClass = ev.isPastEvent ? "opacity-30 grayscale" : "";
-                    const timeColor = ev.isPastEvent ? "text-slate-500" : "text-emerald-400"; 
+                    const timeColor = ev.isPastEvent ? "text-slate-500" : "text-slate-400"; 
                     const titleColor = ev.isPastEvent ? "text-slate-500" : "text-white";
                     
                     const dateObj = new Date(ev.date);
                     const dayNum = dateObj.getDate();
                     
-                    // 🔥 ПОЛНОСТЬЮ ПРОЗРАЧНАЯ ПЛИТКА СОБЫТИЯ С БЕЛЫМ ТЕКСТОМ И ПЕРЕНОСОМ
+                    // 🔥 ДИЗАЙН ПРЯМО КАК НА ФОТО
                     html += `
-                        <div class="flex items-center px-4 py-3 w-full bg-transparent cursor-default ${activeClass} border-b border-slate-700/50 last:border-0">
+                        <div class="flex items-center p-3 md:p-4 w-full bg-transparent cursor-default ${activeClass} border-b border-slate-700/50 last:border-0">
                             <div class="flex items-center gap-2 shrink-0 mr-3">
-                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-white/10 text-white rounded-xl shrink-0 shadow-inner">
+                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-white/10 text-white rounded-xl shrink-0">
                                     <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest opacity-70">${window.t('today_badge')}</span>
                                     <span class="text-xl font-black leading-none">${dayNum}</span>
                                 </div>
                                 ${hasGroup ? `
-                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-white/10 text-white rounded-xl shrink-0 shadow-inner">
+                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-white/10 text-white rounded-xl shrink-0">
                                     <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest opacity-70">${window.t('group_short')}</span>
                                     <span class="text-sm md:text-base font-black leading-none">${evGroup}</span>
                                 </div>` : ''}
@@ -1269,100 +1274,19 @@ try {
                 });
                 container.innerHTML = html;
             } else {
-                container.innerHTML = `<p class="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">${window.t('no_events_today')}</p>`;
-            }
-        });
-    } catch(e) {}
-
-    try {
-        const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
-        onSnapshot(newsQuery, (snapshot) => {
-            let newsHTML = ``; 
-            const now = new Date().getTime();
-            const oneWeek = 7 * 24 * 60 * 60 * 1000;
-            const oneDay = 24 * 60 * 60 * 1000;
-            const isNewsAdmin = currentUserData.roles && (currentUserData.roles.includes('Админ') || currentUserData.roles.includes('Владелец') || currentUserData.roles.includes('Старейшина'));
-
-            snapshot.forEach(docSnap => {
-                const item = docSnap.data();
-                if(item.section === 'news') {
-                    const itemTime = new Date(item.createdAt).getTime();
-                    if (now - itemTime < oneWeek) {
-                        const isNew = (now - itemTime) < oneDay;
-                        const dateStr = new Date(item.createdAt).toLocaleDateString(localeFormat, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-red-400 hover:text-red-600 p-1 bg-red-50 rounded-md transition-colors outline-none flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : '';
-                        
-                        let displayText = ''; let shouldShow = false;
-                        const hasRu = !!item.text_ru; const hasCs = !!item.text_cs;
-                        const hasLegacyText = !!item.text && !hasRu && !hasCs; 
-                        const hasImg = !!item.imageUrl;
-
-                        if (hasLegacyText) { displayText = item.text; shouldShow = true; } 
-                        else if (currentLang === 'ru') { if (hasRu) { displayText = item.text_ru; shouldShow = true; } else if (!hasRu && !hasCs && hasImg) { shouldShow = true; } } 
-                        else if (currentLang === 'cs') { if (hasCs) { displayText = item.text_cs; shouldShow = true; } else if (!hasRu && !hasCs && hasImg) { shouldShow = true; } }
-
-                        if (!shouldShow) return; 
-
-                        const bgCardClass = isNew ? "bg-white border-slate-200 shadow-sm" : "bg-slate-50 opacity-95 border-slate-200";
-                        const newBadge = isNew ? `<span class="absolute top-2 left-2 bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow-sm z-10">${window.t('new_badge')}</span>` : '';
-
-                        let contentHtml = '';
-                        if (!displayText && !item.imageUrl) {
-                            contentHtml = `<div class="flex flex-col items-center justify-center flex-grow py-6 text-slate-300"><svg class="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="text-[10px] font-black uppercase tracking-widest opacity-50">${window.t('no_translation')}</span></div>`;
-                        } else {
-                            const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-32 object-cover rounded-lg mb-3 shrink-0 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
-                            const textHtml = displayText ? `<p class="text-sm font-bold text-slate-800 mb-3 whitespace-pre-wrap flex-grow">${displayText}</p>` : '';
-                            contentHtml = textHtml + imgHtml;
-                        }
-
-                        newsHTML += `
-                            <div class="w-[240px] shrink-0 snap-center rounded-xl border transition-all flex flex-col overflow-hidden relative p-4 ${bgCardClass} min-h-[160px]">
-                                ${newBadge}
-                                ${contentHtml}
-                                <div class="flex justify-between items-center mt-auto pt-2 border-t border-slate-100">
-                                    <span class="text-[9px] text-slate-400 font-bold">${dateStr}</span>
-                                    ${deleteBtn}
-                                </div>
-                            </div>
-                        `;
-                        if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) { window.showToast(window.t('new_announcement_toast'), 'info'); sessionStorage.setItem('news_toast_' + docSnap.id, 'true'); }
-                    }
+                // Если событий нет - возвращаем обратно светлый фон
+                wrapper.classList.remove('bg-[#0f172a]', 'bg-ui-nav');
+                wrapper.classList.add('bg-slate-200/80'); 
+                if (calendarBtn) {
+                    calendarBtn.classList.remove('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-700/50');
+                    calendarBtn.classList.add('text-slate-500', 'hover:bg-slate-300/50');
                 }
-            });
-
-            if (isNewsAdmin) {
-                let textAreaHtml = '';
-                if (currentLang === 'ru') textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-transparent border-0 p-2 text-sm outline-none resize-none font-medium text-slate-700 flex-grow custom-scrollbar mb-1"></textarea>`;
-                else textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-transparent border-0 p-2 text-sm outline-none resize-none font-medium text-slate-700 flex-grow custom-scrollbar mb-1"></textarea>`;
-
-                newsHTML += `
-                    <div class="w-[240px] shrink-0 snap-center p-4 rounded-xl border border-dashed border-slate-400 bg-slate-100/50 flex flex-col relative min-h-[160px]">
-                        <p class="p-1 text-[9px] font-bold text-slate-500 uppercase tracking-widest text-center flex items-center justify-center gap-1 shrink-0 border-b border-slate-200 pb-2 mb-2">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                            ${window.t('create_announcement')}
-                        </p>
-                        ${textAreaHtml}
-                        <div id="image-preview-container" class="hidden relative w-full shrink-0 mb-2 mt-2">
-                            <img id="image-preview" src="" class="h-16 w-full object-cover rounded-lg border border-slate-200">
-                            <button onclick="removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center outline-none shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
-                        </div>
-                        <div class="flex items-center justify-between gap-2 shrink-0 mt-auto pt-2 border-t border-slate-200">
-                            <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-md transition-colors flex items-center justify-center w-10 h-8 shrink-0 shadow-sm"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)"></label>
-                            <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-4 rounded-md flex-grow transition-colors h-8 outline-none shadow-sm uppercase tracking-widest">${window.t('publish')}</button>
-                        </div>
-                    </div>
-                `;
+                container.innerHTML = `<p class="p-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">${window.t('no_events_today')}</p>`;
             }
-
-            const contentNews = document.getElementById('content-news');
-            if(contentNews) contentNews.innerHTML = newsHTML || `<div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center mx-4 md:mx-0 shadow-sm"><p class="text-slate-400 italic text-sm text-center">${window.t('no_news')}</p></div>`;
         });
     } catch(e) {}
 }
 
-
-// Глобальные переменные для фильтров участков
 window.availableTerritoriesData = [];
 window.currentTerrCityFilter = 'all';
 window.showRecommendedTerrOnly = false;
@@ -1512,6 +1436,9 @@ window.takeTerritory = async (num, btn) => {
     }
 };
 
+window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
+window.openReportHistory = () => document.getElementById('report-history-modal').classList.replace('hidden', 'flex');
+window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
 window.closeModals = () => {
     const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
     const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
