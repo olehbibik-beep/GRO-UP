@@ -1,12 +1,12 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDoc, updateDoc, query, where, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const dict = {
     ru: {
         "stand_admin_title": "Стенды (Админ)",
         "btn_back": "Назад",
         "requests_title": "Заявки на стенд",
-        "approved_users": "Одобренные",
+        "publishers_title": "Возвещатели",
         "schedule_title": "Блокировка часов",
         "stats_title": "Статистика за месяц (текущая локация)",
         "click_to_block": "Нажмите, чтобы закрыть/открыть час",
@@ -15,9 +15,12 @@ const dict = {
         "no_approved": "Пока нет одобренных возвещателей",
         "btn_approve": "Одобрить",
         "btn_reject": "Отклонить",
-        "btn_revoke": "Удалить",
+        "btn_revoke": "Забрать",
+        "btn_grant": "Выдать",
         "confirm_revoke": "Точно забрать допуск к стенду у этого возвещателя?",
         "success": "Успешно!",
+        "access_granted": "Доступ предоставлен! ✅",
+        "access_revoked": "Доступ закрыт 🚫",
         "error_general": "Произошла ошибка!",
         "active_slot": "Открыто",
         "blocked_slot": "Заблокировано",
@@ -29,7 +32,7 @@ const dict = {
         "stand_admin_title": "Stojany (Admin)",
         "btn_back": "Zpět",
         "requests_title": "Žádosti o stojan",
-        "approved_users": "Schválení",
+        "publishers_title": "Zvěstovatelé",
         "schedule_title": "Blokování hodin",
         "stats_title": "Statistika za měsíc (aktuální lokace)",
         "click_to_block": "Kliknutím zavřete/otevřete",
@@ -39,8 +42,11 @@ const dict = {
         "btn_approve": "Schválit",
         "btn_reject": "Zamítnout",
         "btn_revoke": "Odebrat",
+        "btn_grant": "Vydat",
         "confirm_revoke": "Opravdu odebrat přístup ke stojanu?",
         "success": "Úspěšně!",
+        "access_granted": "Přístup udělen! ✅",
+        "access_revoked": "Přístup odebrán 🚫",
         "error_general": "Došlo k chybě!",
         "active_slot": "Otevřeno",
         "blocked_slot": "Zablokováno",
@@ -108,6 +114,7 @@ window.selectLocation = (loc) => {
     loadStatistics();  
 };
 
+// 1. ЗАЯВКИ
 const reqQuery = query(collection(db, "requests"), where("type", "==", "stand"));
 onSnapshot(reqQuery, (snapshot) => {
     const list = document.getElementById('stand-requests-list');
@@ -138,36 +145,9 @@ onSnapshot(reqQuery, (snapshot) => {
     list.innerHTML = html || `<p class="text-slate-400 text-xs text-center py-4 italic">${window.t('no_requests')}</p>`;
 });
 
-onSnapshot(collection(db, "users"), (snapshot) => {
-    const list = document.getElementById('approved-users-list');
-    let html = '';
-    const users = [];
-
-    snapshot.forEach(docSnap => {
-        const u = docSnap.data();
-        if (u.status === 'active' && u.roles && u.roles.includes('Служение со стендом')) {
-            users.push({ id: docSnap.id, name: u.name });
-        }
-    });
-
-    users.sort((a, b) => a.name.localeCompare(b.name));
-
-    users.forEach(u => {
-        html += `
-            <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-md">
-                <span class="font-bold text-slate-700 text-sm truncate pr-2">${u.name}</span>
-                <button onclick="removeStandAccess('${u.id}')" class="shrink-0 px-2.5 py-1 bg-white border border-slate-200 text-slate-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 text-[9px] font-black uppercase tracking-widest rounded transition-colors outline-none">
-                    ${window.t('btn_revoke')}
-                </button>
-            </div>
-        `;
-    });
-    list.innerHTML = html || `<p class="col-span-full text-slate-400 text-xs text-center py-4 italic">${window.t('no_approved')}</p>`;
-});
-
-window.approveStand = async (reqId, userId) => {
+window.approveStand = async (reqId, targetUserId) => {
     try {
-        const userRef = doc(db, "users", userId);
+        const userRef = doc(db, "users", targetUserId);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
             const roles = userSnap.data().roles || [];
@@ -183,20 +163,81 @@ window.approveStand = async (reqId, userId) => {
 
 window.rejectStand = async (reqId) => { try { await deleteDoc(doc(db, "requests", reqId)); } catch (e) {} };
 
-window.removeStandAccess = async (userId) => {
-    if (confirm(window.t('confirm_revoke'))) {
-        try {
-            const userRef = doc(db, "users", userId);
-            const userSnap = await getDoc(userRef);
-            if (userSnap.exists()) {
-                let roles = userSnap.data().roles || [];
-                roles = roles.filter(r => r !== "Служение со стендом");
-                await updateDoc(userRef, { roles: roles });
-                window.showToast(window.t('success'));
+
+// 2. 🔥 НОВЫЙ БЛОК: СПИСОК ВСЕХ ВОЗВЕЩАТЕЛЕЙ С КНОПКАМИ ВЫДАТЬ/ЗАБРАТЬ
+onSnapshot(query(collection(db, "users"), where("status", "==", "active")), (snapshot) => {
+    const container = document.getElementById('users-list');
+    if (!container) return;
+    let html = '';
+    
+    const users = [];
+    snapshot.forEach(d => users.push({ id: d.id, ...d.data() }));
+    users.sort((a,b) => a.name.localeCompare(b.name));
+
+    users.forEach(u => {
+        const roles = u.roles || [];
+        const hasStand = roles.includes("Служение со стендом") || roles.includes("Владелец") || roles.includes("Админ");
+        
+        // Значок СТЕНД
+        const badge = hasStand 
+            ? `<span class="bg-indigo-100 border border-indigo-200 text-indigo-600 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-sm shrink-0">СТЕНД</span>` 
+            : ``;
+        
+        // Кнопка
+        const btnColor = hasStand ? "text-rose-500 bg-rose-50 hover:bg-rose-100 border-rose-200" : "text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border-emerald-200";
+        const btnText = hasStand ? window.t('btn_revoke') : window.t('btn_grant');
+
+        html += `
+            <div class="user-row bg-slate-50 border border-slate-100 rounded-lg p-2.5 flex justify-between items-center transition-colors hover:border-slate-300 shadow-sm" data-search="${u.name.toLowerCase()}">
+                <div class="flex items-center gap-2 min-w-0 pr-2">
+                    <span class="font-bold text-slate-700 text-xs truncate">${u.name}</span>
+                    ${badge}
+                </div>
+                <button onclick="toggleStandRole('${u.id}', ${hasStand})" class="shrink-0 px-3 py-1.5 rounded border text-[9px] font-black uppercase tracking-widest outline-none transition-colors shadow-sm ${btnColor}">
+                    ${btnText}
+                </button>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html || `<p class="col-span-full text-slate-400 text-xs text-center py-4 italic">${window.t('no_approved')}</p>`;
+});
+
+window.toggleStandRole = async (targetUserId, currentlyHasAccess) => {
+    try {
+        const userRef = doc(db, "users", targetUserId);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+            let roles = userSnap.data().roles || [];
+            if (currentlyHasAccess) {
+                if(confirm(window.t('confirm_revoke'))) {
+                    roles = roles.filter(r => r !== "Служение со стендом");
+                    await updateDoc(userRef, { roles });
+                    window.showToast(window.t('access_revoked'));
+                }
+            } else {
+                if (!roles.includes("Служение со стендом")) {
+                    roles.push("Служение со стендом");
+                    await updateDoc(userRef, { roles });
+                    window.showToast(window.t('access_granted'));
+                }
             }
-        } catch (e) { alert(window.t('error_general')); }
-    }
+        }
+    } catch (e) { alert(window.t('error_general')); }
 };
+
+// ПОИСК ПО ИМЕНИ
+const searchEl = document.getElementById('search-user');
+if (searchEl) {
+    searchEl.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        document.querySelectorAll('.user-row').forEach(row => {
+            if (row.getAttribute('data-search').includes(term)) row.style.display = '';
+            else row.style.display = 'none';
+        });
+    });
+}
+
 
 // РАСПИСАНИЕ
 let selectedAdminDateStr = "";
