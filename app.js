@@ -153,7 +153,7 @@ function translateDbString(str) {
         "Развивайте интерес": "develop_interest", "Rozvíjení zájmu": "develop_interest",
         "Подготавливайте учеников": "make_disciples", "Činění učedníků": "make_disciples",
         "Объясняйте свои взгляды": "explain_beliefs", "Vysvětlování své víry": "explain_beliefs",
-        "Местные потребности": "local_needs", "Místní потребности": "local_needs",
+        "Местные потребности": "local_needs", "Místní potřeby": "local_needs",
         "Речь 10 мин.": "talk_10_min", "Proslov 10 min.": "talk_10_min"
     };
     if (map[str]) return window.t(map[str]);
@@ -859,7 +859,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 }
 
 function loadPersonalData() {
-    
     try {
         onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
             window.allMapsCache = {};
@@ -1327,6 +1326,7 @@ function loadPersonalData() {
                                 </div>
                             </div>
                         `;
+                        if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) { window.showToast(window.t('new_announcement_toast'), 'info'); sessionStorage.setItem('news_toast_' + docSnap.id, 'true'); }
                     }
                 }
             });
@@ -1578,3 +1578,37 @@ window.publishNews = async () => {
 window.deleteNews = async (id) => {
     if (confirm(window.t('confirm_delete_news'))) { try { await deleteDoc(doc(db, "section_content", id)); } catch (e) { alert(window.t('error_network')); } }
 };
+
+// 🔥 PULL-TO-REFRESH (Свайп вниз для обновления)
+let pStart = { x: 0, y: 0 };
+let pCurrent = { x: 0, y: 0 };
+const mainElem = document.getElementById('main-dashboard');
+
+if (mainElem) {
+    mainElem.addEventListener('touchstart', function(e) {
+        pStart.x = e.touches[0].screenX;
+        pStart.y = e.touches[0].screenY;
+    }, {passive: true});
+
+    mainElem.addEventListener('touchmove', function(e) {
+        pCurrent.x = e.touches[0].screenX;
+        pCurrent.y = e.touches[0].screenY;
+    }, {passive: true});
+
+    mainElem.addEventListener('touchend', function(e) {
+        if (mainElem.scrollTop <= 0) {
+            let yDiff = pCurrent.y - pStart.y;
+            let xDiff = Math.abs(pCurrent.x - pStart.x);
+            if (yDiff > 120 && xDiff < 50 && pStart.y > 0 && pCurrent.y > 0) {
+                const loader = document.getElementById('global-loader');
+                if(loader) {
+                    loader.style.display = 'flex';
+                    loader.style.opacity = '1';
+                }
+                setTimeout(() => window.location.reload(true), 300);
+            }
+        }
+        pStart = { x: 0, y: 0 };
+        pCurrent = { x: 0, y: 0 };
+    });
+}
