@@ -1153,7 +1153,7 @@ function loadPersonalData() {
         });
     } catch(e){}
 
-    try {
+try {
         const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
         onSnapshot(eventsQuery, (snapshot) => {
             const container = document.getElementById('calendar-events');
@@ -1169,106 +1169,101 @@ function loadPersonalData() {
                 const ev = docSnap.data();
                 ev.id = docSnap.id;
                 
-                // 🔥 ТЕМНЫЙ ФОН СОБЫТИЙ: Отрисовываем ПРОШЕДШИЕ события серыми, БУДУЩИЕ - обычными
-                // Если событие было в прошлом (даже сегодня, но часы прошли), делаем его тусклым
-                let isPastEvent = false;
-                let displayTime = ev.time || "";
-                
-                if (displayTime) {
-                    let hours = 0, minutes = 0;
-                    if (!displayTime.includes(':') && displayTime.length >= 3) {
-                        if (displayTime.length === 4) displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
-                        else if (displayTime.length === 3) displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
+                // СТРОГО ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
+                if (ev.date === todayStr) {
+                    let isPastEvent = false;
+                    let displayTime = ev.time || "";
+                    
+                    // Проверяем, не прошло ли уже время события
+                    if (displayTime) {
+                        let hours = 0, minutes = 0;
+                        if (!displayTime.includes(':') && displayTime.length >= 3) {
+                            if (displayTime.length === 4) displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
+                            else if (displayTime.length === 3) displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
+                        }
+                        if (displayTime.includes(':')) {
+                            [hours, minutes] = displayTime.split(':');
+                            const eventExactTime = new Date();
+                            eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+                            // Если прошло более 1.5 часа - делаем тусклым
+                            if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
+                        }
                     }
-                    if (displayTime.includes(':')) {
-                        [hours, minutes] = displayTime.split(':');
-                        const eventExactTime = new Date(ev.date);
-                        eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-                        // Если событие уже прошло более чем на 1.5 часа
-                        if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
-                    }
-                } else {
-                     // Если времени нет, и дата меньше сегодняшней = прошло
-                     if(ev.date < todayStr) isPastEvent = true;
+
+                    ev.isPastEvent = isPastEvent;
+                    ev.displayTime = displayTime;
+                    todayEvents.push(ev);
                 }
-
-                // Добавляем все события, чтобы они выводились списком (а не только сегодняшние)
-                ev.isPastEvent = isPastEvent;
-                ev.displayTime = displayTime;
-                todayEvents.push(ev);
             });
 
-            // Сортировка: сначала будущие (ближайшие), потом прошедшие
-            todayEvents.sort((a, b) => {
-                if (a.date !== b.date) return a.date.localeCompare(b.date);
-                return (a.time || "").localeCompare(b.time || "");
-            });
-
-            // Фильтруем: показываем события, начиная с 7 дней назад, чтобы не засорять список
-            const oneWeekAgoMs = now.getTime() - (7 * 24 * 60 * 60 * 1000);
-            const recentEvents = todayEvents.filter(ev => new Date(ev.date).getTime() >= oneWeekAgoMs);
+            // Сортируем сегодняшние события по времени
+            todayEvents.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
 
             let html = '';
-            if (recentEvents.length > 0) {
-                // Изменен фон контейнера (теперь он темно-синий #0f172a как меню)
-                container.parentElement.classList.replace('bg-slate-200/80', 'bg-[#0f172a]');
-                container.parentElement.classList.replace('shadow-sm', 'shadow-md');
-                container.parentElement.querySelector('button').classList.replace('text-slate-500', 'text-slate-300');
-                container.parentElement.querySelector('button').classList.replace('hover:bg-slate-300/50', 'hover:bg-slate-800');
+            const wrapper = container.parentElement;
+            const calendarBtn = wrapper.querySelector('button');
 
-                recentEvents.forEach(ev => {
+            if (todayEvents.length > 0) {
+                // Включаем темный фон
+                wrapper.classList.remove('bg-slate-200/80');
+                wrapper.classList.add('bg-[#0f172a]'); 
+                if (calendarBtn) {
+                    calendarBtn.classList.remove('text-slate-500', 'hover:bg-slate-300/50');
+                    calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-800');
+                }
+
+                todayEvents.forEach(ev => {
                     let evGroup = ev.group || window.t('no_group');
                     if (evGroup === "Все" || evGroup === "Všechny") evGroup = window.t('all_groups');
                     const hasGroup = evGroup !== window.t('no_group');
                     
-                    // Если событие прошло - делаем его очень тусклым, чтобы не отвлекало
-                    const activeClass = ev.isPastEvent ? "opacity-30 grayscale" : "";
-                    const timeColor = ev.isPastEvent ? "text-slate-500" : "text-emerald-400"; // Зеленый для времени
-                    const leaderColor = ev.isPastEvent ? "text-slate-500" : "text-sky-400";
-                    const titleColor = ev.isPastEvent ? "text-slate-400" : "text-white"; // Белый текст
+                    const activeClass = ev.isPastEvent ? "opacity-40 grayscale" : "";
+                    const timeColor = ev.isPastEvent ? "text-slate-500" : "text-emerald-400";
+                    const leaderColor = ev.isPastEvent ? "text-slate-600" : "text-sky-400";
+                    const titleColor = ev.isPastEvent ? "text-slate-400" : "text-white";
                     
                     const dateObj = new Date(ev.date);
                     const dayNum = dateObj.getDate();
-                    const monthName = dateObj.toLocaleDateString(localeFormat, { month: 'short' }).replace('.','');
-                    const isToday = ev.date === todayStr;
-                    
-                    // Если сегодня - красная плашка, если нет - серая
-                    const badgeBg = isToday ? "bg-rose-500 text-white" : "bg-slate-700 text-slate-300 border border-slate-600";
+                    const badgeBg = "bg-rose-500 text-white";
 
                     html += `
-                        <div class="flex items-center p-3 w-full cursor-default ${activeClass} border-b border-slate-800 last:border-0 hover:bg-slate-800/50 transition-colors">
-                            <div class="flex items-center gap-1.5 shrink-0 mr-3">
-                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 ${badgeBg} rounded-lg shadow-inner shrink-0">
-                                    <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${isToday ? window.t('today_badge') : monthName}</span>
-                                    <span class="text-lg md:text-xl font-black leading-none">${dayNum}</span>
+                        <div class="flex items-center p-3 md:p-4 w-full cursor-default ${activeClass} border-b border-slate-800/50 last:border-0 hover:bg-slate-800/50 transition-colors">
+                            <div class="flex items-center gap-2 shrink-0 mr-3">
+                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 ${badgeBg} rounded-xl shadow-inner shrink-0">
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${window.t('today_badge')}</span>
+                                    <span class="text-xl font-black leading-none">${dayNum}</span>
                                 </div>
                                 ${hasGroup ? `
-                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg shrink-0">
-                                    <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-500 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
+                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-slate-800 border border-slate-700 text-slate-300 rounded-xl shrink-0">
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
                                     <span class="text-sm md:text-lg font-black leading-none">${evGroup}</span>
                                 </div>` : ''}
                             </div>
-                            <div class="flex flex-col flex-grow truncate min-w-0">
-                                <div class="flex items-center gap-1.5 truncate">
-                                    ${ev.displayTime ? `<span class="text-xs md:text-sm font-black shrink-0 ${timeColor}">${ev.displayTime}</span>` : ''}
-                                    <span class="font-black text-sm md:text-base ${titleColor} whitespace-normal leading-tight">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
+                            <div class="flex flex-col flex-grow min-w-0 pr-2">
+                                <div class="flex items-start gap-2">
+                                    ${ev.displayTime ? `<span class="text-sm md:text-base font-black shrink-0 mt-0.5 ${timeColor}">${ev.displayTime}</span>` : ''}
+                                    <span class="font-black text-sm md:text-base ${titleColor} whitespace-normal leading-tight break-words">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
                                 </div>
-                                ${ev.leader ? `<span class="text-[9px] md:text-[10px] uppercase font-bold text-slate-500 truncate mt-1">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
+                                ${ev.leader ? `<span class="text-[10px] md:text-[11px] uppercase font-bold text-slate-400 mt-1.5">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
                             </div>
                         </div>
                     `;
 
-                    // Показывать уведомление только если событие сегодня и еще не прошло
-                    if (isToday && !ev.isPastEvent && !sessionStorage.getItem('event_toast_' + ev.id)) {
+                    if (!ev.isPastEvent && !sessionStorage.getItem('event_toast_' + ev.id)) {
                         window.showToast(`${window.t('today_event_toast')} ${ev.title} ${ev.displayTime ? ' ' + ev.displayTime : ''}`, 'info');
                         sessionStorage.setItem('event_toast_' + ev.id, 'true');
                     }
                 });
                 container.innerHTML = html;
             } else {
-                container.innerHTML = `<p class="p-4 text-xs text-slate-400 italic text-center">${window.t('no_events_today')}</p>`;
-                container.parentElement.classList.replace('bg-[#0f172a]', 'bg-slate-200/80');
-                container.parentElement.classList.replace('shadow-md', 'shadow-sm');
+                // Если событий нет - возвращаем светлый фон
+                wrapper.classList.remove('bg-[#0f172a]');
+                wrapper.classList.add('bg-slate-200/80'); 
+                if (calendarBtn) {
+                    calendarBtn.classList.remove('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-800');
+                    calendarBtn.classList.add('text-slate-500', 'hover:bg-slate-300/50');
+                }
+                container.innerHTML = `<p class="p-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">${window.t('no_events_today')}</p>`;
             }
         });
     } catch(e) {}
