@@ -153,7 +153,7 @@ function translateDbString(str) {
         "Развивайте интерес": "develop_interest", "Rozvíjení zájmu": "develop_interest",
         "Подготавливайте учеников": "make_disciples", "Činění učedníků": "make_disciples",
         "Объясняйте свои взгляды": "explain_beliefs", "Vysvětlování své víry": "explain_beliefs",
-        "Местные потребности": "local_needs", "Místní potřeby": "local_needs",
+        "Местные потребности": "local_needs", "Místní потребности": "local_needs",
         "Речь 10 мин.": "talk_10_min", "Proslov 10 min.": "talk_10_min"
     };
     if (map[str]) return window.t(map[str]);
@@ -1190,7 +1190,6 @@ function loadPersonalData() {
                 const ev = docSnap.data();
                 ev.id = docSnap.id;
                 
-                // ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
                 if (ev.date === todayStr) {
                     let isPastEvent = false;
                     let displayTime = ev.time || "";
@@ -1222,11 +1221,9 @@ function loadPersonalData() {
             const calendarBtn = wrapper.querySelector('button');
 
             if (todayEvents.length > 0) {
-                // 🔥 ФОН БЛОКА КАК У МЕНЮ (ТЕМНЫЙ)
                 wrapper.classList.remove('bg-slate-200/80');
-                wrapper.classList.add('bg-[#0f172a]'); // Темно-синий цвет навигации
+                wrapper.classList.add('bg-[#0f172a]'); 
                 if (calendarBtn) {
-                    // Удаляем рамку между событиями и кнопкой
                     calendarBtn.classList.remove('text-slate-500', 'hover:bg-slate-300/50', 'border-l', 'border-slate-800/50', 'border-slate-700/50', 'border-slate-800');
                     calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50');
                 }
@@ -1236,15 +1233,13 @@ function loadPersonalData() {
                     if (evGroup === "Все" || evGroup === "Všechny") evGroup = window.t('all_groups');
                     const hasGroup = evGroup !== window.t('no_group');
                     
-                    // ПРОШЕДШИЕ СОБЫТИЯ
                     const activeClass = ev.isPastEvent ? "opacity-30 grayscale" : "";
-                    const timeColor = ev.isPastEvent ? "text-slate-500" : "text-slate-400"; 
+                    const timeColor = ev.isPastEvent ? "text-slate-500" : "text-emerald-400"; 
                     const titleColor = ev.isPastEvent ? "text-slate-500" : "text-white";
                     
                     const dateObj = new Date(ev.date);
                     const dayNum = dateObj.getDate();
                     
-                    // 🔥 БЕЗ РАМОК ВООБЩЕ
                     html += `
                         <div class="flex items-center px-4 py-3 w-full bg-transparent cursor-default ${activeClass}">
                             <div class="flex items-center gap-2 shrink-0 mr-3">
@@ -1266,15 +1261,9 @@ function loadPersonalData() {
                             </div>
                         </div>
                     `;
-
-                    if (!ev.isPastEvent && !sessionStorage.getItem('event_toast_' + ev.id)) {
-                        window.showToast(`${window.t('today_event_toast')} ${ev.title} ${ev.displayTime ? ' ' + ev.displayTime : ''}`, 'info');
-                        sessionStorage.setItem('event_toast_' + ev.id, 'true');
-                    }
                 });
                 container.innerHTML = html;
             } else {
-                // Если событий нет - возвращаем обратно светлый фон
                 wrapper.classList.remove('bg-[#0f172a]', 'bg-ui-nav');
                 wrapper.classList.add('bg-slate-200/80'); 
                 if (calendarBtn) {
@@ -1338,7 +1327,6 @@ function loadPersonalData() {
                                 </div>
                             </div>
                         `;
-                        if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) { window.showToast(window.t('new_announcement_toast'), 'info'); sessionStorage.setItem('news_toast_' + docSnap.id, 'true'); }
                     }
                 }
             });
@@ -1373,8 +1361,6 @@ function loadPersonalData() {
     } catch(e) {}
 }
 
-
-// Глобальные переменные для фильтров участков
 window.availableTerritoriesData = [];
 window.currentTerrCityFilter = 'all';
 window.showRecommendedTerrOnly = false;
