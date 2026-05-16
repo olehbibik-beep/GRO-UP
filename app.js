@@ -127,7 +127,7 @@ function translateDbString(str) {
         "Развивайте интерес": "develop_interest", "Rozvíjení zájmu": "develop_interest",
         "Подготавливайте учеников": "make_disciples", "Činění učedníků": "make_disciples",
         "Объясняйте свои взгляды": "explain_beliefs", "Vysvětlování své víry": "explain_beliefs",
-        "Местные потребности": "local_needs", "Místní potřeby": "local_needs",
+        "Местные потребности": "local_needs", "Místní потребности": "local_needs",
         "Речь 10 мин.": "talk_10_min", "Proslov 10 min.": "talk_10_min"
     };
     if (map[str]) return window.t(map[str]);
@@ -454,11 +454,6 @@ if (userId) {
             renderStandCard();
             listenForMessages(); 
             
-            // ПРИНУДИТЕЛЬНО ОТКРЫВАЕМ ДОМИК ПРИ ЗАГРУЗКЕ
-            // (Убрано, чтобы не сбивало вкладки при живом обновлении)
-            // window.switchTab('home'); 
-            
-            // Если вкладка еще не активна, откроем home
             if(!document.querySelector('.tab-content.active')) {
                 window.switchTab('home');
             }
@@ -642,7 +637,7 @@ window.requestStand = async (btn) => {
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-// 🔥 ПРОГРАММА СОБРАНИЯ
+// 🔥 ПРОГРАММА СОБРАНИЯ (БЕЗ РАМОК, КРУПНЫЕ ШРИФТЫ)
 function getISOWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -723,6 +718,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
+    // 🔥 ЗАДАНИЯ ШКОЛЫ: Все в одной белой карточке
     const minRowsRaw = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
@@ -739,7 +735,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     }).join('');
 
     const minRows = minRowsRaw ? `
-        <div class="flex flex-col bg-white/60 shadow-sm rounded-xl mt-1.5 mb-2 mx-1 overflow-hidden">
+        <div class="flex flex-col bg-white/60 border border-slate-200/50 shadow-sm rounded-xl mt-1.5 mb-2 mx-1 overflow-hidden">
             ${minRowsRaw}
         </div>
     ` : '';
@@ -755,12 +751,13 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const cbsNameColor = isCbsMe ? 'font-black text-black' : 'font-bold text-slate-800';
     const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
+    // ВЫХОДНЫЕ: Публичная речь
     const weTalkMe = d.we_talk_speaker === myName;
     const wtTitleColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-900';
     const wtNameColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-800';
 
     const we_talk = `
-        <div class="flex flex-col py-2.5 px-3 bg-white/60 hover:bg-white active:bg-white shadow-sm transition-colors rounded-xl mt-2 mb-1 mx-1 cursor-pointer">
+        <div class="flex flex-col py-2.5 px-3 bg-white/60 hover:bg-white active:bg-white border border-slate-200/50 shadow-sm transition-colors rounded-xl mt-2 mb-1 mx-1 cursor-pointer">
             <span class="text-sm md:text-base ${wtTitleColor} uppercase leading-tight">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
             <span class="text-sm md:text-base ${wtNameColor} mt-1 ml-4">${d.we_talk_speaker || '-'}</span>
         </div>
@@ -774,9 +771,11 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     return `
         <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-4 px-1">
             
-            <div class="flex items-center justify-between pb-3 mb-2 mx-2 border-b border-slate-300">
-                <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
-                <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
+            <div class="flex flex-col gap-1 pb-3 mb-2 mx-2 border-b border-slate-300">
+                <div class="flex items-center justify-between w-full">
+                    <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
+                    <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
+                </div>
             </div>
             
             <div class="flex-grow flex flex-col space-y-0.5">
@@ -811,9 +810,11 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 
         <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-4 px-1">
             
-            <div class="flex items-center justify-between pb-3 mb-2 mx-2 border-b border-slate-300">
-                <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
-                <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
+            <div class="flex flex-col gap-1 pb-3 mb-2 mx-2 border-b border-slate-300">
+                <div class="flex items-center justify-between w-full">
+                    <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
+                    <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
+                </div>
             </div>
 
             <div class="flex-grow flex flex-col space-y-0.5">
@@ -1168,76 +1169,107 @@ function loadPersonalData() {
             snapshot.forEach(docSnap => {
                 const ev = docSnap.data();
                 ev.id = docSnap.id;
-                // ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
-                if (ev.date === todayStr) {
-                    todayEvents.push(ev);
+                
+                // 🔥 ТЕМНЫЙ ФОН СОБЫТИЙ: Отрисовываем ПРОШЕДШИЕ события серыми, БУДУЩИЕ - обычными
+                // Если событие было в прошлом (даже сегодня, но часы прошли), делаем его тусклым
+                let isPastEvent = false;
+                let displayTime = ev.time || "";
+                
+                if (displayTime) {
+                    let hours = 0, minutes = 0;
+                    if (!displayTime.includes(':') && displayTime.length >= 3) {
+                        if (displayTime.length === 4) displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
+                        else if (displayTime.length === 3) displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
+                    }
+                    if (displayTime.includes(':')) {
+                        [hours, minutes] = displayTime.split(':');
+                        const eventExactTime = new Date(ev.date);
+                        eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+                        // Если событие уже прошло более чем на 1.5 часа
+                        if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
+                    }
+                } else {
+                     // Если времени нет, и дата меньше сегодняшней = прошло
+                     if(ev.date < todayStr) isPastEvent = true;
                 }
+
+                // Добавляем все события, чтобы они выводились списком (а не только сегодняшние)
+                ev.isPastEvent = isPastEvent;
+                ev.displayTime = displayTime;
+                todayEvents.push(ev);
             });
 
-            let html = '';
-            if (todayEvents.length > 0) {
-                todayEvents.forEach(ev => {
-                    let isPastEvent = false;
-                    let displayTime = ev.time || "";
-                    
-                    if (displayTime) {
-                        let hours = 0, minutes = 0;
-                        if (!displayTime.includes(':') && displayTime.length >= 3) {
-                            if (displayTime.length === 4) displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
-                            else if (displayTime.length === 3) displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
-                        }
-                        if (displayTime.includes(':')) {
-                            [hours, minutes] = displayTime.split(':');
-                            const eventExactTime = new Date();
-                            eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-                            if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
-                        }
-                    }
+            // Сортировка: сначала будущие (ближайшие), потом прошедшие
+            todayEvents.sort((a, b) => {
+                if (a.date !== b.date) return a.date.localeCompare(b.date);
+                return (a.time || "").localeCompare(b.time || "");
+            });
 
+            // Фильтруем: показываем события, начиная с 7 дней назад, чтобы не засорять список
+            const oneWeekAgoMs = now.getTime() - (7 * 24 * 60 * 60 * 1000);
+            const recentEvents = todayEvents.filter(ev => new Date(ev.date).getTime() >= oneWeekAgoMs);
+
+            let html = '';
+            if (recentEvents.length > 0) {
+                // Изменен фон контейнера (теперь он темно-синий #0f172a как меню)
+                container.parentElement.classList.replace('bg-slate-200/80', 'bg-[#0f172a]');
+                container.parentElement.classList.replace('shadow-sm', 'shadow-md');
+                container.parentElement.querySelector('button').classList.replace('text-slate-500', 'text-slate-300');
+                container.parentElement.querySelector('button').classList.replace('hover:bg-slate-300/50', 'hover:bg-slate-800');
+
+                recentEvents.forEach(ev => {
                     let evGroup = ev.group || window.t('no_group');
                     if (evGroup === "Все" || evGroup === "Všechny") evGroup = window.t('all_groups');
                     const hasGroup = evGroup !== window.t('no_group');
                     
-                    const activeClass = isPastEvent ? "opacity-60 grayscale" : "";
-                    const timeColor = isPastEvent ? "text-slate-400" : "text-rose-500";
-                    const leaderColor = isPastEvent ? "text-slate-400" : "text-indigo-600";
-                    const titleColor = isPastEvent ? "text-slate-500" : "text-slate-800";
+                    // Если событие прошло - делаем его очень тусклым, чтобы не отвлекало
+                    const activeClass = ev.isPastEvent ? "opacity-30 grayscale" : "";
+                    const timeColor = ev.isPastEvent ? "text-slate-500" : "text-emerald-400"; // Зеленый для времени
+                    const leaderColor = ev.isPastEvent ? "text-slate-500" : "text-sky-400";
+                    const titleColor = ev.isPastEvent ? "text-slate-400" : "text-white"; // Белый текст
                     
                     const dateObj = new Date(ev.date);
                     const dayNum = dateObj.getDate();
-                    const badgeBg = "bg-slate-800 text-white";
+                    const monthName = dateObj.toLocaleDateString(localeFormat, { month: 'short' }).replace('.','');
+                    const isToday = ev.date === todayStr;
+                    
+                    // Если сегодня - красная плашка, если нет - серая
+                    const badgeBg = isToday ? "bg-rose-500 text-white" : "bg-slate-700 text-slate-300 border border-slate-600";
 
                     html += `
-                        <div class="flex items-center p-3 w-full cursor-default ${activeClass}">
+                        <div class="flex items-center p-3 w-full cursor-default ${activeClass} border-b border-slate-800 last:border-0 hover:bg-slate-800/50 transition-colors">
                             <div class="flex items-center gap-1.5 shrink-0 mr-3">
                                 <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 ${badgeBg} rounded-lg shadow-inner shrink-0">
-                                    <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-300 leading-none mb-0.5 tracking-widest">${window.t('today_badge')}</span>
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${isToday ? window.t('today_badge') : monthName}</span>
                                     <span class="text-lg md:text-xl font-black leading-none">${dayNum}</span>
                                 </div>
                                 ${hasGroup ? `
-                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-slate-100 border border-slate-200 text-slate-600 rounded-lg shrink-0">
-                                    <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
+                                <div class="flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg shrink-0">
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-500 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
                                     <span class="text-sm md:text-lg font-black leading-none">${evGroup}</span>
                                 </div>` : ''}
                             </div>
                             <div class="flex flex-col flex-grow truncate min-w-0">
                                 <div class="flex items-center gap-1.5 truncate">
-                                    ${displayTime ? `<span class="text-xs md:text-sm font-black shrink-0 ${timeColor}">${displayTime}</span>` : ''}
-                                    <span class="font-black text-sm md:text-base truncate ${titleColor}">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
+                                    ${ev.displayTime ? `<span class="text-xs md:text-sm font-black shrink-0 ${timeColor}">${ev.displayTime}</span>` : ''}
+                                    <span class="font-black text-sm md:text-base ${titleColor} whitespace-normal leading-tight">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
                                 </div>
-                                ${ev.leader ? `<span class="text-[9px] md:text-[10px] uppercase font-bold text-slate-500 truncate mt-0.5">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
+                                ${ev.leader ? `<span class="text-[9px] md:text-[10px] uppercase font-bold text-slate-500 truncate mt-1">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
                             </div>
                         </div>
                     `;
 
-                    if (!isPastEvent && !sessionStorage.getItem('event_toast_' + ev.id)) {
-                        window.showToast(`${window.t('today_event_toast')} ${ev.title} ${displayTime ? ' ' + displayTime : ''}`, 'info');
+                    // Показывать уведомление только если событие сегодня и еще не прошло
+                    if (isToday && !ev.isPastEvent && !sessionStorage.getItem('event_toast_' + ev.id)) {
+                        window.showToast(`${window.t('today_event_toast')} ${ev.title} ${ev.displayTime ? ' ' + ev.displayTime : ''}`, 'info');
                         sessionStorage.setItem('event_toast_' + ev.id, 'true');
                     }
                 });
                 container.innerHTML = html;
             } else {
                 container.innerHTML = `<p class="p-4 text-xs text-slate-400 italic text-center">${window.t('no_events_today')}</p>`;
+                container.parentElement.classList.replace('bg-[#0f172a]', 'bg-slate-200/80');
+                container.parentElement.classList.replace('shadow-md', 'shadow-sm');
             }
         });
     } catch(e) {}
@@ -1330,43 +1362,38 @@ function loadPersonalData() {
 }
 
 
-// Глобальные переменные для фильтров
+// Глобальные переменные для фильтров участков
 window.availableTerritoriesData = [];
 window.currentTerrCityFilter = 'all';
 window.showRecommendedTerrOnly = false;
 
-// 🔥 ОТКРЫТИЕ МОДАЛКИ СВОБОДНЫХ УЧАСТКОВ И РАСЧЕТ ДАТ
 window.openTakeTerrModal = async () => {
     document.getElementById('take-terr-modal').classList.replace('hidden', 'flex');
     const listContainer = document.getElementById('available-terr-list');
     listContainer.innerHTML = `<p class="text-xs italic text-slate-400 text-center py-4 font-bold uppercase tracking-widest animate-pulse">${window.t('loading')}</p>`;
     
     try {
-        // 1. Узнаем какие участки СЕЙЧАС заняты
         const activeSnap = await getDocs(query(collection(db, "territories"), where("status", "==", "active")));
         const activeNumbers = [];
         activeSnap.forEach(doc => activeNumbers.push(Number(doc.data().number)));
 
-        // 2. Достаем ВСЮ историю сданных участков, чтобы узнать, когда их брали в последний раз
         const returnedSnap = await getDocs(query(collection(db, "territories"), where("status", "==", "returned")));
         const lastWorkedMap = {};
         returnedSnap.forEach(doc => {
             const d = doc.data();
             if(d.returnedAt) {
                 const dDate = new Date(d.returnedAt).getTime();
-                // Запоминаем самую свежую дату сдачи для каждого номера
                 if(!lastWorkedMap[d.number] || lastWorkedMap[d.number] < dDate) {
                     lastWorkedMap[d.number] = dDate;
                 }
             }
         });
 
-        // 3. Формируем список свободных участков
         window.availableTerritoriesData = [];
         Object.keys(window.allMapsCache).forEach(numStr => {
             const num = Number(numStr);
             if (!activeNumbers.includes(num)) {
-                let lastW = lastWorkedMap[num] || 0; // 0 = никогда не брали
+                let lastW = lastWorkedMap[num] || 0; 
                 window.availableTerritoriesData.push({ 
                     num: num, 
                     url: window.allMapsCache[numStr].url, 
@@ -1377,14 +1404,12 @@ window.openTakeTerrModal = async () => {
             }
         });
 
-        // 4. Кто получает огонек 🔥 (Не брали > 90 дней или вообще никогда)
         const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
         const now = Date.now();
         window.availableTerritoriesData.forEach(m => {
             m.isFire = (m.lastWorked === 0) || ((now - m.lastWorked) > ninetyDaysMs);
         });
 
-        // Сбрасываем фильтры при открытии
         window.currentTerrCityFilter = 'all';
         window.showRecommendedTerrOnly = false;
 
@@ -1395,41 +1420,31 @@ window.openTakeTerrModal = async () => {
     }
 };
 
-// 🔥 ОТРИСОВКА ИНТЕРФЕЙСА УЧАСТКОВ С ФИЛЬТРАМИ
 window.renderAvailableTerritoriesUI = () => {
     const listContainer = document.getElementById('available-terr-list');
     let filtered = window.availableTerritoriesData;
 
-    // Применяем фильтр по Городу
     if (window.currentTerrCityFilter !== 'all') {
         filtered = filtered.filter(m => m.city === window.currentTerrCityFilter);
     }
     
-    // Применяем фильтр "Давно не брали"
     if (window.showRecommendedTerrOnly) {
         filtered = filtered.filter(m => m.isFire);
-        // Сортируем так, чтобы самые старые были первыми
         filtered.sort((a,b) => a.lastWorked - b.lastWorked);
     } else {
-        // Обычная сортировка по номерам
         filtered.sort((a,b) => a.num - b.num);
     }
 
-    // Собираем список уникальных городов для кнопок
     const cities = [...new Set(window.availableTerritoriesData.map(m => m.city))].sort();
 
-    // 1. КНОПКИ ФИЛЬТРОВ
     let filtersHtml = `<div class="flex flex-nowrap overflow-x-auto gap-2 pb-3 mb-2 custom-scrollbar shrink-0">`;
     
-    // Кнопка Огонек 🔥
     const fireClass = window.showRecommendedTerrOnly ? 'bg-rose-500 text-white shadow-md' : 'bg-rose-50 text-rose-600 border border-rose-200';
     filtersHtml += `<button onclick="window.showRecommendedTerrOnly = !window.showRecommendedTerrOnly; window.renderAvailableTerritoriesUI()" class="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors outline-none ${fireClass}">🔥 Рекомендуем</button>`;
 
-    // Кнопка "Все"
     const allClass = window.currentTerrCityFilter === 'all' ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-50 text-slate-600 border border-slate-200';
     filtersHtml += `<button onclick="window.currentTerrCityFilter = 'all'; window.renderAvailableTerritoriesUI()" class="shrink-0 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors outline-none ${allClass}">Все</button>`;
 
-    // Кнопки городов
     cities.forEach(city => {
         const cityClass = window.currentTerrCityFilter === city ? 'bg-indigo-500 text-white shadow-md' : 'bg-slate-50 text-slate-600 border border-slate-200';
         const displayCity = city === 'Без города' ? 'Прочие' : city;
@@ -1437,7 +1452,6 @@ window.renderAvailableTerritoriesUI = () => {
     });
     filtersHtml += `</div>`;
 
-    // 2. СЕТКА ПЛИТОЧЕК
     let gridHtml = '';
     if (filtered.length === 0) {
         gridHtml = `<p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">Ничего не найдено</p>`;
@@ -1498,9 +1512,6 @@ window.takeTerritory = async (num, btn) => {
     }
 };
 
-window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
-window.openReportHistory = () => document.getElementById('report-history-modal').classList.replace('hidden', 'flex');
-window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
 window.closeModals = () => {
     const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
     const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
