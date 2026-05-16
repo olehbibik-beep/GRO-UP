@@ -1228,7 +1228,7 @@ function loadPersonalData() {
                 wrapper.classList.add('bg-[#0f172a]'); // Темно-синий цвет навигации
                 if (calendarBtn) {
                     calendarBtn.classList.remove('text-slate-500', 'hover:bg-slate-300/50');
-                    calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-700/50');
+                    calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50', 'border-0', 'border-slate-700/50');
                 }
 
                 todayEvents.forEach(ev => {
@@ -1246,7 +1246,7 @@ function loadPersonalData() {
                     
                     // 🔥 ДИЗАЙН ПРЯМО КАК НА ФОТО
                     html += `
-                        <div class="flex items-center p-3 md:p-4 w-full bg-transparent cursor-default ${activeClass} border-b border-slate-700/50 last:border-0">
+                        <div class="flex items-center p-3 md:p-4 w-full bg-transparent cursor-default ${activeClass}">
                             <div class="flex items-center gap-2 shrink-0 mr-3">
                                 <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-white/10 text-white rounded-xl shrink-0">
                                     <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest opacity-70">${window.t('today_badge')}</span>
