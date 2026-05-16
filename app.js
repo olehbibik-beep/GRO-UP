@@ -3,15 +3,6 @@ import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, del
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
-// ====== ТАЙМЕР ЗАГРУЗКИ ======
-setTimeout(() => {
-    const loader = document.getElementById('global-loader');
-    if (loader) {
-        loader.style.opacity = '0';
-        setTimeout(() => loader.style.display = 'none', 500);
-    }
-}, 2000);
-
 // ====== АВТООБНОВЛЕНИЕ ПРИЛОЖЕНИЯ ======
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(reg => {
@@ -21,7 +12,7 @@ if ('serviceWorker' in navigator) {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                     window.showToast("Устанавливаем обновление...", "info");
                     setTimeout(() => {
-                        window.location.reload(true); // Принудительно перезагружаем с сервера
+                        window.location.reload(true);
                     }, 1500);
                 }
             });
@@ -37,6 +28,14 @@ if ('serviceWorker' in navigator) {
     });
 }
 // ========================================
+
+setTimeout(() => {
+    const loader = document.getElementById('global-loader');
+    if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.style.display = 'none', 500);
+    }
+}, 2000);
 
 const dict = {
     ru: {
@@ -154,7 +153,7 @@ function translateDbString(str) {
         "Развивайте интерес": "develop_interest", "Rozvíjení zájmu": "develop_interest",
         "Подготавливайте учеников": "make_disciples", "Činění učedníků": "make_disciples",
         "Объясняйте свои взгляды": "explain_beliefs", "Vysvětlování své víry": "explain_beliefs",
-        "Местные потребности": "local_needs", "Místní потребности": "local_needs",
+        "Местные потребности": "local_needs", "Místní potřeby": "local_needs",
         "Речь 10 мин.": "talk_10_min", "Proslov 10 min.": "talk_10_min"
     };
     if (map[str]) return window.t(map[str]);
@@ -1245,7 +1244,7 @@ function loadPersonalData() {
                     const dateObj = new Date(ev.date);
                     const dayNum = dateObj.getDate();
                     
-                    // 🔥 БЕЗ РАМОК ВООБЩЕ (убрали border-b)
+                    // 🔥 БЕЗ РАМОК ВООБЩЕ
                     html += `
                         <div class="flex items-center px-4 py-3 w-full bg-transparent cursor-default ${activeClass}">
                             <div class="flex items-center gap-2 shrink-0 mr-3">
