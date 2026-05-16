@@ -1195,12 +1195,11 @@ try {
                 const ev = docSnap.data();
                 ev.id = docSnap.id;
                 
-                // СТРОГО ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
+                // ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
                 if (ev.date === todayStr) {
                     let isPastEvent = false;
                     let displayTime = ev.time || "";
                     
-                    // Проверяем, не прошло ли уже время события
                     if (displayTime) {
                         let hours = 0, minutes = 0;
                         if (!displayTime.includes(':') && displayTime.length >= 3) {
@@ -1211,7 +1210,6 @@ try {
                             [hours, minutes] = displayTime.split(':');
                             const eventExactTime = new Date();
                             eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-                            // Если прошло более 1.5 часа - делаем тусклым
                             if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
                         }
                     }
@@ -1222,7 +1220,6 @@ try {
                 }
             });
 
-            // Сортируем сегодняшние события по времени
             todayEvents.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
 
             let html = '';
@@ -1230,12 +1227,12 @@ try {
             const calendarBtn = wrapper.querySelector('button');
 
             if (todayEvents.length > 0) {
-                // Включаем темный фон
+                // 🔥 ФОН БЛОКА КАК У МЕНЮ (ТЕМНЫЙ)
                 wrapper.classList.remove('bg-slate-200/80');
-                wrapper.classList.add('bg-[#0f172a]'); 
+                wrapper.classList.add('bg-[#0f172a]'); // Темно-синий цвет навигации
                 if (calendarBtn) {
                     calendarBtn.classList.remove('text-slate-500', 'hover:bg-slate-300/50');
-                    calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-800');
+                    calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-700/50');
                 }
 
                 todayEvents.forEach(ev => {
@@ -1243,34 +1240,33 @@ try {
                     if (evGroup === "Все" || evGroup === "Všechny") evGroup = window.t('all_groups');
                     const hasGroup = evGroup !== window.t('no_group');
                     
-                    const activeClass = ev.isPastEvent ? "opacity-40 grayscale" : "";
-                    const timeColor = ev.isPastEvent ? "text-slate-500" : "text-emerald-400";
-                    const leaderColor = ev.isPastEvent ? "text-slate-600" : "text-sky-400";
-                    const titleColor = ev.isPastEvent ? "text-slate-400" : "text-white";
+                    // ПРОШЕДШИЕ СОБЫТИЯ
+                    const activeClass = ev.isPastEvent ? "opacity-30 grayscale" : "";
+                    const timeColor = ev.isPastEvent ? "text-slate-500" : "text-slate-400"; 
+                    const titleColor = ev.isPastEvent ? "text-slate-500" : "text-white";
                     
                     const dateObj = new Date(ev.date);
                     const dayNum = dateObj.getDate();
-                    const badgeBg = "bg-rose-500 text-white";
-
+                    
+                    // 🔥 ДИЗАЙН ПРЯМО КАК НА ФОТО
                     html += `
-                        <div class="flex items-center p-3 md:p-4 w-full cursor-default ${activeClass} border-b border-slate-800/50 last:border-0 hover:bg-slate-800/50 transition-colors">
+                        <div class="flex items-center p-3 md:p-4 w-full bg-transparent cursor-default ${activeClass} border-b border-slate-700/50 last:border-0">
                             <div class="flex items-center gap-2 shrink-0 mr-3">
-                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 ${badgeBg} rounded-xl shadow-inner shrink-0">
-                                    <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${window.t('today_badge')}</span>
+                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-white/10 text-white rounded-xl shrink-0">
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest opacity-70">${window.t('today_badge')}</span>
                                     <span class="text-xl font-black leading-none">${dayNum}</span>
                                 </div>
                                 ${hasGroup ? `
-                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-slate-800 border border-slate-700 text-slate-300 rounded-xl shrink-0">
-                                    <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
-                                    <span class="text-sm md:text-lg font-black leading-none">${evGroup}</span>
+                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-white/10 text-white rounded-xl shrink-0">
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest opacity-70">${window.t('group_short')}</span>
+                                    <span class="text-sm md:text-base font-black leading-none">${evGroup}</span>
                                 </div>` : ''}
                             </div>
                             <div class="flex flex-col flex-grow min-w-0 pr-2">
                                 <div class="flex items-start gap-2">
                                     ${ev.displayTime ? `<span class="text-sm md:text-base font-black shrink-0 mt-0.5 ${timeColor}">${ev.displayTime}</span>` : ''}
-                                    <span class="font-black text-sm md:text-base ${titleColor} whitespace-normal leading-tight break-words">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
+                                    <span class="font-bold text-sm md:text-base ${titleColor} whitespace-normal leading-tight break-words">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
                                 </div>
-                                ${ev.leader ? `<span class="text-[10px] md:text-[11px] uppercase font-bold text-slate-400 mt-1.5">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
                             </div>
                         </div>
                     `;
@@ -1282,11 +1278,11 @@ try {
                 });
                 container.innerHTML = html;
             } else {
-                // Если событий нет - возвращаем светлый фон
-                wrapper.classList.remove('bg-[#0f172a]');
+                // Если событий нет - возвращаем обратно светлый фон
+                wrapper.classList.remove('bg-[#0f172a]', 'bg-ui-nav');
                 wrapper.classList.add('bg-slate-200/80'); 
                 if (calendarBtn) {
-                    calendarBtn.classList.remove('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-800');
+                    calendarBtn.classList.remove('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-700/50');
                     calendarBtn.classList.add('text-slate-500', 'hover:bg-slate-300/50');
                 }
                 container.innerHTML = `<p class="p-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">${window.t('no_events_today')}</p>`;
