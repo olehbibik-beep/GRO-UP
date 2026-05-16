@@ -909,112 +909,111 @@ function loadPersonalData() {
 
     window.openDutiesModal = () => document.getElementById('duties-modal').classList.replace('hidden', 'flex');
 
-    try {
-        const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
-        onSnapshot(dutiesQuery, (snapshot) => {
-            const container = document.getElementById('dashboard-duties');
-            const fullListContainer = document.getElementById('duties-full-list');
-            if (!container) return;
-            const today = new Date(); today.setHours(0,0,0,0);
-            let currentDuty = null;
-            let myDutyFound = false;
+ try {
+        const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
+        onSnapshot(eventsQuery, (snapshot) => {
+            const container = document.getElementById('calendar-events');
+            if (!container) return; 
+            
+            const now = new Date();
+            const tzOffset = now.getTimezoneOffset() * 60000;
+            const todayStr = new Date(now.getTime() - tzOffset).toISOString().split('T')[0];
 
-            let fullListHtml = '';
+            let todayEvents = [];
 
             snapshot.forEach(docSnap => {
-                const d = docSnap.data();
-                const dutyStart = new Date(d.rawDate); dutyStart.setHours(0,0,0,0);
-                const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6); dutyEnd.setHours(23,59,59,999);
-                
-                const startDay = dutyStart.getDate();
-                const endDay = dutyEnd.getDate();
-                const endMonth = dutyEnd.toLocaleDateString(localeFormat, { month: 'long' });
-                let dateRangeStr = `${startDay} - ${endDay} ${endMonth}`;
-                if (dutyStart.getMonth() !== dutyEnd.getMonth()) {
-                    const startMonth = dutyStart.toLocaleDateString(localeFormat, { month: 'short' });
-                    dateRangeStr = `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
-                }
-
-                let typeStr = d.type;
-                if (typeStr === 'Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
-                if (typeStr === 'Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
-                const groupStr = d.group === "Все" || d.group === window.t('all_groups') ? window.t('all_groups') : d.group;
-
-                const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
-                const isMyGroup = String(d.group) === String(myGroup);
-
-                let textClass = isMyGroup ? "text-slate-900 font-black" : "text-slate-600";
-                let badgeClass = isMyGroup ? "bg-slate-800 text-white shadow-sm" : "bg-slate-100 text-slate-500 border border-slate-200";
-
-                fullListHtml += `
-                    <div class="py-3 border-b border-slate-100 flex justify-between items-center last:border-0">
-                        <div class="flex flex-col">
-                            <span class="text-sm ${textClass}">${typeStr}</span>
-                            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80 ${textClass}">${dateRangeStr}</span>
-                        </div>
-                        <div class="flex flex-col items-center justify-center px-3 py-1 rounded-md ${badgeClass}">
-                            <span class="text-[8px] uppercase font-bold tracking-widest">${window.t('group_short')}</span>
-                            <span class="text-base font-black leading-none">${groupStr}</span>
-                        </div>
-                    </div>
-                `;
-
-                if (today.getTime() >= dutyStart.getTime() && today.getTime() <= dutyEnd.getTime()) {
-                    currentDuty = d;
-                    if (isMyGroup) myDutyFound = true;
+                const ev = docSnap.data();
+                ev.id = docSnap.id;
+                // 🔥 ВОЗВРАЩАЕМ КАК БЫЛО: ТОЛЬКО СЕГОДНЯШНИЕ СОБЫТИЯ
+                if (ev.date === todayStr) {
+                    todayEvents.push(ev);
                 }
             });
 
-            if(fullListContainer) fullListContainer.innerHTML = fullListHtml || `<p class="text-slate-400 italic text-sm text-center">График пуст</p>`;
+            let html = '';
+            const wrapper = container.parentElement;
+            const calendarBtn = wrapper.querySelector('button');
 
-            const dayOfWeek = today.getDay();
-            const isCleaningDay = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0);
+            if (todayEvents.length > 0) {
+                // 🔥 МЕНЯЕМ ФОН БЛОКА НА ТЕМНЫЙ (как в навигации)
+                wrapper.classList.remove('bg-slate-200/80');
+                wrapper.classList.add('bg-[#0f172a]'); 
+                if (calendarBtn) {
+                    calendarBtn.classList.remove('text-slate-500', 'hover:bg-slate-300/50');
+                    calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-800');
+                }
 
-            if (!currentDuty) {
-                container.innerHTML = `<p class="text-[9px] text-slate-400 italic text-center py-2">${window.t('no_duties')}</p>`;
+                todayEvents.forEach(ev => {
+                    let isPastEvent = false;
+                    let displayTime = ev.time || "";
+                    
+                    if (displayTime) {
+                        let hours = 0, minutes = 0;
+                        if (!displayTime.includes(':') && displayTime.length >= 3) {
+                            if (displayTime.length === 4) displayTime = displayTime.substring(0, 2) + ':' + displayTime.substring(2, 4);
+                            else if (displayTime.length === 3) displayTime = '0' + displayTime.substring(0, 1) + ':' + displayTime.substring(1, 3);
+                        }
+                        if (displayTime.includes(':')) {
+                            [hours, minutes] = displayTime.split(':');
+                            const eventExactTime = new Date();
+                            eventExactTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+                            // Событие считается прошедшим через 1.5 часа после начала
+                            if (now.getTime() > eventExactTime.getTime() + (1.5 * 60 * 60 * 1000)) isPastEvent = true;
+                        }
+                    }
+
+                    let evGroup = ev.group || window.t('no_group');
+                    if (evGroup === "Все" || evGroup === "Všechny") evGroup = window.t('all_groups');
+                    const hasGroup = evGroup !== window.t('no_group');
+                    
+                    // ПРОШЕДШИЕ СОБЫТИЯ СТАНОВЯТСЯ СЕРЫМИ
+                    const activeClass = isPastEvent ? "opacity-40 grayscale" : "";
+                    const timeColor = isPastEvent ? "text-slate-500" : "text-emerald-400";
+                    const leaderColor = isPastEvent ? "text-slate-600" : "text-sky-400";
+                    const titleColor = isPastEvent ? "text-slate-400" : "text-white"; // На темном фоне текст белый
+                    
+                    const dateObj = new Date(ev.date);
+                    const dayNum = dateObj.getDate();
+                    const badgeBg = "bg-slate-700 text-slate-200 border border-slate-600";
+
+                    html += `
+                        <div class="flex items-center p-3 md:p-4 w-full cursor-default ${activeClass} border-b border-slate-800/50 last:border-0">
+                            <div class="flex items-center gap-2 shrink-0 mr-3">
+                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 ${badgeBg} rounded-xl shadow-inner shrink-0">
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${window.t('today_badge')}</span>
+                                    <span class="text-xl font-black leading-none">${dayNum}</span>
+                                </div>
+                                ${hasGroup ? `
+                                <div class="flex flex-col items-center justify-center w-11 h-11 md:w-12 md:h-12 bg-slate-800 border border-slate-700 text-slate-300 rounded-xl shrink-0">
+                                    <span class="text-[7px] md:text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
+                                    <span class="text-sm md:text-lg font-black leading-none">${evGroup}</span>
+                                </div>` : ''}
+                            </div>
+                            <div class="flex flex-col flex-grow min-w-0 pr-2">
+                                <div class="flex items-start gap-2">
+                                    ${displayTime ? `<span class="text-sm md:text-base font-black shrink-0 mt-0.5 ${timeColor}">${displayTime}</span>` : ''}
+                                    <span class="font-black text-sm md:text-base ${titleColor} whitespace-normal leading-tight break-words">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
+                                </div>
+                                ${ev.leader ? `<span class="text-[10px] md:text-[11px] uppercase font-bold text-slate-400 mt-1.5">${window.t('leader_short')} <b class="${leaderColor}">${ev.leader}</b></span>` : ''}
+                            </div>
+                        </div>
+                    `;
+
+                    if (!isPastEvent && !sessionStorage.getItem('event_toast_' + ev.id)) {
+                        window.showToast(`${window.t('today_event_toast')} ${ev.title} ${displayTime ? ' ' + displayTime : ''}`, 'info');
+                        sessionStorage.setItem('event_toast_' + ev.id, 'true');
+                    }
+                });
+                container.innerHTML = html;
             } else {
-                const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
-                const isMyGroup = String(currentDuty.group) === String(myGroup);
-                let badgeClass = isMyGroup ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200';
-                let alertHtml = '';
-                if (isMyGroup && isCleaningDay) {
-                    badgeClass = 'bg-rose-500 text-white border-rose-600 shadow-sm';
-                    alertHtml = `<p class="text-[8px] font-black text-rose-500 uppercase tracking-widest mt-1 animate-pulse flex items-center gap-1 truncate"><svg class="w-2.5 h-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="truncate">${window.t('cleaning_weekend')}</span></p>`;
+                // Если на сегодня событий нет - возвращаем светлый фон
+                wrapper.classList.remove('bg-[#0f172a]');
+                wrapper.classList.add('bg-slate-200/80'); 
+                if (calendarBtn) {
+                    calendarBtn.classList.remove('text-slate-400', 'hover:bg-slate-800/50', 'border-l', 'border-slate-800');
+                    calendarBtn.classList.add('text-slate-500', 'hover:bg-slate-300/50');
                 }
-
-                let typeStr = currentDuty.type;
-                if (typeStr === 'Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
-                if (typeStr === 'Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
-                const groupStr = currentDuty.group === "Все" || currentDuty.group === window.t('all_groups') ? window.t('all_groups') : currentDuty.group;
-
-                const dutyStart = new Date(currentDuty.rawDate); dutyStart.setHours(0,0,0,0);
-                const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6);
-                const startDay = dutyStart.getDate();
-                const endDay = dutyEnd.getDate();
-                const endMonth = dutyEnd.toLocaleDateString(localeFormat, { month: 'long' });
-                let localizedDateRange = `${startDay} - ${endDay} ${endMonth}`;
-                if (dutyStart.getMonth() !== dutyEnd.getMonth()) {
-                    const startMonth = dutyStart.toLocaleDateString(localeFormat, { month: 'short' });
-                    localizedDateRange = `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
-                }
-
-                container.innerHTML = `
-                    <div class="flex items-center w-full h-full gap-3 pl-2">
-                        <div class="flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-lg border ${badgeClass} shrink-0 bg-slate-50 shadow-inner">
-                            <span class="text-[7px] md:text-[8px] uppercase font-bold text-slate-400 leading-none mb-0.5 tracking-widest">${window.t('group_short')}</span>
-                            <span class="text-lg md:text-xl font-black leading-none">${groupStr}</span>
-                        </div>
-                        <div class="flex flex-col justify-center min-w-0 flex-grow pr-2">
-                            <span class="text-xs md:text-sm font-black text-slate-800 leading-tight truncate w-full">${typeStr}</span>
-                            <span class="text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-widest mt-1 truncate w-full">${localizedDateRange}</span>
-                            ${alertHtml}
-                        </div>
-                    </div>
-                `;
-            }
-            if (myDutyFound && isCleaningDay && !sessionStorage.getItem('duty_toast_shown')) {
-                window.showToast(window.t('duty_reminder'), 'warning');
-                sessionStorage.setItem('duty_toast_shown', 'true');
+                container.innerHTML = `<p class="p-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">${window.t('no_events_today')}</p>`;
             }
         });
     } catch(e) {}
