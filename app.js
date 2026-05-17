@@ -3,7 +3,6 @@ import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, del
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
-// ====== АВТООБНОВЛЕНИЕ ПРИЛОЖЕНИЯ ======
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(reg => {
         reg.addEventListener('updatefound', () => {
@@ -11,29 +10,20 @@ if ('serviceWorker' in navigator) {
             newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                     window.showToast("Устанавливаем обновление...", "info");
-                    setTimeout(() => {
-                        window.location.reload(true);
-                    }, 1500);
+                    setTimeout(() => window.location.reload(true), 1500);
                 }
             });
         });
     });
-
     let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-            refreshing = true;
-            window.location.reload(true);
-        }
+        if (!refreshing) { refreshing = true; window.location.reload(true); }
     });
 }
 
 setTimeout(() => {
     const loader = document.getElementById('global-loader');
-    if (loader) {
-        loader.style.opacity = '0';
-        setTimeout(() => loader.style.display = 'none', 500);
-    }
+    if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 500); }
 }, 2000);
 
 const dict = {
@@ -857,8 +847,45 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     `;
 }
 
+// 🔥 КАРТА ДЛЯ ВОЗВЕЩАТЕЛЕЙ
+let userMapInstance = null;
+let userPolygonLayer = null;
+
+window.openTerritoryMap = (numStr) => {
+    const mapData = window.allMapsCache[numStr];
+    if (!mapData || !mapData.polygon) return alert("Для этого участка еще не нарисована карта!");
+
+    document.getElementById('terr-map-title').innerText = `Участок № ${numStr} (${mapData.city})`;
+    document.getElementById('terr-map-modal').classList.replace('hidden', 'flex');
+
+    if (!userMapInstance) {
+        userMapInstance = L.map('user-view-map').setView([49.974, 12.700], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(userMapInstance);
+    }
+
+    setTimeout(() => {
+        userMapInstance.invalidateSize();
+        if (userPolygonLayer) userMapInstance.removeLayer(userPolygonLayer);
+
+        const latlngs = mapData.polygon.map(p => [p.lat, p.lng]);
+        userPolygonLayer = L.polygon(latlngs, {
+            color: '#10b981',
+            fillColor: '#10b981',
+            fillOpacity: 0.35,
+            weight: 3
+        }).addTo(userMapInstance);
+
+        userMapInstance.fitBounds(userPolygonLayer.getBounds(), { padding: [20, 20] });
+    }, 100);
+};
+
+window.closeTerritoryMap = () => {
+    document.getElementById('terr-map-modal').classList.replace('flex', 'hidden');
+};
+
 function loadPersonalData() {
-    
     try {
         onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
             window.allMapsCache = {};
@@ -866,7 +893,8 @@ function loadPersonalData() {
                 window.allMapsCache[d.id] = { 
                     url: d.data().url, 
                     imageUrl: d.data().imageUrl,
-                    city: d.data().city || 'Без города'
+                    city: d.data().city || 'Без города',
+                    polygon: d.data().polygon || null
                 }; 
             });
         });
@@ -1064,12 +1092,15 @@ function loadPersonalData() {
                 else if (diffDays >= 30) { barColor = "bg-amber-500"; textColor = "text-amber-600"; }
 
                 const mapData = window.allMapsCache[String(terr.number)];
+                const hasPolygon = mapData && mapData.polygon;
                 const mapUrl = mapData ? mapData.url : null;
                 const mapImg = mapData ? mapData.imageUrl : null;
                 const cityStr = mapData && mapData.city && mapData.city !== "Без города" ? `<span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest ml-1">- ${mapData.city}</span>` : '';
 
                 let mapArea = '';
-                if (mapUrl && mapImg) {
+                if (hasPolygon) {
+                    mapArea = `<div class="w-full h-24 bg-emerald-50 flex items-center justify-center relative cursor-pointer hover:bg-emerald-100 transition-colors" onclick="openTerritoryMap('${terr.number}')"><svg class="w-8 h-8 text-emerald-500 mb-2 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg><span class="absolute bottom-3 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Интерактивная карта</span></div>`;
+                } else if (mapUrl && mapImg) {
                     mapArea = `<div class="w-full h-32 bg-slate-50 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open('${mapUrl}', '_blank')"><img src="${mapImg}" class="absolute inset-0 w-full h-full object-cover" /><div class="absolute inset-0 bg-slate-900/30 flex flex-col items-center justify-center"><svg class="w-8 h-8 text-white drop-shadow-md mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg><span class="text-[10px] font-bold text-white uppercase tracking-widest drop-shadow-md">${window.t('open_map')}</span></div></div>`;
                 } else if (mapUrl) {
                     mapArea = `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative cursor-pointer hover:bg-slate-100 transition-colors" onclick="window.open('${mapUrl}', '_blank')"><svg class="w-8 h-8 text-emerald-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg><span class="absolute bottom-3 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">${window.t('open_map')}</span></div>`;
@@ -1397,6 +1428,7 @@ window.openTakeTerrModal = async () => {
                     url: window.allMapsCache[numStr].url, 
                     img: window.allMapsCache[numStr].imageUrl,
                     city: window.allMapsCache[numStr].city,
+                    polygon: window.allMapsCache[numStr].polygon,
                     lastWorked: lastW
                 });
             }
@@ -1456,16 +1488,25 @@ window.renderAvailableTerritoriesUI = () => {
     } else {
         gridHtml = '<div class="grid grid-cols-2 gap-3 pb-2">';
         filtered.forEach(m => {
-            const imgHtml = m.img 
-                ? `<img src="${m.img}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />` 
-                : `<div class="w-full h-full flex flex-col items-center justify-center bg-slate-200 text-slate-400"><svg class="w-6 h-6 mb-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>`;
+            const hasPolygon = !!m.polygon;
+            
+            let imgHtml = '';
+            if (hasPolygon) {
+                imgHtml = `<div class="w-full h-full flex flex-col items-center justify-center bg-emerald-50 text-emerald-500 hover:bg-emerald-100 transition-colors"><svg class="w-8 h-8 mb-1 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg><span class="text-[8px] font-bold uppercase tracking-widest text-emerald-600">Карта</span></div>`;
+            } else if (m.img) {
+                imgHtml = `<img src="${m.img}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />`;
+            } else {
+                imgHtml = `<div class="w-full h-full flex flex-col items-center justify-center bg-slate-200 text-slate-400"><svg class="w-6 h-6 mb-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>`;
+            }
             
             const fireBadge = m.isFire ? `<div class="absolute top-2 right-2 bg-white/95 backdrop-blur-sm p-1.5 rounded-full shadow-md z-10 animate-pulse border border-rose-100" title="Давно не брали"><span class="text-xs leading-none">🔥</span></div>` : '';
             const cityHtml = m.city ? `<span class="block text-[8px] text-emerald-100 font-medium truncate mt-0.5">${m.city}</span>` : '';
+            
+            const onclickAttr = hasPolygon ? `openTerritoryMap('${m.num}')` : `window.open('${m.url}', '_blank')`;
 
             gridHtml += `
             <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col relative group">
-                <div class="h-24 w-full relative overflow-hidden bg-slate-100 cursor-pointer" onclick="window.open('${m.url}', '_blank')">
+                <div class="h-24 w-full relative overflow-hidden bg-slate-100 cursor-pointer" onclick="${onclickAttr}">
                     ${fireBadge}
                     ${imgHtml}
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent pointer-events-none"></div>
