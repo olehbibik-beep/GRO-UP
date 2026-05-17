@@ -3,7 +3,6 @@ import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, addDoc, del
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
-// ====== АВТООБНОВЛЕНИЕ ПРИЛОЖЕНИЯ ======
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(reg => {
         reg.addEventListener('updatefound', () => {
@@ -11,30 +10,20 @@ if ('serviceWorker' in navigator) {
             newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                     window.showToast("Устанавливаем обновление...", "info");
-                    setTimeout(() => {
-                        window.location.reload(true);
-                    }, 1500);
+                    setTimeout(() => window.location.reload(true), 1500);
                 }
             });
         });
     });
-
     let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-            refreshing = true;
-            window.location.reload(true);
-        }
+        if (!refreshing) { refreshing = true; window.location.reload(true); }
     });
 }
-// ========================================
 
 setTimeout(() => {
     const loader = document.getElementById('global-loader');
-    if (loader) {
-        loader.style.opacity = '0';
-        setTimeout(() => loader.style.display = 'none', 500);
-    }
+    if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 500); }
 }, 2000);
 
 const dict = {
@@ -86,6 +75,58 @@ const dict = {
         "local_needs": "Местные потребности", "current_week": "АКТУАЛЬНАЯ", "future_week": "БУДУЩАЯ",
         "public_talk": "Публичная речь", "weekend_meeting": "Выходные (Публичная речь)", "watchtower_study": "Изучение Сторожевой Башни", "opening_song": "Вступительные слова / Песня",
         "duties_schedule": "График дежурств", "new_message": "Новое сообщение", "msg_understood": "Понятно"
+    },
+    cs: {
+        "loading_data": "Načítání dat...", "pending_title": "Žádost se vyřizuje", "pending_desc": "Čekejte na potvrzení administrátorem.",
+        "logout_btn": "Odejít", "loading_events": "Načítání schůzek...", "all_year": "Celý<br>rok", "loading_feed": "Načítání příspěvků...",
+        "my_report": "Moje zpráva", "participated": "Ve službě", "hours_label": "Hodiny<br>&nbsp;", "studies_label": "Biblická<br>studia", "credit_label": "Kredit<br>&nbsp;",
+        "fill_btn": "Vyplnit", "this_week": "Tento týden", "loading_duties": "Načítání...", "active_tasks": "Aktivní úkoly",
+        "no_active_tasks": "Žádné aktivní úkoly", "archive_title": "Archiv", "history_empty": "Historie je prázdná", "my_territories": "Moje obvody",
+        "request_btn": "Požádat", "no_territories": "Zatím nemáte žádné obvody", "profile_group": "Skupina", "profile_overseer": "Dozorce",
+        "language": "Jazyk / Язык", "profile_logout": "Odhlásit se", "my_archive": "Můj archiv", "loading_archive": "Načítání...",
+        "alert_no_notifications": "Oznámení nejsou na tomto zařízení podporována.", "alert_notifications_blocked": "Oznámení jsou blokována prohlížečem!\n\nPovolte je v nastavení.",
+        "toast_notifications_enabled": "Oznámení byla úspěšně zapnuta!", "submit_report": "Odeslat zprávu", "alert_report_empty": "Zaškrtněte 'Ve službě' nebo zadejte hodiny!",
+        "saving": "Ukládání...", "saved": "Uloženo:", "success": "Úspěšně", "change": "Změnit", "error_network": "Chyba sítě!",
+        "access_denied": "PŘÍSTUP ODEPŘEN", "no_group": "Bez skupiny", "no_duties": "Tento týden nejsou žádné služby",
+        "duty_reminder": "Připomenutí: Vaše skupina má tento víkend službu!", "cleaning_weekend": "Úklid tento víkend!",
+        "no_active_territories": "Zatím nemáte žádné aktivní obvody", "territory_num": "Obvod č.",
+        "active": "Aktivní", "assistant_for": "Pomocník u", "speech": "Proslov", "assistant_short": "Pom:", "lesson": "Lekce",
+        "no_tasks_upcoming": "Zatím nemáte žádné aktivní úkoly", "new_task_toast": "Máte nový úkol", "delete": "Smazat",
+        "new_badge": "Nové", "new_announcement_toast": "📢 Nové oznámení v kanálu!", "create_announcement": "Vytvořit oznámení",
+        "write_text_ru": "Text (Ruština)...", "write_text_cs": "Text (Čeština)...", "publish": "Publikovat", "no_news": "Žádná aktuální oznámení",
+        "today_badge": "DNES", "group_short": "Sk.", "leader_short": "Ved:", "today_event_toast": "📅 Dnes:", "no_events_today": "Dnes nejsou žádné události",
+        "loading": "Načítání...", "archive_empty": "Archiv je prázdný", "unknown": "Neznámé", "error_loading": "Chyba načítání",
+        "alert_add_text_photo": "Přidejte text nebo fotku!", "alert_publish_error": "Chyba publikování! Zkontrolujte pravidla Storage.",
+        "confirm_delete_news": "Smazat toto oznámení?", "confirm_delete_task": "Opravdu smazat tento úkol?", "admin_title": "Panel administrátora",
+        "back_home": "Na hlavní stránku", "users_title": "Uživatelé", "autosave_data": "Automatické ukládání dat",
+        "cong_name_label": "Název sboru (Uvidí všichni)", "cong_name_placeholder": "Například: Centrální", "requests_title": "Žádosti",
+        "active_users": "Aktivní", "search_placeholder": "Hledat...", "th_name_gender": "Jméno a Pohlaví", "th_pin": "PIN",
+        "th_group": "Skupina", "th_school": "Škola", "th_status": "Status ve sboru", "th_responsible": "Zodpovědný za",
+        "th_manage": "Správa", "error_save": "Chyba při ukládání!", "alert_pin_length": "PIN kód musí mít přesně 6 číslic!",
+        "error_save_pin": "Chyba při ukládání PIN kódu!", "error_update_role": "Chyba při aktualizaci role!", "confirm_block": "Zablokovat uživatele?",
+        "confirm_delete_profile": "POZOR! Smazat profil?", "error_general": "Chyba!", "confirm_reject": "Opravdu zamítnout žádost a smazat data?",
+        "error_delete": "Chyba při mazání", "status_pending": "Čeká", "btn_approve": "Schválit", "btn_reject": "Zamítnout",
+        "btn_unblock": "Odblokovat", "btn_block": "Zablokovat", "btn_delete": "Smazat", "gender_boy": "Bratr", "gender_girl": "Sestra",
+        "role_publisher": "Zvěstovatel", "role_pioneer": "Průkopník", "role_ms": "Služební pom.", "role_elder": "Starší",
+        "role_admin": "Admin", "role_group": "Skupina", "role_terr": "Obvody", "role_school": "Škola", "no_new_requests": "Žádné nové žádosti",
+        "no_active_users": "Žádní aktivní uživatelé",
+        "cat_reading_db": "📖 Čtení Bible", "cat_conversation": "🗣️ Rozhovor", "cat_interest": "🌱 Zájem", "cat_disciples": "👥 Čiňte učedníky",
+        "cat_beliefs": "💡 Přesvědčení", "cat_talk_db": "🎙️ Proslov", "open_map": "Otevřít mapu", "no_map": "Bez mapy", "opt_cleaning": "🧹 Úklid sálu",
+        "opt_special_event": "⭐ Zvláštní událost", "all_groups": "Společné", "congregation_label": "Sbor", "scan_qr": "Naskenujte kód",
+        "days_short": "dní", "return_terr_btn": "Odevzdat", "no_translation": "Bez překladu", "stand_title": "Služba se stojanem",
+        "stand_apply": "Požádat", "stand_signup": "Zapsat se", "stand_pending": "Žádost odeslána", "stand_month_shifts": "Služeb v tomto měsíci",
+        "stand_upcoming": "Tvé nejbližší služby", "stand_no_records": "Žádné zápisy", "zoom_error": "Zoom není nastaven", "zoom_click_hint": "Klikni<br>na ZOOM",
+        "zoom_launch": "SPUSTIT", "months": ["Led", "Úno", "Bře", "Dub", "Kvě", "Čvn", "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro"],
+        "days": ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"], "info_title": "Informace", "in_development": "Sekce ve vývoji",
+        "meeting_program": "Program", "no_schedule": "Žádné publikované programy",
+        "chairman": "Předsedající", "treasures_title": "Poklady z Božího slova", "talk_10_min": "Proslov 10 min.",
+        "spiritual_gems": "Hledání duchovních drahokamů", "bible_reading": "Čtení Bible", "ministry_skills": "Zlepšujme se ve službě",
+        "christian_living": "Křesťanský život", "congregation_bible_study": "Sborové studium Bible", "reader": "Čte",
+        "closing_prayer": "Závěrečná modlitba", "part": "Úkol", "start_conversation": "Zahájení rozhovoru",
+        "develop_interest": "Rozvíjení zájmu", "make_disciples": "Činění učedníků", "explain_beliefs": "Vysvětlování své víry",
+        "local_needs": "Místní potřeby", "current_week": "AKTUÁLNÍ", "future_week": "BUDOUCÍ",
+        "public_talk": "Veřejná přednáška", "weekend_meeting": "Víkend (Veřejná přednáška)", "watchtower_study": "Studium Strážné věže", "opening_song": "Úvodní slova / Píseň",
+        "duties_schedule": "Rozpis služeb", "new_message": "Nová zpráva", "msg_understood": "Rozumím"
     }
 };
 
@@ -825,13 +866,11 @@ window.openTerritoryMap = (numStr) => {
         }).addTo(userMapInstance);
     }
 
-    // Ждем, пока CSS отрендерит окно
     setTimeout(() => {
-        userMapInstance.invalidateSize(); // Чтобы не было серых кусков карты
+        userMapInstance.invalidateSize();
         
         if (userPolygonLayer) userMapInstance.removeLayer(userPolygonLayer);
 
-        // Конвертируем формат базы данных в формат Leaflet
         const latlngs = mapData.polygon.map(p => [p.lat, p.lng]);
         
         userPolygonLayer = L.polygon(latlngs, {
@@ -841,27 +880,23 @@ window.openTerritoryMap = (numStr) => {
             weight: 3
         }).addTo(userMapInstance);
 
-        // Центрируем карту так, чтобы полигон идеально влез в экран
         userMapInstance.fitBounds(userPolygonLayer.getBounds(), { padding: [20, 20] });
     }, 100);
 };
 
-// ЗАКРЫТЬ КАРТУ
 window.closeTerritoryMap = () => {
     document.getElementById('terr-map-modal').classList.replace('flex', 'hidden');
 };
 
 function loadPersonalData() {
-    
-    // Загрузка кэша карт
     try {
         onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
             window.allMapsCache = {};
             mapSnap.forEach(d => { 
                 window.allMapsCache[d.id] = { 
-                    url: d.data().url, // на случай если старые карты без полигонов
+                    url: d.data().url,
                     city: d.data().city || 'Без города',
-                    polygon: d.data().polygon || null // Наш массив координат
+                    polygon: d.data().polygon || null
                 }; 
             });
         });
@@ -1033,7 +1068,6 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    // МОИ УЧАСТКИ
     try {
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
         onSnapshot(terrQuery, (snapshot) => {
@@ -1066,7 +1100,7 @@ function loadPersonalData() {
                 let mapArea = '';
                 if (hasPolygon) {
                     mapArea = `<div class="w-full h-24 bg-emerald-50 flex items-center justify-center relative cursor-pointer hover:bg-emerald-100 transition-colors" onclick="openTerritoryMap('${terr.number}')"><svg class="w-8 h-8 text-emerald-500 mb-2 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg><span class="absolute bottom-3 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Интерактивная карта</span></div>`;
-                } else if (mapData && mapData.url) { // Старый формат
+                } else if (mapData && mapData.url) { 
                     mapArea = `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative cursor-pointer hover:bg-slate-100 transition-colors" onclick="window.open('${mapData.url}', '_blank')"><svg class="w-8 h-8 text-emerald-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg><span class="absolute bottom-3 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">${window.t('open_map')}</span></div>`;
                 } else {
                     mapArea = `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative"><svg class="w-8 h-8 text-slate-300 absolute opacity-50 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg><span class="absolute bottom-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('no_map')}</span></div>`;
@@ -1453,10 +1487,10 @@ window.renderAvailableTerritoriesUI = () => {
             const hasPolygon = m.polygon;
             const mapHtml = hasPolygon 
                 ? `<div class="w-full h-full flex flex-col items-center justify-center bg-emerald-50 text-emerald-500 hover:bg-emerald-100 transition-colors"><svg class="w-8 h-8 mb-1 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg><span class="text-[8px] font-bold uppercase tracking-widest text-emerald-600">Карта</span></div>` 
-                : `<div class="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400"><svg class="w-6 h-6 mb-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg><span class="text-[8px] font-bold uppercase tracking-widest opacity-50">Нет карты</span></div>`;
+                : `<div class="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400"><svg class="w-6 h-6 mb-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>`;
             
             const fireBadge = m.isFire ? `<div class="absolute top-2 right-2 bg-white/95 backdrop-blur-sm p-1.5 rounded-full shadow-md z-10 animate-pulse border border-rose-100" title="Давно не брали"><span class="text-xs leading-none">🔥</span></div>` : '';
-            const cityHtml = m.city ? `<span class="block text-[8px] text-slate-500 font-bold truncate mt-0.5">${m.city}</span>` : '';
+            const cityHtml = m.city ? `<span class="block text-[8px] text-emerald-100 font-medium truncate mt-0.5">${m.city}</span>` : '';
 
             gridHtml += `
             <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col relative group">
@@ -1497,62 +1531,4 @@ window.takeTerritory = async (num, btn) => {
             issuedAt: new Date().toISOString()
         });
         window.showToast(`Участок №${num} успешно закреплен! ✅`, 'success');
-        window.closeTakeTerrModal();
-    } catch (e) {
-        alert('Ошибка сети!');
-        btn.disabled = false;
-        btn.innerText = 'ВЗЯТЬ';
-    }
-};
-
-window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
-window.openReportHistory = () => document.getElementById('report-history-modal').classList.replace('hidden', 'flex');
-window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
-window.closeModals = () => {
-    const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
-    const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
-    const m3 = document.getElementById('duties-modal'); if(m3) m3.classList.replace('flex', 'hidden');
-    const m4 = document.getElementById('user-msg-modal'); if(m4) m4.classList.replace('flex', 'hidden');
-    const m5 = document.getElementById('take-terr-modal'); if(m5) m5.classList.replace('flex', 'hidden');
-};
-window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
-
-window.logout = async () => {
-    const uid = localStorage.getItem('userId');
-    if (uid) { try { await updateDoc(doc(db, "users", uid), { pushToken: "" }); } catch (e) {} }
-    localStorage.clear(); window.location.href = 'login.html'; 
-};
-
-// PULL TO REFRESH
-let pStart = { x: 0, y: 0 };
-let pCurrent = { x: 0, y: 0 };
-const mainElem = document.getElementById('main-dashboard');
-
-if (mainElem) {
-    mainElem.addEventListener('touchstart', function(e) {
-        pStart.x = e.touches[0].screenX;
-        pStart.y = e.touches[0].screenY;
-    }, {passive: true});
-
-    mainElem.addEventListener('touchmove', function(e) {
-        pCurrent.x = e.touches[0].screenX;
-        pCurrent.y = e.touches[0].screenY;
-    }, {passive: true});
-
-    mainElem.addEventListener('touchend', function(e) {
-        if (mainElem.scrollTop <= 0) {
-            let yDiff = pCurrent.y - pStart.y;
-            let xDiff = Math.abs(pCurrent.x - pStart.x);
-            if (yDiff > 120 && xDiff < 50 && pStart.y > 0 && pCurrent.y > 0) {
-                const loader = document.getElementById('global-loader');
-                if(loader) {
-                    loader.style.display = 'flex';
-                    loader.style.opacity = '1';
-                }
-                setTimeout(() => window.location.reload(true), 300);
-            }
-        }
-        pStart = { x: 0, y: 0 };
-        pCurrent = { x: 0, y: 0 };
-    });
-}
+        window.closeTakeTerr
