@@ -1093,39 +1093,33 @@ function loadPersonalData() {
 
                 const mapData = window.allMapsCache[String(terr.number)];
                 const hasPolygon = mapData && mapData.polygon;
-                const mapUrl = mapData ? mapData.url : null;
-                const mapImg = mapData ? mapData.imageUrl : null;
-                const cityStr = mapData && mapData.city && mapData.city !== "Без города" ? `<span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest ml-1">- ${mapData.city}</span>` : '';
+                const cityStr = mapData && mapData.city && mapData.city !== "Без города" ? `<span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mt-1">${mapData.city}</span>` : '';
 
-                let mapArea = '';
+                let mapBtn = '';
                 if (hasPolygon) {
-                    mapArea = `<div class="w-full h-24 bg-emerald-50 flex items-center justify-center relative cursor-pointer hover:bg-emerald-100 transition-colors" onclick="openTerritoryMap('${terr.number}')"><svg class="w-8 h-8 text-emerald-500 mb-2 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg><span class="absolute bottom-3 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Интерактивная карта</span></div>`;
-                } else if (mapUrl && mapImg) {
-                    mapArea = `<div class="w-full h-32 bg-slate-50 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open('${mapUrl}', '_blank')"><img src="${mapImg}" class="absolute inset-0 w-full h-full object-cover" /><div class="absolute inset-0 bg-slate-900/30 flex flex-col items-center justify-center"><svg class="w-8 h-8 text-white drop-shadow-md mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg><span class="text-[10px] font-bold text-white uppercase tracking-widest drop-shadow-md">${window.t('open_map')}</span></div></div>`;
-                } else if (mapUrl) {
-                    mapArea = `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative cursor-pointer hover:bg-slate-100 transition-colors" onclick="window.open('${mapUrl}', '_blank')"><svg class="w-8 h-8 text-emerald-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg><span class="absolute bottom-3 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">${window.t('open_map')}</span></div>`;
-                } else {
-                    mapArea = `<div class="w-full h-24 bg-slate-50 flex items-center justify-center relative"><svg class="w-8 h-8 text-slate-300 absolute opacity-50 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg><span class="absolute bottom-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('no_map')}</span></div>`;
+                    mapBtn = `<button onclick="openTerritoryMap('${terr.number}')" class="w-full mt-3 bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg transition-colors outline-none shadow-sm flex items-center justify-center gap-2 border border-emerald-200 hover:border-emerald-500"><svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg> Карта</button>`;
+                } else if (mapData && mapData.url) {
+                    mapBtn = `<button onclick="window.open('${mapData.url}', '_blank')" class="w-full mt-3 bg-slate-50 hover:bg-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg transition-colors outline-none shadow-sm flex items-center justify-center gap-2 border border-slate-200"><svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg> Ссылка</button>`;
                 }
 
                 html += `
-                    <div class="bg-white rounded-md border border-slate-200 overflow-hidden flex flex-col shadow-sm">
-                        <div class="p-3 flex flex-col bg-white border-b border-slate-100">
-                            <div class="flex justify-between items-center mb-3">
-                                <div class="flex items-center">
-                                    <h3 class="font-black text-slate-800 text-sm">${window.t('territory_num')} ${terr.number}</h3>
-                                    ${cityStr}
-                                </div>
-                                <button onclick="markTerritoryReturned('${docSnap.id}')" class="text-[9px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-md uppercase transition-colors outline-none shadow-sm">${window.t('return_terr_btn')}</button>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-black text-slate-800 text-lg md:text-xl">${window.t('territory_num')} ${terr.number}</h3>
+                                ${cityStr}
                             </div>
-                            <div class="flex items-center gap-3">
-                                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex shadow-inner">
-                                    <div class="${barColor} h-1.5 rounded-full transition-all" style="width: ${progress}%"></div>
-                                </div>
-                                <span class="${textColor} text-[9px] font-black uppercase tracking-widest shrink-0 leading-none">${diffDays} ${window.t('days_short')}</span>
-                            </div>
+                            <button onclick="markTerritoryReturned('${docSnap.id}')" class="text-[9px] font-bold text-slate-400 hover:text-red-500 bg-slate-100 hover:bg-red-50 px-3 py-1.5 rounded-md uppercase transition-colors outline-none shadow-sm">${window.t('return_terr_btn')}</button>
                         </div>
-                        ${mapArea}
+                        
+                        <div class="mt-2 flex items-center gap-3">
+                            <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex shadow-inner">
+                                <div class="${barColor} h-1.5 rounded-full transition-all" style="width: ${progress}%"></div>
+                            </div>
+                            <span class="${textColor} text-[10px] font-black uppercase tracking-widest shrink-0 leading-none">${diffDays} ${window.t('days_short')}</span>
+                        </div>
+                        
+                        ${mapBtn}
                     </div>
                 `;
             });
@@ -1487,7 +1481,7 @@ window.renderAvailableTerritoriesUI = () => {
         gridHtml = `<p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">Ничего не найдено</p>`;
     } else {
         gridHtml = '<div class="grid grid-cols-2 gap-3 pb-2">';
-filtered.forEach(m => {
+        filtered.forEach(m => {
             const hasPolygon = !!m.polygon;
             const fireBadge = m.isFire ? `<div class="absolute top-2 right-2 bg-rose-100 text-rose-600 text-[10px] font-black px-2 py-0.5 rounded shadow-sm z-10 border border-rose-200" title="Давно не брали">🔥 Рекомендуем</div>` : '';
             const cityHtml = m.city ? `<span class="block text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate mt-1">${m.city}</span>` : '';
