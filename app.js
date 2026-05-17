@@ -1487,7 +1487,7 @@ window.renderAvailableTerritoriesUI = () => {
         gridHtml = `<p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">Ничего не найдено</p>`;
     } else {
         gridHtml = '<div class="grid grid-cols-2 gap-3 pb-2">';
-        filtered.forEach(m => {
+filtered.forEach(m => {
             const hasPolygon = !!m.polygon;
             const fireBadge = m.isFire ? `<div class="absolute top-2 right-2 bg-rose-100 text-rose-600 text-[10px] font-black px-2 py-0.5 rounded shadow-sm z-10 border border-rose-200" title="Давно не брали">🔥 Рекомендуем</div>` : '';
             const cityHtml = m.city ? `<span class="block text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate mt-1">${m.city}</span>` : '';
