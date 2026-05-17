@@ -9,10 +9,6 @@
     <meta name="theme-color" content="#0f172a">
     
     <title>GRO-UP App</title>
-
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { ui: { bg: '#BDC1CC', nav: '#0f172a', report: '#9333ea', news: '#0ea5e9', success: '#10b981' } } } } }
@@ -24,8 +20,6 @@
         .tab-content.active { display: block; }
         .custom-scrollbar::-webkit-scrollbar { display: none; }
         .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        /* Фикс для карты Leaflet в мобильном окне */
-        .leaflet-container { z-index: 10; font-family: inherit; }
     </style>
 </head>
 <body class="bg-ui-bg h-[100dvh] font-sans text-slate-800 overflow-hidden flex flex-col-reverse md:flex-row w-full">
@@ -186,18 +180,8 @@
                     </div>
                 </div>
             </div>
-
-    </main>
-
-    <div id="terr-map-modal" class="fixed inset-0 bg-slate-900/90 z-[150] hidden flex-col transition-opacity" onclick="closeTerritoryMap()">
-        <div class="relative w-full h-full md:max-w-4xl md:mx-auto md:h-[80vh] md:mt-[10vh] bg-white md:rounded-3xl flex flex-col overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center p-4 border-b border-slate-100 bg-white z-20 shadow-sm">
-                <h2 class="text-lg md:text-xl font-black text-slate-800 flex items-center gap-2" id="terr-map-title">Участок</h2>
-                <button onclick="closeTerritoryMap()" class="w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full flex items-center justify-center font-bold text-lg outline-none transition-colors">✕</button>
-            </div>
-            <div id="user-view-map" class="w-full flex-grow bg-slate-200 z-10 relative"></div>
         </div>
-    </div>
+    </main>
 
     <div id="profile-modal" class="fixed inset-0 bg-slate-900/60 z-[70] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeModals()">
         <div class="bg-white w-full max-w-xs md:max-w-sm rounded-xl p-5 md:p-6 text-center relative border border-slate-200 shadow-2xl" onclick="event.stopPropagation()">
@@ -267,6 +251,24 @@
         </div>
     </div>
 
+    <div id="qr-modal" class="fixed inset-0 bg-slate-900/90 z-[80] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeQrModal()">
+        <div class="bg-white p-4 rounded-xl relative max-w-xs w-full shadow-2xl" onclick="event.stopPropagation()">
+            <img src="qr.png" alt="QR Code" class="w-full h-auto rounded-lg border border-slate-200 shadow-sm">
+            <p class="text-center text-sm font-bold text-slate-500 mt-4 uppercase tracking-widest" data-lang="scan_qr">Отсканируйте код</p>
+        </div>
+    </div>
+
+    <div id="user-msg-modal" class="fixed inset-0 bg-slate-900/80 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-xl p-6 relative shadow-2xl flex flex-col text-center border-t-4 border-indigo-500">
+            <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+            </div>
+            <h2 class="text-lg font-black text-slate-800 mb-2" data-lang="new_message">Новое сообщение</h2>
+            <div id="user-msg-content" class="text-sm font-medium text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6 text-left whitespace-pre-wrap max-h-64 overflow-y-auto custom-scrollbar"></div>
+            <button onclick="markMessageRead()" id="user-msg-close-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg text-xs uppercase tracking-widest outline-none shadow-sm transition-colors" data-lang="msg_understood">Понятно</button>
+        </div>
+    </div>
+
     <div id="take-terr-modal" class="fixed inset-0 bg-slate-900/60 z-[70] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeModals()">
         <div class="bg-white w-full max-w-md rounded-3xl p-6 relative border border-slate-200 max-h-[85vh] flex flex-col shadow-2xl" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-4">
@@ -286,7 +288,7 @@
         </div>
     </div>
 
-    <script type="module" src="app.js?v=607"></script>
+    <script type="module" src="app.js?v=610"></script>
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[150] flex flex-col gap-2 pointer-events-none"></div>
 </body>
 </html>
