@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, getDoc, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+import { getFirestore, collection, onSnapshot, doc, getDoc, deleteDoc, query, orderBy, setDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const dict = {
     ru: {
@@ -14,12 +13,9 @@ const dict = {
         "btn_force_return": "Отозвать", "btn_delete_returned": "Удалить", "all_terr_free": "Все участки свободны.",
         "no_returned_terr": "Нет сданных участков.", "alert_select_user_num": "Выберите пользователя и введите номер!",
         "alert_terr_already_issued": "❌ Этот участок уже выдан и находится в работе!", "confirm_return": "Принудительно отозвать участок?",
-        "confirm_delete_returned": "Очистить этот участок из списка сданных?", "confirm_delete_request": "Удалить этот запрос?",
-        "error_general": "Ошибка!", "title_issue_terr": "Выдать участок", "delete": "Удалить", "btn_back": "Назад",
-        "btn_map_db": "База карт", "map_db_title": "База карт участков", "map_instruction": "Добавьте ссылку на Google My Maps и скриншот участка. Возвещатели смогут сами выбрать себе этот участок из списка доступных.",
-        "map_url_ph": "Ссылка https://...", "btn_save_map": "Сохранить", "saved_maps": "Сохраненные карты (Сгруппировано)",
-        "history_empty": "История пуста", "alert_fill_all": "Укажите номер и ссылку!", "add_photo": "Добавить фото",
-        "days_short": "дн."
+        "confirm_delete_returned": "Очистить этот участок из списка сданных?", "error_general": "Ошибка!", 
+        "title_issue_terr": "Выдать участок", "delete": "Удалить", "btn_back": "Назад",
+        "btn_map_db": "База карт", "days_short": "дн."
     },
     cs: {
         "terr_title": "Správa obvodů - GRO-UP", "terr_h1": "Obvody", "manage_terr": "Správa území",
@@ -32,22 +28,16 @@ const dict = {
         "btn_force_return": "Odebrat", "btn_delete_returned": "Smazat", "all_terr_free": "Všechny obvody jsou volné.",
         "no_returned_terr": "Žádné vrácené obvody.", "alert_select_user_num": "Vyberte uživatele a zadejte číslo!",
         "alert_terr_already_issued": "❌ Tento obvod je již vydán a zpracovává se!", "confirm_return": "Nuceně odebrat obvod?",
-        "confirm_delete_returned": "Vymazat tento obvod ze seznamu vrácených?", "confirm_delete_request": "Smazat tuto žádost?",
-        "error_general": "Chyba!", "title_issue_terr": "Vydat obvod", "delete": "Smazat", "btn_back": "Zpět",
-        "btn_map_db": "Databáze map", "map_db_title": "Databáze map obvodů", "map_instruction": "Přidejte odkaz na Google My Maps a screenshot obvodu. Zvěstovatelé si budou moci sami vybrat tento obvod z dostupných.",
-        "map_url_ph": "Odkaz https://...", "btn_save_map": "Uložit", "saved_maps": "Uložené mapy (Seskupeno)",
-        "history_empty": "Historie je prázdná", "alert_fill_all": "Zadejte číslo a odkaz!", "add_photo": "Přidat fotku",
-        "days_short": "dní"
+        "confirm_delete_returned": "Vymazat tento obvod ze seznamu vrácených?", "error_general": "Chyba!", 
+        "title_issue_terr": "Vydat obvod", "delete": "Smazat", "btn_back": "Zpět",
+        "btn_map_db": "Databáze map", "days_short": "dní"
     }
 };
 
 const currentLang = localStorage.getItem('app_lang') || 'ru';
 const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU';
 
-window.t = (key) => {
-    if (dict[currentLang] && dict[currentLang][key]) return dict[currentLang][key];
-    return key; 
-};
+window.t = (key) => dict[currentLang][key] || key;
 
 window.showToast = (message) => {
     const container = document.getElementById('toast-container');
@@ -80,7 +70,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app); 
 const currentUserId = localStorage.getItem('userId');
 
 if (!currentUserId) window.location.href = 'login.html';
@@ -93,6 +82,7 @@ getDoc(doc(db, "users", currentUserId)).then(docSnap => {
     if (!isTerr) window.location.href = 'index.html';
 });
 
+// Загрузка возвещателей в селект
 onSnapshot(collection(db, "users"), (snapshot) => {
     const select = document.getElementById('user-select');
     if (!select) return;
@@ -115,7 +105,6 @@ onSnapshot(query(collection(db, "territories"), orderBy("issuedAt", "desc")), (s
     
     let activeHtml = '';
     let returnedHtml = '';
-    
     activeTerritoryNumbers = []; 
 
     snapshot.forEach(docSnap => {
@@ -123,7 +112,6 @@ onSnapshot(query(collection(db, "territories"), orderBy("issuedAt", "desc")), (s
         
         if (!terr.status || terr.status === 'active') {
             activeTerritoryNumbers.push(Number(terr.number)); 
-            
             const issueDate = new Date(terr.issuedAt).toLocaleDateString(localeFormat, {day: 'numeric', month: 'short'});
             const diffDays = Math.floor((new Date() - new Date(terr.issuedAt)) / (1000 * 60 * 60 * 24));
             
@@ -177,10 +165,7 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
     if (!userData || !terrNumStr) return alert(window.t('alert_select_user_num'));
     
     const terrNum = Number(terrNumStr);
-    
-    if (activeTerritoryNumbers.includes(terrNum)) {
-        return alert(window.t('alert_terr_already_issued'));
-    }
+    if (activeTerritoryNumbers.includes(terrNum)) return alert(window.t('alert_terr_already_issued'));
 
     const btn = e.target;
     btn.innerText = window.t('saving'); btn.disabled = true;
@@ -204,13 +189,8 @@ document.getElementById('assign-btn').addEventListener('click', async (e) => {
     } catch (err) { alert(window.t('error_general')); btn.disabled = false; btn.innerText = window.t('btn_assign'); }
 });
 
-window.forceReturnTerritory = async (id) => {
-    if (confirm(window.t('confirm_return'))) await deleteDoc(doc(db, "territories", id));
-};
-
-window.deleteTerritory = async (id) => {
-    if (confirm(window.t('confirm_delete_returned'))) await deleteDoc(doc(db, "territories", id));
-};
+window.forceReturnTerritory = async (id) => { if (confirm(window.t('confirm_return'))) await deleteDoc(doc(db, "territories", id)); };
+window.deleteTerritory = async (id) => { if (confirm(window.t('confirm_delete_returned'))) await deleteDoc(doc(db, "territories", id)); };
 
 const searchEl = document.getElementById('search-terr');
 if(searchEl) {
@@ -224,74 +204,111 @@ if(searchEl) {
     });
 }
 
-// БАЗА КАРТ (С ГРУППИРОВКОЙ)
-let selectedMapImageFile = null;
+// ============================================
+// 🔥 ЛОГИКА ИНТЕРАКТИВНОЙ КАРТЫ (LEAFLET + GEOMAN)
+// ============================================
+let editorMap = null;
+let currentPolygonLayer = null;
 
-window.openMapsModal = () => document.getElementById('maps-modal').classList.replace('hidden', 'flex');
-window.closeMapsModal = () => {
-    document.getElementById('maps-modal').classList.replace('flex', 'hidden');
-    removeMapImage();
-};
+window.openMapsModal = () => {
+    document.getElementById('maps-modal').classList.replace('hidden', 'flex');
+    
+    // Инициализируем карту при первом открытии
+    if (!editorMap) {
+        setTimeout(() => {
+            editorMap = L.map('editor-map').setView([49.974, 12.700], 14); // Центр: Марианске-Лазне
+            
+            // Загружаем бесплатную подложку OSM
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(editorMap);
 
-window.previewMapImage = (input) => {
-    if (input.files && input.files[0]) {
-        selectedMapImageFile = input.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            document.getElementById('map-preview').src = e.target.result;
-            document.getElementById('map-preview-container').classList.remove('hidden');
-        };
-        reader.readAsDataURL(selectedMapImageFile);
+            // Настраиваем инструменты рисования (только полигоны)
+            editorMap.pm.addControls({
+                position: 'topleft',
+                drawMarker: false,
+                drawCircleMarker: false,
+                drawPolyline: false,
+                drawRectangle: false,
+                drawCircle: false,
+                drawText: false,
+                editMode: true,
+                dragMode: true,
+                cutPolygon: false,
+                removalMode: true,
+            });
+
+            // Настраиваем цвет полигона по умолчанию
+            editorMap.pm.setGlobalOptions({
+                pathOptions: { color: '#10b981', fillColor: '#10b981', fillOpacity: 0.4 }
+            });
+
+            // Слушаем событие: нарисовали полигон
+            editorMap.on('pm:create', e => {
+                // Если уже есть контур - удаляем его (чтобы был только 1 участок)
+                if (currentPolygonLayer) editorMap.removeLayer(currentPolygonLayer);
+                currentPolygonLayer = e.layer;
+            });
+
+            // Слушаем удаление слоя
+            editorMap.on('pm:remove', e => {
+                if (e.layer === currentPolygonLayer) currentPolygonLayer = null;
+            });
+            
+        }, 100);
     }
 };
 
-window.removeMapImage = () => {
-    selectedMapImageFile = null;
-    document.getElementById('map-image').value = '';
-    document.getElementById('map-preview-container').classList.add('hidden');
+window.closeMapsModal = () => {
+    document.getElementById('maps-modal').classList.replace('flex', 'hidden');
+    document.getElementById('map-num').value = '';
+    document.getElementById('map-city').value = '';
+    if (currentPolygonLayer) {
+        editorMap.removeLayer(currentPolygonLayer);
+        currentPolygonLayer = null;
+    }
 };
 
 document.getElementById('save-map-btn').addEventListener('click', async (e) => {
     const num = document.getElementById('map-num').value.trim();
     const city = document.getElementById('map-city').value.trim();
-    const url = document.getElementById('map-url').value.trim();
     
-    if (!num || !url) return alert(window.t('alert_fill_all'));
+    if (!num) return alert("Введите номер участка!");
     
+    // Получаем координаты, если полигон нарисован
+    let polygonCoords = null;
+    if (currentPolygonLayer) {
+        // Извлекаем точки [{lat, lng}, ...]
+        const latlngs = currentPolygonLayer.getLatLngs()[0];
+        polygonCoords = latlngs.map(l => ({ lat: l.lat, lng: l.lng }));
+    }
+
+    if (!polygonCoords || polygonCoords.length < 3) return alert("Пожалуйста, нарисуйте на карте контур участка (многоугольник)!");
+
     const btn = e.target;
-    btn.disabled = true; btn.innerText = window.t('saving');
+    btn.disabled = true; btn.innerText = "Сохранение...";
     
     try {
-        let imageUrl = null;
-        if (selectedMapImageFile) {
-            const fileName = `map_${num}_${Date.now()}`;
-            const storageRef = ref(storage, `maps/${fileName}`);
-            await uploadBytes(storageRef, selectedMapImageFile);
-            imageUrl = await getDownloadURL(storageRef);
-        }
-
         const mapData = { 
-            url: url, 
             city: city || "Без города",
+            polygon: polygonCoords,
             updatedAt: new Date().toISOString() 
         };
-        if (imageUrl) mapData.imageUrl = imageUrl;
 
-        await setDoc(doc(db, "territory_maps", num), mapData);
+        await setDoc(doc(db, "territory_maps", num), mapData, { merge: true });
         
         document.getElementById('map-num').value = '';
         document.getElementById('map-city').value = '';
-        document.getElementById('map-url').value = '';
-        removeMapImage();
+        if (currentPolygonLayer) { editorMap.removeLayer(currentPolygonLayer); currentPolygonLayer = null; }
         
-        btn.innerText = window.t('btn_save_map');
+        btn.innerText = "Добавить карту";
         btn.disabled = false;
         window.showToast("Карта сохранена!");
     } catch (err) { 
         console.error(err);
-        alert(window.t('error_general')); 
+        alert("Ошибка при сохранении!"); 
         btn.disabled = false; 
-        btn.innerText = window.t('btn_save_map'); 
+        btn.innerText = "Добавить карту"; 
     }
 });
 
@@ -300,7 +317,12 @@ onSnapshot(collection(db, "territory_maps"), (snapshot) => {
     if (!list) return;
     
     let maps = [];
-    snapshot.forEach(d => maps.push({ num: parseInt(d.id), url: d.data().url, img: d.data().imageUrl, city: d.data().city || 'Без города', id: d.id }));
+    snapshot.forEach(d => maps.push({ 
+        num: parseInt(d.id), 
+        city: d.data().city || 'Без города', 
+        hasPolygon: !!d.data().polygon,
+        id: d.id 
+    }));
     maps.sort((a,b) => a.num - b.num);
 
     const groupedMaps = {};
@@ -326,16 +348,16 @@ onSnapshot(collection(db, "territory_maps"), (snapshot) => {
             <div class="p-2 space-y-1.5 border-t border-slate-200 bg-white">`;
             
         groupMaps.forEach(m => {
-            const photoBadge = m.img ? `<span class="bg-emerald-100 text-emerald-700 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0">ФОТО</span>` : '';
+            // Если есть полигон, показываем бейдж "Интерактивная"
+            const mapBadge = m.hasPolygon ? `<span class="bg-emerald-100 text-emerald-700 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0">КАРТА</span>` : `<span class="bg-slate-100 text-slate-400 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0">ФОТО</span>`;
             groupHtml += `
             <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-2 rounded-lg">
                 <div class="flex items-center gap-2 min-w-0">
                     <span class="bg-slate-800 text-white font-black font-mono text-[10px] px-2 py-1 rounded shrink-0 shadow-sm">${m.num}</span>
                     <span class="text-[9px] font-bold text-slate-400 uppercase ml-1 truncate max-w-[80px]">${m.city}</span>
-                    ${photoBadge}
+                    ${mapBadge}
                 </div>
                 <div class="flex items-center gap-2">
-                    <a href="${m.url}" target="_blank" class="text-xs font-medium text-sky-600 hover:text-sky-700 hover:underline truncate w-20">Ссылка</a>
                     <button onclick="deleteMap('${m.id}')" class="text-slate-300 hover:text-red-500 p-1.5 outline-none transition-colors" title="${window.t('delete')}">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
