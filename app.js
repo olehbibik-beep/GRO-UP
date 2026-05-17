@@ -1531,4 +1531,61 @@ window.takeTerritory = async (num, btn) => {
             issuedAt: new Date().toISOString()
         });
         window.showToast(`Участок №${num} успешно закреплен! ✅`, 'success');
-        window.closeTakeTerr
+        window.closeTakeTerrModal();
+    } catch (e) {
+        alert('Ошибка сети!');
+        btn.disabled = false;
+        btn.innerText = 'ВЗЯТЬ';
+    }
+};
+
+window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
+window.openReportHistory = () => document.getElementById('report-history-modal').classList.replace('hidden', 'flex');
+window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
+window.closeModals = () => {
+    const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
+    const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
+    const m3 = document.getElementById('duties-modal'); if(m3) m3.classList.replace('flex', 'hidden');
+    const m4 = document.getElementById('user-msg-modal'); if(m4) m4.classList.replace('flex', 'hidden');
+    const m5 = document.getElementById('take-terr-modal'); if(m5) m5.classList.replace('flex', 'hidden');
+};
+window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
+
+window.logout = async () => {
+    const uid = localStorage.getItem('userId');
+    if (uid) { try { await updateDoc(doc(db, "users", uid), { pushToken: "" }); } catch (e) {} }
+    localStorage.clear(); window.location.href = 'login.html'; 
+};
+
+let pStart = { x: 0, y: 0 };
+let pCurrent = { x: 0, y: 0 };
+const mainElem = document.getElementById('main-dashboard');
+
+if (mainElem) {
+    mainElem.addEventListener('touchstart', function(e) {
+        pStart.x = e.touches[0].screenX;
+        pStart.y = e.touches[0].screenY;
+    }, {passive: true});
+
+    mainElem.addEventListener('touchmove', function(e) {
+        pCurrent.x = e.touches[0].screenX;
+        pCurrent.y = e.touches[0].screenY;
+    }, {passive: true});
+
+    mainElem.addEventListener('touchend', function(e) {
+        if (mainElem.scrollTop <= 0) {
+            let yDiff = pCurrent.y - pStart.y;
+            let xDiff = Math.abs(pCurrent.x - pStart.x);
+            if (yDiff > 120 && xDiff < 50 && pStart.y > 0 && pCurrent.y > 0) {
+                const loader = document.getElementById('global-loader');
+                if(loader) {
+                    loader.style.display = 'flex';
+                    loader.style.opacity = '1';
+                }
+                setTimeout(() => window.location.reload(true), 300);
+            }
+        }
+        pStart = { x: 0, y: 0 };
+        pCurrent = { x: 0, y: 0 };
+    });
+}
