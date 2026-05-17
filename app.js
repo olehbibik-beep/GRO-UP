@@ -1489,34 +1489,30 @@ window.renderAvailableTerritoriesUI = () => {
         gridHtml = '<div class="grid grid-cols-2 gap-3 pb-2">';
         filtered.forEach(m => {
             const hasPolygon = !!m.polygon;
+            const fireBadge = m.isFire ? `<div class="absolute top-2 right-2 bg-rose-100 text-rose-600 text-[10px] font-black px-2 py-0.5 rounded shadow-sm z-10 border border-rose-200" title="Давно не брали">🔥 Рекомендуем</div>` : '';
+            const cityHtml = m.city ? `<span class="block text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate mt-1">${m.city}</span>` : '';
             
-            let imgHtml = '';
+            // Если есть полигон - кнопка карты, если URL - ссылка
+            let viewBtnHtml = '';
             if (hasPolygon) {
-                imgHtml = `<div class="w-full h-full flex flex-col items-center justify-center bg-emerald-50 text-emerald-500 hover:bg-emerald-100 transition-colors"><svg class="w-8 h-8 mb-1 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg><span class="text-[8px] font-bold uppercase tracking-widest text-emerald-600">Карта</span></div>`;
-            } else if (m.img) {
-                imgHtml = `<img src="${m.img}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />`;
-            } else {
-                imgHtml = `<div class="w-full h-full flex flex-col items-center justify-center bg-slate-200 text-slate-400"><svg class="w-6 h-6 mb-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>`;
+                viewBtnHtml = `<button onclick="openTerritoryMap('${m.num}')" class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-600 font-black text-[9px] uppercase tracking-widest py-2 rounded-lg transition-colors outline-none shadow-sm flex justify-center items-center gap-1 border border-emerald-200"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg> Карта</button>`;
+            } else if (m.url) {
+                viewBtnHtml = `<button onclick="window.open('${m.url}', '_blank')" class="w-full bg-slate-50 hover:bg-slate-100 text-slate-500 font-black text-[9px] uppercase tracking-widest py-2 rounded-lg transition-colors outline-none shadow-sm border border-slate-200">Посмотреть</button>`;
             }
-            
-            const fireBadge = m.isFire ? `<div class="absolute top-2 right-2 bg-white/95 backdrop-blur-sm p-1.5 rounded-full shadow-md z-10 animate-pulse border border-rose-100" title="Давно не брали"><span class="text-xs leading-none">🔥</span></div>` : '';
-            const cityHtml = m.city ? `<span class="block text-[8px] text-emerald-100 font-medium truncate mt-0.5">${m.city}</span>` : '';
-            
-            const onclickAttr = hasPolygon ? `openTerritoryMap('${m.num}')` : `window.open('${m.url}', '_blank')`;
 
             gridHtml += `
-            <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col relative group">
-                <div class="h-24 w-full relative overflow-hidden bg-slate-100 cursor-pointer" onclick="${onclickAttr}">
-                    ${fireBadge}
-                    ${imgHtml}
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent pointer-events-none"></div>
-                    <div class="absolute bottom-2 left-2 right-2 text-white pointer-events-none">
-                        <span class="block font-black text-lg drop-shadow-md leading-none">№ ${m.num}</span>
-                        ${cityHtml}
-                    </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between relative">
+                ${fireBadge}
+                <div class="mb-3">
+                    <span class="block font-black text-xl text-slate-800 leading-none">№ ${m.num}</span>
+                    ${cityHtml}
                 </div>
-                <div class="p-2 flex justify-center items-center bg-white border-t border-slate-100">
-                    <button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-xl transition-colors outline-none shadow-sm active:scale-95 border border-emerald-100 hover:border-emerald-500">Взять</button>
+                
+                <div class="flex gap-2 mt-auto">
+                    <div class="w-1/2">${viewBtnHtml}</div>
+                    <div class="w-1/2">
+                        <button onclick="takeTerritory(${m.num}, this)" class="w-full bg-slate-800 hover:bg-black text-white font-black text-[9px] uppercase tracking-widest py-2 rounded-lg transition-colors outline-none shadow-sm active:scale-95">Взять</button>
+                    </div>
                 </div>
             </div>`;
         });
