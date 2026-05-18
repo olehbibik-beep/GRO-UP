@@ -1546,6 +1546,7 @@ window.closeModals = () => {
     const m3 = document.getElementById('duties-modal'); if(m3) m3.classList.replace('flex', 'hidden');
     const m4 = document.getElementById('user-msg-modal'); if(m4) m4.classList.replace('flex', 'hidden');
     const m5 = document.getElementById('take-terr-modal'); if(m5) m5.classList.replace('flex', 'hidden');
+    const m6 = document.getElementById('info-details-modal'); if(m6) m6.classList.replace('flex', 'hidden');
 };
 window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
 
@@ -1639,3 +1640,7 @@ if (mainElem) {
         pCurrent = { x: 0, y: 0 };
     });
 }
+
+// Логика окна информации о проекте
+window.openInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('hidden', 'flex');
+window.closeInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('flex', 'hidden');
