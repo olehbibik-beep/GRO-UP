@@ -1398,6 +1398,9 @@ window.openTakeTerrModal = async () => {
         const activeSnap = await getDocs(query(collection(db, "territories"), where("status", "==", "active")));
         const activeNumbers = [];
         activeSnap.forEach(doc => activeNumbers.push(Number(doc.data().number)));
+        
+        // Сохраняем точное количество активных участков для информера
+        window.activeTerritoriesCount = activeNumbers.length;
 
         const returnedSnap = await getDocs(query(collection(db, "territories"), where("status", "==", "returned")));
         const lastWorkedMap = {};
@@ -1412,25 +1415,33 @@ window.openTakeTerrModal = async () => {
         });
 
         window.availableTerritoriesData = [];
+        window.cooldownTerritoriesCount = 0; // Счётчик пройденных участков на отдыхе
+
+        const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000; // 3 месяца в миллисекундах
+        const now = Date.now();
+
         Object.keys(window.allMapsCache).forEach(numStr => {
             const num = Number(numStr);
-            if (!activeNumbers.includes(num)) {
-                let lastW = lastWorkedMap[num] || 0; 
-                window.availableTerritoriesData.push({ 
-                    num: num, 
-                    url: window.allMapsCache[numStr].url, 
-                    img: window.allMapsCache[numStr].imageUrl,
-                    city: window.allMapsCache[numStr].city,
-                    polygon: window.allMapsCache[numStr].polygon,
-                    lastWorked: lastW
-                });
-            }
-        });
+            
+            // Если участок сейчас у кого-то в работе — пропускаем его
+            if (activeNumbers.includes(num)) return;
 
-        const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
-        const now = Date.now();
-        window.availableTerritoriesData.forEach(m => {
-            m.isFire = (m.lastWorked === 0) || ((now - m.lastWorked) > ninetyDaysMs);
+            let lastW = lastWorkedMap[num] || 0; 
+            
+            // 🔥 КРИТИЧЕСКАЯ ПРОВЕРКА: Если участок сдали меньше 3 месяцев назад
+            if (lastW > 0 && (now - lastW) < ninetyDaysMs) {
+                window.cooldownTerritoriesCount++; // Отправляем в счётчик "Пройдено"
+                return; // Не добавляем в список доступных!
+            }
+
+            // Если участок свободен и отлежался — выводим его для взятия
+            window.availableTerritoriesData.push({ 
+                num: num, 
+                url: window.allMapsCache[numStr].url, 
+                city: window.allMapsCache[numStr].city,
+                polygon: window.allMapsCache[numStr].polygon,
+                lastWorked: lastW
+            });
         });
 
         window.currentTerrCityFilter = 'all';
@@ -1439,6 +1450,7 @@ window.openTakeTerrModal = async () => {
         window.renderAvailableTerritoriesUI();
 
     } catch (e) {
+        console.error(e);
         listContainer.innerHTML = `<p class="text-xs font-bold uppercase tracking-widest text-red-500 text-center py-4">Ошибка загрузки</p>`;
     }
 };
