@@ -850,12 +850,18 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 let userMapInstance = null;
 let userPolygonLayer = null;
 
+// 🔥 ОБНОВЛЕННАЯ ФУНКЦИЯ: ОТКРЫТЬ КАРТУ (С фиксом кнопки "Назад")
 window.openTerritoryMap = (numStr) => {
     const mapData = window.allMapsCache[numStr];
     if (!mapData || !mapData.polygon) return alert("Для этого участка еще не нарисована карта!");
 
     document.getElementById('terr-map-title').innerText = `Участок № ${numStr} (${mapData.city})`;
     document.getElementById('terr-map-modal').classList.replace('hidden', 'flex');
+
+    // Имитируем переход на новую страницу для смартфона
+    if (window.location.hash !== '#map') {
+        history.pushState({ modal: 'map' }, '', '#map');
+    }
 
     if (!userMapInstance) {
         userMapInstance = L.map('user-view-map').setView([49.974, 12.700], 14);
@@ -879,6 +885,24 @@ window.openTerritoryMap = (numStr) => {
         userMapInstance.fitBounds(userPolygonLayer.getBounds(), { padding: [20, 20] });
     }, 100);
 };
+
+// 🔥 ОБНОВЛЕННАЯ ФУНКЦИЯ: ЗАКРЫТЬ КАРТУ ПО КРЕСТИКУ
+window.closeTerritoryMap = () => {
+    document.getElementById('terr-map-modal').classList.replace('flex', 'hidden');
+    // Если закрыли крестиком, убираем виртуальный хэш из истории
+    if (window.location.hash === '#map') {
+        history.back();
+    }
+};
+
+// 🔥 ПЕРЕХВАТ СИСТЕМНОЙ КНОПКИ "НАЗАД" НА СМАРТФОНЕ
+window.addEventListener('popstate', (event) => {
+    const modal = document.getElementById('terr-map-modal');
+    // Если кнопка "Назад" нажата при открытой карте — просто прячем окно карты
+    if (modal && !modal.classList.contains('hidden')) {
+        modal.classList.replace('flex', 'hidden');
+    }
+});
 
 window.closeTerritoryMap = () => {
     document.getElementById('terr-map-modal').classList.replace('flex', 'hidden');
