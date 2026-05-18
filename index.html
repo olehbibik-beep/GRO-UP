@@ -226,7 +226,7 @@
             </div>
         </div>
 
-     <div id="tab-info" class="tab-content pt-4 md:pt-0 px-4 md:px-0">
+    <div id="tab-info" class="tab-content pt-4 md:pt-0 px-4 md:px-0">
             <div class="w-full max-w-6xl mx-auto px-0 md:pl-8 md:pr-6">
                 <div onclick="openInfoDetailsModal()" class="w-full bg-white rounded-xl border border-slate-200 flex items-center justify-between p-4 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors h-16">
                     <div class="flex items-center gap-3">
@@ -240,6 +240,39 @@
                 </div>
             </div>
         </div>
+
+    </main> <div id="info-details-modal" class="fixed inset-0 bg-slate-900/60 z-[160] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeInfoDetailsModal()">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 relative border border-slate-200 max-h-[85vh] flex flex-col shadow-2xl" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-4">
+                <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center font-serif font-bold italic text-xs">i</div>
+                    О приложении GRO-UP
+                </h2>
+                <button onclick="closeInfoDetailsModal()" class="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition-colors outline-none font-black text-lg pb-1">×</button>
+            </div>
+            
+            <div class="flex-grow overflow-y-auto custom-scrollbar space-y-4 pr-1 text-slate-600 text-sm font-medium leading-relaxed">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p class="font-bold text-slate-700 uppercase text-[10px] tracking-widest mb-1">🔒 Конфиденциальность</p>
+                    <p class="text-xs text-slate-500">Все личные данные, отчеты и координаты участков хранятся в защищенной облачной базе Google Firebase. Информация используется только внутри собрания и защищена от публичного доступа.</p>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p class="font-bold text-slate-700 uppercase text-[10px] tracking-widest mb-1">👥 Права доступа и Роли</p>
+                    <ul class="text-xs text-slate-500 list-disc list-inside space-y-1">
+                        <li><strong class="text-slate-700">Возвещатель:</strong> сдает отчет, видит свои задания, берет свободные участки и записывается на стенды.</li>
+                        <li><strong class="text-slate-700">Надзиратель группы:</strong> координирует дежурства и видит отчеты только своей группы.</li>
+                        <li><strong class="text-slate-700">Ответственный братья:</strong> управляют базами данных по своим назначениям (стенды, участки, школа).</li>
+                    </ul>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <p class="font-bold text-slate-700 uppercase text-[10px] tracking-widest mb-1">📅 Правила использования</p>
+                    <p class="text-xs text-slate-500">Участки территории закрепляются за вами на <strong class="text-slate-700">3 месяца</strong>. Личные отчеты о служении необходимо вносить до конца текущего месяца для корректного ведения общей статистики.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     </main> <div id="info-details-modal" class="fixed inset-0 bg-slate-900/60 z-[160] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeInfoDetailsModal()">
         <div class="bg-white w-full max-w-md rounded-3xl p-6 relative border border-slate-200 max-h-[85vh] flex flex-col shadow-2xl" onclick="event.stopPropagation()">
@@ -391,7 +424,7 @@
         </div>
     </div>
 
-    <script type="module" src="app.js?v=624"></script>
+    <script type="module" src="app.js?v=625"></script>
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[150] flex flex-col gap-2 pointer-events-none"></div>
 </body>
 </html>
