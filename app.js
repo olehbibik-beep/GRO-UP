@@ -1445,56 +1445,43 @@ window.openTakeTerrModal = async () => {
 
 window.renderAvailableTerritoriesUI = () => {
     const listContainer = document.getElementById('available-terr-list');
+    
+    // Так как фильтры по городам убрали, берем полный список и просто сортируем по номерам
     let filtered = window.availableTerritoriesData;
+    filtered.sort((a, b) => a.num - b.num);
 
-    if (window.currentTerrCityFilter !== 'all') {
-        filtered = filtered.filter(m => m.city === window.currentTerrCityFilter);
-    }
-    
-    if (window.showRecommendedTerrOnly) {
-        filtered = filtered.filter(m => m.isFire);
-        filtered.sort((a,b) => a.lastWorked - b.lastWorked);
-    } else {
-        filtered.sort((a,b) => a.num - b.num);
-    }
+    // Считаем показатели для информера
+    const totalMaps = Object.keys(window.allMapsCache).length;
+    const availableMaps = window.availableTerritoriesData.length;
+    const takenMaps = totalMaps - availableMaps;
 
-    const cities = [...new Set(window.availableTerritoriesData.map(m => m.city))].sort();
-
-    // Фильтры сверху
-    let filtersHtml = `<div class="flex flex-nowrap overflow-x-auto gap-2 pb-3 mb-4 custom-scrollbar shrink-0">`;
-    
-    const fireClass = window.showRecommendedTerrOnly ? 'bg-rose-500 text-white shadow-md' : 'bg-rose-50 text-rose-600 border border-rose-200';
-    filtersHtml += `<button onclick="window.showRecommendedTerrOnly = !window.showRecommendedTerrOnly; window.renderAvailableTerritoriesUI()" class="shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-colors outline-none ${fireClass}">🔥 Рекомендуем</button>`;
-
-    const allClass = window.currentTerrCityFilter === 'all' ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-50 text-slate-600 border border-slate-200';
-    filtersHtml += `<button onclick="window.currentTerrCityFilter = 'all'; window.renderAvailableTerritoriesUI()" class="shrink-0 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-colors outline-none ${allClass}">Все</button>`;
-
-    cities.forEach(city => {
-        const cityClass = window.currentTerrCityFilter === city ? 'bg-indigo-500 text-white shadow-md' : 'bg-slate-50 text-slate-600 border border-slate-200';
-        const displayCity = city === 'Без города' ? 'Прочие' : city;
-        filtersHtml += `<button onclick="window.currentTerrCityFilter = '${city}'; window.renderAvailableTerritoriesUI()" class="shrink-0 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-colors outline-none ${cityClass}">${displayCity}</button>`;
-    });
-    filtersHtml += `</div>`;
+    // 🔥 НОВЫЙ СТРОГИЙ СЧЁТЧИК (Вместо тегов и фильтров)
+    let statsHtml = `
+    <div class="grid grid-cols-3 gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-3 mb-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-inner shrink-0">
+        <div>
+            <span class="block text-slate-400 text-[8px] mb-0.5">В базе</span>
+            <span class="text-slate-800 text-sm font-black">${totalMaps}</span>
+        </div>
+        <div class="border-l border-slate-200">
+            <span class="block text-slate-400 text-[8px] mb-0.5">В работе</span>
+            <span class="text-indigo-600 text-sm font-black">${takenMaps}</span>
+        </div>
+        <div class="border-l border-slate-200">
+            <span class="block text-slate-400 text-[8px] mb-0.5">Свободно</span>
+            <span class="text-emerald-600 text-sm font-black">${availableMaps}</span>
+        </div>
+    </div>`;
 
     let gridHtml = '';
     if (filtered.length === 0) {
-        gridHtml = `<p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">Ничего не найдено</p>`;
+        gridHtml = `<p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">Все участки разобраны!</p>`;
     } else {
-        // Счетчик свободных
-        gridHtml += `<p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Доступно: <span class="text-slate-700">${filtered.length}</span></p>`;
-        
-        // Сетка участков
-        gridHtml += '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">';
+        gridHtml = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">';
         filtered.forEach(m => {
             const hasPolygon = !!m.polygon;
-            
-            // Заменили огромный бейдж на аккуратный 🔥 рядом с номером
-            const fireIcon = m.isFire ? `<span title="Рекомендуем" class="text-rose-500 ml-1">🔥</span>` : '';
-            
-            // Город теперь крупный
             const cityHtml = m.city ? `<span class="block font-black text-lg text-slate-600 truncate leading-tight">${m.city}</span>` : '';
             
-            // Кнопка посмотреть (теперь это стрелочка справа)
+            // Кнопка просмотра (Стрелочка справа)
             let viewBtnHtml = '';
             if (hasPolygon) {
                 viewBtnHtml = `<button onclick="openTerritoryMap('${m.num}')" class="w-14 h-12 shrink-0 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 font-black rounded-xl transition-colors outline-none shadow-sm flex justify-center items-center border border-emerald-200" title="Интерактивная карта"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></button>`;
@@ -1509,7 +1496,6 @@ window.renderAvailableTerritoriesUI = () => {
                 <div>
                     <div class="flex items-center gap-1.5 mb-1">
                         <span class="bg-slate-800 text-white font-mono font-black text-sm px-2.5 py-1 rounded-lg leading-none shadow-sm">№ ${m.num}</span>
-                        ${fireIcon}
                     </div>
                     ${cityHtml}
                 </div>
@@ -1523,7 +1509,7 @@ window.renderAvailableTerritoriesUI = () => {
         gridHtml += '</div>';
     }
 
-    listContainer.innerHTML = filtersHtml + gridHtml;
+    listContainer.innerHTML = statsHtml + gridHtml;
 };
 
 window.closeTakeTerrModal = () => {
