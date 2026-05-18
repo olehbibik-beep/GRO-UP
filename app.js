@@ -1458,42 +1458,45 @@ window.openTakeTerrModal = async () => {
 window.renderAvailableTerritoriesUI = () => {
     const listContainer = document.getElementById('available-terr-list');
     
-    // Так как фильтры по городам убрали, берем полный список и просто сортируем по номерам
     let filtered = window.availableTerritoriesData;
     filtered.sort((a, b) => a.num - b.num);
 
-    // Считаем показатели для информера
+    // Рассчитываем идеальный баланс данных для четырёх колонок
     const totalMaps = Object.keys(window.allMapsCache).length;
     const availableMaps = window.availableTerritoriesData.length;
-    const takenMaps = totalMaps - availableMaps;
+    const takenMaps = window.activeTerritoriesCount || 0;
+    const completedMaps = window.cooldownTerritoriesCount || 0; // Количество пройденных на "отдыхе"
 
-    // 🔥 НОВЫЙ СТРОГИЙ СЧЁТЧИК (Вместо тегов и фильтров)
+    // 🔥 СТИЛЬНЫЙ ЧЕТЫРЕХКОЛОНОЧНЫЙ ИНФОРМЕР (Математически идеальный баланс)
     let statsHtml = `
-    <div class="grid grid-cols-3 gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-3 mb-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-inner shrink-0">
+    <div class="grid grid-cols-4 gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-2.5 mb-4 text-center text-[8px] font-black uppercase tracking-widest text-slate-500 shadow-inner shrink-0">
         <div>
-            <span class="block text-slate-400 text-[8px] mb-0.5">В базе</span>
-            <span class="text-slate-800 text-sm font-black">${totalMaps}</span>
+            <span class="block text-slate-400 text-[7px] mb-0.5">В базе</span>
+            <span class="text-slate-800 text-xs font-black">${totalMaps}</span>
         </div>
         <div class="border-l border-slate-200">
-            <span class="block text-slate-400 text-[8px] mb-0.5">В работе</span>
-            <span class="text-indigo-600 text-sm font-black">${takenMaps}</span>
+            <span class="block text-slate-400 text-[7px] mb-0.5">В работе</span>
+            <span class="text-indigo-600 text-xs font-black">${takenMaps}</span>
         </div>
         <div class="border-l border-slate-200">
-            <span class="block text-slate-400 text-[8px] mb-0.5">Свободно</span>
-            <span class="text-emerald-600 text-sm font-black">${availableMaps}</span>
+            <span class="block text-slate-400 text-[7px] mb-0.5">Пройдено</span>
+            <span class="text-purple-600 text-xs font-black">${completedMaps}</span>
+        </div>
+        <div class="border-l border-slate-200">
+            <span class="block text-slate-400 text-[7px] mb-0.5">Свободно</span>
+            <span class="text-emerald-600 text-xs font-black">${availableMaps}</span>
         </div>
     </div>`;
 
     let gridHtml = '';
     if (filtered.length === 0) {
-        gridHtml = `<p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">Все участки разобраны!</p>`;
+        gridHtml = `<p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">Все доступные участки разобраны или отдыхают!</p>`;
     } else {
         gridHtml = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">';
         filtered.forEach(m => {
             const hasPolygon = !!m.polygon;
             const cityHtml = m.city ? `<span class="block font-black text-lg text-slate-600 truncate leading-tight">${m.city}</span>` : '';
             
-            // Кнопка просмотра (Стрелочка справа)
             let viewBtnHtml = '';
             if (hasPolygon) {
                 viewBtnHtml = `<button onclick="openTerritoryMap('${m.num}')" class="w-14 h-12 shrink-0 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 font-black rounded-xl transition-colors outline-none shadow-sm flex justify-center items-center border border-emerald-200" title="Интерактивная карта"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></button>`;
