@@ -226,15 +226,53 @@
             </div>
         </div>
 
-        <div id="tab-info" class="tab-content pt-4 md:pt-0 px-4 md:px-0">
+     <div id="tab-info" class="tab-content pt-4 md:pt-0 px-4 md:px-0">
             <div class="w-full max-w-6xl mx-auto px-0 md:pl-8 md:pr-6">
-                <div class="bg-white p-8 rounded-xl border border-slate-200 shadow-sm text-center flex flex-col items-center justify-center min-h-[50vh]">
-                    <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
-                    <h3 class="font-black text-slate-800 text-xl mb-2" data-lang="info_title">Информация</h3>
-                    <p class="text-xs text-slate-500 font-bold tracking-widest uppercase" data-lang="in_development">Раздел в разработке</p>
+                <div onclick="openInfoDetailsModal()" class="w-full bg-white rounded-xl border border-slate-200 flex items-center justify-between p-4 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors h-16">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-serif font-bold italic text-base shrink-0 shadow-inner">i</div>
+                        <span class="text-xs md:text-sm font-black uppercase tracking-widest text-slate-600">Узнай больше</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-black text-slate-800 tracking-wider text-sm md:text-base">GRO-UP App</span>
+                        <img src="icon-512.png" alt="Logo" class="w-10 h-10 rounded-xl object-contain border border-slate-100 shadow-sm">
+                    </div>
                 </div>
             </div>
         </div>
+
+    </main> <div id="info-details-modal" class="fixed inset-0 bg-slate-900/60 z-[160] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeInfoDetailsModal()">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 relative border border-slate-200 max-h-[85vh] flex flex-col shadow-2xl" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-4">
+                <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center font-serif font-bold italic text-xs">i</div>
+                    О приложении GRO-UP
+                </h2>
+                <button onclick="closeInfoDetailsModal()" class="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition-colors outline-none font-black text-lg pb-1">×</button>
+            </div>
+            
+            <div class="flex-grow overflow-y-auto custom-scrollbar space-y-4 pr-1 text-slate-600 text-sm font-medium leading-relaxed">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p class="font-bold text-slate-700 uppercase text-[10px] tracking-widest mb-1">🔒 Конфиденциальность</p>
+                    <p class="text-xs text-slate-500">Все личные данные, отчеты и координаты участков хранятся в защищенной облачной базе Google Firebase. Информация используется только внутри собрания и защищена от публичного доступа.</p>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p class="font-bold text-slate-700 uppercase text-[10px] tracking-widest mb-1">👥 Права доступа и Роли</p>
+                    <ul class="text-xs text-slate-500 list-disc list-inside space-y-1">
+                        <li><strong class="text-slate-700">Возвещатель:</strong> сдает отчет, видит свои задания, берет свободные участки и записывается на стенды.</li>
+                        <li><strong class="text-slate-700">Надзиратель группы:</strong> координирует дежурства и видит отчеты только своей группы.</li>
+                        <li><strong class="text-slate-700">Ответственный братья:</strong> управляют базами данных по своим назначениям (стенды, участки, школа).</li>
+                    </ul>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <p class="font-bold text-slate-700 uppercase text-[10px] tracking-widest mb-1">📅 Правила использования</p>
+                    <p class="text-xs text-slate-500">Участки территории закрепляются за вами на <strong class="text-slate-700">3 месяца</strong>. Личные отчеты о служении необходимо вносить до конца текущего месяца для корректного ведения общей статистики.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     </main>
 
