@@ -1211,7 +1211,7 @@ function loadPersonalData() {
                                         <div class="flex items-center gap-1.5 min-w-0 w-full truncate">
                                             <span class="font-black ${isPast ? 'text-slate-500' : 'text-sky-700'} text-[10px] md:text-xs uppercase tracking-wide leading-tight truncate">${catStr}</span>
                                         </div>
-                                        <span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-none shadow-sm shrink-0 whitespace-nowrap">${window.t('lesson')} ${task.lesson}</span>
+                                        <span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-none shadow-none shrink-0 whitespace-nowrap">${window.t('lesson')} ${task.lesson}</span>
                                     </div>
                                 </div>
                             </div>
