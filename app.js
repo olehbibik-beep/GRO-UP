@@ -475,62 +475,36 @@ if (userId) {
 }
 
 async function loadProfileData() {
-    const pName = document.getElementById('profile-name');
-    const pGroup = document.getElementById('profile-group');
-    const pOverseer = document.getElementById('profile-overseer');
+    const pName = document.getElementById('profile-name');
+    const pGroup = document.getElementById('profile-group');
+    const pOverseer = document.getElementById('profile-overseer');
 
-    if(pName) pName.innerText = currentUserData.name || "Имя";
-    let roles = currentUserData.roles || ["Возвещатель"];
-    const rolesContainer = document.getElementById('profile-roles-container');
-    
-    if (rolesContainer) {
+    if(pName) pName.innerText = currentUserData.name || "Имя";
+    let roles = currentUserData.roles || ["Возвещатель"];
+    const rolesContainer = document.getElementById('profile-roles-container');
+if (rolesContainer) {
         rolesContainer.innerHTML = roles.map(r => {
             let colorClass = "bg-slate-100 text-slate-500 border border-slate-200"; 
-            let iconHtml = "";
+            let iconHtml = ""; // Переменная для иконки
 
             if(r === "Старейшина") colorClass = "bg-amber-100 text-amber-700 border border-amber-200";
             else if(r === "Помощник собрания") colorClass = "bg-sky-100 text-sky-700 border border-sky-200";
             else if(r === "Пионер") colorClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
             else if(r === "Админ" || r === "Владелец") colorClass = "bg-rose-100 text-rose-700 border border-rose-200";
             else if(r === "Ответственный за график") colorClass = "bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200";
-            // 🔥 Наша новая роль с иконкой тележки
+            
+            // 🔥 Наша роль с иконкой тележки (Вариант 1)
             else if(r === "Служение со стендом") {
                 colorClass = "bg-indigo-100 text-indigo-700 border-indigo-200";
                 iconHtml = `<svg class="w-3 h-3 inline mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 4h10v14H7V4zM10 8h4M10 12h4" /><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 21v-3m4 3v-3" /></svg>`;
             }
 
-            // Обрати внимание: мы убрали "Служение со стендом" из этого списка, чтобы оно отображалось
+            // ВАЖНО: отсюда мы убрали "Служение со стендом", чтобы бейджик не скрывался
             if(["Ответственный за участки", "Ответственный за школу", "Участник школы", "Надзиратель группы"].includes(r)) return '';
             
-            return `<span class="inline-block px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${colorClass} shadow-sm">${iconHtml}${r}</span>`;
+            return `<span class="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${colorClass}">${iconHtml}${r}</span>`;
         }).join('');
     }
-    
-    onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
-        const congEl = document.getElementById('profile-congregation');
-        const dashZoomId = document.getElementById('dash-zoom-id');
-        const dashZoomPass = document.getElementById('dash-zoom-pass');
-        
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            if(congEl) congEl.innerText = data.name || "МАРИАНСКИЕ ЛАЗНЕ";
-            currentZoomData.id = data.zoomId || "";
-            currentZoomData.pass = data.zoomPass || "";
-            if (dashZoomId) dashZoomId.innerText = currentZoomData.id || "-";
-            if (dashZoomPass) dashZoomPass.innerText = currentZoomData.pass || "-";
-        }
-    });
-
-    const myGroup = currentUserData.group || window.t('no_group');
-    if(pGroup) pGroup.innerText = `№ ${myGroup}`;
-    try {
-        if (myGroup !== window.t('no_group') && pOverseer) {
-            const q = query(collection(db, "users"), where("group", "==", myGroup), where("roles", "array-contains", "Надзиратель группы"));
-            const snap = await getDocs(q);
-            pOverseer.innerText = snap.empty ? "-" : snap.docs[0].data().name;
-        } else if (pOverseer) { pOverseer.innerText = "-"; }
-    } catch(e) {}
-}
     
     onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
         const congEl = document.getElementById('profile-congregation');
