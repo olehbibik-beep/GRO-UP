@@ -39,9 +39,10 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ==========================================
-// ЛОГИКА КЭШИРОВАНИЯ И ЗАЩИТА ОТ ДУБЛЕЙ
+// 🔥 ГЛАВНЫЙ РУБИЛЬНИК КЭША
+// Поменял что-то в app.js или index.html? Просто измени тут цифру (например, на v46).
 // ==========================================
-const CACHE_NAME = 'gro-up-v45'; 
+const CACHE_NAME = 'gro-up-v46'; 
 
 const INITIAL_CACHED_RESOURCES = [
   './',
@@ -54,12 +55,13 @@ const INITIAL_CACHED_RESOURCES = [
 self.addEventListener('install', (event) => {
   self.skipWaiting(); 
   
-  // 🔥 НЕУБИВАЕМАЯ УСТАНОВКА: Игнорируем ошибки при скачивании файлов
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
       for (let req of INITIAL_CACHED_RESOURCES) {
          try { 
-             await cache.add(req); 
+             // МАГИЯ ЗДЕСЬ: { cache: 'reload' } заставляет браузер игнорировать старую память
+             // и качать свежайшую версию файла напрямую с твоего сервера!
+             await cache.add(new Request(req, { cache: 'reload' })); 
          } catch(e) { 
              console.log('Файл пропущен при кэшировании: ' + req); 
          }
@@ -72,7 +74,11 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(keys.map((key) => {
-        if (key !== CACHE_NAME) return caches.delete(key);
+        // Как только цифра версии меняется, этот код беспощадно удаляет старый кэш
+        if (key !== CACHE_NAME) {
+            console.log('Удаляем старый кэш: ' + key);
+            return caches.delete(key);
+        }
       }));
     })
   );
@@ -80,12 +86,20 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Не трогаем сторонние запросы (типа базы данных Firebase)
   if (!event.request.url.startsWith(self.location.origin)) return;
+  // Не кэшируем ничего, кроме стандартных GET-запросов
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
     fetch(event.request).then((response) => {
+      // Сеть есть! Отдаем свежий файл и незаметно обновляем кэш в фоне
       const resClone = response.clone();
       caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
       return response;
-    }).catch(() => caches.match(event.request))
+    }).catch(() => {
+      // Интернета нет! Достаем из заначки
+      return caches.match(event.request);
+    })
   );
 });
