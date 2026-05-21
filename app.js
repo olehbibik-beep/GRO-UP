@@ -1198,10 +1198,10 @@ function loadPersonalData() {
                     if (catStr === 'ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ') catStr = window.t('cat_beliefs').replace('💡 ','');
                     if (catStr === 'РЕЧЬ') catStr = window.t('cat_talk_db').replace('🎙️ ','');
 
-                 const cardHtml = `
-                        <div class="p-4 rounded-none border ${opacityClass} mb-3 relative overflow-hidden transition-all flex flex-col justify-between min-h-[90px]">
+            const cardHtml = `
+                        <div style="border-radius: 0px !important;" class="p-4 border ${opacityClass} mb-3 relative overflow-hidden transition-all flex flex-col justify-between min-h-[90px]">
                             <div class="flex items-center gap-3 w-full">
-                                <div class="flex flex-col items-center justify-center w-12 h-12 ${isPast ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-sky-50 border-sky-100 text-sky-500'} rounded-none border shrink-0">
+                                <div style="border-radius: 0px !important;" class="flex flex-col items-center justify-center w-12 h-12 ${isPast ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-sky-50 border-sky-100 text-sky-500'} border shrink-0">
                                     <span class="text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${taskDate.toLocaleDateString(localeFormat, { month: 'short' }).replace('.', '')}</span>
                                     <span class="text-xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${taskDate.getDate()}</span>
                                 </div>
@@ -1211,7 +1211,7 @@ function loadPersonalData() {
                                         <div class="flex items-center gap-1.5 min-w-0 w-full truncate">
                                             <span class="font-black ${isPast ? 'text-slate-500' : 'text-sky-700'} text-[10px] md:text-xs uppercase tracking-wide leading-tight truncate">${catStr}</span>
                                         </div>
-                                        <span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border-none px-2 py-0.5 rounded-none shadow-none shrink-0 whitespace-nowrap">${window.t('lesson')} ${task.lesson}</span>
+                                        <span style="border-radius: 0px !important;" class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border-none px-2 py-0.5 shadow-none shrink-0 whitespace-nowrap">${window.t('lesson')} ${task.lesson}</span>
                                     </div>
                                 </div>
                             </div>
