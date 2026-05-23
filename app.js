@@ -1569,83 +1569,51 @@ window.renderGlobalAvailableMap = () => {
         let bounds = L.latLngBounds();
         let hasPolys = false;
 
-        window.availableTerritoriesData.forEach(m => {
-            if (m.polygon) {
-                hasPolys = true;
-                const latlngs = m.polygon.map(p => [p.lat, p.lng]);
-                
-                // Цвет: Красный (давно не брали) или Зеленый
-                const polyColor = m.isFire ? '#f43f5e' : '#10b981';
-                
-                const poly = L.polygon(latlngs, {
-                    color: polyColor,
-                    fillColor: polyColor,
-                    fillOpacity: 0.45,
-                    weight: 2
-                });
+        // 🔥 ВАЖНО: Используем allMapPolygons, чтобы отрисовать вообще все участки
+        window.allMapPolygons.forEach(m => {
+            hasPolys = true;
+            const latlngs = m.polygon.map(p => [p.lat, p.lng]);
+            
+            let polyColor = '#94a3b8'; // По умолчанию серый
+            let statusText = '';
+            let btnHtml = '';
 
-                // Всплывающее окно прямо на карте
-                const popupHtml = `
-                    <div class="text-center p-1.5 min-w-[140px] font-sans">
-                        <span class="block font-black text-2xl text-slate-800 leading-none mb-1">№ ${m.num}</span>
-                        <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 border-b border-slate-200 pb-2">${m.city}</span>
-                        <button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all">ВЗЯТЬ УЧАСТОК</button>
-                    </div>
-                `;
-                poly.bindPopup(popupHtml);
-                poly.addTo(globalAvailableLayerGroup);
-                bounds.extend(poly.getBounds());
+            // Настраиваем цвета и текст попапа в зависимости от статуса
+            if (m.status === 'active') {
+                statusText = '<span class="text-slate-500">Уже в работе</span>';
+                polyColor = '#94a3b8'; // Серый
+            } else if (m.status === 'cooldown') {
+                statusText = '<span class="text-purple-500">Пройден (на отдыхе)</span>';
+                polyColor = '#cbd5e1'; // Светло-серый
+            } else if (m.status === 'fire') {
+                statusText = '<span class="text-rose-500">Свободен (Рекомендуем)</span>';
+                polyColor = '#f43f5e'; // Красный
+                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2">ВЗЯТЬ УЧАСТОК</button>`;
+            } else if (m.status === 'available') {
+                statusText = '<span class="text-emerald-500">Свободен</span>';
+                polyColor = '#10b981'; // Зеленый
+                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2">ВЗЯТЬ УЧАСТОК</button>`;
             }
-        });
 
-        if (hasPolys) {
-            globalAvailableMapInstance.fitBounds(bounds, { padding: [30, 30] });
-        }
-    }, 100);
-};
-window.renderGlobalAvailableMap = () => {
-    if (!globalAvailableMapInstance) {
-        globalAvailableMapInstance = L.map('available-terr-map').setView([49.974, 12.700], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
-        }).addTo(globalAvailableMapInstance);
-    }
+            const poly = L.polygon(latlngs, {
+                color: polyColor,
+                fillColor: polyColor,
+                fillOpacity: (m.status === 'active' || m.status === 'cooldown') ? 0.3 : 0.45, // Занятые делаем более прозрачными
+                weight: 2
+            });
 
-    setTimeout(() => {
-        globalAvailableMapInstance.invalidateSize();
-        if (globalAvailableLayerGroup) globalAvailableMapInstance.removeLayer(globalAvailableLayerGroup);
-        globalAvailableLayerGroup = L.layerGroup().addTo(globalAvailableMapInstance);
-
-        let bounds = L.latLngBounds();
-        let hasPolys = false;
-
-        window.availableTerritoriesData.forEach(m => {
-            if (m.polygon) {
-                hasPolys = true;
-                const latlngs = m.polygon.map(p => [p.lat, p.lng]);
-                
-                // Цвет: Красный (давно не брали) или Зеленый
-                const polyColor = m.isFire ? '#f43f5e' : '#10b981';
-                
-                const poly = L.polygon(latlngs, {
-                    color: polyColor,
-                    fillColor: polyColor,
-                    fillOpacity: 0.45,
-                    weight: 2
-                });
-
-                // Всплывающее окно прямо на карте!
-                const popupHtml = `
-                    <div class="text-center p-1.5 min-w-[140px] font-sans">
-                        <span class="block font-black text-2xl text-slate-800 leading-none mb-1">№ ${m.num}</span>
-                        <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 border-b border-slate-200 pb-2">${m.city}</span>
-                        <button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all">ВЗЯТЬ УЧАСТОК</button>
-                    </div>
-                `;
-                poly.bindPopup(popupHtml);
-                poly.addTo(globalAvailableLayerGroup);
-                bounds.extend(poly.getBounds());
-            }
+            // Всплывающее окно прямо на карте
+            const popupHtml = `
+                <div class="text-center p-1.5 min-w-[140px] font-sans">
+                    <span class="block font-black text-2xl text-slate-800 leading-none mb-1">№ ${m.num}</span>
+                    <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">${m.city}</span>
+                    <span class="block text-[9px] font-black uppercase tracking-widest border-t border-slate-100 pt-2">${statusText}</span>
+                    ${btnHtml}
+                </div>
+            `;
+            poly.bindPopup(popupHtml);
+            poly.addTo(globalAvailableLayerGroup);
+            bounds.extend(poly.getBounds());
         });
 
         if (hasPolys) {
