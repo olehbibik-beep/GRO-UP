@@ -1429,12 +1429,16 @@ window.openTakeTerrModal = async () => {
     const listContainer = document.getElementById('available-terr-list');
     listContainer.innerHTML = `<p class="text-xs italic text-slate-400 text-center py-4 font-bold uppercase tracking-widest animate-pulse">${window.t('loading')}</p>`;
     
+    // Сбрасываем вид на "Список" при каждом открытии окна
+    window.isAvailableMapView = false;
+    document.getElementById('available-terr-map-container')?.classList.add('hidden');
+    listContainer.classList.remove('hidden');
+
     try {
         const activeSnap = await getDocs(query(collection(db, "territories"), where("status", "==", "active")));
         const activeNumbers = [];
         activeSnap.forEach(doc => activeNumbers.push(Number(doc.data().number)));
         
-        // Сохраняем точное количество активных участков для информера
         window.activeTerritoriesCount = activeNumbers.length;
 
         const returnedSnap = await getDocs(query(collection(db, "territories"), where("status", "==", "returned")));
@@ -1450,26 +1454,25 @@ window.openTakeTerrModal = async () => {
         });
 
         window.availableTerritoriesData = [];
-        window.cooldownTerritoriesCount = 0; // Счётчик пройденных участков на отдыхе
+        window.cooldownTerritoriesCount = 0;
 
-        const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000; // 3 месяца в миллисекундах
+        const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
         const now = Date.now();
+
+        let hasAnyPolygon = false; // Проверяем, есть ли хотя бы одна нарисованная карта
 
         Object.keys(window.allMapsCache).forEach(numStr => {
             const num = Number(numStr);
-            
-            // Если участок сейчас у кого-то в работе — пропускаем его
             if (activeNumbers.includes(num)) return;
 
             let lastW = lastWorkedMap[num] || 0; 
-            
-            // 🔥 КРИТИЧЕСКАЯ ПРОВЕРКА: Если участок сдали меньше 3 месяцев назад
             if (lastW > 0 && (now - lastW) < ninetyDaysMs) {
-                window.cooldownTerritoriesCount++; // Отправляем в счётчик "Пройдено"
-                return; // Не добавляем в список доступных!
+                window.cooldownTerritoriesCount++;
+                return;
             }
 
-            // Если участок свободен и отлежался — выводим его для взятия
+            if (window.allMapsCache[numStr].polygon) hasAnyPolygon = true;
+
             window.availableTerritoriesData.push({ 
                 num: num, 
                 url: window.allMapsCache[numStr].url, 
@@ -1479,8 +1482,17 @@ window.openTakeTerrModal = async () => {
             });
         });
 
-        window.currentTerrCityFilter = 'all';
-        window.showRecommendedTerrOnly = false;
+        window.availableTerritoriesData.forEach(m => {
+            m.isFire = (m.lastWorked === 0) || ((now - m.lastWorked) > ninetyDaysMs);
+        });
+
+        // Показываем кнопку "На карте", только если есть что показать
+        const toggleBtn = document.getElementById('toggle-terr-view-btn');
+        if (toggleBtn) {
+            toggleBtn.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg> На карте`;
+            if (hasAnyPolygon) toggleBtn.classList.remove('hidden');
+            else toggleBtn.classList.add('hidden');
+        }
 
         window.renderAvailableTerritoriesUI();
 
@@ -1488,6 +1500,88 @@ window.openTakeTerrModal = async () => {
         console.error(e);
         listContainer.innerHTML = `<p class="text-xs font-bold uppercase tracking-widest text-red-500 text-center py-4">Ошибка загрузки</p>`;
     }
+};
+
+// 🔥 ЛОГИКА ГЛОБАЛЬНОЙ КАРТЫ СВОБОДНЫХ УЧАСТКОВ
+window.isAvailableMapView = false;
+let globalAvailableMapInstance = null;
+let globalAvailableLayerGroup = null;
+
+window.toggleAvailableView = () => {
+    window.isAvailableMapView = !window.isAvailableMapView;
+    const list = document.getElementById('available-terr-list');
+    const mapContainer = document.getElementById('available-terr-map-container');
+    const btn = document.getElementById('toggle-terr-view-btn');
+
+    if (window.isAvailableMapView) {
+        list.classList.add('hidden');
+        mapContainer.classList.remove('hidden');
+        btn.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg> Списком`;
+        btn.classList.replace('text-indigo-600', 'text-slate-600');
+        btn.classList.replace('bg-indigo-50', 'bg-slate-100');
+        btn.classList.replace('border-indigo-200', 'border-slate-300');
+        
+        // Отрисовываем карту
+        renderGlobalAvailableMap();
+    } else {
+        mapContainer.classList.add('hidden');
+        list.classList.remove('hidden');
+        btn.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg> На карте`;
+        btn.classList.replace('text-slate-600', 'text-indigo-600');
+        btn.classList.replace('bg-slate-100', 'bg-indigo-50');
+        btn.classList.replace('border-slate-300', 'border-indigo-200');
+    }
+};
+
+window.renderGlobalAvailableMap = () => {
+    if (!globalAvailableMapInstance) {
+        globalAvailableMapInstance = L.map('available-terr-map').setView([49.974, 12.700], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(globalAvailableMapInstance);
+    }
+
+    setTimeout(() => {
+        globalAvailableMapInstance.invalidateSize();
+        if (globalAvailableLayerGroup) globalAvailableMapInstance.removeLayer(globalAvailableLayerGroup);
+        globalAvailableLayerGroup = L.layerGroup().addTo(globalAvailableMapInstance);
+
+        let bounds = L.latLngBounds();
+        let hasPolys = false;
+
+        window.availableTerritoriesData.forEach(m => {
+            if (m.polygon) {
+                hasPolys = true;
+                const latlngs = m.polygon.map(p => [p.lat, p.lng]);
+                
+                // Цвет: Красный (давно не брали) или Зеленый
+                const polyColor = m.isFire ? '#f43f5e' : '#10b981';
+                
+                const poly = L.polygon(latlngs, {
+                    color: polyColor,
+                    fillColor: polyColor,
+                    fillOpacity: 0.45,
+                    weight: 2
+                });
+
+                // Всплывающее окно прямо на карте!
+                const popupHtml = `
+                    <div class="text-center p-1.5 min-w-[140px] font-sans">
+                        <span class="block font-black text-2xl text-slate-800 leading-none mb-1">№ ${m.num}</span>
+                        <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 border-b border-slate-200 pb-2">${m.city}</span>
+                        <button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all">ВЗЯТЬ УЧАСТОК</button>
+                    </div>
+                `;
+                poly.bindPopup(popupHtml);
+                poly.addTo(globalAvailableLayerGroup);
+                bounds.extend(poly.getBounds());
+            }
+        });
+
+        if (hasPolys) {
+            globalAvailableMapInstance.fitBounds(bounds, { padding: [30, 30] });
+        }
+    }, 100);
 };
 
 window.renderAvailableTerritoriesUI = () => {
