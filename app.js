@@ -1429,7 +1429,7 @@ window.openTakeTerrModal = async () => {
     const listContainer = document.getElementById('available-terr-list');
     listContainer.innerHTML = `<p class="text-xs italic text-slate-400 text-center py-4 font-bold uppercase tracking-widest animate-pulse">${window.t('loading')}</p>`;
     
-    // 🔥 Сбрасываем вид на "КАРТУ" при каждом открытии окна
+    // Сбрасываем вид на "КАРТУ" при каждом открытии окна
     window.isAvailableMapView = true;
     document.getElementById('available-terr-map-container')?.classList.remove('hidden');
     listContainer.classList.add('hidden');
@@ -1453,51 +1453,64 @@ window.openTakeTerrModal = async () => {
             }
         });
 
-        window.availableTerritoriesData = [];
+        window.availableTerritoriesData = []; // Для списка (только свободные)
+        window.allMapPolygons = []; // 🔥 НОВЫЙ МАССИВ: Для карты (вообще все нарисованные)
         window.cooldownTerritoriesCount = 0;
 
         const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
         const now = Date.now();
 
-        let hasAnyPolygon = false; // Проверяем, есть ли хотя бы одна нарисованная карта
+        let hasAnyPolygon = false; 
 
         Object.keys(window.allMapsCache).forEach(numStr => {
             const num = Number(numStr);
-            if (activeNumbers.includes(num)) return;
-
+            const mapData = window.allMapsCache[numStr];
             let lastW = lastWorkedMap[num] || 0; 
-            // Проверка на отдых (3 месяца)
-            if (lastW > 0 && (now - lastW) < ninetyDaysMs) {
+            
+            let status = 'available';
+            let isFire = false;
+
+            // Определяем статус участка
+            if (activeNumbers.includes(num)) {
+                status = 'active';
+            } else if (lastW > 0 && (now - lastW) < ninetyDaysMs) {
+                status = 'cooldown';
                 window.cooldownTerritoriesCount++;
-                return;
+            } else {
+                isFire = (lastW === 0) || ((now - lastW) > ninetyDaysMs);
+                status = isFire ? 'fire' : 'available';
+                
+                // Добавляем в текстовый список ТОЛЬКО свободные
+                window.availableTerritoriesData.push({ 
+                    num: num, 
+                    url: mapData.url, 
+                    city: mapData.city,
+                    polygon: mapData.polygon,
+                    lastWorked: lastW,
+                    isFire: isFire
+                });
             }
 
-            if (window.allMapsCache[numStr].polygon) hasAnyPolygon = true;
-
-            window.availableTerritoriesData.push({ 
-                num: num, 
-                url: window.allMapsCache[numStr].url, 
-                city: window.allMapsCache[numStr].city,
-                polygon: window.allMapsCache[numStr].polygon,
-                lastWorked: lastW
-            });
+            // Добавляем на КАРТУ ВСЕ нарисованные участки вместе с их статусом
+            if (mapData.polygon) {
+                hasAnyPolygon = true;
+                window.allMapPolygons.push({
+                    num: num,
+                    city: mapData.city,
+                    polygon: mapData.polygon,
+                    status: status
+                });
+            }
         });
 
-        window.availableTerritoriesData.forEach(m => {
-            m.isFire = (m.lastWorked === 0) || ((now - m.lastWorked) > ninetyDaysMs);
-        });
-
-        // Настраиваем кнопку переключателя в зависимости от наличия карт
         const toggleBtn = document.getElementById('toggle-terr-view-btn');
         if (toggleBtn) {
             if (hasAnyPolygon) {
-                // Если есть карты — оставляем режим карты и показываем кнопку "Списком"
                 toggleBtn.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg> Списком`;
                 toggleBtn.className = "bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest py-2 px-3 rounded-xl transition-colors outline-none shadow-sm flex items-center gap-1.5 border border-slate-300";
                 toggleBtn.classList.remove('hidden');
                 setTimeout(() => window.renderGlobalAvailableMap(), 100);
             } else {
-                // 🔥 УМНЫЙ ФОЛБЭК: Если карт вообще нет, принудительно переключаем на Список
                 toggleBtn.classList.add('hidden');
                 window.isAvailableMapView = false;
                 document.getElementById('available-terr-map-container')?.classList.add('hidden');
