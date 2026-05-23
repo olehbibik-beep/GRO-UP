@@ -1581,17 +1581,17 @@ window.renderGlobalAvailableMap = () => {
             // Настраиваем цвета и текст попапа в зависимости от статуса
             if (m.status === 'active') {
                 statusText = '<span class="text-slate-500">Уже в работе</span>';
-                polyColor = '#94a3b8'; // Серый
+                polyColor = '#0f172a'; // Серый
             } else if (m.status === 'cooldown') {
                 statusText = '<span class="text-purple-500">Пройден (на отдыхе)</span>';
-                polyColor = '#cbd5e1'; // Светло-серый
+                polyColor = '#0f172a'; // Светло-серый
             } else if (m.status === 'fire') {
                 statusText = '<span class="text-rose-500">Свободен (Рекомендуем)</span>';
                 polyColor = '#56bc7b'; // Красный
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2">ВЗЯТЬ УЧАСТОК</button>`;
             } else if (m.status === 'available') {
                 statusText = '<span class="text-emerald-500">Свободен</span>';
-                polyColor = '#10b981'; // Зеленый
+                polyColor = '#56bc7b'; // Зеленый
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2">ВЗЯТЬ УЧАСТОК</button>`;
             }
 
