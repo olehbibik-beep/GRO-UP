@@ -1587,7 +1587,7 @@ window.renderGlobalAvailableMap = () => {
                 polyColor = '#cbd5e1'; // Светло-серый
             } else if (m.status === 'fire') {
                 statusText = '<span class="text-rose-500">Свободен (Рекомендуем)</span>';
-                polyColor = '#f43f5e'; // Красный
+                polyColor = '#56bc7b'; // Красный
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2">ВЗЯТЬ УЧАСТОК</button>`;
             } else if (m.status === 'available') {
                 statusText = '<span class="text-emerald-500">Свободен</span>';
