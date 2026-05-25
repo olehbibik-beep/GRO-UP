@@ -154,6 +154,18 @@ window.updateField = async (id, field, value) => {
     } catch (e) { alert(window.t('error_save')); }
 };
 
+window.updateName = async (id, val, inputEl) => {
+    const cleanVal = val.trim();
+    if (!cleanVal) return alert("Имя не может быть пустым!");
+    try {
+        await updateDoc(doc(db, "users", id), { name: cleanVal });
+        // Даем визуальный отклик (мигнет зеленым)
+        inputEl.classList.add('text-emerald-600', 'bg-emerald-50');
+        setTimeout(() => inputEl.classList.remove('text-emerald-600', 'bg-emerald-50'), 1500);
+        logAction(`Изменено имя пользователя (ID: ${id}) на: ${cleanVal}`);
+    } catch (e) { alert(window.t('error_save')); }
+};
+
 window.updatePin = async (id, val, inputEl) => {
     const cleanVal = val.replace(/\D/g, ''); 
     if (cleanVal.length !== 6) {
