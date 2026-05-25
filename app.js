@@ -1286,7 +1286,7 @@ function loadPersonalData() {
                     calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50');
                 }
 
-                todayEvents.forEach(ev => {
+      todayEvents.forEach(ev => {
                     let evGroup = ev.group || window.t('no_group');
                     if (evGroup === "Все" || evGroup === "Všechny") evGroup = window.t('all_groups');
                     const hasGroup = evGroup !== window.t('no_group');
@@ -1297,6 +1297,9 @@ function loadPersonalData() {
                     
                     const dateObj = new Date(ev.date);
                     const dayNum = dateObj.getDate();
+                    
+                    // 🔥 ВЕРНУЛИ ВЕДУЩЕГО: Формируем строку с ведущим, если он указан в базе
+                    const leaderHtml = ev.leader ? `<span class="text-[10px] md:text-xs font-bold mt-1 flex items-center gap-1.5 truncate"><span class="text-slate-500 uppercase tracking-widest text-[8px]">${window.t('leader_short')}</span> <span class="text-indigo-300 truncate">${ev.leader}</span></span>` : '';
                     
                     html += `
                         <div class="flex items-center px-4 py-3 w-full bg-transparent cursor-default ${activeClass}">
@@ -1311,11 +1314,12 @@ function loadPersonalData() {
                                     <span class="text-sm md:text-base font-black leading-none">${evGroup}</span>
                                 </div>` : ''}
                             </div>
-                            <div class="flex flex-col flex-grow min-w-0 pr-2">
+                            <div class="flex flex-col flex-grow min-w-0 pr-2 justify-center">
                                 <div class="flex items-start gap-2">
                                     ${ev.displayTime ? `<span class="text-sm md:text-base font-black shrink-0 mt-0.5 ${timeColor}">${ev.displayTime}</span>` : ''}
                                     <span class="font-bold text-sm md:text-base ${titleColor} whitespace-normal leading-tight break-words">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
                                 </div>
+                                ${leaderHtml}
                             </div>
                         </div>
                     `;
