@@ -341,8 +341,8 @@ onSnapshot(collection(db, "users"), (snapshot) => {
                 <tr class="transition-colors border-b border-slate-100 group user-row ${rowClass}" data-name="${u.name.toLowerCase()}">
                     
                     <td class="py-2 px-3">
-                        <p class="font-black ${nameColor} text-[12px] mb-0.5 truncate">${u.name}</p>
-                        <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 truncate">Был(а): ${lastVisitText}</p>
+                        <input type="text" onchange="updateName('${id}', this.value, this)" value="${u.name}" title="Нажмите, чтобы изменить имя" class="w-full font-black ${nameColor} text-[12px] mb-0.5 truncate bg-transparent border-b border-dashed border-transparent hover:border-slate-300 focus:border-indigo-500 focus:border-solid focus:bg-white outline-none transition-all py-0.5 px-1 -ml-1 rounded-t-sm" ${isBlocked ? 'disabled' : ''}>
+                        <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 pl-1 truncate">Был(а): ${lastVisitText}</p>
                         <select onchange="updateField('${id}', 'gender', this.value)" class="text-[9px] uppercase font-bold p-1 rounded border border-slate-200 bg-white outline-none text-slate-600 cursor-pointer w-full" ${isBlocked ? 'disabled' : ''}>
                             <option value="boy" ${u.gender === 'boy' ? 'selected' : ''}>👨‍💼 ${window.t('gender_boy')}</option>
                             <option value="girl" ${u.gender === 'girl' ? 'selected' : ''}>👩‍💼 ${window.t('gender_girl')}</option>
