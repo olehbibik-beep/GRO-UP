@@ -110,31 +110,55 @@ window.forceRenderEvents = () => {
     const now = new Date();
     const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
-    cachedEvents.forEach(ev => {
-        if (ev.date < todayStr) return; 
-        
-        const groupMatch = (ev.group === "Все" || ev.group === "Všechny" || ev.group == userGroup || showAll);
-        if (!groupMatch) return;
+    // Сначала фильтруем нужные события
+    const filteredEvents = cachedEvents.filter(ev => {
+        if (ev.date < todayStr) return false; 
+        return (ev.group === "Все" || ev.group === "Všechny" || ev.group == userGroup || showAll);
+    });
 
+    if (filteredEvents.length === 0) {
+        list.innerHTML = `<p class="p-6 text-center text-slate-400 text-sm italic">${window.t('history_empty')}</p>`;
+        return;
+    }
+
+    let currentMonth = '';
+
+    filteredEvents.forEach(ev => {
         const dateObj = new Date(ev.date);
-        const dateStr = dateObj.toLocaleDateString(localeFormat, { day: 'numeric', month: 'long', year: 'numeric' });
         
+        // Получаем название месяца для заголовка (например, "май 2026")
+        const monthStr = dateObj.toLocaleDateString(localeFormat, { month: 'long', year: 'numeric' });
+        
+        // Красивая дата с днем недели (например, "26 мая, вт")
+        const dateStr = dateObj.toLocaleDateString(localeFormat, { day: 'numeric', month: 'long', weekday: 'short' });
+        
+        // Если начался новый месяц — рисуем красивый разделитель-заголовок
+        if (monthStr !== currentMonth) {
+            html += `
+                <div class="bg-indigo-50 text-indigo-800 font-black text-[10px] uppercase tracking-widest px-4 py-2 border-y border-indigo-100 shadow-sm sticky top-0 z-10">
+                    📅 ${monthStr}
+                </div>
+            `;
+            currentMonth = monthStr;
+        }
+
         const isSpecial = ev.isSpecial ? `<span class="text-rose-500 ml-1">⭐</span>` : '';
         const groupBadge = (ev.group === "Все" || ev.group === "Všechny") ? window.t('all_groups') : ev.group;
+        const leaderHtml = ev.leader ? `<span class="text-[10px] font-bold text-indigo-400 mt-0.5 block truncate">Вед: ${ev.leader}</span>` : '';
         
         html += `
-            <div class="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                <div class="flex items-start gap-4">
-                    <div class="text-sm font-black text-slate-400 pt-0.5 w-12 text-right shrink-0">${ev.time}</div>
-                    <div class="flex flex-col min-w-0">
+            <div class="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+                <div class="flex items-start gap-4 w-full">
+                    <div class="flex flex-col items-end w-14 shrink-0 pt-0.5">
+                        <span class="text-sm font-black text-slate-800">${ev.time}</span>
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-right mt-1 leading-tight">${dateStr}</span>
+                    </div>
+                    <div class="flex flex-col min-w-0 flex-grow">
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="font-black text-slate-800 text-sm md:text-base leading-tight">${ev.title} ${isSpecial}</span>
-                            <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">${groupBadge}</span>
+                            <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0">${groupBadge}</span>
                         </div>
-                        <div class="flex items-center gap-1.5 mt-1 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                            ${dateStr}
-                        </div>
+                        ${leaderHtml}
                     </div>
                 </div>
                 <button onclick="deleteEvent('${ev.id}')" class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors outline-none shrink-0 border border-transparent hover:border-red-100 ml-2">
@@ -144,7 +168,7 @@ window.forceRenderEvents = () => {
         `;
     });
     
-    list.innerHTML = html || `<p class="p-6 text-center text-slate-400 text-sm italic">${window.t('history_empty')}</p>`;
+    list.innerHTML = html;
 };
 
 window.deleteEvent = async (id) => {
@@ -171,6 +195,36 @@ document.getElementById('add-event-form').addEventListener('submit', async (e) =
         const baseDate = new Date(date);
         const numEvents = repeatWeekly ? 12 : 1; 
         
+        // ПРОВЕРКА НА ДУБЛИКАТЫ ПЕРЕД СОХРАНЕНИЕМ
+        let conflictFound = false;
+        let conflictDateStr = '';
+
+        for(let i = 0; i < numEvents; i++) {
+            const checkDate = new Date(baseDate);
+            checkDate.setDate(baseDate.getDate() + (i * 7));
+            const tz = checkDate.getTimezoneOffset() * 60000;
+            const dStr = new Date(checkDate.getTime() - tz).toISOString().split('T')[0];
+
+            // Ищем, есть ли уже событие в этот день, в это время, для этой же группы
+            const exists = cachedEvents.find(ev => ev.date === dStr && ev.time === time && ev.group === group);
+            if (exists) {
+                conflictFound = true;
+                const formattedDate = checkDate.toLocaleDateString(localeFormat, { day: 'numeric', month: 'long' });
+                conflictDateStr = formattedDate;
+                break; 
+            }
+        }
+
+        // Если нашли совпадение, спрашиваем подтверждение
+        if (conflictFound) {
+            const proceed = confirm(`⚠️ Внимание!\nНа ${conflictDateStr} в ${time} уже запланирована встреча для группы "${group}".\n\nВы точно хотите добавить дубликат?`);
+            if (!proceed) {
+                btn.disabled = false;
+                return; // Отменяем сохранение
+            }
+        }
+
+        // Если всё чисто или админ подтвердил — сохраняем
         for(let i = 0; i < numEvents; i++) {
             const eventDate = new Date(baseDate);
             eventDate.setDate(baseDate.getDate() + (i * 7));
