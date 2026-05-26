@@ -37,7 +37,7 @@
     <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0 no-print">
         <a href="index.html" data-lang-title="back_home" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
             <div class="nav-icon-container text-indigo-300 hover:text-white p-2.5 rounded-full transition-colors flex flex-col items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
                 <span class="text-[8px] font-black uppercase tracking-widest hidden md:block" data-lang="btn_back">Назад</span>
             </div>
         </a>
@@ -55,9 +55,6 @@
                     <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5" id="group-title" data-lang="loading_access">Загрузка доступа...</p>
                 </div>
             </div>
-            <div class="hidden md:flex gap-2 text-xs font-bold no-print">
-                <a href="admin.html" class="text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 px-3 py-2 rounded-lg border border-slate-200 transition-colors" data-lang="users_link">Пользователи</a>
-            </div>
         </div>
 
         <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 mb-6 flex flex-col md:flex-row gap-4 md:items-center justify-between no-print">
@@ -73,7 +70,10 @@
                 </div>
             </div>
             
-            <div class="flex gap-3 items-center w-full md:w-auto">
+            <div class="flex gap-3 items-center w-full md:w-auto flex-wrap md:flex-nowrap">
+                <select id="group-filter" class="hidden flex-grow md:flex-grow-0 bg-slate-50 border border-slate-200 rounded-lg p-2.5 outline-none focus:border-purple-500 font-bold text-slate-700 text-sm cursor-pointer">
+                    <option value="all" data-lang="all_groups">Все</option>
+                </select>
                 <select id="month-filter" class="flex-grow md:flex-grow-0 bg-slate-50 border border-slate-200 rounded-lg p-2.5 outline-none focus:border-purple-500 font-bold text-slate-700 text-sm cursor-pointer">
                     <option value="all" data-lang="all_months">Все месяцы</option>
                 </select>
@@ -107,6 +107,6 @@
 
     </main>
 
-    <script type="module" src="reports.js?v=99"></script>
+    <script type="module" src="reports.js?v=105"></script>
 </body>
 </html>
