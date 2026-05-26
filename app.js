@@ -318,26 +318,24 @@ if (monthLabel) monthLabel.innerText = currentMonthStr;
 
 window.scrollToCurrentWeek = () => {
     const container = document.getElementById('meeting-program-list');
-    // Если контейнер скрыт (мы на другой вкладке), offsetParent будет null — ничего не делаем
     if (!container || container.offsetParent === null) return; 
 
     let activeCard = container.querySelector('.current-week-marker');
     
-    // Если актуальной недели нет, берем первую не-серую
     if (!activeCard) {
         const allCards = Array.from(container.children);
         activeCard = allCards.find(card => !card.classList.contains('grayscale'));
     }
     
-    // Если всё серое — берем последнюю
     if (!activeCard && container.children.length > 0) {
         const len = container.children.length;
         activeCard = len > 1 ? container.children[len - 2] : container.lastElementChild;
     }
 
     if (activeCard) {
-        const scrollPos = activeCard.offsetLeft - 16; 
-        container.scrollTo({ left: scrollPos, behavior: 'smooth' });
+        // 🔥 Никакой математики пикселей.
+        // Просто приказываем браузеру: "помести эту карточку в начало видимой зоны"
+        activeCard.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
     }
 };
 
