@@ -954,7 +954,7 @@ function loadPersonalData() {
         }
     });
 
-   try {
+  try {
         onSnapshot(query(collection(db, "meeting_schedules"), where("isPublished", "==", true)), (snapshot) => {
             const container = document.getElementById('meeting-program-list');
             if(!container) return;
@@ -983,7 +983,7 @@ function loadPersonalData() {
 
             const currentWeekStr = getISOWeekString(new Date()); 
             
-            // 🔥 Выводим ВСЕ расписания без фильтрации старых
+            // Выводим ВСЕ расписания
             let html = '';
             schedules.forEach(s => {
                 html += buildScheduleCards(s, currentUserData.name, currentWeekStr);
@@ -991,11 +991,25 @@ function loadPersonalData() {
 
             container.innerHTML = html || `<p class="text-slate-400 text-sm italic text-center py-4 w-full">${window.t('no_schedule')}</p>`;
             
-            // 🔥 АВТО-ПРОКРУТКА К ТЕКУЩЕЙ НЕДЕЛЕ
+            // 🔥 УМНАЯ АВТО-ПРОКРУТКА
             setTimeout(() => {
-                const activeCard = container.querySelector('.current-week-marker');
+                // 1. Пытаемся найти актуальную неделю
+                let activeCard = container.querySelector('.current-week-marker');
+                
+                // 2. Если её нет (расписание на эту неделю не добавили), ищем первую будущую (ту, что не серая)
+                if (!activeCard) {
+                    const allCards = Array.from(container.children);
+                    activeCard = allCards.find(card => !card.classList.contains('grayscale'));
+                }
+                
+                // 3. Если все недели старые, мотаем в самый конец к последней встрече
+                if (!activeCard && container.children.length > 0) {
+                    // Так как 1 неделя = 2 карточки (будни и выходные), берем начало последней недели
+                    const len = container.children.length;
+                    activeCard = len > 1 ? container.children[len - 2] : container.lastElementChild;
+                }
+
                 if (activeCard) {
-                    // Прокручиваем так, чтобы актуальная карточка встала в начало с небольшим отступом
                     const scrollPos = activeCard.offsetLeft - 16; 
                     container.scrollTo({ left: scrollPos, behavior: 'smooth' });
                 }
