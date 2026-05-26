@@ -121,54 +121,88 @@ window.forceRenderEvents = () => {
         return;
     }
 
-    let currentMonth = '';
-
+    // Группируем события по месяцам
+    const groupedEvents = {};
     filteredEvents.forEach(ev => {
         const dateObj = new Date(ev.date);
-        
-        // Получаем название месяца для заголовка (например, "май 2026")
         const monthStr = dateObj.toLocaleDateString(localeFormat, { month: 'long', year: 'numeric' });
-        
-        // Красивая дата с днем недели (например, "26 мая, вт")
-        const dateStr = dateObj.toLocaleDateString(localeFormat, { day: 'numeric', month: 'long', weekday: 'short' });
-        
-        // Если начался новый месяц — рисуем красивый разделитель-заголовок
-        if (monthStr !== currentMonth) {
-            html += `
-                <div class="bg-indigo-50 text-indigo-800 font-black text-[10px] uppercase tracking-widest px-4 py-2 border-y border-indigo-100 shadow-sm sticky top-0 z-10">
-                    📅 ${monthStr}
+        if (!groupedEvents[monthStr]) groupedEvents[monthStr] = [];
+        groupedEvents[monthStr].push(ev);
+    });
+
+    // Отрисовываем аккордеоны (месяца)
+    for (const [monthStr, events] of Object.entries(groupedEvents)) {
+        html += `
+            <details class="group bg-white border border-slate-200 rounded-md mb-3 overflow-hidden">
+                <summary class="flex justify-between items-center p-4 cursor-pointer select-none bg-indigo-50 hover:bg-indigo-100 transition-colors list-none outline-none [&::-webkit-details-marker]:hidden">
+                    <div class="flex items-center gap-2 text-indigo-800">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span class="font-black text-sm uppercase tracking-widest">${monthStr}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest bg-white border border-indigo-200 px-2 py-0.5 rounded-full">${events.length} встреч</span>
+                        <svg class="w-5 h-5 text-indigo-400 group-open:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
+                </summary>
+                <div class="divide-y divide-slate-100 border-t border-slate-200">
+        `;
+
+        events.forEach(ev => {
+            const dateObj = new Date(ev.date);
+            const dayNum = dateObj.getDate();
+            const weekday = dateObj.toLocaleDateString(localeFormat, { weekday: 'short' });
+            
+            // Иконка звездочки (без эмодзи)
+            const isSpecial = ev.isSpecial ? `
+                <svg class="w-4 h-4 text-rose-500 inline-block ml-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                </svg>` : '';
+                
+            const groupBadge = (ev.group === "Все" || ev.group === "Všechny") ? window.t('all_groups') : ev.group;
+            const leaderHtml = ev.leader ? `<span class="text-[10px] font-bold text-indigo-400 mt-0.5 block truncate">Вед: ${ev.leader}</span>` : '';
+            
+            // Календарный блок для даты
+            const dateBlock = `
+                <div class="flex flex-col items-center justify-center w-12 h-12 bg-slate-100 border border-slate-200 rounded shrink-0">
+                    <span class="text-[8px] uppercase font-bold text-slate-500 leading-none mb-0.5 tracking-widest">${weekday}</span>
+                    <span class="text-lg font-black text-slate-800 leading-none">${dayNum}</span>
                 </div>
             `;
-            currentMonth = monthStr;
-        }
 
-        const isSpecial = ev.isSpecial ? `<span class="text-rose-500 ml-1">⭐</span>` : '';
-        const groupBadge = (ev.group === "Все" || ev.group === "Všechny") ? window.t('all_groups') : ev.group;
-        const leaderHtml = ev.leader ? `<span class="text-[10px] font-bold text-indigo-400 mt-0.5 block truncate">Вед: ${ev.leader}</span>` : '';
-        
-        html += `
-            <div class="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
-                <div class="flex items-start gap-4 w-full">
-                    <div class="flex flex-col items-end w-14 shrink-0 pt-0.5">
-                        <span class="text-sm font-black text-slate-800">${ev.time}</span>
-                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-right mt-1 leading-tight">${dateStr}</span>
-                    </div>
-                    <div class="flex flex-col min-w-0 flex-grow">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="font-black text-slate-800 text-sm md:text-base leading-tight">${ev.title} ${isSpecial}</span>
-                            <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0">${groupBadge}</span>
+            html += `
+                <div class="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                    <div class="flex items-start gap-3 w-full">
+                        ${dateBlock}
+                        <div class="flex flex-col min-w-0 flex-grow pt-0.5">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-black text-slate-800 text-sm md:text-base leading-tight flex items-center">${ev.title} ${isSpecial}</span>
+                                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest bg-white border border-slate-200 px-1.5 py-0.5 rounded shrink-0">${groupBadge}</span>
+                            </div>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-xs font-black text-slate-600">${ev.time}</span>
+                                ${leaderHtml ? `<span class="text-slate-300 mx-1">•</span> ${leaderHtml}` : ''}
+                            </div>
                         </div>
-                        ${leaderHtml}
                     </div>
+                    <button onclick="deleteEvent('${ev.id}')" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors outline-none shrink-0 border border-transparent hover:border-red-200 ml-2">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
                 </div>
-                <button onclick="deleteEvent('${ev.id}')" class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors outline-none shrink-0 border border-transparent hover:border-red-100 ml-2">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                </button>
-            </div>
+            `;
+        });
+
+        html += `
+                </div>
+            </details>
         `;
-    });
+    }
     
-    list.innerHTML = html;
+    // Оборачиваем всё в контейнер, чтобы отменить старую обводку всего блока
+    list.innerHTML = `<div class="p-4 bg-slate-50 border-t border-slate-200">${html}</div>`;
 };
 
 window.deleteEvent = async (id) => {
