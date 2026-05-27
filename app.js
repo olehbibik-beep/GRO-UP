@@ -1843,6 +1843,19 @@ window.removeImage = () => {
     document.getElementById('news-image').value = '';
     document.getElementById('image-preview-container').classList.add('hidden');
 };
+window.openTaskInfoModal = (htmlContent) => {
+    const modal = document.getElementById('task-info-modal');
+    const contentEl = document.getElementById('task-info-content');
+    if (modal && contentEl) {
+        contentEl.innerHTML = htmlContent;
+        modal.classList.replace('hidden', 'flex');
+    }
+};
+
+window.closeTaskInfoModal = () => {
+    const modal = document.getElementById('task-info-modal');
+    if (modal) modal.classList.replace('flex', 'hidden');
+};
 
 window.publishNews = async () => {
     const inputRu = document.getElementById('news-input-ru'); const inputCs = document.getElementById('news-input-cs');
