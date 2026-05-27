@@ -723,7 +723,7 @@ function weekToDateString(weekId) {
     }
 }
 
-function buildScheduleCards(d, myName, currentWeekStr) {
+function buildScheduleCards(d, myName, currentWeekStr) {function buildScheduleCards(d, myName, currentWeekStr) {
     const weekLabel = weekToDateString(d.realWeekId || d.weekId);
     const isCurrentWeek = (d.realWeekId || d.weekId.split('-')[0]+'-'+d.weekId.split('-')[1]) === currentWeekStr;
     const isPastWeek = (d.realWeekId || d.weekId.split('-')[0]+'-'+d.weekId.split('-')[1]) < currentWeekStr;
@@ -735,12 +735,8 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     
     let partCounter = 1;
 
-    // 🔥 ========================================================= 🔥
-    // 🔥 ФУНКЦИЯ ДЛЯ ИКОНКИ "i". ОНА ТЕПЕРЬ ЕДИНАЯ ДЛЯ ВСЕХ ПУНКТОВ  🔥
-    // 🔥 Сюда передается текст или инфа, которую ты хочешь показать  🔥
-    // 🔥 ========================================================= 🔥
-   const getInfoIcon = (infoHtml) => {
-        // Экранируем кавычки, чтобы не сломать HTML
+    // 🔥 ИКОНКА "i" (ВЫЗЫВАЕТСЯ ТОЛЬКО ДЛЯ ШКОЛЫ СЛУЖЕНИЯ) 🔥
+    const getInfoIcon = (infoHtml) => {
         const safeHtml = infoHtml.replace(/"/g, '&quot;');
         return `
             <div class="shrink-0 ml-2 p-1.5" data-info="${safeHtml}" onclick="openTaskInfoModal(this.getAttribute('data-info'))" title="Информация">
@@ -751,26 +747,22 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     };
 
-    // Функция-генератор строк (ДЛЯ ПУНКТОВ С ИКОНКОЙ "i")
+    // Обычная строка (БЕЗ ИКОНКИ)
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
         const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
         const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
-        const translatedTitle = translateDbString(title);
 
         return `
-            <div class="flex items-center justify-between py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg cursor-pointer">
-                <div class="flex flex-col min-w-0">
-                    <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translatedTitle}</span>
-                    <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${person || '-'}</span>
-                </div>
-                ${getInfoIcon(translatedTitle)}
+            <div class="flex flex-col py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+                <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translateDbString(title)}</span>
+                <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${person || '-'}</span>
             </div>
         `;
     };
 
-    // Функция-генератор строк (ДЛЯ ПРЕДСЕДАТЕЛЯ И МОЛИТВ - БЕЗ ИКОНКИ)
+    // Строка без номера (БЕЗ ИКОНКИ)
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
@@ -790,20 +782,19 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const t1NameColor = treasure1Me ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
     const t1Title = translateDbString(d.mw_treasure_title || window.t('talk_10_min'));
     
+    // БЕЗ ИКОНКИ
     const treasure1 = `
-        <div class="flex items-center justify-between py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg cursor-pointer">
-            <div class="flex flex-col min-w-0">
-                <span class="text-[13px] md:text-sm ${t1TitleColor} leading-tight">${partCounter++}. ${t1Title}</span>
-                <span class="text-[13px] md:text-sm ${t1NameColor} mt-0.5 ml-4">${d.mw_treasure_name || '-'}</span>
-            </div>
-            ${getInfoIcon(t1Title)}
+        <div class="flex flex-col py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+            <span class="text-[13px] md:text-sm ${t1TitleColor} leading-tight">${partCounter++}. ${t1Title}</span>
+            <span class="text-[13px] md:text-sm ${t1NameColor} mt-0.5 ml-4">${d.mw_treasure_name || '-'}</span>
         </div>
     `;
 
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
-  const minRowsRaw = (d.ministryParts || []).map((m) => {
+    // 🔥 А ВОТ ЗДЕСЬ ИКОНКА ОСТАЕТСЯ (ШКОЛА СЛУЖЕНИЯ) 🔥
+    const minRowsRaw = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
         const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
@@ -811,39 +802,36 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         const assistStr = m.assistant ? ` <span class="opacity-70 ml-1">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
         const translatedType = translateDbString(m.type || window.t('part'));
         
-        // 🔥 Добавляем подробное описание для конкретных заданий
         let description = "";
         
         if (m.type === "Чтение Библии" || m.type === "Čtení Bible") {
             description = currentLang === 'ru'
-                ? "Это учебное задание назначается учащемуся мужского пола. Учащийся зачитывает назначенный отрывок. Вступление и заключение не требуются. Цель председателя встречи — помочь учащимся читать грамотно, бегло, в естественной манере, с пониманием, правильной интонацией, паузами и правильно делать смысловое ударение. Поскольку библейские отрывки могут быть разной длины, при назначении этого задания руководителю встречи нужно учитывать способности учащегося.<p>Указания для встречи</p> «Наша христианская жизнь и служение»"
+                ? "Это учебное задание назначается учащемуся мужского пола. Учащийся зачитывает назначенный отрывок. Вступление и заключение не требуются. Цель председателя встречи — помочь учащимся читать грамотно, бегло, в естественной манере, с пониманием, правильной интонацией, паузами и правильно делать смысловое ударение. Поскольку библейские отрывки могут быть разной длины, при назначении этого задания руководителю встречи нужно учитывать способности учащегося. <div class='mt-2 font-bold'>Указания для встречи «Наша христианская жизнь и служение»</div>"
                 : "CZ";
         } else if (m.type === "Начинайте разговор" || m.type === "Zahájení rozhovoru") {
             description = currentLang === 'ru' 
-                ? "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим или членом его семьи. Участники могут сидеть или стоять. (Больше о содержании и ситуации в этом задании смотрите в абзацах 12 и 13.) <p>Указания для встречи «Наша христианская жизнь и служение»</p>"
+                ? "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим или членом его семьи. Участники могут сидеть или стоять. (Больше о содержании и ситуации в этом задании смотрите в абзацах 12 и 13.) <div class='mt-2 font-bold'>Указания для встречи «Наша христианская жизнь и служение»</div>"
                 : "CZ";
         } else if (m.type === "Развивайте интерес" || m.type === "Rozvíjení zájmu") {
             description = currentLang === 'ru'
-                ? "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим (km 5/97 7). Участники могут сидеть или стоять. Учащемуся необходимо продемонстрировать, как продолжить предыдущую беседу. (Больше о содержании и ситуации в этом задании смотрите в абзацах 12 и 13.)<p>Указания для встречи</p> «Наша христианская жизнь и служение»"
+                ? "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим (km 5/97 7). Участники могут сидеть или стоять. Учащемуся необходимо продемонстрировать, как продолжить предыдущую беседу. (Больше о содержании и ситуации в этом задании смотрите в абзацах 12 и 13.) <div class='mt-2 font-bold'>Указания для встречи «Наша христианская жизнь и служение»</div>"
                 : "CZ";
         } else if (m.type === "Подготавливайте учеников" || m.type === "Pomáhej lidem stát se učedníky" || m.type === "Činění učedníků") {
             description = currentLang === 'ru'
-                ? "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим (km 5/97 7). Участники могут сидеть или стоять. Если демонстрируется часть изучения, которое уже проводится, нет необходимости делать вступление или заключение, за исключением случаев, когда учащийся работает над соответствующими уроками. Необязательно зачитывать весь рассматриваемый материал, хотя это и допускается.<p>Указания для встречи</p> «Наша христианская жизнь и служение»"
+                ? "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим (km 5/97 7). Участники могут сидеть или стоять. Если демонстрируется часть изучения, которое уже проводится, нет необходимости делать вступление или заключение, за исключением случаев, когда учащийся работает над соответствующими уроками. Необязательно зачитывать весь рассматриваемый материал, хотя это и допускается. <div class='mt-2 font-bold'>Указания для встречи «Наша христианская жизнь и служение»</div>"
                 : "CZ";
         } else if (m.type === "Объясняйте свои взгляды" || m.type === "Vysvětlování své víry") {
             description = currentLang === 'ru'
-                ? "Если это задание преподносится в виде речи, оно поручается учащемуся мужского пола. Если задание преподносится в виде демонстрации, оно назначается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим или членом его семьи. Учащемуся нужно ясно и тактично ответить на вопрос по теме, используя информацию из ссылки к заданию. Учащийся может сам решить, будет ли он ссылаться на указанную публикацию.<p>Указания для встречи</p> «Наша христианская жизнь и служение»>"
+                ? "Если это задание преподносится в виде речи, оно поручается учащемуся мужского пола. Если задание преподносится в виде демонстрации, оно назначается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим или членом его семьи. Учащемуся нужно ясно и тактично ответить на вопрос по теме, используя информацию из ссылки к заданию. Учащийся может сам решить, будет ли он ссылаться на указанную публикацию. <div class='mt-2 font-bold'>Указания для встречи «Наша христианская жизнь и служение»</div>"
                 : "CZ";
         } else if (m.type === "Речь" || m.type === "Proslov" || m.type === "Речь 10 мин." || m.type === "Proslov 10 min.") {
             description = currentLang === 'ru'
-                ? "Это учебное задание поручается учащемуся мужского пола и преподносится в виде речи, обращённой к собранию. Если речь основана на пунктах из Приложения А брошюры «Любите людей», учащемуся нужно показать, как использовать данные стихи в служении. Например, он может объяснить в каких случаях можно использовать стих, значение стиха и то, как с помощью данного стиха можно рассуждать с человеком. Если речь основана на пункте одного из уроков брошюры «Любите людей», учащемуся нужно обратить внимание на то, как применить этот пункт в служении. Он может обсудить пример, который приводится в первом пункте урока или, если это поможет, использовать любой из дополнительных стихов, приведённых в уроке.<p>Указания для встречи</p> «Наша христианская жизнь и служение»"
+                ? "Это учебное задание поручается учащемуся мужского пола и преподносится в виде речи, обращённой к собранию. Если речь основана на пунктах из Приложения А брошюры «Любите людей», учащемуся нужно показать, как использовать данные стихи в служении. Например, он может объяснить в каких случаях можно использовать стих, значение стиха и то, как с помощью данного стиха можно рассуждать с человеком. Если речь основана на пункте одного из уроков брошюры «Любите людей», учащемуся нужно обратить внимание на то, как применить этот пункт в служении. Он может обсудить пример, который приводится в первом пункте урока или, если это поможет, использовать любой из дополнительных стихов, приведённых в уроке. <div class='mt-2 font-bold'>Указания для встречи «Наша христианская жизнь и служение»</div>"
                 : "CZ";
         }
 
-        // Если описание есть, оборачиваем его в красивый блок с верхней линией
         const descHtml = description ? `<div class="mt-4 pt-3 border-t border-slate-100"><div class="text-[11px] font-medium text-slate-500 leading-relaxed">${description}</div></div>` : "";
 
-        // Делаем красивую верстку для содержимого окна
         const extraInfo = m.lesson 
             ? `<span class="font-black text-slate-800 block mb-3 text-base">${translatedType}</span><span class="text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-100 self-start inline-block">${window.t('lesson')} ${m.lesson}</span>${descHtml}` 
             : `<span class="font-black text-slate-800 text-base">${translatedType}</span>${descHtml}`;
@@ -876,13 +864,11 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const cbsNameColor = isCbsMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
     const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
+    // БЕЗ ИКОНКИ
     const cbsRow = `
-        <div class="flex items-center justify-between py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg cursor-pointer">
-            <div class="flex flex-col min-w-0">
-                <span class="text-[13px] md:text-sm ${cbsTitleColor} leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-xs font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
-                <span class="text-[13px] md:text-sm ${cbsNameColor} mt-0.5 ml-4">${d.mw_cbs_conductor || '-'}${readStr}</span>
-            </div>
-            ${getInfoIcon(window.t('congregation_bible_study') + (d.mw_cbs_material ? ` (${d.mw_cbs_material})` : ''))}
+        <div class="flex flex-col py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+            <span class="text-[13px] md:text-sm ${cbsTitleColor} leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-xs font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
+            <span class="text-[13px] md:text-sm ${cbsNameColor} mt-0.5 ml-4">${d.mw_cbs_conductor || '-'}${readStr}</span>
         </div>
     `;
 
@@ -891,13 +877,11 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const wtNameColor = weTalkMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
     const talkTitle = translateDbString(d.we_talk_title || window.t('public_talk'));
 
+    // БЕЗ ИКОНКИ
     const we_talk = `
-        <div class="flex items-center justify-between py-1.5 px-3 bg-white/60 hover:bg-white active:bg-white border border-slate-200/50 shadow-sm transition-colors rounded-xl mt-1.5 mb-1 mx-1 cursor-pointer">
-            <div class="flex flex-col min-w-0">
-                <span class="text-[13px] md:text-sm ${wtTitleColor} uppercase leading-tight">${talkTitle}</span>
-                <span class="text-[13px] md:text-sm ${wtNameColor} mt-0.5 ml-4">${d.we_talk_speaker || '-'}</span>
-            </div>
-            ${getInfoIcon(talkTitle)}
+        <div class="flex flex-col py-1.5 px-3 bg-white/60 hover:bg-white active:bg-white border border-slate-200/50 shadow-sm transition-colors rounded-xl mt-1.5 mb-1 mx-1">
+            <span class="text-[13px] md:text-sm ${wtTitleColor} uppercase leading-tight">${talkTitle}</span>
+            <span class="text-[13px] md:text-sm ${wtNameColor} mt-0.5 ml-4">${d.we_talk_speaker || '-'}</span>
         </div>
     `;
 
@@ -906,13 +890,11 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const wtStudyNameColor = isWtMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
     const we_wt_read_str = d.we_wt_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.we_wt_reader})</span>` : '';
 
+    // БЕЗ ИКОНКИ
     const wtStudyRow = `
-        <div class="flex items-center justify-between py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg mt-1.5 cursor-pointer">
-            <div class="flex flex-col min-w-0">
-                <span class="text-[13px] md:text-sm ${wtStudyTitleColor} leading-tight">${window.t('watchtower_study')}</span>
-                <span class="text-[13px] md:text-sm ${wtStudyNameColor} mt-0.5 ml-4">${d.we_wt_conductor || '-'}${we_wt_read_str}</span>
-            </div>
-            ${getInfoIcon(window.t('watchtower_study'))}
+        <div class="flex flex-col py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg mt-1.5">
+            <span class="text-[13px] md:text-sm ${wtStudyTitleColor} leading-tight">${window.t('watchtower_study')}</span>
+            <span class="text-[13px] md:text-sm ${wtStudyNameColor} mt-0.5 ml-4">${d.we_wt_conductor || '-'}${we_wt_read_str}</span>
         </div>
     `;
 
