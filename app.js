@@ -812,7 +812,10 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         const translatedType = translateDbString(m.type || window.t('part'));
         
         // В пунктах служения часто есть номер урока, передадим его в иконку
-        const extraInfo = m.lesson ? `${translatedType}\\nУрок: ${m.lesson}` : translatedType;
+        // Делаем красивую верстку для содержимого окна
+        const extraInfo = m.lesson 
+            ? `<span class="font-black text-slate-800 block mb-3 text-base">${translatedType}</span><span class="text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-100 self-start inline-block">${window.t('lesson')} ${m.lesson}</span>` 
+            : `<span class="font-black text-slate-800 text-base">${translatedType}</span>`;
 
         return `
             <div class="flex items-center justify-between py-1.5 px-3 border-b border-slate-200/50 last:border-0 hover:bg-white active:bg-white transition-colors cursor-pointer">
