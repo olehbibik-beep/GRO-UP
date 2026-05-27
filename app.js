@@ -731,27 +731,42 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     // Статусы и цвета
     const weekStatus = isCurrentWeek ? window.t('current_week') : (isPastWeek ? "ПРОШЛАЯ" : window.t('future_week'));
     const statusColor = isCurrentWeek ? 'text-emerald-600' : (isPastWeek ? 'text-slate-400' : 'text-slate-500');
-    
-    // Если неделя прошла, делаем карточку полупрозрачной и серой
     const pastCardClass = isPastWeek ? 'opacity-50 grayscale' : '';
     
     let partCounter = 1;
 
-    // Функция-генератор строк
+    // 🔥 ========================================================= 🔥
+    // 🔥 ФУНКЦИЯ ДЛЯ ИКОНКИ "i". ОНА ТЕПЕРЬ ЕДИНАЯ ДЛЯ ВСЕХ ПУНКТОВ  🔥
+    // 🔥 Сюда передается текст или инфа, которую ты хочешь показать  🔥
+    // 🔥 ========================================================= 🔥
+    const getInfoIcon = (infoText) => `
+        <div class="shrink-0 ml-2 p-1.5" onclick="alert('Дополнительная информация:\\n${infoText}')" title="Информация">
+            <svg class="w-4 h-4 text-slate-400 hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </div>
+    `;
+
+    // Функция-генератор строк (ДЛЯ ПУНКТОВ С ИКОНКОЙ "i")
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
         const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
-        const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600'; // Убрали жирный шрифт у обычных имен
+        const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+        const translatedTitle = translateDbString(title);
 
         return `
-            <div class="flex flex-col py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
-                <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translateDbString(title)}</span>
-                <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${person || '-'}</span>
+            <div class="flex items-center justify-between py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg cursor-pointer">
+                <div class="flex flex-col min-w-0">
+                    <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translatedTitle}</span>
+                    <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${person || '-'}</span>
+                </div>
+                ${getInfoIcon(translatedTitle)}
             </div>
         `;
     };
 
+    // Функция-генератор строк (ДЛЯ ПРЕДСЕДАТЕЛЯ И МОЛИТВ - БЕЗ ИКОНКИ)
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
@@ -769,46 +784,39 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const treasure1Me = d.mw_treasure_name === myName;
     const t1TitleColor = treasure1Me ? 'font-black text-black' : 'font-bold text-slate-800';
     const t1NameColor = treasure1Me ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+    const t1Title = translateDbString(d.mw_treasure_title || window.t('talk_10_min'));
     
     const treasure1 = `
-        <div class="flex flex-col py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
-            <span class="text-[13px] md:text-sm ${t1TitleColor} leading-tight">${partCounter++}. ${translateDbString(d.mw_treasure_title || window.t('talk_10_min'))}</span>
-            <span class="text-[13px] md:text-sm ${t1NameColor} mt-0.5 ml-4">${d.mw_treasure_name || '-'}</span>
+        <div class="flex items-center justify-between py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg cursor-pointer">
+            <div class="flex flex-col min-w-0">
+                <span class="text-[13px] md:text-sm ${t1TitleColor} leading-tight">${partCounter++}. ${t1Title}</span>
+                <span class="text-[13px] md:text-sm ${t1NameColor} mt-0.5 ml-4">${d.mw_treasure_name || '-'}</span>
+            </div>
+            ${getInfoIcon(t1Title)}
         </div>
     `;
 
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
- const minRowsRaw = (d.ministryParts || []).map((m) => {
+    const minRowsRaw = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
         const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
         const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
         const assistStr = m.assistant ? ` <span class="opacity-70 ml-1">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
+        const translatedType = translateDbString(m.type || window.t('part'));
+        
+        // В пунктах служения часто есть номер урока, передадим его в иконку
+        const extraInfo = m.lesson ? `${translatedType}\\nУрок: ${m.lesson}` : translatedType;
 
-        // 🔥 ========================================================= 🔥
-        // 🔥 МЕСТО ДЛЯ ТВОЕЙ ИНФОРМАЦИИ (ИКОНКА "i" С ПРАВОЙ СТОРОНЫ) 🔥
-        // 🔥 ========================================================= 🔥
-        // Сейчас при клике на иконку просто вылезает alert(). 
-        // Позже ты сможешь сюда добавить вызов красивого модального окна 
-        // или выводить здесь данные из базы (например, m.lesson).
-        const infoHtml = `
-            <div class="shrink-0 ml-2 p-1.5" onclick="alert('Дополнительная информация о задании: ${m.type}')" title="Информация">
-                <svg class="w-4 h-4 text-slate-400 hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-        `;
-
-        // Обрати внимание: теперь основной div имеет 'flex items-center justify-between'
         return `
             <div class="flex items-center justify-between py-1.5 px-3 border-b border-slate-200/50 last:border-0 hover:bg-white active:bg-white transition-colors cursor-pointer">
                 <div class="flex flex-col min-w-0">
-                    <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
+                    <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translatedType}</span>
                     <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${m.student || '-'}${assistStr}</span>
                 </div>
-                ${infoHtml}
+                ${getInfoIcon(extraInfo)}
             </div>
         `;
     }).join('');
@@ -830,14 +838,28 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const cbsNameColor = isCbsMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
     const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
+    const cbsRow = `
+        <div class="flex items-center justify-between py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg cursor-pointer">
+            <div class="flex flex-col min-w-0">
+                <span class="text-[13px] md:text-sm ${cbsTitleColor} leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-xs font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
+                <span class="text-[13px] md:text-sm ${cbsNameColor} mt-0.5 ml-4">${d.mw_cbs_conductor || '-'}${readStr}</span>
+            </div>
+            ${getInfoIcon(window.t('congregation_bible_study') + (d.mw_cbs_material ? ` (${d.mw_cbs_material})` : ''))}
+        </div>
+    `;
+
     const weTalkMe = d.we_talk_speaker === myName;
     const wtTitleColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-800';
     const wtNameColor = weTalkMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+    const talkTitle = translateDbString(d.we_talk_title || window.t('public_talk'));
 
     const we_talk = `
-        <div class="flex flex-col py-1.5 px-3 bg-white/60 hover:bg-white active:bg-white border border-slate-200/50 shadow-sm transition-colors rounded-xl mt-1.5 mb-1 mx-1 cursor-pointer">
-            <span class="text-[13px] md:text-sm ${wtTitleColor} uppercase leading-tight">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
-            <span class="text-[13px] md:text-sm ${wtNameColor} mt-0.5 ml-4">${d.we_talk_speaker || '-'}</span>
+        <div class="flex items-center justify-between py-1.5 px-3 bg-white/60 hover:bg-white active:bg-white border border-slate-200/50 shadow-sm transition-colors rounded-xl mt-1.5 mb-1 mx-1 cursor-pointer">
+            <div class="flex flex-col min-w-0">
+                <span class="text-[13px] md:text-sm ${wtTitleColor} uppercase leading-tight">${talkTitle}</span>
+                <span class="text-[13px] md:text-sm ${wtNameColor} mt-0.5 ml-4">${d.we_talk_speaker || '-'}</span>
+            </div>
+            ${getInfoIcon(talkTitle)}
         </div>
     `;
 
@@ -845,6 +867,16 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const wtStudyTitleColor = isWtMe ? 'font-black text-black' : 'font-bold text-slate-800';
     const wtStudyNameColor = isWtMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
     const we_wt_read_str = d.we_wt_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.we_wt_reader})</span>` : '';
+
+    const wtStudyRow = `
+        <div class="flex items-center justify-between py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg mt-1.5 cursor-pointer">
+            <div class="flex flex-col min-w-0">
+                <span class="text-[13px] md:text-sm ${wtStudyTitleColor} leading-tight">${window.t('watchtower_study')}</span>
+                <span class="text-[13px] md:text-sm ${wtStudyNameColor} mt-0.5 ml-4">${d.we_wt_conductor || '-'}${we_wt_read_str}</span>
+            </div>
+            ${getInfoIcon(window.t('watchtower_study'))}
+        </div>
+    `;
 
     return `
         <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-2 px-1 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
@@ -875,11 +907,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
                     <span class="text-[10px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('christian_living')}</span>
                 </div>
                 ${livRows}
-                
-                <div class="flex flex-col py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
-                    <span class="text-[13px] md:text-sm ${cbsTitleColor} leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-xs font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
-                    <span class="text-[13px] md:text-sm ${cbsNameColor} mt-0.5 ml-4">${d.mw_cbs_conductor || '-'}${readStr}</span>
-                </div>
+                ${cbsRow}
 
                 ${rowUnnumbered(window.t('closing_prayer'), d.mw_prayer_name)}
             </div>
@@ -901,11 +929,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
                 ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
                 
                 ${we_talk}
-                
-                <div class="flex flex-col py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg mt-1.5">
-                    <span class="text-[13px] md:text-sm ${wtStudyTitleColor} leading-tight">${window.t('watchtower_study')}</span>
-                    <span class="text-[13px] md:text-sm ${wtStudyNameColor} mt-0.5 ml-4">${d.we_wt_conductor || '-'}${we_wt_read_str}</span>
-                </div>
+                ${wtStudyRow}
 
                 ${rowUnnumbered(window.t('closing_prayer'), d.we_prayer_name)}
             </div>
