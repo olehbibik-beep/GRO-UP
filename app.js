@@ -803,7 +803,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
-    const minRowsRaw = (d.ministryParts || []).map((m) => {
+   const minRowsRaw = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
         const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
@@ -813,11 +813,21 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         
         // 🔥 Добавляем подробное описание для конкретных заданий
         let description = "";
+        
         if (m.type === "Начинайте разговор" || m.type === "Zahájení rozhovoru") {
             description = currentLang === 'ru' 
                 ? "7. Начинайте разговор. Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим или членом его семьи. Участники могут сидеть или стоять. (Больше о содержании и ситуации в этом задании смотрите в абзацах 12 и 13.)"
-                : "7. Zahájení rozhovoru. Tento úkol je přidělen studentovi nebo studentce. Pomocník by měl být stejného pohlaví nebo člen rodiny. Účastníci mohou sedět nebo stát. (Více o obsahu a situaci v tomto úkolu viz odstavce 12 a 13.)";
+                : "CZ";
+        } else if (m.type === "Развивайте интерес" || m.type === "Rozvíjení zájmu") {
+            description = currentLang === 'ru'
+                ? "8. Развивайте интерес. Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим (km 5/97 7). Участники могут сидеть или стоять. Учащемуся необходимо продемонстрировать, как продолжить предыдущую беседу. (Больше о содержании и ситуации в этом задании смотрите в абзацах 12 и 13.)"
+                : "CZ";
+        } else if (m.type === "Подготавливайте учеников" || m.type === "Pomáhej lidem stát se učedníky") {
+            description = currentLang === 'ru'
+                ? "9. Подготавливайте учеников. Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим (km 5/97 7). Участники могут сидеть или стоять. Если демонстрируется часть изучения, которое уже проводится, нет необходимости делать вступление или заключение, за исключением случаев, когда учащийся работает над соответствующими уроками. Необязательно зачитывать весь рассматриваемый материал, хотя это и допускается."
+                : "CZ";
         }
+       
 
         // Если описание есть, оборачиваем его в красивый блок с верхней линией
         const descHtml = description ? `<div class="mt-4 pt-3 border-t border-slate-100"><p class="text-[11px] font-medium text-slate-500 leading-relaxed">${description}</p></div>` : "";
