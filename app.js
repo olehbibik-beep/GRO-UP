@@ -739,13 +739,17 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     // 🔥 ФУНКЦИЯ ДЛЯ ИКОНКИ "i". ОНА ТЕПЕРЬ ЕДИНАЯ ДЛЯ ВСЕХ ПУНКТОВ  🔥
     // 🔥 Сюда передается текст или инфа, которую ты хочешь показать  🔥
     // 🔥 ========================================================= 🔥
-    const getInfoIcon = (infoText) => `
-        <div class="shrink-0 ml-2 p-1.5" onclick="alert('Дополнительная информация:\\n${infoText}')" title="Информация">
-            <svg class="w-4 h-4 text-slate-400 hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        </div>
-    `;
+   const getInfoIcon = (infoHtml) => {
+        // Экранируем кавычки, чтобы не сломать HTML
+        const safeHtml = infoHtml.replace(/"/g, '&quot;');
+        return `
+            <div class="shrink-0 ml-2 p-1.5" data-info="${safeHtml}" onclick="openTaskInfoModal(this.getAttribute('data-info'))" title="Информация">
+                <svg class="w-4 h-4 text-slate-400 hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+        `;
+    };
 
     // Функция-генератор строк (ДЛЯ ПУНКТОВ С ИКОНКОЙ "i")
     const row = (title, person) => {
