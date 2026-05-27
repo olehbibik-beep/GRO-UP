@@ -780,17 +780,35 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
-    const minRowsRaw = (d.ministryParts || []).map((m) => {
+ const minRowsRaw = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
         const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
         const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
         const assistStr = m.assistant ? ` <span class="opacity-70 ml-1">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
 
+        // 🔥 ========================================================= 🔥
+        // 🔥 МЕСТО ДЛЯ ТВОЕЙ ИНФОРМАЦИИ (ИКОНКА "i" С ПРАВОЙ СТОРОНЫ) 🔥
+        // 🔥 ========================================================= 🔥
+        // Сейчас при клике на иконку просто вылезает alert(). 
+        // Позже ты сможешь сюда добавить вызов красивого модального окна 
+        // или выводить здесь данные из базы (например, m.lesson).
+        const infoHtml = `
+            <div class="shrink-0 ml-2 p-1.5" onclick="alert('Дополнительная информация о задании: ${m.type}')" title="Информация">
+                <svg class="w-4 h-4 text-slate-400 hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+        `;
+
+        // Обрати внимание: теперь основной div имеет 'flex items-center justify-between'
         return `
-            <div class="flex flex-col py-1.5 px-3 border-b border-slate-200/50 last:border-0 hover:bg-white active:bg-white transition-colors cursor-pointer">
-                <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
-                <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${m.student || '-'}${assistStr}</span>
+            <div class="flex items-center justify-between py-1.5 px-3 border-b border-slate-200/50 last:border-0 hover:bg-white active:bg-white transition-colors cursor-pointer">
+                <div class="flex flex-col min-w-0">
+                    <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translateDbString(m.type || window.t('part'))}</span>
+                    <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${m.student || '-'}${assistStr}</span>
+                </div>
+                ${infoHtml}
             </div>
         `;
     }).join('');
