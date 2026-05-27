@@ -40,9 +40,8 @@ self.addEventListener('notificationclick', (event) => {
 
 // ==========================================
 // 🔥 ГЛАВНЫЙ РУБИЛЬНИК КЭША
-// Поменял что-то в app.js или index.html? Просто измени тут цифру (например, на v46).
 // ==========================================
-const CACHE_NAME = 'gro-up-v46'; 
+const CACHE_NAME = 'gro-up-v50'; 
 
 const INITIAL_CACHED_RESOURCES = [
   './',
