@@ -723,7 +723,7 @@ function weekToDateString(weekId) {
     }
 }
 
-function buildScheduleCards(d, myName, currentWeekStr) {function buildScheduleCards(d, myName, currentWeekStr) {
+function buildScheduleCards(d, myName, currentWeekStr) {
     const weekLabel = weekToDateString(d.realWeekId || d.weekId);
     const isCurrentWeek = (d.realWeekId || d.weekId.split('-')[0]+'-'+d.weekId.split('-')[1]) === currentWeekStr;
     const isPastWeek = (d.realWeekId || d.weekId.split('-')[0]+'-'+d.weekId.split('-')[1]) < currentWeekStr;
@@ -734,18 +734,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {function buildScheduleCa
     const pastCardClass = isPastWeek ? 'opacity-50 grayscale' : '';
     
     let partCounter = 1;
-
-    // 🔥 ИКОНКА "i" (ВЫЗЫВАЕТСЯ ТОЛЬКО ДЛЯ ШКОЛЫ СЛУЖЕНИЯ) 🔥
-    const getInfoIcon = (infoHtml) => {
-        const safeHtml = infoHtml.replace(/"/g, '&quot;');
-        return `
-            <div class="shrink-0 ml-2 p-1.5" data-info="${safeHtml}" onclick="openTaskInfoModal(this.getAttribute('data-info'))" title="Информация">
-                <svg class="w-4 h-4 text-slate-400 hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-        `;
-    };
 
     // Обычная строка (БЕЗ ИКОНКИ)
     const row = (title, person) => {
@@ -793,7 +781,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {function buildScheduleCa
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
-    // 🔥 А ВОТ ЗДЕСЬ ИКОНКА ОСТАЕТСЯ (ШКОЛА СЛУЖЕНИЯ) 🔥
+    // 🔥 ШКОЛА СЛУЖЕНИЯ (Теперь вся строка кликабельна как в топ-приложениях) 🔥
     const minRowsRaw = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
@@ -836,19 +824,28 @@ function buildScheduleCards(d, myName, currentWeekStr) {function buildScheduleCa
             ? `<span class="font-black text-slate-800 block mb-3 text-base">${translatedType}</span><span class="text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-100 self-start inline-block">${window.t('lesson')} ${m.lesson}</span>${descHtml}` 
             : `<span class="font-black text-slate-800 text-base">${translatedType}</span>${descHtml}`;
 
+        // Экранируем для вставки в атрибут HTML
+        const safeHtml = extraInfo.replace(/"/g, '&quot;');
+
+        // Строка теперь — единая кнопка с аккуратным эффектом active:bg-slate-100
         return `
-            <div class="flex items-center justify-between py-1.5 px-3 border-b border-slate-200/50 last:border-0 hover:bg-white active:bg-white transition-colors cursor-pointer">
-                <div class="flex flex-col min-w-0">
+            <div data-info="${safeHtml}" onclick="openTaskInfoModal(this.getAttribute('data-info'))" style="-webkit-tap-highlight-color: transparent;" class="flex items-center justify-between py-2.5 px-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer group">
+                <div class="flex flex-col min-w-0 pointer-events-none">
                     <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translatedType}</span>
                     <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${m.student || '-'}${assistStr}</span>
                 </div>
-                ${getInfoIcon(extraInfo)}
+                <div class="shrink-0 ml-3 text-slate-300 group-hover:text-indigo-400 transition-colors pointer-events-none">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
             </div>
         `;
     }).join('');
 
+    // Весь блок школы служения теперь имеет белый фон, чтобы анимация строк смотрелась красиво
     const minRows = minRowsRaw ? `
-        <div class="flex flex-col bg-white/60 border border-slate-200/50 shadow-sm rounded-xl mt-1 mb-1.5 mx-1 overflow-hidden">
+        <div class="flex flex-col bg-white rounded-xl mt-1.5 mb-2 mx-1 overflow-hidden shadow-sm border border-slate-200/80">
             ${minRowsRaw}
         </div>
     ` : '';
