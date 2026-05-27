@@ -4,7 +4,7 @@ import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, query, where
 const dict = {
     ru: {
         "schedule_for": "График для:", "btn_draft": "Сохранить черновик", "btn_publish": "Опубликовать", "btn_delete": "Удалить",
-        "midweek_meeting": "Будние дни (Христианская жизнь и служение)", "min_label": "Мин:", "chairman_intro": "Председатель / Вступление",
+        "midweek_meeting": "Будние дни (Христианская жизнь и служение)", "chairman_intro": "Председатель / Вступление",
         "treasures_title": "Сокровища из слова бога", "spiritual_gems": "Духовные жемчужины", "bible_reading": "Чтение Библии",
         "ministry_skills": "Навыки служения", "pulled_from_school": "Подтягивается из школы", "christian_living": "Христианская жизнь",
         "congregation_bible_study": "Изучение Библии", "closing_prayer": "Заключительная молитва", "weekend_meeting": "Выходные (Публичная речь)",
@@ -16,7 +16,7 @@ const dict = {
     },
     cs: {
         "schedule_for": "Rozvrh pro:", "btn_draft": "Uložit koncept", "btn_publish": "Publikovat", "btn_delete": "Smazat",
-        "midweek_meeting": "Všední dny (Náš křesťanský život a služba)", "min_label": "Min:", "chairman_intro": "Předsedající / Úvod",
+        "midweek_meeting": "Všední dny (Náš křesťanský život a služba)", "chairman_intro": "Předsedající / Úvod",
         "treasures_title": "Poklady z Božího slova", "spiritual_gems": "Hledání duchovních drahokamů", "bible_reading": "Čtení Bible",
         "ministry_skills": "Zlepšujme se ve službě", "pulled_from_school": "Načítá se ze školy", "christian_living": "Křesťanský život",
         "congregation_bible_study": "Sborové studium Bible", "closing_prayer": "Závěrečná modlitba", "weekend_meeting": "Víkend (Veřejná přednáška)",
@@ -142,15 +142,6 @@ function updateNumeration() {
     });
 }
 
-function saveMinistryState() {
-    const container = document.getElementById('ministry-parts-container');
-    if(!container) return;
-    ministryParts.forEach((part, index) => {
-        const tEl = document.getElementById(`part-min-${index}-time`);
-        if(tEl) part.time = tEl.value;
-    });
-}
-
 function renderMinistryParts() {
     const container = document.getElementById('ministry-parts-container');
     if(!container) return;
@@ -163,17 +154,14 @@ function renderMinistryParts() {
             const assistText = part.assistant ? `<span class="text-slate-400 font-normal mr-1">${window.t('assistant_short')}</span> ${part.assistant}` : `<span class="opacity-50">Без помощника</span>`;
             
             html += `
-                <div class="flex items-end gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 relative">
-                    <input type="text" id="part-min-${index}-time" list="time-list" class="jw-time shrink-0 mb-1 bg-white shadow-sm" value="${part.time || ''}" placeholder="мин">
-                    <div class="w-full flex flex-col gap-1">
-                        <div class="flex items-center gap-1.5 pb-1 border-b border-slate-200">
-                            <span class="part-number text-[11px] font-black text-jw-ministry"></span>
-                            <span class="text-[12px] font-bold text-jw-ministry w-full truncate">${part.type || window.t('part')}</span>
-                        </div>
-                        <div class="flex gap-2 w-full mt-1 items-end">
-                            <span class="w-1/2 text-[13px] font-black text-slate-800 border-b border-slate-200 pb-0.5 truncate">${part.student || '-'}</span>
-                            <span class="w-1/2 text-[10px] font-bold text-slate-600 border-b border-slate-200 pb-0.5 truncate">${assistText}</span>
-                        </div>
+                <div class="flex flex-col gap-1 bg-slate-50 p-3 rounded-lg border border-slate-100 relative">
+                    <div class="flex items-center gap-1.5 pb-1 border-b border-slate-200">
+                        <span class="part-number text-[11px] font-black text-jw-ministry"></span>
+                        <span class="text-[12px] font-bold text-jw-ministry w-full truncate">${part.type || window.t('part')}</span>
+                    </div>
+                    <div class="flex flex-col md:flex-row gap-2 w-full mt-1">
+                        <span class="md:w-1/2 text-[13px] font-black text-slate-800 border-b border-slate-200 pb-0.5 truncate">${part.student || '-'}</span>
+                        <span class="md:w-1/2 text-[10px] font-bold text-slate-600 border-b border-slate-200 pb-0.5 truncate">${assistText}</span>
                     </div>
                 </div>
             `;
@@ -186,7 +174,7 @@ function renderMinistryParts() {
 
 window.addLivingPart = () => {
     saveLivingState();
-    livingParts.push({ time: "15", title: "", name: "" });
+    livingParts.push({ title: "", name: "" });
     renderLivingParts();
 };
 
@@ -200,10 +188,8 @@ function saveLivingState() {
     const container = document.getElementById('living-parts-container');
     if(!container) return;
     livingParts.forEach((part, index) => {
-        const tEl = document.getElementById(`part-liv-${index}-time`);
         const titleEl = document.getElementById(`part-liv-${index}-title`);
         const nameEl = document.getElementById(`part-liv-${index}-name`);
-        if(tEl) part.time = tEl.value;
         if(titleEl) part.title = titleEl.value;
         if(nameEl) part.name = nameEl.value;
     });
@@ -215,16 +201,13 @@ function renderLivingParts() {
     let html = '';
     livingParts.forEach((part, index) => {
         html += `
-            <div class="flex items-end gap-3 px-2 relative pr-8 pb-2 border-b border-slate-100 last:border-0">
-                <input type="text" id="part-liv-${index}-time" list="time-list" class="jw-time shrink-0 mb-1 shadow-sm" value="${part.time || ''}" placeholder="мин">
-                <div class="w-full flex flex-col gap-1">
-                    <div class="flex items-center gap-1.5">
-                        <span class="part-number text-[10px] font-black text-jw-living"></span>
-                        <input type="text" id="part-liv-${index}-title" list="living-types" class="text-xs font-bold text-jw-living bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="${part.title || ''}" placeholder="Тема пункта...">
-                    </div>
-                    <input type="text" id="part-liv-${index}-name" list="list-brothers" class="jw-input mt-1" value="${part.name || ''}" placeholder="Имя брата">
+            <div class="flex flex-col px-2 relative pr-8 pb-2 border-b border-slate-100 last:border-0 gap-1">
+                <div class="flex items-center gap-1.5">
+                    <span class="part-number text-[10px] font-black text-jw-living"></span>
+                    <input type="text" id="part-liv-${index}-title" list="living-types" class="text-xs font-bold text-jw-living bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="${part.title || ''}" placeholder="Тема пункта...">
                 </div>
-                <button onclick="removeLivingPart(${index})" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 font-black outline-none transition-colors" title="Удалить">✖</button>
+                <input type="text" id="part-liv-${index}-name" list="list-brothers" class="jw-input mt-1" value="${part.name || ''}" placeholder="Имя брата">
+                <button onclick="removeLivingPart(${index})" class="absolute top-2 right-0 text-slate-300 hover:text-red-500 font-black outline-none transition-colors text-lg" title="Удалить">✖</button>
             </div>
         `;
     });
@@ -239,8 +222,7 @@ window.loadSchedule = async () => {
 
     const weekId = `${weekIdRaw}-${scheduleLang}`; 
 
-    document.querySelectorAll('.jw-input, .jw-title-input').forEach(input => input.value = '');
-    document.querySelectorAll('.jw-time').forEach(input => input.value = '');
+    document.querySelectorAll('.jw-input').forEach(input => input.value = '');
     ministryParts = [];
     livingParts = [];
     document.getElementById('publish-btn').classList.replace('bg-emerald-700', 'bg-emerald-600');
@@ -263,15 +245,10 @@ window.loadSchedule = async () => {
                 document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
             }
 
-            document.getElementById('mw-chairman-time').value = d.mw_chairman_time || '3';
             document.getElementById('mw-chairman-name').value = d.mw_chairman_name || '';
-
-            document.getElementById('mw-treasure-time').value = d.mw_treasure_time || '10';
             document.getElementById('mw-treasure-title').value = d.mw_treasure_title || '';
             document.getElementById('mw-treasure-name').value = d.mw_treasure_name || '';
-            document.getElementById('mw-gems-time').value = d.mw_gems_time || '10';
             document.getElementById('mw-gems-name').value = d.mw_gems_name || '';
-            document.getElementById('mw-reading-time').value = d.mw_reading_time || '4';
             document.getElementById('mw-reading-name').value = d.mw_reading_name || '';
 
             ministryParts = d.ministryParts || [];
@@ -280,32 +257,22 @@ window.loadSchedule = async () => {
                 livingParts = d.livingParts;
             } else if (d.mw_local_name || d.mw_local_title) {
                 livingParts = [{
-                    time: d.mw_local_time || '15',
                     title: d.mw_local_title || 'Местные потребности',
                     name: d.mw_local_name || ''
                 }];
             } else {
-                livingParts = [{time: "15", title: "Местные потребности", name: ""}];
+                livingParts = [{title: "Местные потребности", name: ""}];
             }
 
-            document.getElementById('mw-cbs-time').value = d.mw_cbs_time || '30';
             document.getElementById('mw-cbs-material').value = d.mw_cbs_material || '';
             document.getElementById('mw-cbs-conductor').value = d.mw_cbs_conductor || '';
             document.getElementById('mw-cbs-reader').value = d.mw_cbs_reader || '';
-
             document.getElementById('mw-prayer-name').value = d.mw_prayer_name || '';
-
-            document.getElementById('we-opening-time').value = d.we_opening_time || '5';
             document.getElementById('we-opening-name').value = d.we_opening_name || '';
-            
-            document.getElementById('we-talk-time').value = d.we_talk_time || '30';
             document.getElementById('we-talk-title').value = d.we_talk_title || '';
             document.getElementById('we-talk-speaker').value = d.we_talk_speaker || '';
-            
-            document.getElementById('we-wt-time').value = d.we_wt_time || '60';
             document.getElementById('we-wt-conductor').value = d.we_wt_conductor || '';
             document.getElementById('we-wt-reader').value = d.we_wt_reader || '';
-            
             document.getElementById('we-prayer-name').value = d.we_prayer_name || '';
         } else {
             document.getElementById('delete-btn').classList.add('hidden');
@@ -337,7 +304,6 @@ window.loadSchedule = async () => {
                         if (cat === 'РЕЧЬ') cat = 'Речь';
 
                         fetchedMinistryParts.push({
-                            time: "5",
                             type: cat,
                             student: t.userName,
                             assistant: t.assistant && t.assistant !== "Без помощника" ? t.assistant : ""
@@ -353,7 +319,7 @@ window.loadSchedule = async () => {
             ministryParts = fetchedMinistryParts; 
 
             livingParts = [
-                {time: "15", title: "Местные потребности", name: ""}
+                {title: "Местные потребности", name: ""}
             ];
         }
         renderMinistryParts();
@@ -369,7 +335,6 @@ window.saveSchedule = async (isPublished) => {
 
     const weekId = `${weekIdRaw}-${scheduleLang}`; 
 
-    saveMinistryState(); 
     saveLivingState();
 
     const btn = isPublished ? document.getElementById('publish-btn') : document.getElementById('save-draft-btn');
@@ -384,40 +349,25 @@ window.saveSchedule = async (isPublished) => {
         isPublished: isPublished,
         updatedAt: new Date().toISOString(),
 
-        mw_chairman_time: document.getElementById('mw-chairman-time').value,
         mw_chairman_name: document.getElementById('mw-chairman-name').value.trim(),
-        
-        mw_treasure_time: document.getElementById('mw-treasure-time').value,
         mw_treasure_title: document.getElementById('mw-treasure-title').value.trim(),
         mw_treasure_name: document.getElementById('mw-treasure-name').value.trim(),
-        
-        mw_gems_time: document.getElementById('mw-gems-time').value,
         mw_gems_name: document.getElementById('mw-gems-name').value.trim(),
-        
-        mw_reading_time: document.getElementById('mw-reading-time').value,
         mw_reading_name: document.getElementById('mw-reading-name').value.trim(),
 
         ministryParts: ministryParts,
         livingParts: livingParts,
         
-        mw_cbs_time: document.getElementById('mw-cbs-time').value,
         mw_cbs_material: document.getElementById('mw-cbs-material').value.trim(),
         mw_cbs_conductor: document.getElementById('mw-cbs-conductor').value.trim(),
         mw_cbs_reader: document.getElementById('mw-cbs-reader').value.trim(),
-        
         mw_prayer_name: document.getElementById('mw-prayer-name').value.trim(),
 
-        we_opening_time: document.getElementById('we-opening-time').value,
         we_opening_name: document.getElementById('we-opening-name').value.trim(),
-        
-        we_talk_time: document.getElementById('we-talk-time').value,
         we_talk_title: document.getElementById('we-talk-title').value.trim(),
         we_talk_speaker: document.getElementById('we-talk-speaker').value.trim(),
-        
-        we_wt_time: document.getElementById('we-wt-time').value,
         we_wt_conductor: document.getElementById('we-wt-conductor').value.trim(),
         we_wt_reader: document.getElementById('we-wt-reader').value.trim(),
-        
         we_prayer_name: document.getElementById('we-prayer-name').value.trim(),
     };
 
@@ -432,11 +382,10 @@ window.saveSchedule = async (isPublished) => {
         document.getElementById('delete-btn').classList.add('flex');
     } catch (e) { alert(window.t('error_save')); }
     
-    btn.innerText = originalText;
+    btn.innerHTML = isPublished ? "ОПУБЛИКОВАТЬ" : `<svg class="w-5 h-5 md:hidden inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg><span class="hidden md:inline text-[10px] md:text-xs">СОХРАНИТЬ ЧЕРНОВИК</span>`;
     btn.disabled = false;
 };
 
-// 🔥 УДАЛЕНИЕ: СТИРАЕТ НОВЫЙ И СТАРЫЙ (ОШИБОЧНЫЙ) ГРАФИК
 window.deleteSchedule = async () => {
     const weekIdRaw = document.getElementById('week-selector').value;
     const scheduleLang = document.getElementById('schedule-lang').value || 'ru';
@@ -446,7 +395,7 @@ window.deleteSchedule = async () => {
     if(confirm(window.t('confirm_del'))) {
         try {
             await deleteDoc(doc(db, "meeting_schedules", weekId));
-            await deleteDoc(doc(db, "meeting_schedules", weekIdRaw)); // Подчищаем старый системный мусор
+            await deleteDoc(doc(db, "meeting_schedules", weekIdRaw)); 
             
             window.showToast(window.t('success_del'));
             window.loadSchedule(); 
