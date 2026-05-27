@@ -333,8 +333,6 @@ window.scrollToCurrentWeek = () => {
     }
 
     if (activeCard) {
-        // 🔥 Никакой математики пикселей.
-        // Просто приказываем браузеру: "помести эту карточку в начало видимой зоны"
         activeCard.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
     }
 };
@@ -358,11 +356,10 @@ window.switchTab = (tabId, btnElement) => {
         }
     }
 
-    // 🔥 ИСПРАВЛЕНИЕ: Прокручиваем расписание ровно в тот момент, когда вкладка открылась
     if (tabId === 'tasks') {
         setTimeout(() => {
             if (window.scrollToCurrentWeek) window.scrollToCurrentWeek();
-        }, 50); // Микро-задержка, чтобы браузер успел применить display: block
+        }, 50);
     }
 };
 
@@ -507,17 +504,17 @@ if (userId) {
 }
 
 async function loadProfileData() {
-    const pName = document.getElementById('profile-name');
-    const pGroup = document.getElementById('profile-group');
-    const pOverseer = document.getElementById('profile-overseer');
+    const pName = document.getElementById('profile-name');
+    const pGroup = document.getElementById('profile-group');
+    const pOverseer = document.getElementById('profile-overseer');
 
-    if(pName) pName.innerText = currentUserData.name || "Имя";
-    let roles = currentUserData.roles || ["Возвещатель"];
-    const rolesContainer = document.getElementById('profile-roles-container');
+    if(pName) pName.innerText = currentUserData.name || "Имя";
+    let roles = currentUserData.roles || ["Возвещатель"];
+    const rolesContainer = document.getElementById('profile-roles-container');
 if (rolesContainer) {
         rolesContainer.innerHTML = roles.map(r => {
             let colorClass = "bg-slate-100 text-slate-500 border border-slate-200"; 
-            let iconHtml = ""; // Переменная для иконки
+            let iconHtml = ""; 
 
             if(r === "Старейшина") colorClass = "bg-amber-100 text-amber-700 border border-amber-200";
             else if(r === "Помощник собрания") colorClass = "bg-sky-100 text-sky-700 border border-sky-200";
@@ -525,13 +522,11 @@ if (rolesContainer) {
             else if(r === "Админ" || r === "Владелец") colorClass = "bg-rose-100 text-rose-700 border border-rose-200";
             else if(r === "Ответственный за график") colorClass = "bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200";
             
-            // 🔥 Наша роль с иконкой тележки (Вариант 1)
             else if(r === "Служение со стендом") {
                 colorClass = "bg-indigo-100 text-indigo-700 border-indigo-200";
                 iconHtml = `<svg class="w-3 h-3 inline mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 4h10v14H7V4zM10 8h4M10 12h4" /><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 21v-3m4 3v-3" /></svg>`;
             }
 
-            // ВАЖНО: отсюда мы убрали "Служение со стендом", чтобы бейджик не скрывался
             if(["Ответственный за участки", "Ответственный за школу", "Участник школы", "Надзиратель группы"].includes(r)) return '';
             
             return `<span class="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${colorClass}">${iconHtml}${r}</span>`;
@@ -957,7 +952,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 let userMapInstance = null;
 let userPolygonLayer = null;
 
-// 🔥 ОБНОВЛЕННАЯ ФУНКЦИЯ: ОТКРЫТЬ КАРТУ (С фиксом кнопки "Назад")
 window.openTerritoryMap = (numStr) => {
     const mapData = window.allMapsCache[numStr];
     if (!mapData || !mapData.polygon) return alert("Для этого участка еще не нарисована карта!");
@@ -965,7 +959,6 @@ window.openTerritoryMap = (numStr) => {
     document.getElementById('terr-map-title').innerText = `Участок № ${numStr} (${mapData.city})`;
     document.getElementById('terr-map-modal').classList.replace('hidden', 'flex');
 
-    // Имитируем переход на новую страницу для смартфона
     if (window.location.hash !== '#map') {
         history.pushState({ modal: 'map' }, '', '#map');
     }
@@ -993,19 +986,8 @@ window.openTerritoryMap = (numStr) => {
     }, 100);
 };
 
-// 🔥 ОБНОВЛЕННАЯ ФУНКЦИЯ: ЗАКРЫТЬ КАРТУ ПО КРЕСТИКУ
-window.closeTerritoryMap = () => {
-    document.getElementById('terr-map-modal').classList.replace('flex', 'hidden');
-    // Если закрыли крестиком, убираем виртуальный хэш из истории
-    if (window.location.hash === '#map') {
-        history.back();
-    }
-};
-
-// 🔥 ПЕРЕХВАТ СИСТЕМНОЙ КНОПКИ "НАЗАД" НА СМАРТФОНЕ
 window.addEventListener('popstate', (event) => {
     const modal = document.getElementById('terr-map-modal');
-    // Если кнопка "Назад" нажата при открытой карте — просто прячем окно карты
     if (modal && !modal.classList.contains('hidden')) {
         modal.classList.replace('flex', 'hidden');
     }
@@ -1013,6 +995,9 @@ window.addEventListener('popstate', (event) => {
 
 window.closeTerritoryMap = () => {
     document.getElementById('terr-map-modal').classList.replace('flex', 'hidden');
+    if (window.location.hash === '#map') {
+        history.back();
+    }
 };
 
 function loadPersonalData() {
@@ -1045,7 +1030,7 @@ function loadPersonalData() {
         }
     });
 
- try {
+    try {
         onSnapshot(query(collection(db, "meeting_schedules"), where("isPublished", "==", true)), (snapshot) => {
             const container = document.getElementById('meeting-program-list');
             if(!container) return;
@@ -1081,7 +1066,6 @@ function loadPersonalData() {
 
             container.innerHTML = html || `<p class="text-slate-400 text-sm italic text-center py-4 w-full">${window.t('no_schedule')}</p>`;
             
-            // Прокручиваем, если данные обновились, пока мы уже сидим на этой вкладке
             setTimeout(() => {
                 if (window.scrollToCurrentWeek) window.scrollToCurrentWeek();
             }, 300);
@@ -1398,7 +1382,6 @@ function loadPersonalData() {
                     const dateObj = new Date(ev.date);
                     const dayNum = dateObj.getDate();
                     
-                    // 🔥 ВЕРНУЛИ ВЕДУЩЕГО: Формируем строку с ведущим, если он указан в базе
                     const leaderHtml = ev.leader ? `<span class="text-[10px] md:text-xs font-bold mt-1 flex items-center gap-1.5 truncate"><span class="text-slate-500 uppercase tracking-widest text-[8px]">${window.t('leader_short')}</span> <span class="text-indigo-300 truncate">${ev.leader}</span></span>` : '';
                     
                     html += `
@@ -1533,7 +1516,6 @@ window.openTakeTerrModal = async () => {
     const listContainer = document.getElementById('available-terr-list');
     listContainer.innerHTML = `<p class="text-xs italic text-slate-400 text-center py-4 font-bold uppercase tracking-widest animate-pulse">${window.t('loading')}</p>`;
     
-    // Сбрасываем вид на "КАРТУ" при каждом открытии окна
     window.isAvailableMapView = true;
     document.getElementById('available-terr-map-container')?.classList.remove('hidden');
     listContainer.classList.add('hidden');
@@ -1557,8 +1539,8 @@ window.openTakeTerrModal = async () => {
             }
         });
 
-        window.availableTerritoriesData = []; // Для списка (только свободные)
-        window.allMapPolygons = []; // 🔥 НОВЫЙ МАССИВ: Для карты (вообще все нарисованные)
+        window.availableTerritoriesData = []; 
+        window.allMapPolygons = []; 
         window.cooldownTerritoriesCount = 0;
 
         const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
@@ -1574,7 +1556,6 @@ window.openTakeTerrModal = async () => {
             let status = 'available';
             let isFire = false;
 
-            // Определяем статус участка
             if (activeNumbers.includes(num)) {
                 status = 'active';
             } else if (lastW > 0 && (now - lastW) < ninetyDaysMs) {
@@ -1584,7 +1565,6 @@ window.openTakeTerrModal = async () => {
                 isFire = (lastW === 0) || ((now - lastW) > ninetyDaysMs);
                 status = isFire ? 'fire' : 'available';
                 
-                // Добавляем в текстовый список ТОЛЬКО свободные
                 window.availableTerritoriesData.push({ 
                     num: num, 
                     url: mapData.url, 
@@ -1595,7 +1575,6 @@ window.openTakeTerrModal = async () => {
                 });
             }
 
-            // Добавляем на КАРТУ ВСЕ нарисованные участки вместе с их статусом
             if (mapData.polygon) {
                 hasAnyPolygon = true;
                 window.allMapPolygons.push({
@@ -1630,7 +1609,6 @@ window.openTakeTerrModal = async () => {
     }
 };
 
-// 🔥 ЛОГИКА ГЛОБАЛЬНОЙ КАРТЫ СВОБОДНЫХ УЧАСТКОВ
 window.isAvailableMapView = false;
 let globalAvailableMapInstance = null;
 let globalAvailableLayerGroup = null;
@@ -1647,7 +1625,6 @@ window.toggleAvailableView = () => {
         btn.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg> Списком`;
         btn.className = "bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest py-2 px-3 rounded-xl transition-colors outline-none shadow-sm flex items-center gap-1.5 border border-slate-300";
         
-        // Отрисовываем карту
         window.renderGlobalAvailableMap();
     } else {
         mapContainer.classList.add('hidden');
@@ -1673,40 +1650,37 @@ window.renderGlobalAvailableMap = () => {
         let bounds = L.latLngBounds();
         let hasPolys = false;
 
-        // 🔥 ВАЖНО: Используем allMapPolygons, чтобы отрисовать вообще все участки
         window.allMapPolygons.forEach(m => {
             hasPolys = true;
             const latlngs = m.polygon.map(p => [p.lat, p.lng]);
             
-            let polyColor = '#94a3b8'; // По умолчанию серый
+            let polyColor = '#94a3b8'; 
             let statusText = '';
             let btnHtml = '';
 
-            // Настраиваем цвета и текст попапа в зависимости от статуса
             if (m.status === 'active') {
                 statusText = '<span class="text-slate-500">Уже в работе</span>';
-                polyColor = '#0f172a'; // Серый
+                polyColor = '#0f172a'; 
             } else if (m.status === 'cooldown') {
                 statusText = '<span class="text-purple-500">Пройден (на отдыхе)</span>';
-                polyColor = '#0f172a'; // Светло-серый
+                polyColor = '#0f172a'; 
             } else if (m.status === 'fire') {
                 statusText = '<span class="text-rose-500">Свободен (Рекомендуем)</span>';
-                polyColor = '#56bc7b'; // Красный
+                polyColor = '#56bc7b'; 
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2">ВЗЯТЬ УЧАСТОК</button>`;
             } else if (m.status === 'available') {
                 statusText = '<span class="text-emerald-500">Свободен</span>';
-                polyColor = '#56bc7b'; // Зеленый
+                polyColor = '#56bc7b'; 
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2">ВЗЯТЬ УЧАСТОК</button>`;
             }
 
             const poly = L.polygon(latlngs, {
                 color: polyColor,
                 fillColor: polyColor,
-                fillOpacity: (m.status === 'active' || m.status === 'cooldown') ? 0.3 : 0.45, // Занятые делаем более прозрачными
+                fillOpacity: (m.status === 'active' || m.status === 'cooldown') ? 0.3 : 0.45, 
                 weight: 2
             });
 
-            // Всплывающее окно прямо на карте
             const popupHtml = `
                 <div class="text-center p-1.5 min-w-[140px] font-sans">
                     <span class="block font-black text-2xl text-slate-800 leading-none mb-1">№ ${m.num}</span>
@@ -1732,13 +1706,11 @@ window.renderAvailableTerritoriesUI = () => {
     let filtered = window.availableTerritoriesData;
     filtered.sort((a, b) => a.num - b.num);
 
-    // Рассчитываем идеальный баланс данных для четырёх колонок
     const totalMaps = Object.keys(window.allMapsCache).length;
     const availableMaps = window.availableTerritoriesData.length;
     const takenMaps = window.activeTerritoriesCount || 0;
-    const completedMaps = window.cooldownTerritoriesCount || 0; // Количество пройденных на "отдыхе"
+    const completedMaps = window.cooldownTerritoriesCount || 0; 
 
-    // 🔥 СТИЛЬНЫЙ ЧЕТЫРЕХКОЛОНОЧНЫЙ ИНФОРМЕР (Математически идеальный баланс)
     let statsHtml = `
     <div class="grid grid-cols-4 gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-2.5 mb-4 text-center text-[8px] font-black uppercase tracking-widest text-slate-500 shadow-inner shrink-0">
         <div>
@@ -1833,6 +1805,7 @@ window.closeModals = () => {
     const m4 = document.getElementById('user-msg-modal'); if(m4) m4.classList.replace('flex', 'hidden');
     const m5 = document.getElementById('take-terr-modal'); if(m5) m5.classList.replace('flex', 'hidden');
     const m6 = document.getElementById('info-details-modal'); if(m6) m6.classList.replace('flex', 'hidden');
+    const m7 = document.getElementById('task-info-modal'); if(m7) m7.classList.replace('flex', 'hidden');
 };
 window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
 
@@ -1860,6 +1833,7 @@ window.removeImage = () => {
     document.getElementById('news-image').value = '';
     document.getElementById('image-preview-container').classList.add('hidden');
 };
+
 window.openTaskInfoModal = (htmlContent) => {
     const modal = document.getElementById('task-info-modal');
     const contentEl = document.getElementById('task-info-content');
@@ -1906,7 +1880,6 @@ window.deleteNews = async (id) => {
     if (confirm(window.t('confirm_delete_news'))) { try { await deleteDoc(doc(db, "section_content", id)); } catch (e) { alert(window.t('error_network')); } }
 };
 
-// PULL TO REFRESH
 let pStart = { x: 0, y: 0 };
 let pCurrent = { x: 0, y: 0 };
 const mainElem = document.getElementById('main-dashboard');
@@ -1940,6 +1913,5 @@ if (mainElem) {
     });
 }
 
-// Логика окна информации о проекте
 window.openInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('hidden', 'flex');
 window.closeInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('flex', 'hidden');
