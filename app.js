@@ -1536,7 +1536,7 @@ function loadPersonalData() {
                 `;
             }
 
-            const contentNews = document.getElementById('content-news');
+           const contentNews = document.getElementById('content-news');
             if(contentNews) contentNews.innerHTML = newsHTML || `<div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center mx-4 md:mx-0 shadow-sm"><p class="text-slate-400 italic text-sm text-center">${window.t('no_news')}</p></div>`;
         });
     } catch(e) {}
