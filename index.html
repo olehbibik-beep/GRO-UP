@@ -37,12 +37,31 @@
 </head>
 <body class="bg-ui-bg h-[100dvh] font-sans text-slate-800 overflow-hidden flex flex-col-reverse md:flex-row w-full">
 
-  <div id="global-loader" class="fixed inset-0 bg-ui-bg z-[200] flex items-center justify-center transition-opacity duration-500">
-        <div class="relative flex items-center justify-center">
-            <div class="absolute w-36 h-36 border-[2px] border-slate-300/50 rounded-full"></div>
-            <div class="absolute w-36 h-36 border-[2px] border-slate-800 border-t-transparent border-l-transparent rounded-full animate-spin"></div>
-            <img src="icon-512.png" alt="GRO-UP" class="w-24 h-24 rounded-2xl object-contain z-10 shadow-sm">
+  <div id="global-loader" class="fixed inset-0 bg-ui-bg z-[200] flex flex-col items-center justify-center transition-opacity duration-500">
+        
+        <style>
+            @keyframes shift-progress {
+                from { background-position-x: 0; }
+                to { background-position-x: 48px; } /* Смещение строго на размер одного цикла градиента */
+            }
+            .segmented-loader-line {
+                background-image: linear-gradient(90deg, 
+                    #9333ea 0% 16%,   transparent 16% 25%, 
+                    #0ea5e9 25% 41%,  transparent 41% 50%, 
+                    #10b981 50% 66%,  transparent 66% 75%, 
+                    #d97706 75% 91%,  transparent 91% 100%
+                );
+                background-size: 48px 100%; /* Ширина одного полного набора цветных штрихов */
+                animation: shift-progress 0.8s linear infinite;
+            }
+        </style>
+
+        <img src="icon-512.png" alt="GRO-UP" class="w-24 h-24 rounded-2xl object-contain shadow-xl mb-6">
+        
+        <div class="w-24 h-[3px] bg-slate-300/40 rounded-full overflow-hidden">
+            <div class="w-full h-full segmented-loader-line"></div>
         </div>
+
     </div>
 
     <div id="pending-screen" class="fixed inset-0 bg-white z-[100] hidden flex-col items-center justify-center text-center p-6">
