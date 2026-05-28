@@ -6,79 +6,98 @@
     <title data-lang="duties_title">График Дежурств - GRO-UP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f8fafc', adminNav: '#1e1b4b' } } } } }
+        tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f8fafc', adminNav: '#0f172a' } } } } }
     </script>
     <style>
-        ::-webkit-scrollbar { display: none; }
-        body { -ms-overflow-style: none; scrollbar-width: none; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="bg-white text-slate-800 min-h-[100dvh] font-sans pb-10 overflow-x-hidden w-full">
+<body class="bg-ui-bg text-slate-800 min-h-screen font-sans pb-24 md:pb-0 overflow-x-hidden w-full">
 
-    <header class="fixed top-0 left-0 w-full bg-white/90 backdrop-blur-md border-b border-slate-100 z-50 flex items-center px-4 h-14">
-        <a href="index.html" class="p-2 -ml-2 text-slate-400 hover:text-slate-800 transition-colors outline-none rounded-full active:bg-slate-100">
-            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
+    <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-slate-800 md:border-t-0">
+        <a href="index.html" data-lang-title="back_home" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
+            <div class="nav-icon-container text-slate-400 hover:text-white p-2.5 rounded-full transition-colors flex flex-col items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                <span class="text-[8px] font-black uppercase tracking-widest hidden md:block mt-1" data-lang="btn_back">Назад</span>
+            </div>
         </a>
-        <h1 class="text-lg font-black text-slate-800 ml-2 tracking-wide" data-lang="duties_h1">График дежурств</h1>
-    </header>
+    </nav>
 
-    <main class="w-full max-w-2xl mx-auto pt-20 px-4 md:px-0">
+    <main class="w-full max-w-5xl mx-auto pt-6 px-4 md:pl-28 md:pr-6">
         
-        <div class="mb-8">
-            <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2" data-lang="assign_title">
-                Назначить
-            </h2>
+        <div class="mb-6 flex justify-between items-center bg-transparent">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-black text-slate-800 leading-tight" data-lang="duties_h1">График</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5" data-lang="manage_duties">Управление дежурствами</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             
-            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col gap-4">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5" data-lang="duty_type_label">Тип дежурства</label>
-                    <select id="duty-type" class="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:border-slate-400 font-bold text-slate-700 appearance-none">
-                        <option value="Уборка зала" data-lang="opt_cleaning">Уборка зала</option>
-                        <option value="Специальное событие" data-lang="opt_special_event">Специальное событие</option>
-                    </select>
-                </div>
+            <div class="md:col-span-1">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 sticky top-6">
+                    <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2" data-lang="assign_title">
+                        Назначить
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="duty_type_label">Тип дежурства</label>
+                            <select id="duty-type" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-slate-400 font-bold text-slate-700 appearance-none">
+                                <option value="Уборка зала" data-lang="opt_cleaning">Уборка зала</option>
+                                <option value="Специальное событие" data-lang="opt_special_event">Специальное событие</option>
+                            </select>
+                        </div>
 
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5" data-lang="start_group_label">Группа (можно 1, 2)</label>
-                    <input type="text" id="duty-group" data-lang-placeholder="ph_group_example" placeholder="Например: 1, 2" class="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:border-slate-400 font-bold text-slate-700">
-                </div>
-                
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5" data-lang="start_monday_label">С понедельника (Дата начала)</label>
-                    <input type="date" id="duty-date" class="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:border-slate-400 font-bold text-slate-700 cursor-pointer">
-                </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="start_group_label">Группа (можно 1, 2)</label>
+                            <input type="text" id="duty-group" data-lang-placeholder="ph_group_example" placeholder="Например: 1, 2" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-slate-400 font-bold text-slate-700">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="start_monday_label">С понедельника (Дата)</label>
+                            <input type="date" id="duty-date" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-slate-400 font-bold text-slate-700 cursor-pointer">
+                        </div>
 
-                <div class="mt-2">
-                    <label class="flex items-center gap-3 cursor-pointer mb-2 p-2 -ml-2 rounded-lg active:bg-slate-100 transition-colors w-max">
-                        <input type="checkbox" id="duty-recurring" class="w-5 h-5 accent-slate-800 rounded cursor-pointer" onchange="document.getElementById('weeks-container').classList.toggle('hidden')">
-                        <span class="text-xs font-bold text-slate-700 uppercase tracking-wide mt-0.5" data-lang="auto_distribute">Авто-раскидать на месяц</span>
-                    </label>
-                    <div id="weeks-container" class="hidden flex items-center justify-between gap-4 mt-2 bg-white p-3 rounded-xl border border-slate-200">
-                        <span class="text-xs text-slate-500 font-bold" data-lang="how_many_weeks">На сколько недель?</span>
-                        <input type="number" id="duty-weeks" value="4" min="2" max="12" class="w-20 p-2 text-center font-black text-slate-800 bg-slate-50 rounded-lg border border-slate-200 outline-none focus:border-slate-400">
+                        <div class="pt-1">
+                            <label class="flex items-center gap-3 cursor-pointer mb-2 w-max p-2 -ml-2 rounded-lg active:bg-slate-50 transition-colors">
+                                <input type="checkbox" id="duty-recurring" class="w-5 h-5 accent-slate-800 rounded cursor-pointer" onchange="document.getElementById('weeks-container').classList.toggle('hidden')">
+                                <span class="text-[11px] font-black text-slate-600 uppercase tracking-widest mt-0.5" data-lang="auto_distribute">Авто-раскидать</span>
+                            </label>
+                            <div id="weeks-container" class="hidden flex items-center justify-between gap-2 mt-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest" data-lang="how_many_weeks">На сколько недель?</span>
+                                <input type="number" id="duty-weeks" value="4" min="2" max="12" class="w-16 p-2 text-center font-black text-slate-800 bg-white rounded-lg border border-slate-200 outline-none focus:border-slate-400">
+                            </div>
+                        </div>
+
+                        <button id="save-duty-btn" data-lang="btn_assign" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition-colors active:bg-slate-700 mt-2 text-xs uppercase tracking-widest outline-none">
+                            Назначить
+                        </button>
                     </div>
                 </div>
-
-                <button id="save-duty-btn" data-lang="btn_assign" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-4 rounded-xl transition-colors active:bg-slate-700 mt-2 text-xs uppercase tracking-widest outline-none">
-                    Назначить
-                </button>
             </div>
-        </div>
 
-        <div>
-            <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2" data-lang="current_schedule">
-                Текущий график
-            </h2>
-            <div id="duties-list" class="bg-white rounded-2xl border border-slate-200 flex flex-col overflow-hidden min-h-[100px]">
-                <p class="text-slate-400 italic p-6 text-center text-sm" data-lang="loading">Загрузка...</p>
+            <div class="md:col-span-2">
+                <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2" data-lang="current_schedule">
+                    Текущий график
+                </h2>
+                <div id="duties-list" class="bg-white rounded-2xl border border-slate-200 flex flex-col overflow-hidden min-h-[150px]">
+                    <p class="text-slate-400 italic p-6 text-center text-sm" data-lang="loading">Загрузка...</p>
+                </div>
             </div>
-        </div>
 
+        </div>
     </main>
 
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[200] flex flex-col gap-2 pointer-events-none"></div>
-    <script type="module" src="duties.js?v=200"></script>
+    <script type="module" src="duties.js?v=201"></script>
 </body>
 </html>
