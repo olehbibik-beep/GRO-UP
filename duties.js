@@ -15,11 +15,11 @@ const dict = {
         "duty_type_label": "Тип дежурства",
         "opt_cleaning": "Уборка зала",
         "opt_special_event": "Специальное событие",
-        "start_group_label": "Начальная группа (можно 1, 2)",
+        "start_group_label": "Группа (можно 1, 2)",
         "ph_group_example": "Например: 1, 2",
-        "start_monday_label": "С понедельника (Дата начала)",
-        "auto_distribute": "Авто-раскидать на месяц",
-        "how_many_weeks": "На сколько недель?",
+        "start_monday_label": "С понедельника (Дата)",
+        "auto_distribute": "Авто-раскидать",
+        "how_many_weeks": "Недель?",
         "btn_assign": "Назначить",
         "current_schedule": "Текущий график",
         "alert_select_monday": "Выберите дату понедельника!",
@@ -43,11 +43,11 @@ const dict = {
         "duty_type_label": "Typ služby",
         "opt_cleaning": "Úklid sálu",
         "opt_special_event": "Zvláštní událost",
-        "start_group_label": "Počáteční skupina (lze 1, 2)",
+        "start_group_label": "Skupina (lze 1, 2)",
         "ph_group_example": "Například: 1, 2",
-        "start_monday_label": "Od pondělí (Datum začátku)",
+        "start_monday_label": "Od pondělí (Datum)",
         "auto_distribute": "Rozdělit na měsíc",
-        "how_many_weeks": "Na kolik týdnů?",
+        "how_many_weeks": "Týdnů?",
         "btn_assign": "Přiřadit",
         "current_schedule": "Aktuální rozpis",
         "alert_select_monday": "Vyberte datum pondělí!",
@@ -61,6 +61,7 @@ const dict = {
 };
 
 const currentLang = localStorage.getItem('app_lang') || 'ru';
+const localeFormat = currentLang === 'cs' ? 'cs-CZ' : 'ru-RU';
 
 window.t = (key) => {
     if (dict[currentLang] && dict[currentLang][key]) {
@@ -88,7 +89,7 @@ window.showToast = (message) => {
     const container = document.getElementById('toast-container');
     if (!container) return;
     const toast = document.createElement('div');
-    toast.className = `bg-slate-800 text-white px-5 py-4 rounded-xl shadow-lg text-sm font-bold text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
+    toast.className = `bg-slate-800 text-white px-5 py-4 rounded-xl text-sm font-bold text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
     toast.innerText = message;
     container.appendChild(toast);
     requestAnimationFrame(() => toast.classList.remove('-translate-y-10', 'opacity-0'));
@@ -137,7 +138,6 @@ document.getElementById('save-duty-btn').addEventListener('click', async (e) => 
     btn.innerText = window.t('generating'); btn.disabled = true;
 
     try {
-        // ЖЕЛЕЗОБЕТОННЫЙ ПАРСИНГ ДАТЫ
         const [yyyy, mm, dd] = dateStr.split('-');
         const baseDate = new Date(yyyy, mm - 1, dd, 0, 0, 0);
         
@@ -154,7 +154,6 @@ document.getElementById('save-duty-btn').addEventListener('click', async (e) => 
             const targetDate = new Date(baseDate);
             targetDate.setDate(targetDate.getDate() + (i * 7));
             
-            // Сохраняем дату чистой строкой YYYY-MM-DD
             const rawDateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
             const assignedGroup = groupQueue[i % groupQueue.length];
 
@@ -189,12 +188,12 @@ onSnapshot(q, (snapshot) => {
     today.setHours(0,0,0,0);
     
     let renderedCount = 0;
+    let currentMonthGroup = ''; // Для отслеживания месяца
 
     snapshot.forEach(docSnap => {
         const d = docSnap.data();
         if (!d.rawDate) return;
 
-        // ЖЕЛЕЗОБЕТОННОЕ ЧТЕНИЕ ДАТЫ (Без сдвига часовых поясов)
         const [ry, rm, rd] = d.rawDate.split('-');
         const dutyStart = new Date(ry, rm - 1, rd, 0, 0, 0);
         
@@ -202,10 +201,16 @@ onSnapshot(q, (snapshot) => {
         dutyEnd.setDate(dutyStart.getDate() + 6); 
         dutyEnd.setHours(23,59,59,999);
 
-        // АВТОУДАЛЕНИЕ ПРОШЛОЙ НЕДЕЛИ
         if (dutyEnd.getTime() < today.getTime()) {
             if (isFullAdmin) deleteDoc(doc(db, "duties", docSnap.id)); 
             return;
+        }
+
+        // ГРУППИРОВКА ПО МЕСЯЦУ
+        const monthLabel = dutyStart.toLocaleDateString(localeFormat, { month: 'long', year: 'numeric' });
+        if (monthLabel !== currentMonthGroup) {
+            currentMonthGroup = monthLabel;
+            html += `<div class="bg-slate-50 px-4 py-2 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-200">${currentMonthGroup}</div>`;
         }
 
         renderedCount++;
@@ -234,7 +239,7 @@ onSnapshot(q, (snapshot) => {
                     <div class="flex flex-col min-w-0">
                         <div class="flex items-center gap-2 truncate">
                             <h3 class="font-black text-slate-800 text-base truncate">${typeStr}</h3>
-                            <span class="bg-slate-100 text-slate-500 border border-slate-200 text-[9px] px-2 py-0.5 rounded-md font-black uppercase shrink-0">${groupStr}</span>
+                            <span class="bg-slate-100 text-slate-600 border border-slate-200 text-[9px] px-2 py-0.5 rounded font-black uppercase shrink-0">${groupStr}</span>
                         </div>
                         <div class="flex items-center gap-2 mt-1 truncate">
                             <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">${localizedDateRange}</p>
