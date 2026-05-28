@@ -1851,9 +1851,15 @@ window.closeModals = () => {
 window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
 
 window.logout = async () => {
-    const uid = localStorage.getItem('userId');
-    if (uid) { try { await updateDoc(doc(db, "users", uid), { pushToken: "" }); } catch (e) {} }
-    localStorage.clear(); window.location.href = 'login.html'; 
+    // Добавлена защита от случайного нажатия!
+    if (confirm("Выйти из аккаунта? / Odhlásit se?")) {
+        const uid = localStorage.getItem('userId');
+        if (uid) { 
+            try { await updateDoc(doc(db, "users", uid), { pushToken: "" }); } catch (e) {} 
+        }
+        localStorage.clear(); 
+        window.location.href = 'login.html'; 
+    }
 };
 
 let selectedImageFile = null;
