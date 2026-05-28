@@ -255,6 +255,17 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     const pendingList = document.getElementById('pending-list');
     const groupsContainer = document.getElementById('groups-container');
     
+    // 🔥 СОХРАНЯЕМ СОСТОЯНИЕ ОТКРЫТЫХ АККОРДЕОНОВ 🔥
+    const openGroups = [];
+    if (groupsContainer) {
+        const detailsElements = groupsContainer.querySelectorAll('details');
+        detailsElements.forEach(detail => {
+            if (detail.open) {
+                openGroups.push(detail.getAttribute('data-group'));
+            }
+        });
+    }
+    
     let pendingHTML = '';
     let pendingCount = 0;
     let activeCount = 0;
@@ -410,9 +421,11 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         });
 
         const gLabel = gName === 'Без группы' ? window.t('no_group') : `Группа ${gName}`;
+        // 🔥 ВОТ ТУТ МЫ ПРОВЕРЯЕМ, БЫЛА ЛИ ОТКРЫТА ЭТА ГРУППА ДО ПЕРЕРИСОВКИ 🔥
+        const isOpen = openGroups.includes(gName) ? 'open' : '';
 
         groupsHTML += `
-            <details class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden group">
+            <details data-group="${gName}" ${isOpen} class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden group">
                 <summary class="font-black text-slate-700 p-4 cursor-pointer outline-none flex justify-between items-center hover:bg-slate-50 transition-colors">
                     <div class="flex items-center gap-2">
                         <svg class="w-5 h-5 text-slate-400 group-open:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
