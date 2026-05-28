@@ -40,64 +40,62 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 mb-6">
+            <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2" data-lang="assign_title">
+                Назначить
+            </h2>
             
-            <div class="md:col-span-1">
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 sticky top-6">
-                    <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2" data-lang="assign_title">
-                        Назначить
-                    </h2>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="duty_type_label">Тип дежурства</label>
-                            <select id="duty-type" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-slate-400 font-bold text-slate-700 appearance-none">
-                                <option value="Уборка зала" data-lang="opt_cleaning">Уборка зала</option>
-                                <option value="Специальное событие" data-lang="opt_special_event">Специальное событие</option>
-                            </select>
-                        </div>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                
+                <div class="md:col-span-3">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="duty_type_label">Тип дежурства</label>
+                    <select id="duty-type" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-slate-400 font-bold text-slate-700 appearance-none">
+                        <option value="Уборка зала" data-lang="opt_cleaning">Уборка зала</option>
+                        <option value="Специальное событие" data-lang="opt_special_event">Специальное событие</option>
+                    </select>
+                </div>
 
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="start_group_label">Группа (можно 1, 2)</label>
-                            <input type="text" id="duty-group" data-lang-placeholder="ph_group_example" placeholder="Например: 1, 2" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-slate-400 font-bold text-slate-700">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="start_monday_label">С понедельника (Дата)</label>
-                            <input type="date" id="duty-date" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-slate-400 font-bold text-slate-700 cursor-pointer">
-                        </div>
+                <div class="md:col-span-3">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="start_group_label">Группа (можно 1, 2)</label>
+                    <input type="text" id="duty-group" data-lang-placeholder="ph_group_example" placeholder="Например: 1, 2" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-slate-400 font-bold text-slate-700">
+                </div>
+                
+                <div class="md:col-span-3">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5" data-lang="start_monday_label">С понедельника (Дата)</label>
+                    <input type="date" id="duty-date" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-slate-400 font-bold text-slate-700 cursor-pointer">
+                </div>
 
-                        <div class="pt-1">
-                            <label class="flex items-center gap-3 cursor-pointer mb-2 w-max p-2 -ml-2 rounded-lg active:bg-slate-50 transition-colors">
-                                <input type="checkbox" id="duty-recurring" class="w-5 h-5 accent-slate-800 rounded cursor-pointer" onchange="document.getElementById('weeks-container').classList.toggle('hidden')">
-                                <span class="text-[11px] font-black text-slate-600 uppercase tracking-widest mt-0.5" data-lang="auto_distribute">Авто-раскидать</span>
-                            </label>
-                            <div id="weeks-container" class="hidden flex items-center justify-between gap-2 mt-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest" data-lang="how_many_weeks">На сколько недель?</span>
-                                <input type="number" id="duty-weeks" value="4" min="2" max="12" class="w-16 p-2 text-center font-black text-slate-800 bg-white rounded-lg border border-slate-200 outline-none focus:border-slate-400">
-                            </div>
+                <div class="md:col-span-3 flex flex-col justify-end h-full">
+                    <div class="mb-3 pt-1">
+                        <label class="flex items-center gap-3 cursor-pointer w-max p-2 -ml-2 rounded-lg active:bg-slate-50 transition-colors">
+                            <input type="checkbox" id="duty-recurring" class="w-5 h-5 accent-slate-800 rounded cursor-pointer" onchange="document.getElementById('weeks-container').classList.toggle('hidden')">
+                            <span class="text-[11px] font-black text-slate-600 uppercase tracking-widest mt-0.5" data-lang="auto_distribute">Авто-раскидать</span>
+                        </label>
+                        <div id="weeks-container" class="hidden flex items-center justify-between gap-2 mt-1 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest" data-lang="how_many_weeks">Недель?</span>
+                            <input type="number" id="duty-weeks" value="4" min="2" max="12" class="w-16 p-2 text-center font-black text-slate-800 bg-white rounded-lg border border-slate-200 outline-none focus:border-slate-400">
                         </div>
-
-                        <button id="save-duty-btn" data-lang="btn_assign" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition-colors active:bg-slate-700 mt-2 text-xs uppercase tracking-widest outline-none">
-                            Назначить
-                        </button>
                     </div>
+                    <button id="save-duty-btn" data-lang="btn_assign" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition-colors active:bg-slate-700 text-xs uppercase tracking-widest outline-none">
+                        Назначить
+                    </button>
                 </div>
-            </div>
 
-            <div class="md:col-span-2">
-                <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2" data-lang="current_schedule">
-                    Текущий график
-                </h2>
-                <div id="duties-list" class="bg-white rounded-2xl border border-slate-200 flex flex-col overflow-hidden min-h-[150px]">
-                    <p class="text-slate-400 italic p-6 text-center text-sm" data-lang="loading">Загрузка...</p>
-                </div>
             </div>
-
         </div>
+
+        <div>
+            <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2" data-lang="current_schedule">
+                Текущий график
+            </h2>
+            <div id="duties-list" class="bg-white rounded-2xl border border-slate-200 flex flex-col overflow-hidden min-h-[150px]">
+                <p class="text-slate-400 italic p-6 text-center text-sm" data-lang="loading">Загрузка...</p>
+            </div>
+        </div>
+
     </main>
 
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[200] flex flex-col gap-2 pointer-events-none"></div>
-    <script type="module" src="duties.js?v=201"></script>
+    <script type="module" src="duties.js?v=203"></script>
 </body>
 </html>
