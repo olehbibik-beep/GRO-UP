@@ -188,6 +188,31 @@ if (!userId) {
     window.location.href = 'login.html';
 }
 
+// ГЛОБАЛЬНЫЕ ФУНКЦИИ ОКНА И НАВИГАЦИИ
+window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
+window.openReportHistory = () => document.getElementById('report-history-modal').classList.replace('hidden', 'flex');
+window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
+window.openDutiesModal = () => document.getElementById('duties-modal').classList.replace('hidden', 'flex');
+window.openInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('hidden', 'flex');
+window.closeInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('flex', 'hidden');
+
+window.closeModals = () => {
+    const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
+    const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
+    const m3 = document.getElementById('duties-modal'); if(m3) m3.classList.replace('flex', 'hidden');
+    const m4 = document.getElementById('user-msg-modal'); if(m4) m4.classList.replace('flex', 'hidden');
+    const m5 = document.getElementById('take-terr-modal'); if(m5) m5.classList.replace('flex', 'hidden');
+    const m6 = document.getElementById('info-details-modal'); if(m6) m6.classList.replace('flex', 'hidden');
+    const m7 = document.getElementById('task-info-modal'); if(m7) m7.classList.replace('flex', 'hidden');
+};
+window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
+
+window.logout = async () => {
+    const uid = localStorage.getItem('userId');
+    if (uid) { try { await updateDoc(doc(db, "users", uid), { pushToken: "" }); } catch (e) {} }
+    localStorage.clear(); window.location.href = 'login.html'; 
+};
+
 window.scrollNews = (offset) => { document.getElementById('content-news')?.scrollBy({ left: offset, behavior: 'smooth' }); };
 window.scrollProgram = (dir) => { 
     const container = document.getElementById('meeting-program-list');
@@ -321,17 +346,14 @@ window.scrollToCurrentWeek = () => {
     if (!container || container.offsetParent === null) return; 
 
     let activeCard = container.querySelector('.current-week-marker');
-    
     if (!activeCard) {
         const allCards = Array.from(container.children);
         activeCard = allCards.find(card => !card.classList.contains('grayscale'));
     }
-    
     if (!activeCard && container.children.length > 0) {
         const len = container.children.length;
         activeCard = len > 1 ? container.children[len - 2] : container.lastElementChild;
     }
-
     if (activeCard) {
         activeCard.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
     }
@@ -521,7 +543,6 @@ if (rolesContainer) {
             else if(r === "Пионер") colorClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
             else if(r === "Админ" || r === "Владелец") colorClass = "bg-rose-100 text-rose-700 border border-rose-200";
             else if(r === "Ответственный за график") colorClass = "bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200";
-            
             else if(r === "Служение со стендом") {
                 colorClass = "bg-indigo-100 text-indigo-700 border-indigo-200";
                 iconHtml = `<svg class="w-3 h-3 inline mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 4h10v14H7V4zM10 8h4M10 12h4" /><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 21v-3m4 3v-3" /></svg>`;
@@ -730,7 +751,18 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     
     let partCounter = 1;
 
-    // Обычная строка (БЕЗ ИКОНКИ)
+    // ИКОНКА "i" (ВЫЗЫВАЕТСЯ ТОЛЬКО ДЛЯ ШКОЛЫ СЛУЖЕНИЯ)
+    const getInfoIcon = (infoHtml) => {
+        const safeHtml = infoHtml.replace(/"/g, '&quot;');
+        return `
+            <div class="shrink-0 ml-2 p-1.5" data-info="${safeHtml}" onclick="openTaskInfoModal(this.getAttribute('data-info'))" title="Информация">
+                <svg class="w-4 h-4 text-slate-400 hover:text-indigo-500 transition-colors pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+        `;
+    };
+
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
@@ -745,7 +777,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     };
 
-    // Строка без номера (БЕЗ ИКОНКИ)
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
@@ -765,7 +796,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const t1NameColor = treasure1Me ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
     const t1Title = translateDbString(d.mw_treasure_title || window.t('talk_10_min'));
     
-    // БЕЗ ИКОНКИ
     const treasure1 = `
         <div class="flex flex-col py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
             <span class="text-[13px] md:text-sm ${t1TitleColor} leading-tight">${partCounter++}. ${t1Title}</span>
@@ -776,7 +806,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
-    // 🔥 ШКОЛА СЛУЖЕНИЯ (Теперь вся строка кликабельна как в топ-приложениях) 🔥
     const minRowsRaw = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
@@ -819,10 +848,8 @@ function buildScheduleCards(d, myName, currentWeekStr) {
             ? `<span class="font-black text-slate-800 block mb-3 text-base">${translatedType}</span><span class="text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-100 self-start inline-block">${window.t('lesson')} ${m.lesson}</span>${descHtml}` 
             : `<span class="font-black text-slate-800 text-base">${translatedType}</span>${descHtml}`;
 
-        // Экранируем для вставки в атрибут HTML
         const safeHtml = extraInfo.replace(/"/g, '&quot;');
 
-        // Строка теперь — единая кнопка с аккуратным эффектом active:bg-slate-100
         return `
             <div data-info="${safeHtml}" onclick="openTaskInfoModal(this.getAttribute('data-info'))" style="-webkit-tap-highlight-color: transparent;" class="flex items-center justify-between py-2.5 px-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer group">
                 <div class="flex flex-col min-w-0 pointer-events-none">
@@ -838,7 +865,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     }).join('');
 
-    // Весь блок школы служения теперь имеет белый фон, чтобы анимация строк смотрелась красиво
     const minRows = minRowsRaw ? `
         <div class="flex flex-col bg-white rounded-xl mt-1.5 mb-2 mx-1 overflow-hidden shadow-sm border border-slate-200/80">
             ${minRowsRaw}
@@ -856,7 +882,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const cbsNameColor = isCbsMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
     const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
-    // БЕЗ ИКОНКИ
     const cbsRow = `
         <div class="flex flex-col py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
             <span class="text-[13px] md:text-sm ${cbsTitleColor} leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-xs font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
@@ -869,7 +894,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const wtNameColor = weTalkMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
     const talkTitle = translateDbString(d.we_talk_title || window.t('public_talk'));
 
-    // БЕЗ ИКОНКИ
     const we_talk = `
         <div class="flex flex-col py-1.5 px-3 bg-white/60 hover:bg-white active:bg-white border border-slate-200/50 shadow-sm transition-colors rounded-xl mt-1.5 mb-1 mx-1">
             <span class="text-[13px] md:text-sm ${wtTitleColor} uppercase leading-tight">${talkTitle}</span>
@@ -882,7 +906,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const wtStudyNameColor = isWtMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
     const we_wt_read_str = d.we_wt_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.we_wt_reader})</span>` : '';
 
-    // БЕЗ ИКОНКИ
     const wtStudyRow = `
         <div class="flex flex-col py-1 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg mt-1.5">
             <span class="text-[13px] md:text-sm ${wtStudyTitleColor} leading-tight">${window.t('watchtower_study')}</span>
@@ -1088,8 +1111,16 @@ function loadPersonalData() {
 
             snapshot.forEach(docSnap => {
                 const d = docSnap.data();
-                const dutyStart = new Date(d.rawDate); dutyStart.setHours(0,0,0,0);
-                const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6); dutyEnd.setHours(23,59,59,999);
+                
+                if (!d.rawDate) return;
+                
+                // Железобетонный парсинг даты
+                const [ry, rm, rd] = d.rawDate.split('-');
+                const dutyStart = new Date(ry, rm - 1, rd, 0, 0, 0);
+                
+                const dutyEnd = new Date(dutyStart); 
+                dutyEnd.setDate(dutyStart.getDate() + 6); 
+                dutyEnd.setHours(23,59,59,999);
                 
                 const startDay = dutyStart.getDate();
                 const endDay = dutyEnd.getDate();
@@ -1101,8 +1132,8 @@ function loadPersonalData() {
                 }
 
                 let typeStr = d.type;
-                if (typeStr === 'Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
-                if (typeStr === 'Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
+                if (typeStr === 'Уборка зала' || typeStr === '🧹 Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
+                if (typeStr === 'Специальное событие' || typeStr === '⭐ Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
                 const groupStr = d.group === "Все" || d.group === window.t('all_groups') ? window.t('all_groups') : d.group;
 
                 const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
@@ -1148,12 +1179,16 @@ function loadPersonalData() {
                 }
 
                 let typeStr = currentDuty.type;
-                if (typeStr === 'Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
-                if (typeStr === 'Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
+                if (typeStr === 'Уборка зала' || typeStr === '🧹 Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
+                if (typeStr === 'Специальное событие' || typeStr === '⭐ Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
                 const groupStr = currentDuty.group === "Все" || currentDuty.group === window.t('all_groups') ? window.t('all_groups') : currentDuty.group;
 
-                const dutyStart = new Date(currentDuty.rawDate); dutyStart.setHours(0,0,0,0);
-                const dutyEnd = new Date(dutyStart); dutyEnd.setDate(dutyStart.getDate() + 6);
+                const [ry, rm, rd] = currentDuty.rawDate.split('-');
+                const dutyStart = new Date(ry, rm - 1, rd, 0, 0, 0);
+                
+                const dutyEnd = new Date(dutyStart); 
+                dutyEnd.setDate(dutyStart.getDate() + 6);
+                
                 const startDay = dutyStart.getDate();
                 const endDay = dutyEnd.getDate();
                 const endMonth = dutyEnd.toLocaleDateString(localeFormat, { month: 'long' });
