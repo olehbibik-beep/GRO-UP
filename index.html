@@ -35,14 +35,13 @@
         .leaflet-container { z-index: 10; font-family: inherit; }
     </style>
 </head>
-<body class="bg-ui-bg h-[100dvh] font-sans text-slate-800 overflow-hidden flex flex-col-reverse md:flex-row w-full">
+<body class="bg-ui-bg h-[100dvh] font-sans text-slate-800 overflow-hidden flex flex-col md:flex-row w-full">
 
-  <div id="global-loader" class="fixed inset-0 bg-ui-bg z-[200] flex flex-col items-center justify-center transition-opacity duration-500">
-        
+    <div id="global-loader" class="fixed inset-0 bg-ui-bg z-[200] flex flex-col items-center justify-center transition-opacity duration-500">
         <style>
             @keyframes shift-progress {
                 from { background-position-x: 0; }
-                to { background-position-x: 48px; } /* Смещение строго на размер одного цикла градиента */
+                to { background-position-x: 48px; }
             }
             .segmented-loader-line {
                 background-image: linear-gradient(90deg, 
@@ -51,17 +50,14 @@
                     #10b981 50% 66%,  transparent 66% 75%, 
                     #d97706 75% 91%,  transparent 91% 100%
                 );
-                background-size: 48px 100%; /* Ширина одного полного набора цветных штрихов */
+                background-size: 48px 100%;
                 animation: shift-progress 0.8s linear infinite;
             }
         </style>
-
         <img src="icon-512.png" alt="GRO-UP" class="w-24 h-24 rounded-2xl object-contain shadow-xl mb-6">
-        
         <div class="w-24 h-[3px] bg-slate-300/40 rounded-full overflow-hidden">
             <div class="w-full h-full segmented-loader-line"></div>
         </div>
-
     </div>
 
     <div id="pending-screen" class="fixed inset-0 bg-white z-[100] hidden flex-col items-center justify-center text-center p-6">
@@ -73,7 +69,7 @@
         <button onclick="logout()" class="text-indigo-500 text-sm font-bold hover:underline outline-none" data-lang="logout_btn">Выйти</button>
     </div>
 
-    <nav class="shrink-0 w-full bg-ui-nav flex flex-row items-center justify-between z-40 md:h-[100dvh] md:w-20 md:flex-col md:justify-start md:py-6 md:border-t-0 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] border-t border-slate-800">
+    <nav class="fixed bottom-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-between z-40 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] border-t border-slate-800 md:relative md:w-20 md:h-[100dvh] md:flex-col md:justify-start md:py-6 md:border-t-0">
         <button onclick="switchTab('tasks', this)" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
             <div class="nav-icon-container text-slate-500 hover:text-slate-300 p-2.5 rounded-full transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
@@ -101,11 +97,11 @@
         </button>
     </nav>
 
-    <main class="flex-1 overflow-y-auto custom-scrollbar relative w-full pb-6" id="main-dashboard" style="display: none;">
+    <main class="flex-1 overflow-y-auto custom-scrollbar relative w-full pb-24 md:pb-6" id="main-dashboard" style="display: none;">
         
         <div id="tab-home" class="tab-content active">
             <div class="flex flex-col">
-                <div class="flex bg-ui-nav shadow-lg min-h-[80px] w-full mb-6 relative z-10">
+                <div class="flex bg-ui-nav shadow-lg min-h-[80px] w-full mb-6 relative z-10 pt-[env(safe-area-inset-top)]">
                     <div id="calendar-events" class="flex-grow flex flex-col justify-center bg-transparent py-2">
                         <p class="p-4 text-xs text-slate-400 font-bold uppercase tracking-widest text-center" data-lang="loading_events">Загрузка встреч...</p>
                     </div>
@@ -449,7 +445,7 @@
         </div>
     </div>
 
-    <script type="module" src="app.js?v=641"></script>
+    <script type="module" src="app.js?v=642"></script>
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[150] flex flex-col gap-2 pointer-events-none"></div>
 
 </body>
