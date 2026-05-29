@@ -993,10 +993,9 @@ window.openTerritoryMap = (numStr) => {
     }
 
     if (!userMapInstance) {
-        userMapInstance = L.map('user-view-map').setView([49.974, 12.700], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
-        }).addTo(userMapInstance);
+        // Убрали надпись Leaflet и добавили НОВЫЙ ЧИСТЫЙ СТИЛЬ КАРТЫ
+        userMapInstance = L.map('user-view-map', { attributionControl: false }).setView([49.974, 12.700], 14);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(userMapInstance);
     }
 
     setTimeout(() => {
@@ -1677,9 +1676,9 @@ window.toggleAvailableView = () => {
 
 window.renderGlobalAvailableMap = () => {
     if (!globalAvailableMapInstance) {
-        // ДОБАВЛЕНО: attributionControl: false - убирает надпись Leaflet
+        // Убрали надпись Leaflet и добавили НОВЫЙ ЧИСТЫЙ СТИЛЬ КАРТЫ
         globalAvailableMapInstance = L.map('available-terr-map', { attributionControl: false }).setView([49.974, 12.700], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(globalAvailableMapInstance);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(globalAvailableMapInstance);
     }
 
     setTimeout(() => {
@@ -1687,26 +1686,14 @@ window.renderGlobalAvailableMap = () => {
         if (globalAvailableLayerGroup) globalAvailableMapInstance.removeLayer(globalAvailableLayerGroup);
         globalAvailableLayerGroup = L.layerGroup().addTo(globalAvailableMapInstance);
 
-        // === 1. ВНЕДРЯЕМ ПАТТЕРН КОСЫХ ЛИНИЙ В HTML ===
-        if (!document.getElementById('svg-hatch-pattern')) {
-            const svgMarkup = `
-            <svg style="width:0; height:0; position:absolute;" aria-hidden="true">
-              <defs>
-                <pattern id="svg-hatch-pattern" width="12" height="12" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
-                  <line x1="0" y1="0" x2="0" y2="12" stroke="#475569" stroke-width="2" opacity="0.3" />
-                </pattern>
-              </defs>
-            </svg>`;
-            document.body.insertAdjacentHTML('beforeend', svgMarkup);
-        }
-
-        // === 2. СОЗДАЕМ МАСКУ "ВЕСЬ МИР" С ДЫРКАМИ ДЛЯ УЧАСТКОВ ===
+        // Маска "Весь мир" с вырезанными дырками участков
         const maskOuter = [[90, -180], [90, 180], [-90, 180], [-90, -180]];
         const maskHoles = window.allMapPolygons.map(m => m.polygon.map(p => [p.lat, p.lng]));
         
+        // НОВАЯ ТЕМНАЯ ЗАЛИВКА ВМЕСТО ШТРИХОВКИ
         L.polygon([maskOuter, ...maskHoles], {
-            fillColor: 'url(#svg-hatch-pattern)',
-            fillOpacity: 1,
+            fillColor: '#0f172a', // Темно-синий/почти черный цвет
+            fillOpacity: 0.4,     // Степень "затемнения" всего остального города
             stroke: false,
             interactive: false
         }).addTo(globalAvailableLayerGroup);
@@ -1715,7 +1702,6 @@ window.renderGlobalAvailableMap = () => {
         let hasPolys = false;
         let currentlyHighlighted = null; 
 
-        // === 3. РИСУЕМ САМИ УЧАСТКИ ВНУТРИ "ДЫРОК" ===
         window.allMapPolygons.forEach(m => {
             hasPolys = true;
             const latlngs = m.polygon.map(p => [p.lat, p.lng]);
@@ -1734,11 +1720,10 @@ window.renderGlobalAvailableMap = () => {
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             }
 
-            // ИЗМЕНЕНО: По умолчанию СПЛОШНАЯ линия (dashArray: '')
             const defaultStyle = {
                 color: '#ffffff',       
                 weight: 2,              
-                dashArray: '',          // <-- Сплошная
+                dashArray: '',          
                 fillColor: polyColor,   
                 fillOpacity: fillOp,    
                 opacity: 0.9            
@@ -1756,23 +1741,21 @@ window.renderGlobalAvailableMap = () => {
             `;
             poly.bindPopup(popupHtml);
 
-            // КЛИК: Убираем заливку, делаем линию ПУНКТИРНОЙ
             poly.on('click', function () {
                 if (currentlyHighlighted) {
                     currentlyHighlighted.poly.setStyle(currentlyHighlighted.defaultStyle);
                 }
                 
                 poly.setStyle({
-                    fillOpacity: 0.0,    
-                    color: '#ffffff',    
+                    fillOpacity: 0.0,    // Полностью прозрачный
+                    color: '#ffffff',    // Белая рамка
                     weight: 2,           
-                    dashArray: '6, 6'    // <-- Становится пунктиром при клике
+                    dashArray: '6, 6'    // Пунктир при выборе
                 });
                 
                 currentlyHighlighted = { poly: poly, defaultStyle: defaultStyle };
             });
 
-            // ЗАКРЫТИЕ ОКНА: Возвращаем сплошную линию
             poly.on('popupclose', function () {
                 poly.setStyle(defaultStyle);
                 if (currentlyHighlighted && currentlyHighlighted.poly === poly) {
