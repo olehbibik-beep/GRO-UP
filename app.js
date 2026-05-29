@@ -1688,46 +1688,63 @@ window.renderGlobalAvailableMap = () => {
         if (globalAvailableLayerGroup) globalAvailableMapInstance.removeLayer(globalAvailableLayerGroup);
         globalAvailableLayerGroup = L.layerGroup().addTo(globalAvailableMapInstance);
 
+        // === 1. ВНЕДРЯЕМ ПАТТЕРН КОСЫХ ЛИНИЙ В HTML ===
+        if (!document.getElementById('svg-hatch-pattern')) {
+            const svgMarkup = `
+            <svg style="width:0; height:0; position:absolute;" aria-hidden="true">
+              <defs>
+                <pattern id="svg-hatch-pattern" width="12" height="12" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+                  <line x1="0" y1="0" x2="0" y2="12" stroke="#475569" stroke-width="2" opacity="0.3" />
+                </pattern>
+              </defs>
+            </svg>`;
+            document.body.insertAdjacentHTML('beforeend', svgMarkup);
+        }
+
+        // === 2. СОЗДАЕМ МАСКУ "ВЕСЬ МИР" С ДЫРКАМИ ДЛЯ УЧАСТКОВ ===
+        const maskOuter = [[90, -180], [90, 180], [-90, 180], [-90, -180]];
+        const maskHoles = window.allMapPolygons.map(m => m.polygon.map(p => [p.lat, p.lng]));
+        
+        // Накрываем всё, где нет участков, косыми линиями
+        L.polygon([maskOuter, ...maskHoles], {
+            fillColor: 'url(#svg-hatch-pattern)',
+            fillOpacity: 1, // Прозрачность регулируется в самом SVG
+            stroke: false,
+            interactive: false // Чтобы штриховка не блокировала клики по карте
+        }).addTo(globalAvailableLayerGroup);
+
         let bounds = L.latLngBounds();
         let hasPolys = false;
-        
-        // Переменная для хранения текущего выделенного участка
         let currentlyHighlighted = null; 
 
+        // === 3. РИСУЕМ САМИ УЧАСТКИ ВНУТРИ "ДЫРОК" ===
         window.allMapPolygons.forEach(m => {
             hasPolys = true;
             const latlngs = m.polygon.map(p => [p.lat, p.lng]);
             
-            // Базовые цвета для "тумана"
-            let polyColor = '#94a3b8'; // Серый по умолчанию
+            // Базовый сероватый цвет
+            let polyColor = '#94a3b8'; 
+            let fillOp = 0.4;
             let statusText = '';
             let btnHtml = '';
 
-            if (m.status === 'active') {
-                statusText = '<span class="text-slate-500">Уже в работе</span>';
-                polyColor = '#64748b'; // Темно-серый для занятых
-            } else if (m.status === 'cooldown') {
-                statusText = '<span class="text-purple-500">Пройден (на отдыхе)</span>';
-                polyColor = '#64748b'; 
-            } else if (m.status === 'fire') {
-                statusText = '<span class="text-rose-500">Свободен (Рекомендуем)</span>';
-                polyColor = '#10b981'; // Приглушенный зеленый для свободных
-                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
-            } else if (m.status === 'available') {
-                statusText = '<span class="text-emerald-500">Свободен</span>';
-                polyColor = '#10b981'; 
+            if (m.status === 'active' || m.status === 'cooldown') {
+                statusText = m.status === 'active' ? '<span class="text-slate-500">Уже в работе</span>' : '<span class="text-purple-500">Пройден (на отдыхе)</span>';
+                polyColor = '#64748b'; // Занятые делаем чуть темнее
+                fillOp = 0.5;
+            } else {
+                statusText = m.status === 'fire' ? '<span class="text-rose-500">Свободен (Рекомендуем)</span>' : '<span class="text-emerald-500">Свободен</span>';
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             }
 
-            // === БАЗОВЫЙ СТИЛЬ: "ТУМАН" ===
-            // Участки плотные (0.5), накрывают карту, границы белые и пунктирные
+            // Исходный стиль: белая пунктирная граница, сероватая заливка
             const defaultStyle = {
                 color: '#ffffff',       // Белая граница
-                weight: 2,              // Тонкая линия
-                dashArray: '5, 5',      // Пунктир
-                fillColor: polyColor,   // Серый или зеленый
-                fillOpacity: 0.5,       // ПЛОТНАЯ ЗАЛИВКА (скрывает детали карты)
-                opacity: 0.8            
+                weight: 2,              // Не толстая
+                dashArray: '6, 6',      // Пунктир
+                fillColor: polyColor,   // Сероватый цвет
+                fillOpacity: fillOp,    // Плотность заливки
+                opacity: 0.9            
             };
 
             const poly = L.polygon(latlngs, defaultStyle);
@@ -1742,24 +1759,23 @@ window.renderGlobalAvailableMap = () => {
             `;
             poly.bindPopup(popupHtml);
 
-            // === КЛИК: "РАССЕИВАНИЕ ТУМАНА" ===
+            // КЛИК: Убираем заливку в 0, делаем линию белой и сплошной
             poly.on('click', function () {
                 if (currentlyHighlighted) {
                     currentlyHighlighted.poly.setStyle(currentlyHighlighted.defaultStyle);
                 }
                 
-                // Делаем участок кристально прозрачным, а границу — яркой и сплошной
                 poly.setStyle({
-                    fillOpacity: 0.05,   // ПОЧТИ ПОЛНОСТЬЮ ПРОЗРАЧНЫЙ (видно все дома и улицы)
-                    color: '#4f46e5',    // Сплошная сине-фиолетовая рамка (чтобы не потерять границы)
-                    weight: 3,           // Чуть толще
-                    dashArray: ''        // Убираем пунктир
+                    fillOpacity: 0.0,    // Полностью прозрачный!
+                    color: '#ffffff',    // Белая граница
+                    weight: 2,           // Тонкая линия
+                    dashArray: ''        // СПЛОШНАЯ (без пунктира)
                 });
                 
                 currentlyHighlighted = { poly: poly, defaultStyle: defaultStyle };
             });
 
-            // Когда окошко закрывается — возвращаем серый "туман"
+            // ЗАКРЫТИЕ ОКНА: Возвращаем сероватый пунктир
             poly.on('popupclose', function () {
                 poly.setStyle(defaultStyle);
                 if (currentlyHighlighted && currentlyHighlighted.poly === poly) {
