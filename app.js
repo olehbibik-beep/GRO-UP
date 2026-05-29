@@ -981,38 +981,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 let userMapInstance = null;
 let userPolygonLayer = null;
 
-window.openTerritoryMap = (numStr) => {
-    const mapData = window.allMapsCache[numStr];
-    if (!mapData || !mapData.polygon) return alert("Для этого участка еще не нарисована карта!");
-
-    document.getElementById('terr-map-title').innerText = `Участок № ${numStr} (${mapData.city})`;
-    document.getElementById('terr-map-modal').classList.replace('hidden', 'flex');
-
-    if (window.location.hash !== '#map') {
-        history.pushState({ modal: 'map' }, '', '#map');
-    }
-
-    if (!userMapInstance) {
-        // Убрали надпись Leaflet и добавили НОВЫЙ ЧИСТЫЙ СТИЛЬ КАРТЫ
-        userMapInstance = L.map('user-view-map', { attributionControl: false }).setView([49.974, 12.700], 14);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(userMapInstance);
-    }
-
-    setTimeout(() => {
-        userMapInstance.invalidateSize();
-        if (userPolygonLayer) userMapInstance.removeLayer(userPolygonLayer);
-
-        const latlngs = mapData.polygon.map(p => [p.lat, p.lng]);
-        userPolygonLayer = L.polygon(latlngs, {
-            color: '#10b981',
-            fillColor: '#10b981',
-            fillOpacity: 0.35,
-            weight: 3
-        }).addTo(userMapInstance);
-
-        userMapInstance.fitBounds(userPolygonLayer.getBounds(), { padding: [20, 20] });
-    }, 100);
-};
 
 window.addEventListener('popstate', (event) => {
     const modal = document.getElementById('terr-map-modal');
@@ -1021,12 +989,6 @@ window.addEventListener('popstate', (event) => {
     }
 });
 
-window.closeTerritoryMap = () => {
-    document.getElementById('terr-map-modal').classList.replace('flex', 'hidden');
-    if (window.location.hash === '#map') {
-        history.back();
-    }
-};
 
 function loadPersonalData() {
     try {
