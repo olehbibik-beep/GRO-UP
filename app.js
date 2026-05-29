@@ -1723,26 +1723,27 @@ window.renderGlobalAvailableMap = () => {
             const latlngs = m.polygon.map(p => [p.lat, p.lng]);
             
             // НОВЫЕ ЦВЕТА УЧАСТКОВ
-            let polyColor = '#10b981'; // По умолчанию зеленый
+           // Зеленый цвет (как логотип) по умолчанию
+            let polyColor = '#10b981'; 
             let fillOp = 0.45;
             let statusText = '';
             let btnHtml = '';
 
             if (m.status === 'active') {
                 statusText = '<span class="text-slate-500">Уже в работе</span>';
-                polyColor = '#1e293b'; // ОЧЕНЬ ТЕМНЫЙ для участков в работе
-                fillOp = 0.65;         // Более плотная заливка
+                polyColor = '#1e293b'; // ОЧЕНЬ ТЕМНЫЙ цвет для участков в работе
+                fillOp = 0.65;         // Делаем его менее прозрачным
             } else if (m.status === 'cooldown') {
                 statusText = '<span class="text-purple-500">Пройден (на отдыхе)</span>';
-                polyColor = '#64748b'; // Серый
+                polyColor = '#64748b'; // Оставляем просто серым
                 fillOp = 0.5;
             } else if (m.status === 'fire') {
                 statusText = '<span class="text-rose-500">Свободен (Рекомендуем)</span>';
-                polyColor = '#10b981'; // Изумрудный / Зеленый (как лого)
+                polyColor = '#10b981'; // Зеленый как логотип
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             } else {
                 statusText = '<span class="text-emerald-500">Свободен</span>';
-                polyColor = '#10b981'; // Изумрудный / Зеленый (как лого)
+                polyColor = '#10b981'; // Зеленый как логотип
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             }
 
