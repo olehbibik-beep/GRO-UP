@@ -1686,7 +1686,7 @@ window.renderGlobalAvailableMap = () => {
         if (globalAvailableLayerGroup) globalAvailableMapInstance.removeLayer(globalAvailableLayerGroup);
         globalAvailableLayerGroup = L.layerGroup().addTo(globalAvailableMapInstance);
 
-        // === ВНЕДРЯЕМ СТИЛИ ДЛЯ ЦИФР ПОВЕРХ КАРТЫ ===
+        // === СТИЛИ ДЛЯ ЦИФР (Черные цифры с белым контуром) ===
         if (!document.getElementById('terr-label-style')) {
             const styleMarkup = `
             <style id="terr-label-style">
@@ -1694,26 +1694,16 @@ window.renderGlobalAvailableMap = () => {
                     background: transparent !important;
                     border: none !important;
                     box-shadow: none !important;
-                    color: #ffffff;
+                    color: #0f172a; /* Почти черный / Темно-синий */
                     font-weight: 900;
-                    font-size: 14px;
-                    text-shadow: 0px 0px 4px rgba(0,0,0,0.9), 0px 0px 2px rgba(0,0,0,0.9);
+                    font-size: 15px;
+                    /* Белое свечение вокруг цифр, чтобы не сливались с картой */
+                    text-shadow: 0px 0px 4px rgba(255,255,255,1), 0px 0px 2px rgba(255,255,255,1);
                 }
-                .terr-map-label::before { display: none !important; } /* Убираем стандартный "хвостик" */
+                .terr-map-label::before { display: none !important; } 
             </style>`;
             document.head.insertAdjacentHTML('beforeend', styleMarkup);
         }
-
-        // Маска "Весь мир" с вырезанными дырками
-        const maskOuter = [[90, -180], [90, 180], [-90, 180], [-90, -180]];
-        const maskHoles = window.allMapPolygons.map(m => m.polygon.map(p => [p.lat, p.lng]));
-        
-        L.polygon([maskOuter, ...maskHoles], {
-            fillColor: '#0f172a',
-            fillOpacity: 0.4,
-            stroke: false,
-            interactive: false
-        }).addTo(globalAvailableLayerGroup);
 
         let bounds = L.latLngBounds();
         let hasPolys = false;
@@ -1748,7 +1738,7 @@ window.renderGlobalAvailableMap = () => {
 
             const poly = L.polygon(latlngs, defaultStyle);
 
-            // === МАГИЯ ЗДЕСЬ: ДОБАВЛЯЕМ НОМЕР ПРЯМО В ЦЕНТР УЧАСТКА ===
+            // Добавляем черный номер по центру
             poly.bindTooltip(String(m.num), {
                 permanent: true,
                 direction: 'center',
@@ -1770,9 +1760,10 @@ window.renderGlobalAvailableMap = () => {
                     currentlyHighlighted.poly.setStyle(currentlyHighlighted.defaultStyle);
                 }
                 
+                // Делаем линию темной при клике, так как на белой карте белая пунктирная линия почти не видна
                 poly.setStyle({
                     fillOpacity: 0.0,
-                    color: '#ffffff',
+                    color: '#334155',    // Темно-серая граница при клике для контраста
                     weight: 2,           
                     dashArray: '6, 6'    
                 });
