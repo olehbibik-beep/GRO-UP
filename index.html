@@ -41,7 +41,7 @@
         <style>
             @keyframes shift-progress {
                 from { background-position-x: 0; }
-                to { background-position-x: 48px; }
+                to { background-position-x: 96px; } /* Смещение увеличено в 2 раза */
             }
             .segmented-loader-line {
                 background-image: linear-gradient(90deg, 
@@ -50,8 +50,8 @@
                     #10b981 50% 66%,  transparent 66% 75%, 
                     #d97706 75% 91%,  transparent 91% 100%
                 );
-                background-size: 48px 100%;
-                animation: shift-progress 0.8s linear infinite;
+                background-size: 96px 100%; /* Размер штрихов увеличен в 2 раза */
+                animation: shift-progress 1.5s linear infinite; /* Сделали движение чуть более плавным и солидным */
             }
         </style>
         <img src="icon-512.png" alt="GRO-UP" class="w-24 h-24 rounded-2xl object-contain shadow-xl mb-6">
