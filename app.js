@@ -1677,10 +1677,9 @@ window.toggleAvailableView = () => {
 
 window.renderGlobalAvailableMap = () => {
     if (!globalAvailableMapInstance) {
-        globalAvailableMapInstance = L.map('available-terr-map').setView([49.974, 12.700], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
-        }).addTo(globalAvailableMapInstance);
+        // ДОБАВЛЕНО: attributionControl: false - убирает надпись Leaflet
+        globalAvailableMapInstance = L.map('available-terr-map', { attributionControl: false }).setView([49.974, 12.700], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(globalAvailableMapInstance);
     }
 
     setTimeout(() => {
@@ -1705,12 +1704,11 @@ window.renderGlobalAvailableMap = () => {
         const maskOuter = [[90, -180], [90, 180], [-90, 180], [-90, -180]];
         const maskHoles = window.allMapPolygons.map(m => m.polygon.map(p => [p.lat, p.lng]));
         
-        // Накрываем всё, где нет участков, косыми линиями
         L.polygon([maskOuter, ...maskHoles], {
             fillColor: 'url(#svg-hatch-pattern)',
-            fillOpacity: 1, // Прозрачность регулируется в самом SVG
+            fillOpacity: 1,
             stroke: false,
-            interactive: false // Чтобы штриховка не блокировала клики по карте
+            interactive: false
         }).addTo(globalAvailableLayerGroup);
 
         let bounds = L.latLngBounds();
@@ -1722,7 +1720,6 @@ window.renderGlobalAvailableMap = () => {
             hasPolys = true;
             const latlngs = m.polygon.map(p => [p.lat, p.lng]);
             
-            // Базовый сероватый цвет
             let polyColor = '#94a3b8'; 
             let fillOp = 0.4;
             let statusText = '';
@@ -1730,20 +1727,20 @@ window.renderGlobalAvailableMap = () => {
 
             if (m.status === 'active' || m.status === 'cooldown') {
                 statusText = m.status === 'active' ? '<span class="text-slate-500">Уже в работе</span>' : '<span class="text-purple-500">Пройден (на отдыхе)</span>';
-                polyColor = '#64748b'; // Занятые делаем чуть темнее
+                polyColor = '#64748b'; 
                 fillOp = 0.5;
             } else {
                 statusText = m.status === 'fire' ? '<span class="text-rose-500">Свободен (Рекомендуем)</span>' : '<span class="text-emerald-500">Свободен</span>';
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             }
 
-            // Исходный стиль: белая пунктирная граница, сероватая заливка
+            // ИЗМЕНЕНО: По умолчанию СПЛОШНАЯ линия (dashArray: '')
             const defaultStyle = {
-                color: '#ffffff',       // Белая граница
-                weight: 2,              // Не толстая
-                dashArray: '6, 6',      // Пунктир
-                fillColor: polyColor,   // Сероватый цвет
-                fillOpacity: fillOp,    // Плотность заливки
+                color: '#ffffff',       
+                weight: 2,              
+                dashArray: '',          // <-- Сплошная
+                fillColor: polyColor,   
+                fillOpacity: fillOp,    
                 opacity: 0.9            
             };
 
@@ -1759,23 +1756,23 @@ window.renderGlobalAvailableMap = () => {
             `;
             poly.bindPopup(popupHtml);
 
-            // КЛИК: Убираем заливку в 0, делаем линию белой и сплошной
+            // КЛИК: Убираем заливку, делаем линию ПУНКТИРНОЙ
             poly.on('click', function () {
                 if (currentlyHighlighted) {
                     currentlyHighlighted.poly.setStyle(currentlyHighlighted.defaultStyle);
                 }
                 
                 poly.setStyle({
-                    fillOpacity: 0.0,    // Полностью прозрачный!
-                    color: '#ffffff',    // Белая граница
-                    weight: 2,           // Тонкая линия
-                    dashArray: ''        // СПЛОШНАЯ (без пунктира)
+                    fillOpacity: 0.0,    
+                    color: '#ffffff',    
+                    weight: 2,           
+                    dashArray: '6, 6'    // <-- Становится пунктиром при клике
                 });
                 
                 currentlyHighlighted = { poly: poly, defaultStyle: defaultStyle };
             });
 
-            // ЗАКРЫТИЕ ОКНА: Возвращаем сероватый пунктир
+            // ЗАКРЫТИЕ ОКНА: Возвращаем сплошную линию
             poly.on('popupclose', function () {
                 poly.setStyle(defaultStyle);
                 if (currentlyHighlighted && currentlyHighlighted.poly === poly) {
