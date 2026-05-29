@@ -1677,6 +1677,7 @@ window.toggleAvailableView = () => {
 
 window.renderGlobalAvailableMap = () => {
     if (!globalAvailableMapInstance) {
+        // Устанавливаем начальный вид карты на Тахов (или координаты твоего собрания)
         globalAvailableMapInstance = L.map('available-terr-map').setView([49.974, 12.700], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap'
@@ -1698,32 +1699,37 @@ window.renderGlobalAvailableMap = () => {
             hasPolys = true;
             const latlngs = m.polygon.map(p => [p.lat, p.lng]);
             
-            let polyColor = '#94a3b8'; 
+            // Основной цвет полигона (динамический, но мы сделаем его очень прозрачным)
+            let polyColor = '#94a3b8'; // Цвет по умолчанию (серый)
             let statusText = '';
             let btnHtml = '';
 
+            // Определяем текст статуса и кнопку, цвет оставляем, но он будет faint
             if (m.status === 'active') {
                 statusText = '<span class="text-slate-500">Уже в работе</span>';
-                polyColor = '#0f172a'; 
+                polyColor = '#0f172a'; // Темный для занятых (все равно будет прозрачным)
             } else if (m.status === 'cooldown') {
                 statusText = '<span class="text-purple-500">Пройден (на отдыхе)</span>';
                 polyColor = '#0f172a'; 
             } else if (m.status === 'fire') {
                 statusText = '<span class="text-rose-500">Свободен (Рекомендуем)</span>';
-                polyColor = '#56bc7b'; 
+                polyColor = '#10b981'; // Изумрудный для свободных
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             } else if (m.status === 'available') {
                 statusText = '<span class="text-emerald-500">Свободен</span>';
-                polyColor = '#56bc7b'; 
+                polyColor = '#10b981'; 
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             }
 
-            // Базовый стиль участка (сохраняем, чтобы потом вернуть)
+            // === НОВЫЙ "ГЕЙМ-ЧЕЙНДЖЕР" СТИЛЬ УЧАСТКА ===
+            // Тонкие белые пунктирные границы, еле заметная заливка.
             const defaultStyle = {
-                color: polyColor,
-                fillColor: polyColor,
-                fillOpacity: (m.status === 'active' || m.status === 'cooldown') ? 0.3 : 0.45, 
-                weight: 2
+                color: '#ffffff',       // Абсолютно белая граница
+                weight: 2,              // Тонкая линия
+                dashArray: '5, 5',      // ПРЕРЫВИСТАЯ (пунктир 5px линия, 5px пропуск)
+                fillColor: polyColor,   // Базовый цвет из статуса
+                fillOpacity: (m.status === 'active' || m.status === 'cooldown') ? 0.05 : 0.15, // УЛЬТРА-ВЫСОКАЯ ПРОЗРАЧНОСТЬ
+                opacity: 0.8            // Прозрачность самой границы
             };
 
             const poly = L.polygon(latlngs, defaultStyle);
@@ -1738,23 +1744,25 @@ window.renderGlobalAvailableMap = () => {
             `;
             poly.bindPopup(popupHtml);
 
-            // === МАГИЯ ВЫДЕЛЕНИЯ ===
-            // При клике: сбрасываем старое выделение и подсвечиваем новый полигон
+            // === ВЫДЕЛЕНИЕ "ПРОЯВЛЕНИЕМ" ===
+            // При клике: сбрасываем старое выделение и "закрашиваем" этот полигон
             poly.on('click', function () {
                 if (currentlyHighlighted) {
                     currentlyHighlighted.poly.setStyle(currentlyHighlighted.defaultStyle);
                 }
                 
+                // Проявляем полигон (меняем заливку на плотную и цвет на тему)
                 poly.setStyle({
-                    weight: 4,               // Делаем границу толще
-                    color: '#4f46e5',        // Ярко-синяя граница
-                    fillOpacity: 0.75        // Делаем заливку насыщеннее
+                    fillColor: '#4f46e5', // Яркий индиго при выборе
+                    fillOpacity: 0.4,    // Делаем заливку видимой
+                    color: '#ffffff',     // Граница остается белой и пунктирной
+                    dashArray: '5, 5'     // Сохраняем пунктир
                 });
                 
                 currentlyHighlighted = { poly: poly, defaultStyle: defaultStyle };
             });
 
-            // Когда окошко закрывается — возвращаем обычный цвет
+            // Когда окошко закрывается — возвращаем тонкий "призрачный" цвет
             poly.on('popupclose', function () {
                 poly.setStyle(defaultStyle);
                 if (currentlyHighlighted && currentlyHighlighted.poly === poly) {
@@ -1766,6 +1774,7 @@ window.renderGlobalAvailableMap = () => {
             bounds.extend(poly.getBounds());
         });
 
+        // Если есть полигоны, масштабируем карту, чтобы показать их все
         if (hasPolys) {
             globalAvailableMapInstance.fitBounds(bounds, { padding: [30, 30] });
         }
