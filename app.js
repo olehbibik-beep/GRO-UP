@@ -1253,10 +1253,12 @@ function loadPersonalData() {
                 const hasPolygon = mapData && mapData.polygon;
                 const cityStr = mapData && mapData.city && mapData.city !== "Без города" ? `<span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mt-1">${mapData.city}</span>` : '';
 
-                let mapBtn = '';
+let mapBtn = '';
                 if (hasPolygon) {
-                    mapBtn = `<button onclick="openTerritoryMap('${terr.number}')" class="w-full mt-3 bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg transition-colors outline-none shadow-sm flex items-center justify-center gap-2 border border-emerald-200 hover:border-emerald-500"><svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg> Интерактивная карта</button>`;
+                    // НОВАЯ КНОПКА: Перебрасывает на общую карту и центрируется на участке
+                    mapBtn = `<button onclick="focusOnTerritoryOnMap('${terr.number}')" class="w-full mt-3 bg-slate-50 hover:bg-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg transition-colors outline-none shadow-sm flex items-center justify-center gap-2 border border-slate-200">Показать на карте <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg></button>`;
                 } else if (mapData && mapData.url) {
+                    // СТАРАЯ КНОПКА: Остается как есть, если это просто ссылка на сторонний сайт
                     mapBtn = `<button onclick="window.open('${mapData.url}', '_blank')" class="w-full mt-3 bg-slate-50 hover:bg-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg transition-colors outline-none shadow-sm flex items-center justify-center gap-2 border border-slate-200"><svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg> Открыть ссылку</button>`;
                 }
 
