@@ -3,7 +3,7 @@
   "short_name": "GRO-UP",
   "description": "Приложение для нашего собрания",
   "start_url": "./index.html",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#cbd5e1",
   "theme_color": "#0f172a",
   "icons": [
