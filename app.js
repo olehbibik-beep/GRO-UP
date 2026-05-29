@@ -1694,16 +1694,25 @@ window.renderGlobalAvailableMap = () => {
                     background: transparent !important;
                     border: none !important;
                     box-shadow: none !important;
-                    color: #0f172a; /* Почти черный / Темно-синий */
+                    color: #0f172a; 
                     font-weight: 900;
                     font-size: 15px;
-                    /* Белое свечение вокруг цифр, чтобы не сливались с картой */
                     text-shadow: 0px 0px 4px rgba(255,255,255,1), 0px 0px 2px rgba(255,255,255,1);
                 }
                 .terr-map-label::before { display: none !important; } 
             </style>`;
             document.head.insertAdjacentHTML('beforeend', styleMarkup);
         }
+
+        const maskOuter = [[90, -180], [90, 180], [-90, 180], [-90, -180]];
+        const maskHoles = window.allMapPolygons.map(m => m.polygon.map(p => [p.lat, p.lng]));
+        
+        L.polygon([maskOuter, ...maskHoles], {
+            fillColor: '#0f172a',
+            fillOpacity: 0.4,
+            stroke: false,
+            interactive: false
+        }).addTo(globalAvailableLayerGroup);
 
         let bounds = L.latLngBounds();
         let hasPolys = false;
@@ -1713,17 +1722,27 @@ window.renderGlobalAvailableMap = () => {
             hasPolys = true;
             const latlngs = m.polygon.map(p => [p.lat, p.lng]);
             
-            let polyColor = '#94a3b8'; 
-            let fillOp = 0.4;
+            // НОВЫЕ ЦВЕТА УЧАСТКОВ
+            let polyColor = '#10b981'; // По умолчанию зеленый
+            let fillOp = 0.45;
             let statusText = '';
             let btnHtml = '';
 
-            if (m.status === 'active' || m.status === 'cooldown') {
-                statusText = m.status === 'active' ? '<span class="text-slate-500">Уже в работе</span>' : '<span class="text-purple-500">Пройден (на отдыхе)</span>';
-                polyColor = '#64748b'; 
+            if (m.status === 'active') {
+                statusText = '<span class="text-slate-500">Уже в работе</span>';
+                polyColor = '#1e293b'; // ОЧЕНЬ ТЕМНЫЙ для участков в работе
+                fillOp = 0.65;         // Более плотная заливка
+            } else if (m.status === 'cooldown') {
+                statusText = '<span class="text-purple-500">Пройден (на отдыхе)</span>';
+                polyColor = '#64748b'; // Серый
                 fillOp = 0.5;
+            } else if (m.status === 'fire') {
+                statusText = '<span class="text-rose-500">Свободен (Рекомендуем)</span>';
+                polyColor = '#10b981'; // Изумрудный / Зеленый (как лого)
+                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             } else {
-                statusText = m.status === 'fire' ? '<span class="text-rose-500">Свободен (Рекомендуем)</span>' : '<span class="text-emerald-500">Свободен</span>';
+                statusText = '<span class="text-emerald-500">Свободен</span>';
+                polyColor = '#10b981'; // Изумрудный / Зеленый (как лого)
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             }
 
@@ -1738,7 +1757,6 @@ window.renderGlobalAvailableMap = () => {
 
             const poly = L.polygon(latlngs, defaultStyle);
 
-            // Добавляем черный номер по центру
             poly.bindTooltip(String(m.num), {
                 permanent: true,
                 direction: 'center',
@@ -1760,10 +1778,9 @@ window.renderGlobalAvailableMap = () => {
                     currentlyHighlighted.poly.setStyle(currentlyHighlighted.defaultStyle);
                 }
                 
-                // Делаем линию темной при клике, так как на белой карте белая пунктирная линия почти не видна
                 poly.setStyle({
                     fillOpacity: 0.0,
-                    color: '#334155',    // Темно-серая граница при клике для контраста
+                    color: '#334155',    
                     weight: 2,           
                     dashArray: '6, 6'    
                 });
