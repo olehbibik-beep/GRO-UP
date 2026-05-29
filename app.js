@@ -1808,6 +1808,7 @@ window.renderAvailableTerritoriesUI = () => {
     const takenMaps = window.activeTerritoriesCount || 0;
     const completedMaps = window.cooldownTerritoriesCount || 0; 
 
+    // Оставляем красивую статистику сверху
     let statsHtml = `
     <div class="grid grid-cols-4 gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-2.5 mb-4 text-center text-[8px] font-black uppercase tracking-widest text-slate-500 shadow-inner shrink-0">
         <div>
@@ -1835,30 +1836,33 @@ window.renderAvailableTerritoriesUI = () => {
         gridHtml = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">';
         filtered.forEach(m => {
             const hasPolygon = !!m.polygon;
-            const cityHtml = m.city ? `<span class="block font-black text-lg text-slate-600 truncate leading-tight">${m.city}</span>` : '';
+            const cityStr = m.city ? m.city : 'Без города';
             
-            let viewBtnHtml = '';
+            // Логика: если есть координаты - летим на общую карту. Если просто ссылка - открываем в браузере.
+            let clickAction = '';
             if (hasPolygon) {
-                viewBtnHtml = `<button onclick="openTerritoryMap('${m.num}')" class="w-14 h-12 shrink-0 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 font-black rounded-xl transition-colors outline-none shadow-sm flex justify-center items-center border border-emerald-200" title="Интерактивная карта"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></button>`;
+                clickAction = `onclick="focusOnTerritoryOnMap('${m.num}')"`;
             } else if (m.url) {
-                viewBtnHtml = `<button onclick="window.open('${m.url}', '_blank')" class="w-14 h-12 shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black rounded-xl transition-colors outline-none shadow-sm flex justify-center items-center border border-slate-200" title="Открыть ссылку"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg></button>`;
+                clickAction = `onclick="window.open('${m.url}', '_blank')"`;
             } else {
-                viewBtnHtml = `<div class="w-14 h-12 shrink-0 bg-slate-50 text-slate-300 rounded-xl flex items-center justify-center border border-slate-100"><svg class="w-5 h-5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg></div>`;
+                clickAction = `onclick="alert('Для этого участка нет карты или ссылки')"`;
             }
 
+            // НОВАЯ КОМПАКТНАЯ КАРТОЧКА (Вся работает как кнопка)
             gridHtml += `
-            <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between gap-4">
-                <div>
-                    <div class="flex items-center gap-1.5 mb-1">
-                        <span class="bg-slate-800 text-white font-mono font-black text-sm px-2.5 py-1 rounded-lg leading-none shadow-sm">№ ${m.num}</span>
-                    </div>
-                    ${cityHtml}
+            <div ${clickAction} class="bg-white border border-slate-200 rounded-xl p-4 flex justify-between items-center shadow-sm cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all active:scale-[0.98] group">
+                
+                <div class="flex flex-col text-left pr-2">
+                    <span class="bg-slate-800 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-md w-max mb-1.5 shadow-sm">№ ${m.num}</span>
+                    <span class="font-black text-slate-700 text-sm md:text-base leading-tight">${cityStr}</span>
                 </div>
                 
-                <div class="flex items-center gap-2 mt-auto">
-                    <button onclick="takeTerritory(${m.num}, this)" class="flex-grow bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-widest py-3.5 rounded-xl transition-colors outline-none shadow-sm active:scale-95">Взять</button>
-                    ${viewBtnHtml}
+                <div class="w-10 h-10 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center shrink-0 border border-slate-200 group-hover:bg-emerald-50 group-hover:text-emerald-600 group-hover:border-emerald-200 transition-colors">
+                    <svg class="w-5 h-5 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
                 </div>
+                
             </div>`;
         });
         gridHtml += '</div>';
