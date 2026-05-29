@@ -1690,6 +1690,9 @@ window.renderGlobalAvailableMap = () => {
 
         let bounds = L.latLngBounds();
         let hasPolys = false;
+        
+        // Переменная для хранения текущего выделенного участка
+        let currentlyHighlighted = null; 
 
         window.allMapPolygons.forEach(m => {
             hasPolys = true;
@@ -1708,19 +1711,22 @@ window.renderGlobalAvailableMap = () => {
             } else if (m.status === 'fire') {
                 statusText = '<span class="text-rose-500">Свободен (Рекомендуем)</span>';
                 polyColor = '#56bc7b'; 
-                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2">ВЗЯТЬ УЧАСТОК</button>`;
+                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             } else if (m.status === 'available') {
                 statusText = '<span class="text-emerald-500">Свободен</span>';
                 polyColor = '#56bc7b'; 
-                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2">ВЗЯТЬ УЧАСТОК</button>`;
+                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             }
 
-            const poly = L.polygon(latlngs, {
+            // Базовый стиль участка (сохраняем, чтобы потом вернуть)
+            const defaultStyle = {
                 color: polyColor,
                 fillColor: polyColor,
                 fillOpacity: (m.status === 'active' || m.status === 'cooldown') ? 0.3 : 0.45, 
                 weight: 2
-            });
+            };
+
+            const poly = L.polygon(latlngs, defaultStyle);
 
             const popupHtml = `
                 <div class="text-center p-1.5 min-w-[140px] font-sans">
@@ -1731,6 +1737,31 @@ window.renderGlobalAvailableMap = () => {
                 </div>
             `;
             poly.bindPopup(popupHtml);
+
+            // === МАГИЯ ВЫДЕЛЕНИЯ ===
+            // При клике: сбрасываем старое выделение и подсвечиваем новый полигон
+            poly.on('click', function () {
+                if (currentlyHighlighted) {
+                    currentlyHighlighted.poly.setStyle(currentlyHighlighted.defaultStyle);
+                }
+                
+                poly.setStyle({
+                    weight: 4,               // Делаем границу толще
+                    color: '#4f46e5',        // Ярко-синяя граница
+                    fillOpacity: 0.75        // Делаем заливку насыщеннее
+                });
+                
+                currentlyHighlighted = { poly: poly, defaultStyle: defaultStyle };
+            });
+
+            // Когда окошко закрывается — возвращаем обычный цвет
+            poly.on('popupclose', function () {
+                poly.setStyle(defaultStyle);
+                if (currentlyHighlighted && currentlyHighlighted.poly === poly) {
+                    currentlyHighlighted = null;
+                }
+            });
+
             poly.addTo(globalAvailableLayerGroup);
             bounds.extend(poly.getBounds());
         });
