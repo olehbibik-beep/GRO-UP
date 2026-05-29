@@ -1215,7 +1215,7 @@ function loadPersonalData() {
                 const hasPolygon = mapData && mapData.polygon;
                 const cityStr = mapData && mapData.city && mapData.city !== "Без города" ? `<span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mt-1">${mapData.city}</span>` : '';
 
-let mapBtn = '';
+ let mapBtn = '';
                 if (hasPolygon) {
                     // НОВАЯ КНОПКА: Перебрасывает на общую карту и центрируется на участке
                     mapBtn = `<button onclick="focusOnTerritoryOnMap('${terr.number}')" class="w-full mt-3 bg-slate-50 hover:bg-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg transition-colors outline-none shadow-sm flex items-center justify-center gap-2 border border-slate-200">Показать на карте <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg></button>`;
@@ -1640,31 +1640,36 @@ window.toggleAvailableView = () => {
 
 // Функция переброса на общую карту с выделением участка
 window.focusOnTerritoryOnMap = (numStr) => {
-    // Открываем модалку с общей картой
+    // 1. Убеждаемся, что модальное окно открыто
     document.getElementById('take-terr-modal').classList.replace('hidden', 'flex');
     
-    // Убеждаемся что включен вид карты, а не списка (если кнопка "Списком" активна)
+    // 2. ПРИНУДИТЕЛЬНО ПРЯЧЕМ СПИСОК И ПОКАЗЫВАЕМ КАРТУ
     const listEl = document.getElementById('available-terr-list');
     const mapEl = document.getElementById('available-terr-map-container');
+    const toggleBtn = document.getElementById('toggle-terr-view-btn');
+    
     if (listEl && mapEl) {
         listEl.classList.add('hidden');
         mapEl.classList.remove('hidden');
     }
     
-    // Даем карте отрендериться и затем летим к участку
+    // Меняем иконку кнопки в шапке обратно на "Списком"
+    if (toggleBtn) {
+        toggleBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg> Списком`;
+    }
+    
+    // 3. Плавно летим к участку и "кликаем" по нему
     setTimeout(() => {
         if(globalAvailableMapInstance) globalAvailableMapInstance.invalidateSize();
         
         const poly = window.terrMapPolygons[numStr];
         if (poly) {
-            // Летим к границам участка
             globalAvailableMapInstance.flyToBounds(poly.getBounds(), { padding: [30, 30], duration: 0.5 });
-            // Программно кликаем, чтобы участок выделился (пунктиром) и открылась плашка
-            poly.fire('click'); 
+            poly.fire('click'); // Имитируем клик, чтобы открылась плашка "Взять участок"
         } else {
             alert("Участок не найден на карте!");
         }
-    }, 300);
+    }, 100);
 };
 
 // === ФУНКЦИЯ 2: Общая карта свободных участков ===
