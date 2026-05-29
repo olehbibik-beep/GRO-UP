@@ -1674,9 +1674,9 @@ window.toggleAvailableView = () => {
     }
 };
 
+// === ФУНКЦИЯ 2: Общая карта свободных участков ===
 window.renderGlobalAvailableMap = () => {
     if (!globalAvailableMapInstance) {
-        // Убрали надпись Leaflet и добавили НОВЫЙ ЧИСТЫЙ СТИЛЬ КАРТЫ
         globalAvailableMapInstance = L.map('available-terr-map', { attributionControl: false }).setView([49.974, 12.700], 12);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(globalAvailableMapInstance);
     }
@@ -1686,14 +1686,31 @@ window.renderGlobalAvailableMap = () => {
         if (globalAvailableLayerGroup) globalAvailableMapInstance.removeLayer(globalAvailableLayerGroup);
         globalAvailableLayerGroup = L.layerGroup().addTo(globalAvailableMapInstance);
 
-        // Маска "Весь мир" с вырезанными дырками участков
+        // === ВНЕДРЯЕМ СТИЛИ ДЛЯ ЦИФР ПОВЕРХ КАРТЫ ===
+        if (!document.getElementById('terr-label-style')) {
+            const styleMarkup = `
+            <style id="terr-label-style">
+                .terr-map-label {
+                    background: transparent !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    color: #ffffff;
+                    font-weight: 900;
+                    font-size: 14px;
+                    text-shadow: 0px 0px 4px rgba(0,0,0,0.9), 0px 0px 2px rgba(0,0,0,0.9);
+                }
+                .terr-map-label::before { display: none !important; } /* Убираем стандартный "хвостик" */
+            </style>`;
+            document.head.insertAdjacentHTML('beforeend', styleMarkup);
+        }
+
+        // Маска "Весь мир" с вырезанными дырками
         const maskOuter = [[90, -180], [90, 180], [-90, 180], [-90, -180]];
         const maskHoles = window.allMapPolygons.map(m => m.polygon.map(p => [p.lat, p.lng]));
         
-        // НОВАЯ ТЕМНАЯ ЗАЛИВКА ВМЕСТО ШТРИХОВКИ
         L.polygon([maskOuter, ...maskHoles], {
-            fillColor: '#0f172a', // Темно-синий/почти черный цвет
-            fillOpacity: 0.4,     // Степень "затемнения" всего остального города
+            fillColor: '#0f172a',
+            fillOpacity: 0.4,
             stroke: false,
             interactive: false
         }).addTo(globalAvailableLayerGroup);
@@ -1731,6 +1748,13 @@ window.renderGlobalAvailableMap = () => {
 
             const poly = L.polygon(latlngs, defaultStyle);
 
+            // === МАГИЯ ЗДЕСЬ: ДОБАВЛЯЕМ НОМЕР ПРЯМО В ЦЕНТР УЧАСТКА ===
+            poly.bindTooltip(String(m.num), {
+                permanent: true,
+                direction: 'center',
+                className: 'terr-map-label'
+            });
+
             const popupHtml = `
                 <div class="text-center p-1.5 min-w-[140px] font-sans">
                     <span class="block font-black text-2xl text-slate-800 leading-none mb-1">№ ${m.num}</span>
@@ -1747,10 +1771,10 @@ window.renderGlobalAvailableMap = () => {
                 }
                 
                 poly.setStyle({
-                    fillOpacity: 0.0,    // Полностью прозрачный
-                    color: '#ffffff',    // Белая рамка
+                    fillOpacity: 0.0,
+                    color: '#ffffff',
                     weight: 2,           
-                    dashArray: '6, 6'    // Пунктир при выборе
+                    dashArray: '6, 6'    
                 });
                 
                 currentlyHighlighted = { poly: poly, defaultStyle: defaultStyle };
