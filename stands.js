@@ -44,7 +44,7 @@ window.showToast = (message) => {
     const container = document.getElementById('toast-container');
     if (!container) return;
     const toast = document.createElement('div');
-    toast.className = `bg-slate-800 text-white px-4 py-3 rounded-md text-xs font-bold text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
+    toast.className = `bg-slate-800 text-white px-5 py-4 rounded-xl shadow-2xl text-sm font-black text-center transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
     toast.innerText = message;
     container.appendChild(toast);
     requestAnimationFrame(() => toast.classList.remove('-translate-y-10', 'opacity-0'));
@@ -91,10 +91,12 @@ let unsubscribeSettings = null;
 let currentSlotsData = {};
 let currentBlockedSlots = [];
 
-// НОВОЕ ВРЕМЯ 10:00 - 18:00
+// НОВОЕ ВРЕМЯ 06:00 - 20:00 (Полностью совпадает с админкой)
 const TIME_SLOTS = [
+    "06:00 - 07:00", "07:00 - 08:00", "08:00 - 09:00", "09:00 - 10:00",
     "10:00 - 11:00", "11:00 - 12:00", "12:00 - 13:00", "13:00 - 14:00",
-    "14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00"
+    "14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00",
+    "18:00 - 19:00", "19:00 - 20:00"
 ];
 
 window.selectLocation = (loc) => {
