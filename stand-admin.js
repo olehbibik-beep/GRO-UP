@@ -3,55 +3,25 @@ import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDoc, u
 
 const dict = {
     ru: {
-        "stand_admin_title": "Стенды (Админ)",
-        "btn_back": "Назад",
-        "requests_title": "Заявки на стенд",
-        "publishers_title": "Возвещатели",
-        "schedule_title": "Блокировка часов",
-        "stats_title": "Статистика за месяц (текущая локация)",
-        "click_to_block": "Нажмите, чтобы закрыть/открыть час",
-        "copy_month": "На месяц",
-        "no_requests": "Нет новых заявок",
-        "no_approved": "Пока нет одобренных возвещателей",
-        "btn_approve": "Одобрить",
-        "btn_reject": "Отклонить",
-        "btn_revoke": "Забрать",
-        "btn_grant": "Выдать",
-        "confirm_revoke": "Точно забрать допуск к стенду у этого возвещателя?",
-        "success": "Успешно!",
-        "access_granted": "Доступ предоставлен! ✅",
-        "access_revoked": "Доступ закрыт 🚫",
-        "error_general": "Произошла ошибка!",
-        "active_slot": "Открыто",
-        "blocked_slot": "Заблокировано",
-        "total_shifts": "Смен: ",
-        "months": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"],
+        "stand_admin_title": "Стенды (Админ)", "btn_back": "Назад", "requests_title": "Заявки на стенд",
+        "publishers_title": "Возвещатели", "schedule_title": "Блокировка часов", "stats_title": "Статистика за месяц (текущая локация)",
+        "click_to_block": "Нажмите, чтобы закрыть/открыть час", "copy_month": "На месяц", "no_requests": "Нет новых заявок",
+        "no_approved": "Пока нет одобренных возвещателей", "btn_approve": "Одобрить на стенд", "btn_reject": "Отклонить",
+        "btn_revoke": "Забрать допуск", "btn_grant": "Одобрить на стенд", "confirm_revoke": "Точно забрать допуск к стенду у этого возвещателя?",
+        "success": "Успешно!", "access_granted": "Доступ предоставлен! ✅", "access_revoked": "Доступ закрыт 🚫",
+        "error_general": "Произошла ошибка!", "active_slot": "Открыто", "blocked_slot": "Заблокировано",
+        "total_shifts": "Смен: ", "months": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"],
         "days": ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
     },
     cs: {
-        "stand_admin_title": "Stojany (Admin)",
-        "btn_back": "Zpět",
-        "requests_title": "Žádosti o stojan",
-        "publishers_title": "Zvěstovatelé",
-        "schedule_title": "Blokování hodin",
-        "stats_title": "Statistika za měsíc (aktuální lokace)",
-        "click_to_block": "Kliknutím zavřete/otevřete",
-        "copy_month": "Na měsíc",
-        "no_requests": "Žádné nové žádosti",
-        "no_approved": "Zatím žádní schválení",
-        "btn_approve": "Schválit",
-        "btn_reject": "Zamítnout",
-        "btn_revoke": "Odebrat",
-        "btn_grant": "Vydat",
-        "confirm_revoke": "Opravdu odebrat přístup ke stojanu?",
-        "success": "Úspěšně!",
-        "access_granted": "Přístup udělen! ✅",
-        "access_revoked": "Přístup odebrán 🚫",
-        "error_general": "Došlo k chybě!",
-        "active_slot": "Otevřeno",
-        "blocked_slot": "Zablokováno",
-        "total_shifts": "Služeb: ",
-        "months": ["Led", "Úno", "Bře", "Dub", "Kvě", "Čvn", "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro"],
+        "stand_admin_title": "Stojany (Admin)", "btn_back": "Zpět", "requests_title": "Žádosti o stojan",
+        "publishers_title": "Zvěstovatelé", "schedule_title": "Blokování hodin", "stats_title": "Statistika za měsíc (aktuální lokace)",
+        "click_to_block": "Kliknutím zavřete/otevřete", "copy_month": "Na měsíc", "no_requests": "Žádné nové žádosti",
+        "no_approved": "Zatím žádní schválení", "btn_approve": "Schválit", "btn_reject": "Zamítnout",
+        "btn_revoke": "Odebrat přístup", "btn_grant": "Udělit přístup", "confirm_revoke": "Opravdu odebrat přístup ke stojanu?",
+        "success": "Úspěšně!", "access_granted": "Přístup udělen! ✅", "access_revoked": "Přístup odebrán 🚫",
+        "error_general": "Došlo k chybě!", "active_slot": "Otevřeno", "blocked_slot": "Zablokováno",
+        "total_shifts": "Služeb: ", "months": ["Led", "Úno", "Bře", "Dub", "Kvě", "Čvn", "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro"],
         "days": ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"]
     }
 };
@@ -98,6 +68,8 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
 });
 
 let activeLocation = "ML - CupVital";
+window.activeUsersCache = [];
+window.standStatsCache = {};
 
 window.selectLocation = (loc) => {
     document.querySelectorAll('.loc-btn').forEach(btn => btn.classList.remove('active', 'bg-[#1e293b]', 'text-white'));
@@ -164,44 +136,82 @@ window.approveStand = async (reqId, targetUserId) => {
 window.rejectStand = async (reqId) => { try { await deleteDoc(doc(db, "requests", reqId)); } catch (e) {} };
 
 
-// 2. 🔥 НОВЫЙ БЛОК: СПИСОК ВСЕХ ВОЗВЕЩАТЕЛЕЙ С КНОПКАМИ ВЫДАТЬ/ЗАБРАТЬ
+// 2. ВОЗВЕЩАТЕЛИ (Большие карточки с индикатором)
 onSnapshot(query(collection(db, "users"), where("status", "==", "active")), (snapshot) => {
+    window.activeUsersCache = [];
+    snapshot.forEach(d => window.activeUsersCache.push({ id: d.id, ...d.data() }));
+    window.activeUsersCache.sort((a,b) => a.name.localeCompare(b.name));
+    renderUsersList();
+});
+
+window.renderUsersList = () => {
     const container = document.getElementById('users-list');
     if (!container) return;
     let html = '';
-    
-    const users = [];
-    snapshot.forEach(d => users.push({ id: d.id, ...d.data() }));
-    users.sort((a,b) => a.name.localeCompare(b.name));
 
-    users.forEach(u => {
+    window.activeUsersCache.forEach(u => {
         const roles = u.roles || [];
         const hasStand = roles.includes("Служение со стендом") || roles.includes("Владелец") || roles.includes("Админ");
+        const groupStr = u.group && u.group !== "Без группы" ? u.group : "-";
         
-        // Значок СТЕНД
+        // Получаем кол-во служений в этом месяце из кэша статистики
+        const shiftsCount = window.standStatsCache[u.name] || 0;
+        
+        // Расчет прогресс-бара (допустим, 12 смен - это 100% визуальной шкалы)
+        let progressPercent = (shiftsCount / 12) * 100;
+        if (progressPercent > 100) progressPercent = 100;
+        
+        let progressColor = 'bg-emerald-500';
+        if (shiftsCount >= 10) progressColor = 'bg-rose-500';
+        else if (shiftsCount >= 5) progressColor = 'bg-amber-500';
+
         const badge = hasStand 
-            ? `<span class="bg-indigo-100 border border-indigo-200 text-indigo-600 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-sm shrink-0">СТЕНД</span>` 
-            : ``;
-        
-        // Кнопка
-        const btnColor = hasStand ? "text-rose-500 bg-rose-50 hover:bg-rose-100 border-rose-200" : "text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border-emerald-200";
-        const btnText = hasStand ? window.t('btn_revoke') : window.t('btn_grant');
+            ? `<span class="bg-indigo-100 border border-indigo-200 text-indigo-600 text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-md shadow-sm shrink-0">ДОПУСК ЕСТЬ</span>` 
+            : `<span class="bg-slate-100 border border-slate-200 text-slate-400 text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-md shadow-sm shrink-0">НЕТ ДОПУСКА</span>`;
 
         html += `
-            <div class="user-row bg-slate-50 border border-slate-100 rounded-lg p-2.5 flex justify-between items-center transition-colors hover:border-slate-300 shadow-sm" data-search="${u.name.toLowerCase()}">
-                <div class="flex items-center gap-2 min-w-0 pr-2">
-                    <span class="font-bold text-slate-700 text-xs truncate">${u.name}</span>
+            <div class="user-row bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3 transition-colors shadow-sm hover:shadow-md" data-search="${u.name.toLowerCase()}">
+                
+                <div class="flex justify-between items-start gap-2">
+                    <div class="min-w-0">
+                        <span class="font-black text-slate-800 text-sm md:text-base block truncate">${u.name}</span>
+                        <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Группа: <span class="text-slate-600">${groupStr}</span></span>
+                    </div>
                     ${badge}
                 </div>
-                <button onclick="toggleStandRole('${u.id}', ${hasStand})" class="shrink-0 px-3 py-1.5 rounded border text-[9px] font-black uppercase tracking-widest outline-none transition-colors shadow-sm ${btnColor}">
-                    ${btnText}
-                </button>
+
+                <div class="w-full mt-1">
+                    <div class="flex justify-between text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                        <span>Служений в этом месяце:</span>
+                        <span class="text-slate-600">${shiftsCount}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex shadow-inner">
+                        <div class="${progressColor} h-1.5 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
+                    </div>
+                </div>
+
+                <div class="mt-2">
+                    ${hasStand
+                        ? `<button onclick="toggleStandRole('${u.id}', true)" class="w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-black uppercase tracking-widest text-[10px] rounded-lg border border-rose-200 transition-colors outline-none shadow-sm">Забрать допуск</button>`
+                        : `<button onclick="toggleStandRole('${u.id}', false)" class="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 font-black uppercase tracking-widest text-[10px] rounded-lg border border-emerald-200 transition-colors outline-none shadow-sm">Одобрить на стенд</button>`
+                    }
+                </div>
             </div>
         `;
     });
     
     container.innerHTML = html || `<p class="col-span-full text-slate-400 text-xs text-center py-4 italic">${window.t('no_approved')}</p>`;
-});
+
+    // Повторно применяем поиск, если он активен
+    const searchEl = document.getElementById('search-user');
+    if (searchEl && searchEl.value) {
+        const term = searchEl.value.toLowerCase();
+        document.querySelectorAll('.user-row').forEach(row => {
+            if (row.getAttribute('data-search').includes(term)) row.style.display = '';
+            else row.style.display = 'none';
+        });
+    }
+};
 
 window.toggleStandRole = async (targetUserId, currentlyHasAccess) => {
     try {
@@ -239,14 +249,16 @@ if (searchEl) {
 }
 
 
-// РАСПИСАНИЕ
+// 3. РАСПИСАНИЕ (ОБНОВЛЕНО ВРЕМЯ С 06:00 до 20:00)
 let selectedAdminDateStr = "";
 let currentAdminDayNum = null;
 let currentBlockedCache = [];
 
 const TIME_SLOTS = [
+    "06:00 - 07:00", "07:00 - 08:00", "08:00 - 09:00", "09:00 - 10:00",
     "10:00 - 11:00", "11:00 - 12:00", "12:00 - 13:00", "13:00 - 14:00",
-    "14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00"
+    "14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00",
+    "18:00 - 19:00", "19:00 - 20:00"
 ];
 let unsubscribeSettings = null;
 
@@ -306,7 +318,7 @@ function loadDaySettings() {
     unsubscribeSettings = onSnapshot(doc(db, "stand_settings", settingsDocId), (docSnap) => {
         let blockedSlots = [];
         if (docSnap.exists()) { blockedSlots = docSnap.data().blocked || []; }
-        currentBlockedCache = blockedSlots; // Сохраняем для шаблона
+        currentBlockedCache = blockedSlots; 
 
         let html = '';
         TIME_SLOTS.forEach(time => {
@@ -349,7 +361,6 @@ window.toggleSlotBlock = async (time, currentlyBlocked) => {
     } catch (e) { console.error(e); }
 };
 
-// 🔥 МАССОВОЕ КОПИРОВАНИЕ ШАБЛОНА
 window.applyScheduleToAll = async () => {
     const dayName = window.t('days')[currentAdminDayNum];
     if (!confirm(`Применить текущие настройки блокировки ко всем таким же дням недели (${dayName}) на 30 дней вперед для локации ${activeLocation}?`)) return;
@@ -375,7 +386,7 @@ window.applyScheduleToAll = async () => {
     }
 };
 
-// СТАТИСТИКА
+// 4. СТАТИСТИКА
 function loadStatistics() {
     const today = new Date();
     const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
@@ -390,6 +401,10 @@ function loadStatistics() {
             if (!stats[data.userName]) stats[data.userName] = 0;
             stats[data.userName]++;
         });
+        
+        // Сохраняем статистику глобально и обновляем карточки возвещателей
+        window.standStatsCache = stats;
+        renderUsersList();
 
         const sortedStats = Object.keys(stats).map(name => ({ name, count: stats[name] })).sort((a, b) => b.count - a.count);
 
@@ -399,7 +414,6 @@ function loadStatistics() {
         } else {
             sortedStats.forEach((s, index) => {
                 const count = s.count;
-                // Цветовая шкала 0-10, 10-20, 20+
                 let progressColor = 'bg-emerald-500';
                 let txtColor = 'text-emerald-700';
                 if (count >= 20) { progressColor = 'bg-rose-500'; txtColor = 'text-rose-700'; }
@@ -429,7 +443,6 @@ function loadStatistics() {
     });
 }
 
-// 🔥 ОЧИСТКА СТАТИСТИКИ
 window.clearStats = async () => {
     if (!confirm(`Вы точно хотите удалить все записи стендов за этот месяц для локации ${activeLocation}? Это действие нельзя отменить!`)) return;
 
