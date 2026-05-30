@@ -374,60 +374,27 @@ window.applyScheduleToAll = async () => {
     }
 };
 
-// 4. СТАТИСТИКА
+// 4. СТАТИСТИКА (ГЛОБАЛЬНАЯ ПО ВСЕМ СТЕНДАМ)
 function loadStatistics() {
     const today = new Date();
     const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
-    const statsQuery = query(collection(db, "stands"), where("date", ">=", firstDayStr), where("location", "==", activeLocation));
+    
+    // ИЗМЕНЕНИЕ: Убрали where("location", "==", activeLocation)
+    // Теперь скрипт вытягивает абсолютно ВСЕ записи на стендах за этот месяц
+    const statsQuery = query(collection(db, "stands"), where("date", ">=", firstDayStr));
     
     onSnapshot(statsQuery, (snapshot) => {
-        const container = document.getElementById('stats-container');
         let stats = {};
         
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
             if (!stats[data.userName]) stats[data.userName] = 0;
-            stats[data.userName]++;
+            stats[data.userName]++; // Каждый записанный слот = 1 час
         });
         
-        // Сохраняем статистику глобально и обновляем карточки возвещателей
+        // Сохраняем статистику глобально и обновляем список пользователей
         window.standStatsCache = stats;
         renderUsersList();
-
-        const sortedStats = Object.keys(stats).map(name => ({ name, count: stats[name] })).sort((a, b) => b.count - a.count);
-
-        let html = '';
-        if (sortedStats.length === 0) {
-            html = `<p class="text-slate-400 text-xs italic text-center py-2">Записей на ${activeLocation} в этом месяце еще нет</p>`;
-        } else {
-            sortedStats.forEach((s, index) => {
-                const count = s.count;
-                let progressColor = 'bg-emerald-500';
-                let txtColor = 'text-emerald-700';
-                if (count >= 20) { progressColor = 'bg-rose-500'; txtColor = 'text-rose-700'; }
-                else if (count >= 10) { progressColor = 'bg-amber-500'; txtColor = 'text-amber-700'; }
-                
-                let progressPercent = (count / 50) * 100;
-                if (progressPercent > 100) progressPercent = 100;
-
-                html += `
-                    <div class="flex flex-col p-3 rounded-md border border-slate-100 bg-slate-50 mb-2">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-bold text-sm text-slate-800 truncate pr-2">${index < 3 ? '⭐ ' : ''}${s.name}</span>
-                            <span class="flex items-center gap-1.5 shrink-0">
-                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('total_shifts')}</span>
-                                <span class="bg-white border border-slate-200 px-2 py-0.5 rounded ${txtColor} font-black text-xs min-w-[24px] text-center shadow-sm">${count}</span>
-                            </span>
-                        </div>
-                        <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden flex">
-                            <div class="${progressColor} h-1.5 rounded-full transition-all" style="width: ${progressPercent}%"></div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-        
-        if (container) container.innerHTML = html;
     });
 }
 
