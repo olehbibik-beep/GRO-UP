@@ -1677,6 +1677,11 @@ window.renderGlobalAvailableMap = () => {
     if (!globalAvailableMapInstance) {
         globalAvailableMapInstance = L.map('available-terr-map', { attributionControl: false }).setView([49.974, 12.700], 12);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(globalAvailableMapInstance);
+        
+        // НОВОЕ: Прятать окошко (плашку) при любом сдвиге или зуме карты, чтобы не мешалось
+        globalAvailableMapInstance.on('movestart zoomstart', () => {
+            globalAvailableMapInstance.closePopup();
+        });
     }
 
     setTimeout(() => {
@@ -1684,20 +1689,18 @@ window.renderGlobalAvailableMap = () => {
         if (globalAvailableLayerGroup) globalAvailableMapInstance.removeLayer(globalAvailableLayerGroup);
         globalAvailableLayerGroup = L.layerGroup().addTo(globalAvailableMapInstance);
 
-        // === НОВЫЙ ДИЗАЙН ЦИФР (Темно-серый кружок) ===
         if (!document.getElementById('terr-label-style')) {
             const styleMarkup = `
             <style id="terr-label-style">
                 .terr-map-label {
-                    background: #334155 !important; /* Темно-серый цвет */
-                    border: 2px solid #ffffff !important; /* Белая окантовка для контраста */
-                    border-radius: 50% !important; /* Делает идеальный круг */
+                    background: #334155 !important; 
+                    border: 2px solid #ffffff !important; 
+                    border-radius: 50% !important; 
                     color: #ffffff !important;
                     font-weight: 900;
                     font-size: 12px;
                     text-shadow: none !important;
                     box-shadow: 0px 2px 4px rgba(0,0,0,0.3) !important;
-                    /* Жесткие размеры для круга */
                     width: 28px !important;
                     height: 28px !important;
                     line-height: 24px !important;
@@ -1720,28 +1723,29 @@ window.renderGlobalAvailableMap = () => {
             hasPolys = true;
             const latlngs = m.polygon.map(p => [p.lat, p.lng]);
             
-            // НОВАЯ ЛОГИКА ДИЗАЙНА УЧАСТКОВ
+            // БАЗОВЫЕ НАСТРОЙКИ (Для свободных участков)
             let polyColor = '#64748b'; // Серый цвет границы
-            let fillOp = 0.0;          // ПОЛНОСТЬЮ ПРОЗРАЧНЫЙ ФОН
-            let dashArr = '6, 6';      // Пунктир
-            let weight = 2;            // Толщина линии
+            let fillOp = 0.0;          // Свободные участки полностью прозрачные
+            let dashArr = '3, 4';      // ОЧЕНЬ МЕЛКИЙ ПУНКТИР
+            let weight = 2;            
             
             let statusText = '';
             let btnHtml = '';
 
-            // Немного отличаем занятые участки, но оставляем их прозрачными
+            // ЗАДАЕМ СТАТУСЫ, ЦВЕТА И ЭМОДЗИ
             if (m.status === 'active') {
-                statusText = '<span class="text-slate-500">Уже в работе</span>';
-                polyColor = '#0f172a'; // Почти черный пунктир для занятых
-                fillOp = 0.05;         // Еле-еле заметная тень
+                statusText = '<span class="text-slate-500 flex items-center justify-center gap-1.5 mt-2 text-[11px] bg-slate-100 py-1 rounded-md">🚧 Копаем... 👷‍♂️</span>';
+                polyColor = '#475569'; // Темно-серый
+                fillOp = 0.25;         // Серая заливка для видности!
             } else if (m.status === 'cooldown') {
-                statusText = '<span class="text-purple-500">Пройден (на отдыхе)</span>';
+                statusText = '<span class="text-purple-500 flex items-center justify-center gap-1.5 mt-2 text-[11px] bg-purple-50 py-1 rounded-md">⏳ Спит... 🛌</span>';
                 polyColor = '#94a3b8'; // Светло-серый
+                fillOp = 0.2;          // Легкая серая заливка
             } else if (m.status === 'fire') {
-                statusText = '<span class="text-rose-500">Свободен (Рекомендуем)</span>';
+                statusText = '<span class="text-rose-500 mt-1 block">Свободен (Рекомендуем)</span>';
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             } else {
-                statusText = '<span class="text-emerald-500">Свободен</span>';
+                statusText = '<span class="text-emerald-500 mt-1 block">Свободен</span>';
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             }
 
@@ -1768,23 +1772,25 @@ window.renderGlobalAvailableMap = () => {
                 <div class="text-center p-1.5 min-w-[140px] font-sans">
                     <span class="block font-black text-2xl text-slate-800 leading-none mb-1">№ ${m.num}</span>
                     <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">${m.city}</span>
-                    <span class="block text-[9px] font-black uppercase tracking-widest border-t border-slate-100 pt-2">${statusText}</span>
+                    <span class="block text-[9px] font-black uppercase tracking-widest border-t border-slate-100 pt-1">${statusText}</span>
                     ${btnHtml}
                 </div>
             `;
-            poly.bindPopup(popupHtml);
+            
+            // НОВОЕ: autoPan: false отключает бесячий "прыжок" карты при клике на участок
+            poly.bindPopup(popupHtml, { autoPan: false });
 
-            // КЛИК: Делаем рамку зеленой и сплошной, чтобы выделить выбор
+            // КЛИК: Делаем рамку зеленой и сплошной (если участок свободен)
             poly.on('click', function () {
                 if (currentlyHighlighted) {
                     currentlyHighlighted.poly.setStyle(currentlyHighlighted.defaultStyle);
                 }
                 
                 poly.setStyle({
-                    fillOpacity: 0.15,   // Слегка заливаем зеленым
-                    color: '#10b981',    // Зеленая граница
-                    weight: 3,           // Делаем потолще
-                    dashArray: ''        // Убираем пунктир (сплошная)
+                    fillOpacity: Math.max(fillOp, 0.15), // Оставляем базовую заливку или добавляем зеленую
+                    color: '#10b981',    
+                    weight: 3,           
+                    dashArray: ''        
                 });
                 
                 currentlyHighlighted = { poly: poly, defaultStyle: defaultStyle };
