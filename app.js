@@ -1684,17 +1684,26 @@ window.renderGlobalAvailableMap = () => {
         if (globalAvailableLayerGroup) globalAvailableMapInstance.removeLayer(globalAvailableLayerGroup);
         globalAvailableLayerGroup = L.layerGroup().addTo(globalAvailableMapInstance);
 
+        // === НОВЫЙ ДИЗАЙН ЦИФР (Темно-серый кружок) ===
         if (!document.getElementById('terr-label-style')) {
             const styleMarkup = `
             <style id="terr-label-style">
                 .terr-map-label {
-                    background: transparent !important;
-                    border: none !important;
-                    box-shadow: none !important;
-                    color: #0f172a; 
+                    background: #334155 !important; /* Темно-серый цвет */
+                    border: 2px solid #ffffff !important; /* Белая окантовка для контраста */
+                    border-radius: 50% !important; /* Делает идеальный круг */
+                    color: #ffffff !important;
                     font-weight: 900;
-                    font-size: 15px;
-                    text-shadow: 0px 0px 4px rgba(255,255,255,1), 0px 0px 2px rgba(255,255,255,1);
+                    font-size: 12px;
+                    text-shadow: none !important;
+                    box-shadow: 0px 2px 4px rgba(0,0,0,0.3) !important;
+                    /* Жесткие размеры для круга */
+                    width: 28px !important;
+                    height: 28px !important;
+                    line-height: 24px !important;
+                    text-align: center !important;
+                    padding: 0 !important;
+                    white-space: nowrap !important;
                 }
                 .terr-map-label::before { display: none !important; } 
             </style>`;
@@ -1705,40 +1714,41 @@ window.renderGlobalAvailableMap = () => {
         let hasPolys = false;
         let currentlyHighlighted = null; 
         
-        // НОВОЕ: Объект для хранения участков (чтобы потом к ним перелетать)
         window.terrMapPolygons = {}; 
 
         window.allMapPolygons.forEach(m => {
             hasPolys = true;
             const latlngs = m.polygon.map(p => [p.lat, p.lng]);
             
-            let polyColor = '#10b981'; 
-            let fillOp = 0.45;
+            // НОВАЯ ЛОГИКА ДИЗАЙНА УЧАСТКОВ
+            let polyColor = '#64748b'; // Серый цвет границы
+            let fillOp = 0.0;          // ПОЛНОСТЬЮ ПРОЗРАЧНЫЙ ФОН
+            let dashArr = '6, 6';      // Пунктир
+            let weight = 2;            // Толщина линии
+            
             let statusText = '';
             let btnHtml = '';
 
+            // Немного отличаем занятые участки, но оставляем их прозрачными
             if (m.status === 'active') {
                 statusText = '<span class="text-slate-500">Уже в работе</span>';
-                polyColor = '#1e293b'; 
-                fillOp = 0.65;         
+                polyColor = '#0f172a'; // Почти черный пунктир для занятых
+                fillOp = 0.05;         // Еле-еле заметная тень
             } else if (m.status === 'cooldown') {
                 statusText = '<span class="text-purple-500">Пройден (на отдыхе)</span>';
-                polyColor = '#64748b'; 
-                fillOp = 0.5;
+                polyColor = '#94a3b8'; // Светло-серый
             } else if (m.status === 'fire') {
                 statusText = '<span class="text-rose-500">Свободен (Рекомендуем)</span>';
-                polyColor = '#10b981'; 
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             } else {
                 statusText = '<span class="text-emerald-500">Свободен</span>';
-                polyColor = '#10b981'; 
                 btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             }
 
             const defaultStyle = {
-                color: '#ffffff',       
-                weight: 2,              
-                dashArray: '',          
+                color: polyColor,       
+                weight: weight,              
+                dashArray: dashArr,          
                 fillColor: polyColor,   
                 fillOpacity: fillOp,    
                 opacity: 0.9            
@@ -1746,7 +1756,6 @@ window.renderGlobalAvailableMap = () => {
 
             const poly = L.polygon(latlngs, defaultStyle);
             
-            // Сохраняем полигон по номеру участка
             window.terrMapPolygons[m.num] = poly;
 
             poly.bindTooltip(String(m.num), {
@@ -1765,16 +1774,17 @@ window.renderGlobalAvailableMap = () => {
             `;
             poly.bindPopup(popupHtml);
 
+            // КЛИК: Делаем рамку зеленой и сплошной, чтобы выделить выбор
             poly.on('click', function () {
                 if (currentlyHighlighted) {
                     currentlyHighlighted.poly.setStyle(currentlyHighlighted.defaultStyle);
                 }
                 
                 poly.setStyle({
-                    fillOpacity: 0.0,
-                    color: '#334155',    
-                    weight: 2,           
-                    dashArray: '6, 6'    
+                    fillOpacity: 0.15,   // Слегка заливаем зеленым
+                    color: '#10b981',    // Зеленая граница
+                    weight: 3,           // Делаем потолще
+                    dashArray: ''        // Убираем пунктир (сплошная)
                 });
                 
                 currentlyHighlighted = { poly: poly, defaultStyle: defaultStyle };
