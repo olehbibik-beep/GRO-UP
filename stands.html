@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon-512.png" type="image/png">
     <meta name="theme-color" content="#0f172a">
@@ -23,11 +23,16 @@
         .loc-btn.active { background-color: #1e293b; color: white; border-color: #1e293b; }
     </style>
 </head>
-<body class="bg-ui-bg text-slate-800 min-h-screen font-sans">
+<body class="bg-ui-bg text-slate-800 min-h-screen font-sans pb-24 md:pb-0 overflow-x-hidden w-full">
 
-    <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-slate-800 md:border-t-0 no-print">
-        <a href="index.html" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-slate-400 hover:text-white" title="Назад">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+    <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] border-t border-slate-800 md:border-t-0 no-print">
+        <a href="index.html" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors" title="Назад">
+            <div class="nav-icon-container text-slate-400 hover:text-white p-2.5 rounded-full transition-colors flex flex-col items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                </svg>
+                <span class="text-[8px] font-black uppercase tracking-widest hidden md:block mt-1" data-lang="btn_back">Назад</span>
+            </div>
         </a>
     </nav>
 
@@ -79,7 +84,7 @@
         
     </main>
 
-    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
-    <script type="module" src="stands.js?v=25"></script>
+    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[200] flex flex-col gap-2 pointer-events-none"></div>
+    <script type="module" src="stands.js?v=26"></script>
 </body>
 </html>
