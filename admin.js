@@ -4,8 +4,8 @@ import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, getDoc
 const dict = {
     ru: {
         "admin_title": "Панель Администратора", "back_home": "На главную", "users_title": "Пользователи", "btn_back": "Назад",
-        "autosave_data": "Автосохранение данных", "cong_name_label": "Название собрания (Увидят все)", "cong_name_placeholder": "Например: Центральное",
-        "requests_title": "Заявки", "active_users": "Активные пользователи", "search_placeholder": "Поиск по имени...",
+        "autosave_data": "Автосохранение данных", "cong_name_label": "Название собрания", "cong_name_placeholder": "Например: Центральное",
+        "requests_title": "Заявки", "active_users": "Активные пользователи", "search_placeholder": "Поиск...",
         "error_save": "Ошибка сохранения!", "alert_pin_length": "ПИН-код должен состоять ровно из 6 цифр!",
         "error_save_pin": "Ошибка при сохранении ПИН-кода!", "error_update_role": "Ошибка при обновлении роли!",
         "confirm_block": "Заблокировать пользователя?", "confirm_delete_profile": "ВНИМАНИЕ! Удалить профиль?",
@@ -19,8 +19,8 @@ const dict = {
     },
     cs: {
         "admin_title": "Panel administrátora", "back_home": "Na hlavní stránku", "users_title": "Uživatelé", "btn_back": "Zpět",
-        "autosave_data": "Automatické ukládání dat", "cong_name_label": "Název sboru (Uvidí všichni)", "cong_name_placeholder": "Například: Centrální",
-        "requests_title": "Žádosti", "active_users": "Aktivní uživatelé", "search_placeholder": "Hledat podle jména...",
+        "autosave_data": "Automatické ukládání dat", "cong_name_label": "Název sboru", "cong_name_placeholder": "Například: Centrální",
+        "requests_title": "Žádosti", "active_users": "Aktivní uživatelé", "search_placeholder": "Hledat...",
         "error_save": "Chyba při ukládání!", "alert_pin_length": "PIN kód musí mít přesně 6 číslic!",
         "error_save_pin": "Chyba při ukládání PIN kódu!", "error_update_role": "Chyba při aktualizaci role!",
         "confirm_block": "Zablokovat uživatele?", "confirm_delete_profile": "POZOR! Smazat profil?",
@@ -85,9 +85,7 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
 
 // ЛОГИРОВАНИЕ
 async function logAction(actionStr) {
-    try {
-        await addDoc(collection(db, "admin_logs"), { action: actionStr, date: new Date().toISOString(), adminId: userId });
-    } catch(e) {}
+    try { await addDoc(collection(db, "admin_logs"), { action: actionStr, date: new Date().toISOString(), adminId: userId }); } catch(e) {}
 }
 
 onSnapshot(query(collection(db, "admin_logs"), orderBy("date", "desc"), limit(20)), (snapshot) => {
@@ -244,35 +242,14 @@ document.getElementById('filter-group').addEventListener('change', (e) => {
     renderUsersList();
 });
 
-function updateGroupDropdown() {
-    const select = document.getElementById('filter-group');
-    if (!select) return;
-    const groups = new Set();
-    allUsersData.forEach(u => {
-        if (u.group && u.group !== 'Без группы') groups.add(u.group);
-    });
-    const sortedGroups = Array.from(groups).sort((a,b) => a - b);
-    
-    let html = `<option value="all">Все группы</option>`;
-    sortedGroups.forEach(g => { html += `<option value="${g}">Группа ${g}</option>`; });
-    html += `<option value="none">Без группы</option>`;
-    
-    select.innerHTML = html;
-    
-    // Возвращаем выбранное значение, если оно еще актуально
-    if (sortedGroups.includes(currentGroupFilter) || currentGroupFilter === 'none' || currentGroupFilter === 'all') {
-        select.value = currentGroupFilter;
-    } else {
-        select.value = 'all';
-        currentGroupFilter = 'all';
-    }
-}
-
 onSnapshot(collection(db, "users"), (snapshot) => {
     allUsersData = [];
     let pendingHTML = '';
     let pendingCount = 0;
+    
+    // Считаем правильно
     let stats = { total: 0, pub: 0, pio: 0, eld: 0, ms: 0 };
+    const groups = new Set();
 
     snapshot.forEach((docSnap) => {
         const u = docSnap.data();
@@ -298,9 +275,18 @@ onSnapshot(collection(db, "users"), (snapshot) => {
             `;
         } else if (u.status === 'active' || u.status === 'blocked') {
             allUsersData.push(u);
+            
+            // Собираем группы для фильтра
+            if (u.group && String(u.group).trim() !== '' && String(u.group) !== 'Без группы') {
+                groups.add(String(u.group).trim());
+            }
+
             if (u.status === 'active') {
                 stats.total++;
-                const r = u.roles || [];
+                let r = u.roles || [];
+                // Если ролей вообще нет, человек по умолчанию Возвещатель
+                if (r.length === 0) r = ['Возвещатель']; 
+                
                 if (r.includes('Возвещатель')) stats.pub++;
                 if (r.includes('Пионер')) stats.pio++;
                 if (r.includes('Старейшина')) stats.eld++;
@@ -309,8 +295,8 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         }
     });
 
+    // Обновляем счетчики на экране
     document.getElementById('pending-count').innerText = pendingCount;
-    document.getElementById('active-count').innerText = stats.total;
     const pList = document.getElementById('pending-list');
     if (pList) pList.innerHTML = pendingHTML || `<p class="text-slate-400 text-xs text-center py-4 font-bold uppercase tracking-widest">${window.t('no_new_requests')}</p>`;
 
@@ -320,7 +306,25 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     document.getElementById('stat-eld').innerText = stats.eld;
     document.getElementById('stat-ms').innerText = stats.ms;
 
-    updateGroupDropdown();
+    // Автоматическое заполнение выпадающего списка групп
+    const select = document.getElementById('filter-group');
+    if (select) {
+        const sortedGroups = Array.from(groups).sort((a,b) => Number(a) - Number(b));
+        let html = `<option value="all">Все группы</option>`;
+        sortedGroups.forEach(g => { html += `<option value="${g}">Группа ${g}</option>`; });
+        html += `<option value="none">Без группы</option>`;
+        
+        // Оставляем выбор пользователя, если он переключил фильтр
+        if (sortedGroups.includes(currentGroupFilter) || currentGroupFilter === 'none' || currentGroupFilter === 'all') {
+            select.innerHTML = html;
+            select.value = currentGroupFilter;
+        } else {
+            select.innerHTML = html;
+            select.value = 'all';
+            currentGroupFilter = 'all';
+        }
+    }
+
     renderUsersList();
 });
 
@@ -328,20 +332,20 @@ function renderUsersList() {
     const container = document.getElementById('users-list-container');
     if (!container) return;
 
-    // Фильтрация
+    // Фильтрация: Поиск + Фильтр по группе
     const filteredUsers = allUsersData.filter(u => {
         const term = currentSearchTerm.trim();
         const nameMatch = !term || u.name.toLowerCase().includes(term);
         
-        const gName = u.group || 'Без группы';
+        const gName = (u.group && String(u.group).trim() !== '') ? String(u.group).trim() : 'Без группы';
         let groupMatch = true;
         if (currentGroupFilter === 'none') groupMatch = (gName === 'Без группы');
-        else if (currentGroupFilter !== 'all') groupMatch = (String(gName) === String(currentGroupFilter));
+        else if (currentGroupFilter !== 'all') groupMatch = (gName === currentGroupFilter);
 
         return nameMatch && groupMatch;
     });
 
-    // Сортировка
+    // Сортировка: Сначала по группе, потом по алфавиту
     filteredUsers.sort((a, b) => {
         const gA = a.group || 'Без группы';
         const gB = b.group || 'Без группы';
