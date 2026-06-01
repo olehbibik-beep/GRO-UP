@@ -229,13 +229,20 @@ window.openReportHistory = async () => {
             html += `
                 <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-3 shadow-sm relative">
                     <h4 class="font-black text-slate-800 text-sm uppercase tracking-widest mb-3 border-b border-slate-200 pb-2">${monthName} ${year}</h4>
-                    <div class="grid grid-cols-2 gap-y-2 gap-x-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    <div class="grid grid-cols-2 gap-y-2 gap-x-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">
                         <div class="flex justify-between border-b border-slate-100 pb-1">Служил(а): <span class="font-black text-slate-800">${isParticipated}</span></div>
                         <div class="flex justify-between border-b border-slate-100 pb-1">Часы: <span class="font-black text-slate-800">${hours}</span></div>
                         <div class="flex justify-between border-b border-slate-100 pb-1">Изучения: <span class="font-black text-slate-800">${studies}</span></div>
                         <div class="flex justify-between border-b border-slate-100 pb-1">Кредит: <span class="font-black text-slate-800">${credit}</span></div>
                     </div>
-                    <button onclick="sendCorrection('${r.id}')" class="text-[10px] bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 font-black uppercase tracking-widest px-3 py-2 rounded-lg w-full transition-colors mt-2 shadow-sm outline-none">Изменить часы</button>
+                    
+                    <button id="btn-edit-${r.id}" onclick="toggleEditHours('${r.id}', true)" class="text-[10px] bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 font-black uppercase tracking-widest px-3 py-2 rounded-lg w-full transition-colors mt-2 shadow-sm outline-none">Изменить часы</button>
+
+                    <div id="form-edit-${r.id}" class="hidden mt-2 flex gap-2">
+                        <input type="number" id="input-hours-${r.id}" value="${hours}" min="0" class="w-16 bg-white border border-slate-300 rounded-lg text-center font-black text-slate-800 text-sm outline-none focus:border-indigo-500 shadow-inner">
+                        <button onclick="saveNewHours('${r.id}')" class="flex-grow bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest rounded-lg transition-colors shadow-sm outline-none">Сохранить</button>
+                        <button onclick="toggleEditHours('${r.id}', false)" class="w-10 bg-slate-200 hover:bg-slate-300 text-slate-500 font-black rounded-lg transition-colors shadow-sm outline-none flex items-center justify-center">✕</button>
+                    </div>
                 </div>
             `;
         });
@@ -247,6 +254,55 @@ window.openReportHistory = async () => {
         container.innerHTML = `<p class="text-center py-6 text-red-500 text-xs font-bold uppercase tracking-widest">Ошибка загрузки данных</p>`;
     }
 };
+
+// Функция скрытия/показа встроенного редактора
+window.toggleEditHours = (id, show) => {
+    if (show) {
+        document.getElementById(`btn-edit-${id}`).classList.add('hidden');
+        document.getElementById(`form-edit-${id}`).classList.remove('hidden');
+        document.getElementById(`form-edit-${id}`).classList.add('flex');
+    } else {
+        document.getElementById(`btn-edit-${id}`).classList.remove('hidden');
+        document.getElementById(`form-edit-${id}`).classList.add('hidden');
+        document.getElementById(`form-edit-${id}`).classList.remove('flex');
+    }
+};
+
+// Функция сохранения новых часов напрямую
+window.saveNewHours = async (reportId) => {
+    const inputEl = document.getElementById(`input-hours-${reportId}`);
+    if (!inputEl) return;
+    
+    const val = inputEl.value;
+    if (val === '') return;
+    
+    const hoursNum = Number(val);
+    if (isNaN(hoursNum) || hoursNum < 0) {
+        alert("Пожалуйста, введите корректное число.");
+        return;
+    }
+
+    const btn = inputEl.nextElementSibling;
+    const originalText = btn.innerText;
+    btn.innerText = '...';
+    btn.disabled = true;
+
+    try {
+        await updateDoc(doc(db, "reports", reportId), {
+            hours: hoursNum,
+            participated: hoursNum > 0 ? true : false,
+            updatedAt: new Date().toISOString()
+        });
+        
+        window.showToast("Часы успешно обновлены! ✅");
+        window.openReportHistory(); // Сразу перерисовываем архив, чтобы показать новые цифры
+    } catch(e) {
+        alert("Ошибка при обновлении часов. Проверьте интернет.");
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+};
+// --- КОНЕЦ БЛОКА АРХИВА ---
 
 // Функция прямой перезаписи часов
 window.sendCorrection = async (reportId) => {
