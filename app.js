@@ -2072,8 +2072,8 @@ window.takeTerritory = async (num, btn) => {
 };
 
 window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
-window.openReportHistory = () => document.getElementById('report-history-modal').classList.replace('hidden', 'flex');
 window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
+
 window.closeModals = () => {
     const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
     const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
