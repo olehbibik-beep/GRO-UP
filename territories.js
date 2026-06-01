@@ -209,21 +209,56 @@ if(searchEl) {
 // ============================================
 let editorMap = null;
 let currentPolygonLayer = null;
+let existingPolygonsLayerGroup = null; // Группа для старых участков
+let allExistingMapData = []; // Кэш всех существующих участков
+
+// Функция для отрисовки старых участков на редакторской карте
+function renderExistingPolygonsOnEditor() {
+    if (!editorMap) return;
+    
+    if (existingPolygonsLayerGroup) {
+        editorMap.removeLayer(existingPolygonsLayerGroup);
+    }
+    existingPolygonsLayerGroup = L.layerGroup().addTo(editorMap);
+
+    allExistingMapData.forEach(m => {
+        if (m.hasPolygon && m.polygonCoords) {
+            const latlngs = m.polygonCoords.map(p => [p.lat, p.lng]);
+            
+            // Существующие участки рисуем серым, полупрозрачным цветом
+            const poly = L.polygon(latlngs, {
+                color: '#94a3b8',       // Серый контур
+                weight: 2,              // Тонкая линия
+                dashArray: '4, 4',      // Пунктир
+                fillColor: '#cbd5e1',   // Светло-серая заливка
+                fillOpacity: 0.2,       
+                interactive: true,      // Разрешаем клики для всплывающих подсказок
+                pmIgnore: true          // 🔥 САМОЕ ГЛАВНОЕ: Геоман игнорирует этот слой! (нельзя случайно отредактировать)
+            });
+
+            // Показываем номер участка
+            poly.bindTooltip(`№ ${m.num}`, {
+                permanent: true,
+                direction: 'center',
+                className: 'bg-slate-700 text-white px-1.5 py-0.5 border-none rounded shadow-sm text-[10px] font-black'
+            });
+
+            poly.addTo(existingPolygonsLayerGroup);
+        }
+    });
+}
 
 window.openMapsModal = () => {
     document.getElementById('maps-modal').classList.replace('hidden', 'flex');
     
-    // Инициализируем карту при первом открытии
     if (!editorMap) {
         setTimeout(() => {
             editorMap = L.map('editor-map').setView([49.974, 12.700], 14); // Центр: Марианске-Лазне
             
-            // Загружаем бесплатную подложку OSM
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap'
             }).addTo(editorMap);
 
-            // Настраиваем инструменты рисования (только полигоны)
             editorMap.pm.addControls({
                 position: 'topleft',
                 drawMarker: false,
@@ -238,23 +273,27 @@ window.openMapsModal = () => {
                 removalMode: true,
             });
 
-            // Настраиваем цвет полигона по умолчанию
             editorMap.pm.setGlobalOptions({
                 pathOptions: { color: '#10b981', fillColor: '#10b981', fillOpacity: 0.4 }
             });
 
-            // Слушаем событие: нарисовали полигон
             editorMap.on('pm:create', e => {
-                // Если уже есть контур - удаляем его (чтобы был только 1 участок)
                 if (currentPolygonLayer) editorMap.removeLayer(currentPolygonLayer);
                 currentPolygonLayer = e.layer;
             });
 
-            // Слушаем удаление слоя
             editorMap.on('pm:remove', e => {
                 if (e.layer === currentPolygonLayer) currentPolygonLayer = null;
             });
             
+            renderExistingPolygonsOnEditor(); // Отрисовка всех готовых участков
+            
+        }, 100);
+    } else {
+        // Если карта уже инициализирована, просто обновляем размер и участки
+        setTimeout(() => {
+            editorMap.invalidateSize();
+            renderExistingPolygonsOnEditor();
         }, 100);
     }
 };
@@ -275,10 +314,8 @@ document.getElementById('save-map-btn').addEventListener('click', async (e) => {
     
     if (!num) return alert("Введите номер участка!");
     
-    // Получаем координаты, если полигон нарисован
     let polygonCoords = null;
     if (currentPolygonLayer) {
-        // Извлекаем точки [{lat, lng}, ...]
         const latlngs = currentPolygonLayer.getLatLngs()[0];
         polygonCoords = latlngs.map(l => ({ lat: l.lat, lng: l.lng }));
     }
@@ -301,14 +338,14 @@ document.getElementById('save-map-btn').addEventListener('click', async (e) => {
         document.getElementById('map-city').value = '';
         if (currentPolygonLayer) { editorMap.removeLayer(currentPolygonLayer); currentPolygonLayer = null; }
         
-        btn.innerText = "Добавить карту";
+        btn.innerText = "Сохранить карту";
         btn.disabled = false;
         window.showToast("Карта сохранена!");
     } catch (err) { 
         console.error(err);
         alert("Ошибка при сохранении!"); 
         btn.disabled = false; 
-        btn.innerText = "Добавить карту"; 
+        btn.innerText = "Сохранить карту"; 
     }
 });
 
@@ -317,13 +354,27 @@ onSnapshot(collection(db, "territory_maps"), (snapshot) => {
     if (!list) return;
     
     let maps = [];
-    snapshot.forEach(d => maps.push({ 
-        num: parseInt(d.id), 
-        city: d.data().city || 'Без города', 
-        hasPolygon: !!d.data().polygon,
-        id: d.id 
-    }));
+    allExistingMapData = []; // Очищаем кэш для карты
+
+    snapshot.forEach(d => {
+        const data = d.data();
+        const mapObj = {
+            num: parseInt(d.id), 
+            city: data.city || 'Без города', 
+            hasPolygon: !!data.polygon,
+            polygonCoords: data.polygon, // Сохраняем гео-координаты для отрисовки
+            id: d.id 
+        };
+        maps.push(mapObj);
+        allExistingMapData.push(mapObj); // Помещаем в кэш
+    });
+    
     maps.sort((a,b) => a.num - b.num);
+
+    // Если модальное окно с картой сейчас открыто, сразу обновляем подложку
+    if (editorMap) {
+        renderExistingPolygonsOnEditor();
+    }
 
     const groupedMaps = {};
     maps.forEach(m => {
@@ -348,7 +399,6 @@ onSnapshot(collection(db, "territory_maps"), (snapshot) => {
             <div class="p-2 space-y-1.5 border-t border-slate-200 bg-white">`;
             
         groupMaps.forEach(m => {
-            // Если есть полигон, показываем бейдж "Интерактивная"
             const mapBadge = m.hasPolygon ? `<span class="bg-emerald-100 text-emerald-700 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0">КАРТА</span>` : `<span class="bg-slate-100 text-slate-400 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0">ФОТО</span>`;
             groupHtml += `
             <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-2 rounded-lg">
@@ -369,7 +419,7 @@ onSnapshot(collection(db, "territory_maps"), (snapshot) => {
         html += groupHtml;
     }
 
-    list.innerHTML = html || `<p class="text-xs italic text-slate-400 text-center py-4">${window.t('history_empty')}</p>`;
+    list.innerHTML = html || `<p class="text-xs italic text-slate-400 text-center py-4">Архив пуст</p>`;
 });
 
 window.deleteMap = async (id) => {
