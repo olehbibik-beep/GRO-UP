@@ -195,15 +195,12 @@ window.openReportHistory = async () => {
     const modal = document.getElementById('report-history-modal');
     if (modal) modal.classList.replace('hidden', 'flex');
 
-    // Ищем контейнер внутри модального окна, куда будем вставлять отчеты
-    // (Убедись, что в HTML внутри этого окна есть <div id="report-history-list"></div>)
     const container = document.getElementById('report-history-list') || document.getElementById('archive-list');
     if (!container) return;
 
     container.innerHTML = `<p class="text-center py-6 text-slate-400 text-sm font-bold uppercase tracking-widest animate-pulse">${window.t('loading_archive') || 'Загрузка...'}</p>`;
 
     try {
-        // Достаем ВСЕ отчеты только для текущего пользователя
         const q = query(collection(db, "reports"), where("userId", "==", userId));
         const snapshot = await getDocs(q);
 
@@ -212,7 +209,6 @@ window.openReportHistory = async () => {
             reports.push({ id: docSnap.id, ...docSnap.data() });
         });
 
-        // Сортируем от новых к старым (по ключу месяца, например "2026-05")
         reports.sort((a, b) => b.month.localeCompare(a.month));
 
         if (reports.length === 0) {
@@ -225,16 +221,10 @@ window.openReportHistory = async () => {
             const isParticipated = r.participated ? 'Да' : 'Нет';
             const hours = r.hours || 0;
             const studies = r.studies || 0;
-            const credit = r.credit || r.pubs || 0; // На случай если раньше называли pubs
+            const credit = r.credit || r.pubs || 0; 
             
-            // Красивый вывод месяца (например: "05" -> "Май 2026")
             const [year, monthNum] = r.month.split('-');
             const monthName = window.t('months')[parseInt(monthNum, 10) - 1];
-
-            // Если уже есть корректировка, выводим её статус
-            const correctionHtml = r.correction 
-                ? `<div class="mt-2 p-2.5 bg-amber-50 border border-amber-200 text-amber-700 text-[11px] rounded-lg leading-tight"><b>Корректировка:</b> ${r.correction}</div>` 
-                : `<button onclick="sendCorrection('${r.id}')" class="text-[10px] bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 font-black uppercase tracking-widest px-3 py-2 rounded-lg w-full transition-colors mt-2 shadow-sm outline-none">Добавить корректировку</button>`;
 
             html += `
                 <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-3 shadow-sm relative">
@@ -245,7 +235,7 @@ window.openReportHistory = async () => {
                         <div class="flex justify-between border-b border-slate-100 pb-1">Изучения: <span class="font-black text-slate-800">${studies}</span></div>
                         <div class="flex justify-between border-b border-slate-100 pb-1">Кредит: <span class="font-black text-slate-800">${credit}</span></div>
                     </div>
-                    ${correctionHtml}
+                    <button onclick="sendCorrection('${r.id}')" class="text-[10px] bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 font-black uppercase tracking-widest px-3 py-2 rounded-lg w-full transition-colors mt-2 shadow-sm outline-none">Изменить часы</button>
                 </div>
             `;
         });
@@ -257,6 +247,37 @@ window.openReportHistory = async () => {
         container.innerHTML = `<p class="text-center py-6 text-red-500 text-xs font-bold uppercase tracking-widest">Ошибка загрузки данных</p>`;
     }
 };
+
+// Функция прямой перезаписи часов
+window.sendCorrection = async (reportId) => {
+    const newHours = prompt("Введите новое количество часов (это число заменит старое):");
+    
+    // Если пользователь нажал "Отмена" или ничего не ввел
+    if (newHours === null || newHours.trim() === "") return;
+
+    const hoursNum = Number(newHours);
+    
+    // Проверка на дурака (если ввели буквы)
+    if (isNaN(hoursNum) || hoursNum < 0) {
+        alert("Пожалуйста, введите корректное число.");
+        return;
+    }
+
+    try {
+        // Перезаписываем часы. Если часов больше 0, автоматически ставим галочку "Служил(а)"
+        await updateDoc(doc(db, "reports", reportId), {
+            hours: hoursNum,
+            participated: hoursNum > 0 ? true : false,
+            updatedAt: new Date().toISOString()
+        });
+        
+        window.showToast("Часы успешно обновлены! ✅");
+        window.openReportHistory(); // Сразу перерисовываем архив, чтобы показать новые цифры
+    } catch(e) {
+        alert("Ошибка при обновлении часов. Проверьте интернет.");
+    }
+};
+// --- КОНЕЦ БЛОКА АРХИВА ---
 
 // Функция отправки корректировки
 window.sendCorrection = async (reportId) => {
