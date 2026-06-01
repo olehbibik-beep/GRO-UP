@@ -190,7 +190,92 @@ if (!userId) {
 
 // ГЛОБАЛЬНЫЕ ФУНКЦИИ ОКНА И НАВИГАЦИИ
 window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
-window.openReportHistory = () => document.getElementById('report-history-modal').classList.replace('hidden', 'flex');
+// --- ЛОГИКА АРХИВА ОТЧЕТОВ И КОРРЕКТИРОВОК ---
+window.openReportHistory = async () => {
+    const modal = document.getElementById('report-history-modal');
+    if (modal) modal.classList.replace('hidden', 'flex');
+
+    // Ищем контейнер внутри модального окна, куда будем вставлять отчеты
+    // (Убедись, что в HTML внутри этого окна есть <div id="report-history-list"></div>)
+    const container = document.getElementById('report-history-list') || document.getElementById('archive-list');
+    if (!container) return;
+
+    container.innerHTML = `<p class="text-center py-6 text-slate-400 text-sm font-bold uppercase tracking-widest animate-pulse">${window.t('loading_archive') || 'Загрузка...'}</p>`;
+
+    try {
+        // Достаем ВСЕ отчеты только для текущего пользователя
+        const q = query(collection(db, "reports"), where("userId", "==", userId));
+        const snapshot = await getDocs(q);
+
+        let reports = [];
+        snapshot.forEach(docSnap => {
+            reports.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        // Сортируем от новых к старым (по ключу месяца, например "2026-05")
+        reports.sort((a, b) => b.month.localeCompare(a.month));
+
+        if (reports.length === 0) {
+            container.innerHTML = `<p class="text-center py-8 text-slate-400 text-xs font-bold uppercase tracking-widest">${window.t('archive_empty') || 'Архив пуст'}</p>`;
+            return;
+        }
+
+        let html = '';
+        reports.forEach(r => {
+            const isParticipated = r.participated ? 'Да' : 'Нет';
+            const hours = r.hours || 0;
+            const studies = r.studies || 0;
+            const credit = r.credit || r.pubs || 0; // На случай если раньше называли pubs
+            
+            // Красивый вывод месяца (например: "05" -> "Май 2026")
+            const [year, monthNum] = r.month.split('-');
+            const monthName = window.t('months')[parseInt(monthNum, 10) - 1];
+
+            // Если уже есть корректировка, выводим её статус
+            const correctionHtml = r.correction 
+                ? `<div class="mt-2 p-2.5 bg-amber-50 border border-amber-200 text-amber-700 text-[11px] rounded-lg leading-tight"><b>Корректировка:</b> ${r.correction}</div>` 
+                : `<button onclick="sendCorrection('${r.id}')" class="text-[10px] bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 font-black uppercase tracking-widest px-3 py-2 rounded-lg w-full transition-colors mt-2 shadow-sm outline-none">Добавить корректировку</button>`;
+
+            html += `
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-3 shadow-sm relative">
+                    <h4 class="font-black text-slate-800 text-sm uppercase tracking-widest mb-3 border-b border-slate-200 pb-2">${monthName} ${year}</h4>
+                    <div class="grid grid-cols-2 gap-y-2 gap-x-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                        <div class="flex justify-between border-b border-slate-100 pb-1">Служил(а): <span class="font-black text-slate-800">${isParticipated}</span></div>
+                        <div class="flex justify-between border-b border-slate-100 pb-1">Часы: <span class="font-black text-slate-800">${hours}</span></div>
+                        <div class="flex justify-between border-b border-slate-100 pb-1">Изучения: <span class="font-black text-slate-800">${studies}</span></div>
+                        <div class="flex justify-between border-b border-slate-100 pb-1">Кредит: <span class="font-black text-slate-800">${credit}</span></div>
+                    </div>
+                    ${correctionHtml}
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error(error);
+        container.innerHTML = `<p class="text-center py-6 text-red-500 text-xs font-bold uppercase tracking-widest">Ошибка загрузки данных</p>`;
+    }
+};
+
+// Функция отправки корректировки
+window.sendCorrection = async (reportId) => {
+    const text = prompt("Опишите корректировку (Например: Забыл добавить 2 часа и 1 изучение):");
+    if (!text || !text.trim()) return;
+
+    try {
+        // Записываем корректировку прямо в документ отчета
+        await updateDoc(doc(db, "reports", reportId), {
+            correction: text.trim(),
+            correctionDate: new Date().toISOString()
+        });
+        window.showToast("Корректировка отправлена секретарю! ✅");
+        window.openReportHistory(); // Обновляем модальное окно, чтобы показать статус
+    } catch(e) {
+        alert("Ошибка при отправке корректировки. Проверьте интернет.");
+    }
+};
+// --- КОНЕЦ БЛОКА АРХИВА ---
 window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
 window.openDutiesModal = () => document.getElementById('duties-modal').classList.replace('hidden', 'flex');
 window.openInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('hidden', 'flex');
