@@ -4,6 +4,7 @@ import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, query, where
 const dict = {
     ru: {
         "schedule_for": "График для:", "btn_draft": "Сохранить черновик", "btn_publish": "Опубликовать", "btn_delete": "Удалить",
+        "btn_print": "Печать", "program_title": "Программа встреч собрания",
         "midweek_meeting": "Будние дни (Христианская жизнь и служение)", "chairman_intro": "Председатель / Вступление",
         "treasures_title": "Сокровища из слова бога", "spiritual_gems": "Духовные жемчужины", "bible_reading": "Чтение Библии",
         "ministry_skills": "Навыки служения", "pulled_from_school": "Подтягивается из школы", "christian_living": "Христианская жизнь",
@@ -12,10 +13,12 @@ const dict = {
         "add_btn": "+ Добавить", "saving": "Сохранение...", "published": "ОПУБЛИКОВАНО", "draft": "ЧЕРНОВИК", "new_schedule": "НОВЫЙ ГРАФИК",
         "success_pub": "График опубликован!", "success_draft": "Черновик сохранен", "error_save": "Ошибка сохранения!",
         "confirm_del": "Точно удалить этот график навсегда?", "success_del": "График успешно удален!", "error_del": "Ошибка удаления!",
-        "part": "Задание", "assistant_short": "Пом:"
+        "part": "Задание", "assistant_short": "Пом:", "conductor": "Ведущий", "reader": "Чтец",
+        "months": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"]
     },
     cs: {
         "schedule_for": "Rozvrh pro:", "btn_draft": "Uložit koncept", "btn_publish": "Publikovat", "btn_delete": "Smazat",
+        "btn_print": "Tisk", "program_title": "Program shromáždění sboru",
         "midweek_meeting": "Všední dny (Náš křesťanský život a služba)", "chairman_intro": "Předsedající / Úvod",
         "treasures_title": "Poklady z Božího slova", "spiritual_gems": "Hledání duchovních drahokamů", "bible_reading": "Čtení Bible",
         "ministry_skills": "Zlepšujme se ve službě", "pulled_from_school": "Načítá se ze školy", "christian_living": "Křesťanský život",
@@ -24,7 +27,8 @@ const dict = {
         "add_btn": "+ Přidat", "saving": "Ukládání...", "published": "PUBLIKOVÁNO", "draft": "KONCEPT", "new_schedule": "NOVÝ ROZVRH",
         "success_pub": "Rozvrh byl publikován!", "success_draft": "Koncept byl uložen", "error_save": "Chyba při ukládání!",
         "confirm_del": "Opravdu chcete tento rozvrh trvale smazat?", "success_del": "Rozvrh byl úspěšně smazán!", "error_del": "Chyba při mazání!",
-        "part": "Úkol", "assistant_short": "Pom:"
+        "part": "Úkol", "assistant_short": "Pom:", "conductor": "Předsedající", "reader": "Čte",
+        "months": ["Led", "Úno", "Bře", "Dub", "Kvě", "Čvn", "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro"]
     }
 };
 
@@ -382,7 +386,7 @@ window.saveSchedule = async (isPublished) => {
         document.getElementById('delete-btn').classList.add('flex');
     } catch (e) { alert(window.t('error_save')); }
     
-    btn.innerHTML = isPublished ? "ОПУБЛИКОВАТЬ" : `<svg class="w-5 h-5 md:hidden inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg><span class="hidden md:inline text-[10px] md:text-xs">СОХРАНИТЬ ЧЕРНОВИК</span>`;
+    btn.innerHTML = isPublished ? window.t('btn_publish') : `<svg class="w-5 h-5 md:hidden inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg><span class="hidden md:inline text-[10px] md:text-xs">${window.t('btn_draft')}</span>`;
     btn.disabled = false;
 };
 
@@ -402,5 +406,142 @@ window.deleteSchedule = async () => {
         } catch(e) {
             alert(window.t('error_del'));
         }
+    }
+};
+
+// ==============================
+// ЛОГИКА РАСПЕЧАТКИ ГРАФИКА
+// ==============================
+function formatWeekForPrint(weekStr) {
+    if (!weekStr) return "";
+    const [year, week] = weekStr.split('-W');
+    const simpleDate = new Date(year, 0, 1 + (week - 1) * 7);
+    const day = simpleDate.getDay();
+    const diff = simpleDate.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(simpleDate.setDate(diff));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const m1 = window.t('months') ? window.t('months')[monday.getMonth()] : monday.getMonth()+1;
+    const m2 = window.t('months') ? window.t('months')[sunday.getMonth()] : sunday.getMonth()+1;
+
+    if (monday.getMonth() === sunday.getMonth()) {
+        return `${monday.getDate()} - ${sunday.getDate()} ${m1} ${year}`;
+    } else {
+        return `${monday.getDate()} ${m1} - ${sunday.getDate()} ${m2} ${year}`;
+    }
+}
+
+window.printSchedule = () => {
+    saveLivingState(); // Убеждаемся, что все набранные вручную поля сохранены
+    const weekStr = document.getElementById('week-selector').value;
+    const dateFormatted = formatWeekForPrint(weekStr);
+
+    let html = `
+    <div style="max-width: 800px; margin: 0 auto; font-family: sans-serif; color: #000;">
+        <h1 style="text-align: center; font-size: 24px; text-transform: uppercase; margin-bottom: 5px;">${window.t('program_title')}</h1>
+        <h2 style="text-align: center; font-size: 18px; color: #555; margin-top: 0; margin-bottom: 30px;">${dateFormatted}</h2>
+
+        <div style="border-bottom: 2px solid #000; margin-bottom: 15px;">
+            <h3 style="font-size: 18px; margin: 0 0 5px 0;">${window.t('midweek_meeting')}</h3>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 15px;">
+            <strong>${window.t('chairman_intro')}:</strong>
+            <span>${document.getElementById('mw-chairman-name').value || '-'}</span>
+        </div>
+
+        <h4 style="font-size: 14px; text-transform: uppercase; background: #eee; padding: 6px 10px; margin-bottom: 15px;">${window.t('treasures_title')}</h4>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px;">
+            <span>${document.getElementById('mw-treasure-title').value || '-'}</span>
+            <strong>${document.getElementById('mw-treasure-name').value || '-'}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px;">
+            <span>${window.t('spiritual_gems')}</span>
+            <strong>${document.getElementById('mw-gems-name').value || '-'}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 25px; font-size: 15px;">
+            <span>${window.t('bible_reading')}</span>
+            <strong>${document.getElementById('mw-reading-name').value || '-'}</strong>
+        </div>
+
+        <h4 style="font-size: 14px; text-transform: uppercase; background: #eee; padding: 6px 10px; margin-bottom: 15px;">${window.t('ministry_skills')}</h4>
+    `;
+
+    if(ministryParts.length === 0) {
+        html += `<div style="font-size: 15px; color: #777; margin-bottom: 25px;">-</div>`;
+    } else {
+        ministryParts.forEach(p => {
+            let assistStr = p.assistant && p.assistant !== "Без помощника" ? ` <span style="font-size: 13px; color: #555;">(${window.t('assistant_short')} ${p.assistant})</span>` : '';
+            html += `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px;">
+                <span>${p.type || window.t('part')}</span>
+                <strong>${p.student || '-'}${assistStr}</strong>
+            </div>
+            `;
+        });
+    }
+
+    html += `
+        <h4 style="font-size: 14px; text-transform: uppercase; background: #eee; padding: 6px 10px; margin-top: 25px; margin-bottom: 15px;">${window.t('christian_living')}</h4>
+    `;
+
+    livingParts.forEach(p => {
+        html += `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px;">
+            <span>${p.title || window.t('part')}</span>
+            <strong>${p.name || '-'}</strong>
+        </div>
+        `;
+    });
+
+    let cbsMat = document.getElementById('mw-cbs-material').value;
+    html += `
+        <div style="display: flex; justify-content: space-between; margin-top: 15px; margin-bottom: 8px; font-size: 15px;">
+            <span>${window.t('congregation_bible_study')} ${cbsMat ? `(${cbsMat})` : ''}</span>
+            <div>
+                <strong>${document.getElementById('mw-cbs-conductor').value || '-'}</strong>
+                <span style="font-size: 13px; color: #555; margin-left: 8px;">(${window.t('reader')}: ${document.getElementById('mw-cbs-reader').value || '-'})</span>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 20px; margin-bottom: 50px; font-size: 15px;">
+            <span>${window.t('closing_prayer')}</span>
+            <strong>${document.getElementById('mw-prayer-name').value || '-'}</strong>
+        </div>
+
+        <div style="border-bottom: 2px solid #000; margin-bottom: 15px;">
+            <h3 style="font-size: 18px; margin: 0 0 5px 0;">${window.t('weekend_meeting')}</h3>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 25px; font-size: 15px;">
+            <span>${window.t('opening_song')}</span>
+            <strong>${document.getElementById('we-opening-name').value || '-'}</strong>
+        </div>
+
+        <h4 style="font-size: 14px; text-transform: uppercase; background: #eee; padding: 6px 10px; margin-bottom: 15px;">${window.t('public_talk')}</h4>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 25px; font-size: 15px;">
+            <span>${document.getElementById('we-talk-title').value || '-'}</span>
+            <strong>${document.getElementById('we-talk-speaker').value || '-'}</strong>
+        </div>
+
+        <h4 style="font-size: 14px; text-transform: uppercase; background: #eee; padding: 6px 10px; margin-bottom: 15px;">${window.t('watchtower_study')}</h4>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px;">
+            <span>${window.t('conductor')}</span>
+            <strong>${document.getElementById('we-wt-conductor').value || '-'}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 25px; font-size: 15px;">
+            <span>${window.t('reader')}</span>
+            <strong>${document.getElementById('we-wt-reader').value || '-'}</strong>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 20px; font-size: 15px;">
+            <span>${window.t('closing_prayer')}</span>
+            <strong>${document.getElementById('we-prayer-name').value || '-'}</strong>
+        </div>
+    </div>
+    `;
+
+    const printArea = document.getElementById('print-area');
+    if(printArea) {
+        printArea.innerHTML = html;
+        window.print(); // Вызываем системное окно печати
     }
 };
