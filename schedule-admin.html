@@ -25,43 +25,58 @@
         .custom-scrollbar::-webkit-scrollbar { display: block; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
-        /* СТИЛИ ДЛЯ ИДЕАЛЬНОЙ ПЕЧАТИ ИНТЕРФЕЙСА */
+        /* === СТИЛИ ДЛЯ ПЕЧАТИ (A4 Альбомная) === */
         @media print {
             @page {
-                size: A4 landscape; /* Альбомная ориентация, чтобы влезли 2 колонки */
+                size: A4 landscape; /* Альбомная ориентация */
                 margin: 10mm;
             }
             
-            /* Включаем цветную печать (фоны, тексты) */
+            /* 1. Скрываем меню, кнопки и верхнюю панель настроек */
+            nav, button, #toast-container, .no-print { 
+                display: none !important; 
+            }
+            main > div:first-child { 
+                display: none !important; /* Прячем блок с выбором недели и кнопками */
+            }
+            
+            /* 2. Настраиваем фон и растягиваем контент */
+            body { 
+                background: white !important; 
+            }
+            main { 
+                padding: 0 !important; 
+                margin: 0 !important; 
+                max-width: 100% !important; 
+            }
+            
+            /* 3. Форсируем отображение формы строго в 2 колонки */
+            #schedule-form { 
+                display: grid !important; 
+                grid-template-columns: 1fr 1fr !important; 
+                gap: 20px !important; 
+                visibility: visible !important;
+            }
+
+            /* 4. Очищаем дизайн от теней и серых блоков для бумаги */
+            .shadow-sm { box-shadow: none !important; }
+            .bg-slate-50 { background-color: transparent !important; }
+            .border-slate-200 { border-color: #cbd5e1 !important; }
+            
+            /* 5. Делаем текст в полях ввода черным и оставляем только нижнюю черту */
+            input.jw-input, input[type="text"] {
+                color: black !important;
+                background: transparent !important;
+                border: none !important;
+                border-bottom: 1px solid #94a3b8 !important;
+                border-radius: 0 !important;
+                padding-bottom: 2px !important;
+            }
+
+            /* 6. Включаем цветную печать (чтобы заголовки остались бирюзовыми/красными) */
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
-            }
-
-            /* Убираем фон приложения, меню и верхнюю панель с кнопками */
-            body { background: white !important; }
-            nav, .mb-6.flex-col, .no-print { display: none !important; }
-            
-            /* Растягиваем контент на весь лист */
-            main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
-            
-            /* Жестко форсируем 2 колонки, как на компьютере */
-            #schedule-form {
-                display: grid !important;
-                grid-template-columns: 1fr 1fr !important;
-                gap: 20px !important;
-            }
-
-            /* Убираем тени, чтобы на бумаге смотрелось чище */
-            .shadow-sm { box-shadow: none !important; border-color: #cbd5e1 !important; }
-            
-            /* Прячем кнопки редактирования (+ Добавить, крестики) */
-            button { display: none !important; }
-            
-            /* Инпуты делаем просто как подчеркнутый текст */
-            input.jw-input, input[type="text"] {
-                border-bottom: 1px solid #94a3b8 !important;
-                color: #000 !important;
             }
         }
     </style>
