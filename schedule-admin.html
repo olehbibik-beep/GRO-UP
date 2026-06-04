@@ -17,7 +17,7 @@
     <script>
         tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f3f4f6', nav: '#0f172a' }, jw: { treasure: '#0d9488', ministry: '#d97706', living: '#b91c1c', weekend: '#475569' } } } } }
     </script>
- <style>
+    <style>
         ::-webkit-scrollbar { display: none; }
         body { -ms-overflow-style: none; scrollbar-width: none; }
         .jw-input { width: 100%; border: none; border-bottom: 1px solid #cbd5e1; background: transparent; font-size: 13px; font-weight: 700; color: #1e293b; padding: 4px 0; outline: none; transition: border-color 0.2s; }
@@ -32,12 +32,9 @@
                 margin: 10mm;
             }
             
-            /* 1. Скрываем меню, кнопки и верхнюю панель настроек */
-            nav, button, #toast-container, .no-print { 
+            /* 1. Скрываем только то, что имеет класс no-print (меню и настройки) */
+            .no-print { 
                 display: none !important; 
-            }
-            main > div:first-child { 
-                display: none !important; /* Прячем блок с выбором недели и кнопками */
             }
             
             /* 2. Настраиваем фон и растягиваем контент */
@@ -55,7 +52,6 @@
                 display: grid !important; 
                 grid-template-columns: 1fr 1fr !important; 
                 gap: 20px !important; 
-                visibility: visible !important;
             }
 
             /* 4. Очищаем дизайн от теней и серых блоков для бумаги */
@@ -73,7 +69,10 @@
                 padding-bottom: 2px !important;
             }
 
-            /* 6. Включаем цветную печать (чтобы заголовки остались бирюзовыми/красными) */
+            /* Прячем кнопки добавления пунктов (+ Добавить, крестики) */
+            button { display: none !important; }
+
+            /* 6. Включаем цветную печать */
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
@@ -89,9 +88,9 @@
         </a>
     </nav>
 
-    <main class="w-full max-w-6xl mx-auto px-4 py-6 md:pl-28 md:pr-6 no-print">
+    <main class="w-full max-w-6xl mx-auto px-4 py-6 md:pl-28 md:pr-6">
         
-        <div class="flex flex-col bg-white border border-slate-200 p-4 rounded-xl mb-6 shadow-sm gap-4">
+        <div class="flex flex-col bg-white border border-slate-200 p-4 rounded-xl mb-6 shadow-sm gap-4 no-print">
             
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <span class="text-xs font-black uppercase tracking-widest text-slate-500" data-lang="schedule_for">График для:</span>
@@ -256,8 +255,6 @@
 
         </div>
     </main>
-
-    <div id="print-area" class="hidden text-black bg-white p-6"></div>
 
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
     <script type="module" src="schedule-admin.js?v=21"></script>
