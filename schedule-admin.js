@@ -5,30 +5,30 @@ const dict = {
     ru: {
         "schedule_for": "График для:", "btn_draft": "Сохранить черновик", "btn_publish": "Опубликовать", "btn_delete": "Удалить",
         "btn_print": "Печать", "program_title": "Программа встреч собрания",
-        "midweek_meeting": "Будние дни (Христианская жизнь и служение)", "chairman_intro": "Председатель / Вступление",
+        "midweek_meeting": "Будние дни", "chairman_intro": "Председатель / Вступление",
         "treasures_title": "Сокровища из слова бога", "spiritual_gems": "Духовные жемчужины", "bible_reading": "Чтение Библии",
         "ministry_skills": "Навыки служения", "pulled_from_school": "Подтягивается из школы", "christian_living": "Христианская жизнь",
-        "congregation_bible_study": "Изучение Библии", "closing_prayer": "Заключительная молитва", "weekend_meeting": "Выходные (Публичная речь)",
+        "congregation_bible_study": "Изучение Библии", "closing_prayer": "Заключительная молитва", "weekend_meeting": "Выходные дни",
         "opening_song": "Вступительные слова / Песня", "public_talk": "Публичная речь", "watchtower_study": "Изучение Сторожевой Башни",
         "add_btn": "+ Добавить", "saving": "Сохранение...", "published": "ОПУБЛИКОВАНО", "draft": "ЧЕРНОВИК", "new_schedule": "НОВЫЙ ГРАФИК",
         "success_pub": "График опубликован!", "success_draft": "Черновик сохранен", "error_save": "Ошибка сохранения!",
         "confirm_del": "Точно удалить этот график навсегда?", "success_del": "График успешно удален!", "error_del": "Ошибка удаления!",
         "part": "Задание", "assistant_short": "Пом:", "conductor": "Ведущий", "reader": "Чтец",
-        "months": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"]
+        "months": ["Января", "Февраля", "Марта", "Апреля", "Мая", "Июня", "Июля", "Августа", "Сентября", "Октября", "Ноября", "Декабря"]
     },
     cs: {
         "schedule_for": "Rozvrh pro:", "btn_draft": "Uložit koncept", "btn_publish": "Publikovat", "btn_delete": "Smazat",
         "btn_print": "Tisk", "program_title": "Program shromáždění sboru",
-        "midweek_meeting": "Všední dny (Náš křesťanský život a služba)", "chairman_intro": "Předsedající / Úvod",
+        "midweek_meeting": "Všední dny", "chairman_intro": "Předsedající / Úvod",
         "treasures_title": "Poklady z Božího slova", "spiritual_gems": "Hledání duchovních drahokamů", "bible_reading": "Čtení Bible",
         "ministry_skills": "Zlepšujme se ve službě", "pulled_from_school": "Načítá se ze školy", "christian_living": "Křesťanský život",
-        "congregation_bible_study": "Sborové studium Bible", "closing_prayer": "Závěrečná modlitba", "weekend_meeting": "Víkend (Veřejná přednáška)",
+        "congregation_bible_study": "Sborové studium Bible", "closing_prayer": "Závěrečná modlitba", "weekend_meeting": "Víkend",
         "opening_song": "Úvodní slova / Píseň", "public_talk": "Veřejná přednáška", "watchtower_study": "Studium Strážné věže",
         "add_btn": "+ Přidat", "saving": "Ukládání...", "published": "PUBLIKOVÁNO", "draft": "KONCEPT", "new_schedule": "NOVÝ ROZVRH",
         "success_pub": "Rozvrh byl publikován!", "success_draft": "Koncept byl uložen", "error_save": "Chyba při ukládání!",
         "confirm_del": "Opravdu chcete tento rozvrh trvale smazat?", "success_del": "Rozvrh byl úspěšně smazán!", "error_del": "Chyba při mazání!",
         "part": "Úkol", "assistant_short": "Pom:", "conductor": "Předsedající", "reader": "Čte",
-        "months": ["Led", "Úno", "Bře", "Dub", "Kvě", "Čvn", "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro"]
+        "months": ["Ledna", "Února", "Března", "Dubna", "Května", "Června", "Července", "Srpna", "Září", "Října", "Listopadu", "Prosince"]
     }
 };
 
@@ -99,7 +99,6 @@ function getDateFromWeekString(weekStr) {
     return new Date(simpleDate.setDate(diff));
 }
 
-// Хелпер для сдвига недели для печати
 function getNextWeekRaw(currentWeekRaw, offsetWeeks) {
     const d = getDateFromWeekString(currentWeekRaw);
     d.setDate(d.getDate() + offsetWeeks * 7);
@@ -236,7 +235,6 @@ window.loadSchedule = async () => {
     document.querySelectorAll('.jw-input').forEach(input => input.value = '');
     ministryParts = [];
     livingParts = [];
-    document.getElementById('publish-btn').classList.replace('bg-emerald-700', 'bg-emerald-600');
     document.getElementById('save-status').innerText = "...";
 
     try {
@@ -349,8 +347,8 @@ window.saveSchedule = async (isPublished) => {
     saveLivingState();
 
     const btn = isPublished ? document.getElementById('publish-btn') : document.getElementById('save-draft-btn');
-    const originalText = btn.innerText;
-    btn.innerText = window.t('saving');
+    const originalSvg = btn.innerHTML;
+    btn.innerHTML = `<svg class="w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>`;
     btn.disabled = true;
 
     const scheduleData = {
@@ -393,7 +391,7 @@ window.saveSchedule = async (isPublished) => {
         document.getElementById('delete-btn').classList.add('flex');
     } catch (e) { alert(window.t('error_save')); }
     
-    btn.innerHTML = isPublished ? window.t('btn_publish') : `<svg class="w-5 h-5 md:hidden inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg><span class="hidden md:inline text-[10px] md:text-xs">${window.t('btn_draft')}</span>`;
+    btn.innerHTML = originalSvg;
     btn.disabled = false;
 };
 
@@ -417,7 +415,7 @@ window.deleteSchedule = async () => {
 };
 
 // ==============================
-// ЛОГИКА РАСПЕЧАТКИ ГРАФИКА (3 НЕДЕЛИ)
+// ЛОГИКА РАСПЕЧАТКИ ГРАФИКА (4 НЕДЕЛИ)
 // ==============================
 function formatWeekForPrint(weekStr) {
     if (!weekStr) return "";
@@ -439,35 +437,45 @@ function formatWeekForPrint(weekStr) {
     }
 }
 
-// Хелпер для создания компактного HTML одной недели
 function buildCompactWeekHtml(data, weekRaw) {
-    // Если данных в базе нет, выводим заглушку
     if (!data) return `
-        <div style="border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px; page-break-inside: avoid;">
-            <div style="text-align:center; font-weight:900; font-size:14px; margin-bottom:5px; text-transform:uppercase;">${formatWeekForPrint(weekRaw)}</div>
-            <div style="text-align:center; font-size:12px; color:#555;">Нет данных</div>
+        <div style="border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px; margin-bottom: 8px; page-break-inside: avoid;">
+            <div style="text-align:center; font-weight:900; font-size:13px; margin-bottom:2px; text-transform:uppercase; color: #0f172a;">${formatWeekForPrint(weekRaw)}</div>
+            <div style="text-align:center; font-size:11px; color:#94a3b8; font-style: italic;">Нет данных на эту неделю</div>
         </div>`;
 
-    // Функция отрисовки строки (если имя не вписано - строка не рисуется!)
     const row = (label, name) => {
         if (!name || name.trim() === '') return '';
-        return `<div style="display:flex; justify-content:space-between; margin-bottom: 3px; font-size: 11px;"><span>${label}</span><strong>${name}</strong></div>`;
+        return `<div style="display:flex; justify-content:space-between; margin-bottom: 3px; font-size: 11px; line-height: 1.1;">
+                    <span style="color: #475569; padding-right: 4px;">${label}</span>
+                    <strong style="color: #0f172a; text-align: right; max-width: 65%; word-break: break-word;">${name}</strong>
+                </div>`;
     };
 
-    // --- ЛЕВАЯ КОЛОНКА (Служение) ---
+    const sectionHeader = (title, bgColor, iconSvg) => {
+        return `<div style="margin-top:4px; margin-bottom:4px; font-weight:900; font-size:10px; background:${bgColor}; color:white; padding:2px 4px; text-transform:uppercase; border-radius: 3px; display: flex; align-items: center; gap: 4px;">
+                    ${iconSvg} <span>${title}</span>
+                </div>`;
+    };
+
+    // Иконки для разделов
+    const iconTreasure = `<svg style="width:11px;height:11px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`;
+    const iconMinistry = `<svg style="width:11px;height:11px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>`;
+    const iconLiving = `<svg style="width:11px;height:11px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>`;
+    const iconWeekend = `<svg style="width:11px;height:11px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>`;
+
+    // Формируем левую колонку (Служение)
     let leftCol = '';
     leftCol += row(window.t('chairman_intro'), data.mw_chairman_name);
     
-    // Сокровища (печатаются только если есть хоть одно имя)
     let treasures = row(data.mw_treasure_title || window.t('part'), data.mw_treasure_name);
     treasures += row(window.t('spiritual_gems'), data.mw_gems_name);
     treasures += row(window.t('bible_reading'), data.mw_reading_name);
     if (treasures.trim()) {
-        leftCol += `<div style="margin-top:6px; margin-bottom:4px; font-weight:900; font-size:10px; background:#e2e8f0; padding:2px 6px; text-transform:uppercase;">${window.t('treasures_title')}</div>`;
+        leftCol += sectionHeader(window.t('treasures_title'), '#0d9488', iconTreasure);
         leftCol += treasures;
     }
 
-    // Навыки служения
     let ministry = '';
     (data.ministryParts || []).forEach(p => {
         if(!p.student || p.student.trim() === '') return;
@@ -475,50 +483,46 @@ function buildCompactWeekHtml(data, weekRaw) {
         ministry += row(p.type, `${p.student}${ast}`);
     });
     if (ministry.trim()) {
-        leftCol += `<div style="margin-top:6px; margin-bottom:4px; font-weight:900; font-size:10px; background:#e2e8f0; padding:2px 6px; text-transform:uppercase;">${window.t('ministry_skills')}</div>`;
+        leftCol += sectionHeader(window.t('ministry_skills'), '#d97706', iconMinistry);
         leftCol += ministry;
     }
 
-    // Христианская жизнь
     let living = '';
     (data.livingParts || []).forEach(p => {
         if(!p.name || p.name.trim() === '') return;
         living += row(p.title || window.t('part'), p.name);
     });
-    
     let cbsCond = data.mw_cbs_conductor || '';
-    let cbsRead = data.mw_cbs_reader ? ` (Чтец: ${data.mw_cbs_reader})` : '';
+    let cbsRead = data.mw_cbs_reader ? ` (${window.t('reader')}: ${data.mw_cbs_reader})` : '';
     if (cbsCond.trim()) {
         living += row(`${window.t('congregation_bible_study')} ${data.mw_cbs_material ? `(${data.mw_cbs_material})` : ''}`, `${cbsCond}${cbsRead}`);
     }
     living += row(window.t('closing_prayer'), data.mw_prayer_name);
-
     if (living.trim()) {
-        leftCol += `<div style="margin-top:6px; margin-bottom:4px; font-weight:900; font-size:10px; background:#e2e8f0; padding:2px 6px; text-transform:uppercase;">${window.t('christian_living')}</div>`;
+        leftCol += sectionHeader(window.t('christian_living'), '#b91c1c', iconLiving);
         leftCol += living;
     }
 
-    // --- ПРАВАЯ КОЛОНКА (Выходные) ---
+    // Формируем правую колонку (Выходные)
     let rightCol = '';
     rightCol += row(window.t('opening_song'), data.we_opening_name);
     
     if (data.we_talk_speaker && data.we_talk_speaker.trim() !== '') {
-        rightCol += `<div style="margin-top:6px; margin-bottom:4px; font-weight:900; font-size:10px; background:#e2e8f0; padding:2px 6px; text-transform:uppercase;">${window.t('public_talk')}</div>`;
-        rightCol += `<div style="display:flex; justify-content:space-between; margin-bottom: 3px; font-size: 11px;"><span>${data.we_talk_title || window.t('public_talk')}</span><strong>${data.we_talk_speaker}</strong></div>`;
+        rightCol += sectionHeader(window.t('public_talk'), '#475569', iconWeekend);
+        rightCol += row(data.we_talk_title || window.t('public_talk'), data.we_talk_speaker);
     }
 
     let wt = row(window.t('conductor'), data.we_wt_conductor);
     wt += row(window.t('reader'), data.we_wt_reader);
     if (wt.trim()) {
-        rightCol += `<div style="margin-top:6px; margin-bottom:4px; font-weight:900; font-size:10px; background:#e2e8f0; padding:2px 6px; text-transform:uppercase;">${window.t('watchtower_study')}</div>`;
+        rightCol += sectionHeader(window.t('watchtower_study'), '#475569', iconWeekend);
         rightCol += wt;
     }
-    
     rightCol += row(window.t('closing_prayer'), data.we_prayer_name);
 
     return `
-    <div style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; page-break-inside: avoid;">
-        <div style="text-align:center; font-weight:900; font-size:13px; margin-bottom:6px; text-transform:uppercase;">${formatWeekForPrint(weekRaw)}</div>
+    <div style="border-bottom: 1px dashed #cbd5e1; padding-bottom: 8px; margin-bottom: 10px; page-break-inside: avoid;">
+        <div style="text-align:center; font-weight:900; font-size:14px; margin-bottom:4px; text-transform:uppercase; color: #0f172a;">${formatWeekForPrint(weekRaw)}</div>
         <div style="display:flex; gap:25px;">
             <div style="flex:1;">${leftCol}</div>
             <div style="flex:1;">${rightCol}</div>
@@ -528,21 +532,21 @@ function buildCompactWeekHtml(data, weekRaw) {
 }
 
 window.printSchedule = async () => {
-    saveLivingState(); // Сохраняем введенные данные
+    saveLivingState(); 
 
-    // Показываем кнопку загрузки, так как мы будем тянуть данные из базы
-    const btn = document.querySelector('button[title="Распечатать"]');
-    const oldText = btn.innerHTML;
-    btn.innerHTML = '...';
+    const btn = document.getElementById('print-btn');
+    const oldHtml = btn.innerHTML;
+    btn.innerHTML = `<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>`;
     btn.disabled = true;
 
     try {
         const week1Raw = document.getElementById('week-selector').value;
         const week2Raw = getNextWeekRaw(week1Raw, 1);
         const week3Raw = getNextWeekRaw(week1Raw, 2);
+        const week4Raw = getNextWeekRaw(week1Raw, 3);
         const lang = document.getElementById('schedule-lang').value || 'ru';
 
-        // 1. Берем данные Первой Недели прямо из текущей формы на экране
+        // 1. Собираем первую неделю с формы
         const week1Data = {
             mw_chairman_name: document.getElementById('mw-chairman-name').value.trim(),
             mw_treasure_title: document.getElementById('mw-treasure-title').value.trim(),
@@ -563,7 +567,7 @@ window.printSchedule = async () => {
             we_prayer_name: document.getElementById('we-prayer-name').value.trim()
         };
 
-        // 2. Скачиваем данные для Второй и Третьей недели из Базы Данных
+        // 2. Достаем остальные 3 недели из базы
         const getWData = async (raw) => {
             const snap = await getDoc(doc(db, "meeting_schedules", `${raw}-${lang}`));
             return snap.exists() ? snap.data() : null;
@@ -571,30 +575,31 @@ window.printSchedule = async () => {
 
         const week2Data = await getWData(week2Raw);
         const week3Data = await getWData(week3Raw);
+        const week4Data = await getWData(week4Raw);
 
-        // 3. Формируем единый HTML для трех недель
+        // 3. Формируем финальный HTML
         const printHtml = `
             <div style="font-family: sans-serif; color: #000; max-width: 900px; margin: 0 auto;">
-                <h1 style="text-align: center; font-size: 16px; text-transform: uppercase; margin: 0 0 10px 0;">${window.t('program_title')}</h1>
+                <h1 style="text-align: center; font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0 0 15px 0;">${window.t('program_title')}</h1>
                 ${buildCompactWeekHtml(week1Data, week1Raw)}
                 ${buildCompactWeekHtml(week2Data, week2Raw)}
                 ${buildCompactWeekHtml(week3Data, week3Raw)}
+                ${buildCompactWeekHtml(week4Data, week4Raw)}
             </div>
         `;
 
         document.getElementById('print-area').innerHTML = printHtml;
 
-        // Небольшая задержка, чтобы браузер успел отрисовать скрытый блок, и вызываем печать
         setTimeout(() => {
             window.print();
-            btn.innerHTML = oldText;
+            btn.innerHTML = oldHtml;
             btn.disabled = false;
         }, 500);
 
     } catch (e) {
         console.error(e);
-        alert("Ошибка при загрузке следующих недель. Проверьте интернет.");
-        btn.innerHTML = oldText;
+        alert("Ошибка сети. Попробуйте еще раз.");
+        btn.innerHTML = oldHtml;
         btn.disabled = false;
     }
 };
