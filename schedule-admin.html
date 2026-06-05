@@ -17,7 +17,7 @@
     <script>
         tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f3f4f6', nav: '#0f172a' }, jw: { treasure: '#0d9488', ministry: '#d97706', living: '#b91c1c', weekend: '#475569' } } } } }
     </script>
-    <style>
+  <style>
         ::-webkit-scrollbar { display: none; }
         body { -ms-overflow-style: none; scrollbar-width: none; }
         .jw-input { width: 100%; border: none; border-bottom: 1px solid #cbd5e1; background: transparent; font-size: 13px; font-weight: 700; color: #1e293b; padding: 4px 0; outline: none; transition: border-color 0.2s; }
@@ -25,20 +25,19 @@
         .custom-scrollbar::-webkit-scrollbar { display: block; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
-        /* === СТИЛИ ДЛЯ ПЕЧАТИ (A4 Портретная, 4 недели) === */
+        /* === СТИЛИ ДЛЯ ПЕЧАТИ (A4 Портретная, 4 недели НА ВЕСЬ ЛИСТ) === */
         @media print {
             @page {
-                size: A4 portrait; /* Портретная ориентация для 4 блоков */
+                size: A4 portrait;
                 margin: 8mm;
             }
             
             nav, .no-print, #schedule-form { display: none !important; }
-            body { background: white !important; margin: 0; padding: 0; }
-            main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+            body, html { background: white !important; margin: 0 !important; padding: 0 !important; height: 100% !important; }
+            main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; height: 100% !important; }
             
-            #print-area { display: block !important; visibility: visible !important; width: 100%; }
+            #print-area { display: block !important; visibility: visible !important; width: 100%; height: 100%; }
             
-            /* Цветная печать фонов и текста */
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
