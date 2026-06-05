@@ -99,6 +99,13 @@ function getDateFromWeekString(weekStr) {
     return new Date(simpleDate.setDate(diff));
 }
 
+// Хелпер для сдвига недели для печати
+function getNextWeekRaw(currentWeekRaw, offsetWeeks) {
+    const d = getDateFromWeekString(currentWeekRaw);
+    d.setDate(d.getDate() + offsetWeeks * 7);
+    return getISOWeekString(d);
+}
+
 window.changeWeek = (offset) => {
     const input = document.getElementById('week-selector');
     if (!input.value) return;
@@ -410,9 +417,184 @@ window.deleteSchedule = async () => {
 };
 
 // ==============================
-// ЛОГИКА РАСПЕЧАТКИ ГРАФИКА
+// ЛОГИКА РАСПЕЧАТКИ ГРАФИКА (3 НЕДЕЛИ)
 // ==============================
-window.printSchedule = () => {
-    saveLivingState(); // Убеждаемся, что все набранные вручную поля сохранены
-    window.print(); // Вызываем системное окно печати
+function formatWeekForPrint(weekStr) {
+    if (!weekStr) return "";
+    const [year, week] = weekStr.split('-W');
+    const simpleDate = new Date(year, 0, 1 + (week - 1) * 7);
+    const day = simpleDate.getDay();
+    const diff = simpleDate.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(simpleDate.setDate(diff));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const m1 = window.t('months') ? window.t('months')[monday.getMonth()] : monday.getMonth()+1;
+    const m2 = window.t('months') ? window.t('months')[sunday.getMonth()] : sunday.getMonth()+1;
+
+    if (monday.getMonth() === sunday.getMonth()) {
+        return `${monday.getDate()} - ${sunday.getDate()} ${m1} ${year}`;
+    } else {
+        return `${monday.getDate()} ${m1} - ${sunday.getDate()} ${m2} ${year}`;
+    }
+}
+
+// Хелпер для создания компактного HTML одной недели
+function buildCompactWeekHtml(data, weekRaw) {
+    // Если данных в базе нет, выводим заглушку
+    if (!data) return `
+        <div style="border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px; page-break-inside: avoid;">
+            <div style="text-align:center; font-weight:900; font-size:14px; margin-bottom:5px; text-transform:uppercase;">${formatWeekForPrint(weekRaw)}</div>
+            <div style="text-align:center; font-size:12px; color:#555;">Нет данных</div>
+        </div>`;
+
+    // Функция отрисовки строки (если имя не вписано - строка не рисуется!)
+    const row = (label, name) => {
+        if (!name || name.trim() === '') return '';
+        return `<div style="display:flex; justify-content:space-between; margin-bottom: 3px; font-size: 11px;"><span>${label}</span><strong>${name}</strong></div>`;
+    };
+
+    // --- ЛЕВАЯ КОЛОНКА (Служение) ---
+    let leftCol = '';
+    leftCol += row(window.t('chairman_intro'), data.mw_chairman_name);
+    
+    // Сокровища (печатаются только если есть хоть одно имя)
+    let treasures = row(data.mw_treasure_title || window.t('part'), data.mw_treasure_name);
+    treasures += row(window.t('spiritual_gems'), data.mw_gems_name);
+    treasures += row(window.t('bible_reading'), data.mw_reading_name);
+    if (treasures.trim()) {
+        leftCol += `<div style="margin-top:6px; margin-bottom:4px; font-weight:900; font-size:10px; background:#e2e8f0; padding:2px 6px; text-transform:uppercase;">${window.t('treasures_title')}</div>`;
+        leftCol += treasures;
+    }
+
+    // Навыки служения
+    let ministry = '';
+    (data.ministryParts || []).forEach(p => {
+        if(!p.student || p.student.trim() === '') return;
+        let ast = p.assistant && p.assistant !== "Без помощника" ? ` (Пом: ${p.assistant})` : '';
+        ministry += row(p.type, `${p.student}${ast}`);
+    });
+    if (ministry.trim()) {
+        leftCol += `<div style="margin-top:6px; margin-bottom:4px; font-weight:900; font-size:10px; background:#e2e8f0; padding:2px 6px; text-transform:uppercase;">${window.t('ministry_skills')}</div>`;
+        leftCol += ministry;
+    }
+
+    // Христианская жизнь
+    let living = '';
+    (data.livingParts || []).forEach(p => {
+        if(!p.name || p.name.trim() === '') return;
+        living += row(p.title || window.t('part'), p.name);
+    });
+    
+    let cbsCond = data.mw_cbs_conductor || '';
+    let cbsRead = data.mw_cbs_reader ? ` (Чтец: ${data.mw_cbs_reader})` : '';
+    if (cbsCond.trim()) {
+        living += row(`${window.t('congregation_bible_study')} ${data.mw_cbs_material ? `(${data.mw_cbs_material})` : ''}`, `${cbsCond}${cbsRead}`);
+    }
+    living += row(window.t('closing_prayer'), data.mw_prayer_name);
+
+    if (living.trim()) {
+        leftCol += `<div style="margin-top:6px; margin-bottom:4px; font-weight:900; font-size:10px; background:#e2e8f0; padding:2px 6px; text-transform:uppercase;">${window.t('christian_living')}</div>`;
+        leftCol += living;
+    }
+
+    // --- ПРАВАЯ КОЛОНКА (Выходные) ---
+    let rightCol = '';
+    rightCol += row(window.t('opening_song'), data.we_opening_name);
+    
+    if (data.we_talk_speaker && data.we_talk_speaker.trim() !== '') {
+        rightCol += `<div style="margin-top:6px; margin-bottom:4px; font-weight:900; font-size:10px; background:#e2e8f0; padding:2px 6px; text-transform:uppercase;">${window.t('public_talk')}</div>`;
+        rightCol += `<div style="display:flex; justify-content:space-between; margin-bottom: 3px; font-size: 11px;"><span>${data.we_talk_title || window.t('public_talk')}</span><strong>${data.we_talk_speaker}</strong></div>`;
+    }
+
+    let wt = row(window.t('conductor'), data.we_wt_conductor);
+    wt += row(window.t('reader'), data.we_wt_reader);
+    if (wt.trim()) {
+        rightCol += `<div style="margin-top:6px; margin-bottom:4px; font-weight:900; font-size:10px; background:#e2e8f0; padding:2px 6px; text-transform:uppercase;">${window.t('watchtower_study')}</div>`;
+        rightCol += wt;
+    }
+    
+    rightCol += row(window.t('closing_prayer'), data.we_prayer_name);
+
+    return `
+    <div style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; page-break-inside: avoid;">
+        <div style="text-align:center; font-weight:900; font-size:13px; margin-bottom:6px; text-transform:uppercase;">${formatWeekForPrint(weekRaw)}</div>
+        <div style="display:flex; gap:25px;">
+            <div style="flex:1;">${leftCol}</div>
+            <div style="flex:1;">${rightCol}</div>
+        </div>
+    </div>
+    `;
+}
+
+window.printSchedule = async () => {
+    saveLivingState(); // Сохраняем введенные данные
+
+    // Показываем кнопку загрузки, так как мы будем тянуть данные из базы
+    const btn = document.querySelector('button[title="Распечатать"]');
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '...';
+    btn.disabled = true;
+
+    try {
+        const week1Raw = document.getElementById('week-selector').value;
+        const week2Raw = getNextWeekRaw(week1Raw, 1);
+        const week3Raw = getNextWeekRaw(week1Raw, 2);
+        const lang = document.getElementById('schedule-lang').value || 'ru';
+
+        // 1. Берем данные Первой Недели прямо из текущей формы на экране
+        const week1Data = {
+            mw_chairman_name: document.getElementById('mw-chairman-name').value.trim(),
+            mw_treasure_title: document.getElementById('mw-treasure-title').value.trim(),
+            mw_treasure_name: document.getElementById('mw-treasure-name').value.trim(),
+            mw_gems_name: document.getElementById('mw-gems-name').value.trim(),
+            mw_reading_name: document.getElementById('mw-reading-name').value.trim(),
+            ministryParts: ministryParts,
+            livingParts: livingParts,
+            mw_cbs_material: document.getElementById('mw-cbs-material').value.trim(),
+            mw_cbs_conductor: document.getElementById('mw-cbs-conductor').value.trim(),
+            mw_cbs_reader: document.getElementById('mw-cbs-reader').value.trim(),
+            mw_prayer_name: document.getElementById('mw-prayer-name').value.trim(),
+            we_opening_name: document.getElementById('we-opening-name').value.trim(),
+            we_talk_title: document.getElementById('we-talk-title').value.trim(),
+            we_talk_speaker: document.getElementById('we-talk-speaker').value.trim(),
+            we_wt_conductor: document.getElementById('we-wt-conductor').value.trim(),
+            we_wt_reader: document.getElementById('we-wt-reader').value.trim(),
+            we_prayer_name: document.getElementById('we-prayer-name').value.trim()
+        };
+
+        // 2. Скачиваем данные для Второй и Третьей недели из Базы Данных
+        const getWData = async (raw) => {
+            const snap = await getDoc(doc(db, "meeting_schedules", `${raw}-${lang}`));
+            return snap.exists() ? snap.data() : null;
+        };
+
+        const week2Data = await getWData(week2Raw);
+        const week3Data = await getWData(week3Raw);
+
+        // 3. Формируем единый HTML для трех недель
+        const printHtml = `
+            <div style="font-family: sans-serif; color: #000; max-width: 900px; margin: 0 auto;">
+                <h1 style="text-align: center; font-size: 16px; text-transform: uppercase; margin: 0 0 10px 0;">${window.t('program_title')}</h1>
+                ${buildCompactWeekHtml(week1Data, week1Raw)}
+                ${buildCompactWeekHtml(week2Data, week2Raw)}
+                ${buildCompactWeekHtml(week3Data, week3Raw)}
+            </div>
+        `;
+
+        document.getElementById('print-area').innerHTML = printHtml;
+
+        // Небольшая задержка, чтобы браузер успел отрисовать скрытый блок, и вызываем печать
+        setTimeout(() => {
+            window.print();
+            btn.innerHTML = oldText;
+            btn.disabled = false;
+        }, 500);
+
+    } catch (e) {
+        console.error(e);
+        alert("Ошибка при загрузке следующих недель. Проверьте интернет.");
+        btn.innerHTML = oldText;
+        btn.disabled = false;
+    }
 };
