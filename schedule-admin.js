@@ -415,7 +415,7 @@ window.deleteSchedule = async () => {
 };
 
 // ==============================
-// ЛОГИКА РАСПЕЧАТКИ ГРАФИКА (4 НЕДЕЛИ)
+// ЛОГИКА РАСПЕЧАТКИ ГРАФИКА (4 НЕДЕЛИ - НА ВЕСЬ ЛИСТ А4)
 // ==============================
 function formatWeekForPrint(weekStr) {
     if (!weekStr) return "";
@@ -436,6 +436,170 @@ function formatWeekForPrint(weekStr) {
         return `${monday.getDate()} ${m1} - ${sunday.getDate()} ${m2} ${year}`;
     }
 }
+
+function buildCompactWeekHtml(data, weekRaw, isLast = false) {
+    const borderStyle = isLast ? 'none' : '2px dashed #cbd5e1'; // Убираем черту у последней недели
+    
+    if (!data) return `
+        <div style="flex: 1; border-bottom: ${borderStyle}; padding-bottom: 5px; display: flex; flex-direction: column; justify-content: center;">
+            <div style="text-align:center; font-weight:900; font-size:16px; margin-bottom:2px; text-transform:uppercase; color: #0f172a;">${formatWeekForPrint(weekRaw)}</div>
+            <div style="text-align:center; font-size:13px; color:#94a3b8; font-style: italic;">Нет данных на эту неделю</div>
+        </div>`;
+
+    // ШРИФТЫ УВЕЛИЧЕНЫ ДО 13px!
+    const row = (label, name) => {
+        if (!name || name.trim() === '') return '';
+        return `<div style="display:flex; justify-content:space-between; margin-bottom: 5px; font-size: 13px; line-height: 1.2;">
+                    <span style="color: #475569; padding-right: 6px;">${label}</span>
+                    <strong style="color: #0f172a; text-align: right; max-width: 65%; word-break: break-word;">${name}</strong>
+                </div>`;
+    };
+
+    const sectionHeader = (title, bgColor, iconSvg) => {
+        return `<div style="margin-top:6px; margin-bottom:6px; font-weight:900; font-size:12px; background:${bgColor}; color:white; padding:3px 6px; text-transform:uppercase; border-radius: 4px; display: flex; align-items: center; gap: 5px;">
+                    ${iconSvg} <span>${title}</span>
+                </div>`;
+    };
+
+    const iconTreasure = `<svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`;
+    const iconMinistry = `<svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>`;
+    const iconLiving = `<svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>`;
+    const iconWeekend = `<svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>`;
+
+    let leftCol = '';
+    leftCol += row(window.t('chairman_intro'), data.mw_chairman_name);
+    
+    let treasures = row(data.mw_treasure_title || window.t('part'), data.mw_treasure_name);
+    treasures += row(window.t('spiritual_gems'), data.mw_gems_name);
+    treasures += row(window.t('bible_reading'), data.mw_reading_name);
+    if (treasures.trim()) {
+        leftCol += sectionHeader(window.t('treasures_title'), '#0d9488', iconTreasure);
+        leftCol += treasures;
+    }
+
+    let ministry = '';
+    (data.ministryParts || []).forEach(p => {
+        if(!p.student || p.student.trim() === '') return;
+        let ast = p.assistant && p.assistant !== "Без помощника" ? ` (Пом: ${p.assistant})` : '';
+        ministry += row(p.type, `${p.student}${ast}`);
+    });
+    if (ministry.trim()) {
+        leftCol += sectionHeader(window.t('ministry_skills'), '#d97706', iconMinistry);
+        leftCol += ministry;
+    }
+
+    let living = '';
+    (data.livingParts || []).forEach(p => {
+        if(!p.name || p.name.trim() === '') return;
+        living += row(p.title || window.t('part'), p.name);
+    });
+    let cbsCond = data.mw_cbs_conductor || '';
+    let cbsRead = data.mw_cbs_reader ? ` (${window.t('reader')}: ${data.mw_cbs_reader})` : '';
+    if (cbsCond.trim()) {
+        living += row(`${window.t('congregation_bible_study')} ${data.mw_cbs_material ? `(${data.mw_cbs_material})` : ''}`, `${cbsCond}${cbsRead}`);
+    }
+    living += row(window.t('closing_prayer'), data.mw_prayer_name);
+    if (living.trim()) {
+        leftCol += sectionHeader(window.t('christian_living'), '#b91c1c', iconLiving);
+        leftCol += living;
+    }
+
+    let rightCol = '';
+    rightCol += row(window.t('opening_song'), data.we_opening_name);
+    
+    if (data.we_talk_speaker && data.we_talk_speaker.trim() !== '') {
+        rightCol += sectionHeader(window.t('public_talk'), '#475569', iconWeekend);
+        rightCol += row(data.we_talk_title || window.t('public_talk'), data.we_talk_speaker);
+    }
+
+    let wt = row(window.t('conductor'), data.we_wt_conductor);
+    wt += row(window.t('reader'), data.we_wt_reader);
+    if (wt.trim()) {
+        rightCol += sectionHeader(window.t('watchtower_study'), '#475569', iconWeekend);
+        rightCol += wt;
+    }
+    rightCol += row(window.t('closing_prayer'), data.we_prayer_name);
+
+    return `
+    <div style="flex: 1; border-bottom: ${borderStyle}; padding-bottom: 10px; display: flex; flex-direction: column;">
+        <div style="text-align:center; font-weight:900; font-size:16px; margin-bottom:6px; text-transform:uppercase; color: #0f172a;">${formatWeekForPrint(weekRaw)}</div>
+        <div style="display:flex; gap:35px; flex: 1;">
+            <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-start;">${leftCol}</div>
+            <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-start;">${rightCol}</div>
+        </div>
+    </div>
+    `;
+}
+
+window.printSchedule = async () => {
+    saveLivingState(); 
+
+    const btn = document.getElementById('print-btn');
+    const oldHtml = btn.innerHTML;
+    btn.innerHTML = `<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>`;
+    btn.disabled = true;
+
+    try {
+        const week1Raw = document.getElementById('week-selector').value;
+        const week2Raw = getNextWeekRaw(week1Raw, 1);
+        const week3Raw = getNextWeekRaw(week1Raw, 2);
+        const week4Raw = getNextWeekRaw(week1Raw, 3);
+        const lang = document.getElementById('schedule-lang').value || 'ru';
+
+        const week1Data = {
+            mw_chairman_name: document.getElementById('mw-chairman-name').value.trim(),
+            mw_treasure_title: document.getElementById('mw-treasure-title').value.trim(),
+            mw_treasure_name: document.getElementById('mw-treasure-name').value.trim(),
+            mw_gems_name: document.getElementById('mw-gems-name').value.trim(),
+            mw_reading_name: document.getElementById('mw-reading-name').value.trim(),
+            ministryParts: ministryParts,
+            livingParts: livingParts,
+            mw_cbs_material: document.getElementById('mw-cbs-material').value.trim(),
+            mw_cbs_conductor: document.getElementById('mw-cbs-conductor').value.trim(),
+            mw_cbs_reader: document.getElementById('mw-cbs-reader').value.trim(),
+            mw_prayer_name: document.getElementById('mw-prayer-name').value.trim(),
+            we_opening_name: document.getElementById('we-opening-name').value.trim(),
+            we_talk_title: document.getElementById('we-talk-title').value.trim(),
+            we_talk_speaker: document.getElementById('we-talk-speaker').value.trim(),
+            we_wt_conductor: document.getElementById('we-wt-conductor').value.trim(),
+            we_wt_reader: document.getElementById('we-wt-reader').value.trim(),
+            we_prayer_name: document.getElementById('we-prayer-name').value.trim()
+        };
+
+        const getWData = async (raw) => {
+            const snap = await getDoc(doc(db, "meeting_schedules", `${raw}-${lang}`));
+            return snap.exists() ? snap.data() : null;
+        };
+
+        const week2Data = await getWData(week2Raw);
+        const week3Data = await getWData(week3Raw);
+        const week4Data = await getWData(week4Raw);
+
+        // Главный контейнер имеет height: 100vh; flex; чтобы растянуть на лист
+        const printHtml = `
+            <div style="font-family: sans-serif; color: #000; height: 100vh; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; overflow: hidden;">
+                <h1 style="text-align: center; font-size: 18px; font-weight: 900; text-transform: uppercase; margin: 0 0 10px 0; flex-shrink: 0;">${window.t('program_title')}</h1>
+                ${buildCompactWeekHtml(week1Data, week1Raw, false)}
+                ${buildCompactWeekHtml(week2Data, week2Raw, false)}
+                ${buildCompactWeekHtml(week3Data, week3Raw, false)}
+                ${buildCompactWeekHtml(week4Data, week4Raw, true)} </div>
+        `;
+
+        document.getElementById('print-area').innerHTML = printHtml;
+
+        setTimeout(() => {
+            window.print();
+            btn.innerHTML = oldHtml;
+            btn.disabled = false;
+        }, 500);
+
+    } catch (e) {
+        console.error(e);
+        alert("Ошибка сети. Попробуйте еще раз.");
+        btn.innerHTML = oldHtml;
+        btn.disabled = false;
+    }
+};
 
 function buildCompactWeekHtml(data, weekRaw) {
     if (!data) return `
