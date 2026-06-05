@@ -17,7 +17,7 @@
     <script>
         tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f3f4f6', nav: '#0f172a' }, jw: { treasure: '#0d9488', ministry: '#d97706', living: '#b91c1c', weekend: '#475569' } } } } }
     </script>
-  <style>
+    <style>
         ::-webkit-scrollbar { display: none; }
         body { -ms-overflow-style: none; scrollbar-width: none; }
         .jw-input { width: 100%; border: none; border-bottom: 1px solid #cbd5e1; background: transparent; font-size: 13px; font-weight: 700; color: #1e293b; padding: 4px 0; outline: none; transition: border-color 0.2s; }
@@ -25,40 +25,46 @@
         .custom-scrollbar::-webkit-scrollbar { display: block; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
-        /* === СТИЛИ ДЛЯ ПЕЧАТИ (A4 Портретная, 4 недели НА ВЕСЬ ЛИСТ) === */
+        /* === ИДЕАЛЬНЫЕ СТИЛИ ДЛЯ ПЕЧАТИ (A4 Портретная) === */
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 8mm;
+                margin: 10mm;
             }
             
-            nav, .no-print, #schedule-form { display: none !important; }
-            body, html { background: white !important; margin: 0 !important; padding: 0 !important; height: 100% !important; }
-            main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; height: 100% !important; }
+            /* Жестко скрываем всё, что имеет класс no-print */
+            .no-print { display: none !important; }
             
-            #print-area { display: block !important; visibility: visible !important; width: 100%; height: 100%; }
+            body, html { background: white !important; margin: 0 !important; padding: 0 !important; }
             
+            /* Показываем только зону печати */
+            #print-area { display: block !important; visibility: visible !important; width: 100%; }
+            
+            /* Разрешаем браузеру печатать цвета (фоны кнопок/заголовков) */
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
         }
         @media screen {
+            /* На экране зону печати не видно */
             #print-area { display: none !important; }
         }
     </style>
 </head>
 <body class="bg-ui-bg text-slate-800 font-sans pb-24 md:pb-6 relative">
 
+    <!-- КЛАСС no-print СКРОЕТ МЕНЮ ПРИ ПЕЧАТИ -->
     <nav class="fixed bottom-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-slate-800 md:border-t-0 no-print">
         <a href="index.html" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-slate-400 hover:text-white">
             <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
         </a>
     </nav>
 
-    <main class="w-full max-w-6xl mx-auto px-4 py-6 md:pl-28 md:pr-6">
+    <!-- КЛАСС no-print СКРОЕТ ВЕСЬ РЕДАКТОР ПРИ ПЕЧАТИ -->
+    <main class="w-full max-w-6xl mx-auto px-4 py-6 md:pl-28 md:pr-6 no-print">
         
-        <div class="flex flex-col bg-white border border-slate-200 p-4 rounded-xl mb-6 shadow-sm gap-4 no-print">
+        <div class="flex flex-col bg-white border border-slate-200 p-4 rounded-xl mb-6 shadow-sm gap-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <span class="text-xs font-black uppercase tracking-widest text-slate-500" data-lang="schedule_for">График для:</span>
                 <select id="schedule-lang" onchange="loadSchedule()" class="bg-indigo-50 border border-indigo-200 text-indigo-700 font-black text-sm px-4 py-2 rounded-lg outline-none cursor-pointer shadow-sm">
@@ -74,7 +80,6 @@
                     <button onclick="changeWeek(1)" class="w-10 h-10 md:w-10 md:h-10 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg font-black flex items-center justify-center transition-colors outline-none shrink-0">&rarr;</button>
                 </div>
                 
-                <!-- КОМПАКТНЫЕ КНОПКИ (ТОЛЬКО ИКОНКИ) -->
                 <div class="flex items-center justify-end gap-2 overflow-x-auto custom-scrollbar pb-1">
                     <span id="save-status" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mr-1 hidden lg:block">...</span>
                     
@@ -114,7 +119,6 @@
 
         <div id="schedule-form" class="grid grid-cols-1 lg:grid-cols-2 gap-8 hidden">
             
-            <!-- Левая колонка (Будние дни) -->
             <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
                 <div class="w-full flex flex-col mb-8">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-lang="chairman_intro">Председатель / Вступление</span>
@@ -189,7 +193,6 @@
 
             </div>
 
-            <!-- Правая колонка (Выходные) -->
             <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col">
                 <div class="flex-grow space-y-8">
                     <div class="w-full flex flex-col px-2">
@@ -233,13 +236,12 @@
             </div>
 
         </div>
-
-        <!-- Контейнер для печати (Скрыт в обычном режиме) -->
-        <div id="print-area"></div>
-
     </main>
 
-    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
-    <script type="module" src="schedule-admin.js?v=23"></script>
+    <!-- КОНТЕЙНЕР ДЛЯ ПЕЧАТИ (ВНЕ ТЕГА MAIN!) -->
+    <div id="print-area"></div>
+    <div id="toast-container" class="no-print fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
+    
+    <script type="module" src="schedule-admin.js?v=24"></script>
 </body>
 </html>
