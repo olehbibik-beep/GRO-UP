@@ -14,7 +14,7 @@ const dict = {
         "success_pub": "График опубликован!", "success_draft": "Черновик сохранен", "error_save": "Ошибка сохранения!",
         "confirm_del": "Точно удалить этот график навсегда?", "success_del": "График успешно удален!", "error_del": "Ошибка удаления!",
         "part": "Задание", "assistant_short": "Пом:", "conductor": "Ведущий", "reader": "Чтец",
-        "attendants_and_sound": "Обслуживание встреч", "attendant": "Распорядитель", "sound": "Звук / Видео",
+        "attendants_and_sound": "Обслуживание встреч", "attendant": "Распорядители", "sound": "Звук / Видео",
         "months": ["Января", "Февраля", "Марта", "Апреля", "Мая", "Июня", "Июля", "Августа", "Сентября", "Октября", "Ноября", "Декабря"]
     },
     cs: {
@@ -29,7 +29,7 @@ const dict = {
         "success_pub": "Rozvrh byl publikován!", "success_draft": "Koncept byl uložen", "error_save": "Chyba při ukládání!",
         "confirm_del": "Opravdu chcete tento rozvrh trvale smazat?", "success_del": "Rozvrh byl úspěšně smazán!", "error_del": "Chyba při mazání!",
         "part": "Úkol", "assistant_short": "Pom:", "conductor": "Předsedající", "reader": "Čte",
-        "attendants_and_sound": "Zajištění shromáždění", "attendant": "Pořadatel", "sound": "Zvuk / Video",
+        "attendants_and_sound": "Zajištění shromáždění", "attendant": "Pořadatelé", "sound": "Zvuk / Video",
         "months": ["Ledna", "Února", "Března", "Dubna", "Května", "Června", "Července", "Srpna", "Září", "Října", "Listopadu", "Prosince"]
     }
 };
@@ -178,9 +178,12 @@ async function loadSchedule() {
             document.getElementById('we-wt-reader').value = d.we_wt_reader || '';
             document.getElementById('we-prayer-name').value = d.we_prayer_name || '';
 
-            // НОВЫЕ ПОЛЯ (Звук и Распорядитель)
-            document.getElementById('duty-attendant').value = d.duty_attendant || '';
-            document.getElementById('duty-sound').value = d.duty_sound || '';
+            // НОВЫЕ ПОЛЯ 
+            document.getElementById('duty-attendant-1').value = d.duty_attendant_1 || '';
+            document.getElementById('duty-attendant-2').value = d.duty_attendant_2 || '';
+            document.getElementById('duty-sound-1').value = d.duty_sound_1 || '';
+            document.getElementById('duty-sound-2').value = d.duty_sound_2 || '';
+
         } else {
             document.getElementById('delete-btn').classList.add('hidden');
             document.getElementById('delete-btn').classList.remove('inline-block');
@@ -258,9 +261,11 @@ function setCurrentWeek() {
 
 function loadUsersForDatalists() {
     onSnapshot(collection(db, "users"), (snapshot) => {
+        const listAll = document.getElementById('list-all-users');
         const listBrothers = document.getElementById('list-brothers');
         const listSchool = document.getElementById('list-school');
-        let brothersHtml = ''; let schoolHtml = '';
+        
+        let allHtml = ''; let brothersHtml = ''; let schoolHtml = '';
         
         let allUsers = [];
         snapshot.forEach(docSnap => allUsers.push(docSnap.data()));
@@ -268,10 +273,14 @@ function loadUsersForDatalists() {
 
         allUsers.forEach(u => {
             if (u.status !== 'active') return;
+            allHtml += `<option value="${u.name}">`;
             if (u.gender === 'boy') brothersHtml += `<option value="${u.name}">`;
             if (u.roles && u.roles.includes('Участник школы')) schoolHtml += `<option value="${u.name}">`;
         });
-        listBrothers.innerHTML = brothersHtml; listSchool.innerHTML = schoolHtml;
+        
+        if(listAll) listAll.innerHTML = allHtml;
+        if(listBrothers) listBrothers.innerHTML = brothersHtml; 
+        if(listSchool) listSchool.innerHTML = schoolHtml;
     });
 }
 
@@ -399,8 +408,10 @@ window.saveSchedule = async (isPublished) => {
         we_prayer_name: document.getElementById('we-prayer-name').value.trim(),
 
         // НОВЫЕ ПОЛЯ
-        duty_attendant: document.getElementById('duty-attendant').value.trim(),
-        duty_sound: document.getElementById('duty-sound').value.trim(),
+        duty_attendant_1: document.getElementById('duty-attendant-1').value.trim(),
+        duty_attendant_2: document.getElementById('duty-attendant-2').value.trim(),
+        duty_sound_1: document.getElementById('duty-sound-1').value.trim(),
+        duty_sound_2: document.getElementById('duty-sound-2').value.trim(),
     };
 
     try {
@@ -461,7 +472,7 @@ function formatWeekForPrint(weekStr) {
 }
 
 function buildCompactWeekHtml(data, weekRaw, isLast = false) {
-    const borderStyle = isLast ? 'none' : '1px solid #cbd5e1'; 
+    const borderStyle = isLast ? 'none' : '1px dashed #cbd5e1'; 
     
     if (!data) return `
         <div style="flex: 1; border-bottom: ${borderStyle}; padding-bottom: 5px; display: flex; flex-direction: column; justify-content: center;">
@@ -542,20 +553,25 @@ function buildCompactWeekHtml(data, weekRaw, isLast = false) {
     }
     rightCol += row(window.t('closing_prayer'), data.we_prayer_name);
 
-    // Блок обязанностей (Звук, Распорядитель) выводится внизу карточки
+    // ПРИЖАТАЯ РАМОЧКА ЗВУКА И РАСПОРЯДИТЕЛЕЙ
+    let attendantsArr = [data.duty_attendant_1, data.duty_attendant_2].filter(Boolean);
+    let soundsArr = [data.duty_sound_1, data.duty_sound_2].filter(Boolean);
+    let attendantsStr = attendantsArr.length > 0 ? attendantsArr.join(', ') : '';
+    let soundsStr = soundsArr.length > 0 ? soundsArr.join(', ') : '';
+
     let dutiesHtml = '';
-    if ((data.duty_attendant && data.duty_attendant.trim() !== '') || (data.duty_sound && data.duty_sound.trim() !== '')) {
+    if (attendantsStr || soundsStr) {
         dutiesHtml = `
-        <div style="margin-top: 8px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 4px; display: flex; justify-content: space-around; align-items: center; font-size: 11px; background-color: #f8fafc; color: #0f172a;">
-            ${data.duty_attendant ? `<div><span style="color: #64748b; margin-right: 4px; font-size: 10px; text-transform: uppercase; font-weight: bold;">${window.t('attendant')}:</span><strong style="font-size: 12px;">${data.duty_attendant}</strong></div>` : ''}
-            ${data.duty_sound ? `<div><span style="color: #64748b; margin-right: 4px; font-size: 10px; text-transform: uppercase; font-weight: bold;">${window.t('sound')}:</span><strong style="font-size: 12px;">${data.duty_sound}</strong></div>` : ''}
+        <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; font-size: 11px; color: #0f172a;">
+            <div style="flex:1;">${attendantsStr ? `<span style="color: #64748b; font-size: 9px; text-transform: uppercase; font-weight: bold; margin-right: 4px;">${window.t('attendant')}:</span><strong>${attendantsStr}</strong>` : ''}</div>
+            <div style="flex:1; text-align:right;">${soundsStr ? `<span style="color: #64748b; font-size: 9px; text-transform: uppercase; font-weight: bold; margin-right: 4px;">${window.t('sound')}:</span><strong>${soundsStr}</strong>` : ''}</div>
         </div>
         `;
     }
 
     return `
-    <div style="flex: 1; border-bottom: ${borderStyle}; padding-bottom: 10px; display: flex; flex-direction: column;">
-        <div style="text-align:center; font-weight:900; font-size:16px; margin-bottom:6px; text-transform:uppercase; color: #0f172a;">${formatWeekForPrint(weekRaw)}</div>
+    <div style="flex: 1; border-bottom: ${borderStyle}; padding-bottom: 6px; display: flex; flex-direction: column;">
+        <div style="text-align:center; font-weight:900; font-size:16px; margin-bottom:4px; text-transform:uppercase; color: #0f172a;">${formatWeekForPrint(weekRaw)}</div>
         <div style="display:flex; gap:35px; flex: 1;">
             <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-start;">${leftCol}</div>
             <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-start;">${rightCol}</div>
@@ -598,8 +614,10 @@ window.printSchedule = async () => {
             we_wt_conductor: document.getElementById('we-wt-conductor').value.trim(),
             we_wt_reader: document.getElementById('we-wt-reader').value.trim(),
             we_prayer_name: document.getElementById('we-prayer-name').value.trim(),
-            duty_attendant: document.getElementById('duty-attendant').value.trim(),
-            duty_sound: document.getElementById('duty-sound').value.trim()
+            duty_attendant_1: document.getElementById('duty-attendant-1').value.trim(),
+            duty_attendant_2: document.getElementById('duty-attendant-2').value.trim(),
+            duty_sound_1: document.getElementById('duty-sound-1').value.trim(),
+            duty_sound_2: document.getElementById('duty-sound-2').value.trim()
         };
 
         const getWData = async (raw) => {
@@ -612,7 +630,7 @@ window.printSchedule = async () => {
         const week4Data = await getWData(week4Raw);
 
         const printHtml = `
-            <div style="font-family: sans-serif; color: #000; min-height: 270mm; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; overflow: hidden;">
+            <div style="font-family: sans-serif; color: #000; height: 100vh; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; overflow: hidden;">
                 <h1 style="text-align: center; font-size: 18px; font-weight: 900; text-transform: uppercase; margin: 0 0 10px 0; flex-shrink: 0;">${window.t('program_title')}</h1>
                 ${buildCompactWeekHtml(week1Data, week1Raw, false)}
                 ${buildCompactWeekHtml(week2Data, week2Raw, false)}
