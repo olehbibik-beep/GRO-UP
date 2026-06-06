@@ -32,22 +32,18 @@
                 margin: 10mm;
             }
             
-            /* Жестко скрываем всё, что имеет класс no-print */
             .no-print { display: none !important; }
             
             body, html { background: white !important; margin: 0 !important; padding: 0 !important; }
             
-            /* Показываем только зону печати */
             #print-area { display: block !important; visibility: visible !important; width: 100%; }
             
-            /* Разрешаем браузеру печатать цвета (фоны кнопок/заголовков) */
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
         }
         @media screen {
-            /* На экране зону печати не видно */
             #print-area { display: none !important; }
         }
     </style>
@@ -100,6 +96,7 @@
             </div>
         </div>
 
+        <datalist id="list-all-users"></datalist> <!-- НОВЫЙ СПИСОК (БРАТЬЯ И СЕСТРЫ) -->
         <datalist id="list-brothers"></datalist>
         <datalist id="list-school"></datalist>
         <datalist id="part-types">
@@ -233,7 +230,7 @@
                 </div>
             </div>
 
-            <!-- БЛОК "РАСПОРЯДИТЕЛИ И ЗВУК" -->
+            <!-- БЛОК "ОБСЛУЖИВАНИЕ ВСТРЕЧ" -->
             <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm lg:col-span-2">
                 <h3 class="font-black text-slate-800 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
                     <svg class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -242,13 +239,15 @@
                     <span data-lang="attendants_and_sound">Обслуживание встреч</span>
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="w-full flex flex-col">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-lang="attendant">Распорядитель</span>
-                        <input type="text" id="duty-attendant" list="list-brothers" class="jw-input mt-1" placeholder="Имя брата...">
+                    <div class="w-full flex flex-col gap-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-lang="attendant">Распорядители</span>
+                        <input type="text" id="duty-attendant-1" list="list-all-users" class="jw-input" placeholder="Имя 1...">
+                        <input type="text" id="duty-attendant-2" list="list-all-users" class="jw-input" placeholder="Имя 2...">
                     </div>
-                    <div class="w-full flex flex-col">
+                    <div class="w-full flex flex-col gap-2">
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-lang="sound">Звук / Видео</span>
-                        <input type="text" id="duty-sound" list="list-brothers" class="jw-input mt-1" placeholder="Имя брата...">
+                        <input type="text" id="duty-sound-1" list="list-all-users" class="jw-input" placeholder="Имя 1...">
+                        <input type="text" id="duty-sound-2" list="list-all-users" class="jw-input" placeholder="Имя 2...">
                     </div>
                 </div>
             </div>
@@ -261,6 +260,6 @@
     <div id="print-area"></div>
     <div id="toast-container" class="no-print fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
     
-    <script type="module" src="schedule-admin.js?v=26"></script>
+    <script type="module" src="schedule-admin.js?v=27"></script>
 </body>
 </html>
