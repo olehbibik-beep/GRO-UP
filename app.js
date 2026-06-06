@@ -1088,16 +1088,16 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 
     if (attendantsArr.length > 0 || soundsArr.length > 0) {
         dutiesBlock = `
-            <div class="mt-4 pt-3 border-t border-slate-300 border-dashed grid grid-cols-2 gap-2 text-center bg-slate-50 rounded-xl p-2 shadow-inner mx-2 mb-2">
+            <div class="mt-3 grid grid-cols-2 gap-2 text-center bg-slate-200/60 rounded-xl p-2.5 mx-2 mb-2">
                 ${attendantsArr.length > 0 ? `
                 <div class="flex flex-col items-center justify-center">
-                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-400">Распорядители</span>
+                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-500">Распорядители</span>
                     <span class="text-[10px] md:text-xs font-bold text-slate-800 leading-tight mt-0.5">${attendantsArr.join('<br>')}</span>
                 </div>` : '<div></div>'}
                 
                 ${soundsArr.length > 0 ? `
-                <div class="flex flex-col items-center justify-center border-l border-slate-200">
-                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-400">Звук / Видео</span>
+                <div class="flex flex-col items-center justify-center border-l border-slate-300">
+                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-500">Звук / Видео</span>
                     <span class="text-[10px] md:text-xs font-bold text-slate-800 leading-tight mt-0.5">${soundsArr.join('<br>')}</span>
                 </div>` : '<div></div>'}
             </div>
