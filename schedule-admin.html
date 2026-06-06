@@ -54,14 +54,12 @@
 </head>
 <body class="bg-ui-bg text-slate-800 font-sans pb-24 md:pb-6 relative">
 
-    <!-- КЛАСС no-print СКРОЕТ МЕНЮ ПРИ ПЕЧАТИ -->
     <nav class="fixed bottom-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-slate-800 md:border-t-0 no-print">
         <a href="index.html" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-slate-400 hover:text-white">
             <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
         </a>
     </nav>
 
-    <!-- КЛАСС no-print СКРОЕТ ВЕСЬ РЕДАКТОР ПРИ ПЕЧАТИ -->
     <main class="w-full max-w-6xl mx-auto px-4 py-6 md:pl-28 md:pr-6 no-print">
         
         <div class="flex flex-col bg-white border border-slate-200 p-4 rounded-xl mb-6 shadow-sm gap-4">
@@ -117,7 +115,6 @@
             <option value="Пункт"></option>
         </datalist>
 
-        <!-- ВОТ ГЛАВНОЕ ИСПРАВЛЕНИЕ: УБРАН КЛАСС hidden -->
         <div id="schedule-form" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
             <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
@@ -236,13 +233,34 @@
                 </div>
             </div>
 
+            <!-- БЛОК "РАСПОРЯДИТЕЛИ И ЗВУК" -->
+            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm lg:col-span-2">
+                <h3 class="font-black text-slate-800 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span data-lang="attendants_and_sound">Обслуживание встреч</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="w-full flex flex-col">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-lang="attendant">Распорядитель</span>
+                        <input type="text" id="duty-attendant" list="list-brothers" class="jw-input mt-1" placeholder="Имя брата...">
+                    </div>
+                    <div class="w-full flex flex-col">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-lang="sound">Звук / Видео</span>
+                        <input type="text" id="duty-sound" list="list-brothers" class="jw-input mt-1" placeholder="Имя брата...">
+                    </div>
+                </div>
+            </div>
+
         </div>
+
     </main>
 
     <!-- КОНТЕЙНЕР ДЛЯ ПЕЧАТИ (ВНЕ ТЕГА MAIN!) -->
     <div id="print-area"></div>
     <div id="toast-container" class="no-print fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
     
-    <script type="module" src="schedule-admin.js?v=25"></script>
+    <script type="module" src="schedule-admin.js?v=26"></script>
 </body>
 </html>
