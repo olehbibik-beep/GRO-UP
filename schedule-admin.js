@@ -472,7 +472,8 @@ function formatWeekForPrint(weekStr) {
 }
 
 function buildCompactWeekHtml(data, weekRaw, isLast = false) {
-    const borderStyle = isLast ? 'none' : '1px dashed #cbd5e1'; 
+    // Вместо штриховки теперь сплошная светлая линия (или ничего, если неделя последняя)
+    const borderStyle = isLast ? 'none' : '2px solid #e2e8f0'; 
     
     if (!data) return `
         <div style="flex: 1; border-bottom: ${borderStyle}; padding-bottom: 5px; display: flex; flex-direction: column; justify-content: center;">
@@ -499,7 +500,9 @@ function buildCompactWeekHtml(data, weekRaw, isLast = false) {
     const iconLiving = `<svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>`;
     const iconWeekend = `<svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>`;
 
+    // --- ЛЕВАЯ КОЛОНКА ---
     let leftCol = '';
+    leftCol += `<div style="text-align:center; font-weight:900; font-size:12px; margin-bottom:8px; text-transform:uppercase; color:#64748b; letter-spacing:1px;">${window.t('midweek_meeting')}</div>`;
     leftCol += row(window.t('chairman_intro'), data.mw_chairman_name);
     
     let treasures = row(data.mw_treasure_title || window.t('part'), data.mw_treasure_name);
@@ -537,7 +540,9 @@ function buildCompactWeekHtml(data, weekRaw, isLast = false) {
         leftCol += living;
     }
 
+    // --- ПРАВАЯ КОЛОНКА ---
     let rightCol = '';
+    rightCol += `<div style="text-align:center; font-weight:900; font-size:12px; margin-bottom:8px; text-transform:uppercase; color:#64748b; letter-spacing:1px;">${window.t('weekend_meeting')}</div>`;
     rightCol += row(window.t('opening_song'), data.we_opening_name);
     
     if (data.we_talk_speaker && data.we_talk_speaker.trim() !== '') {
@@ -553,7 +558,7 @@ function buildCompactWeekHtml(data, weekRaw, isLast = false) {
     }
     rightCol += row(window.t('closing_prayer'), data.we_prayer_name);
 
-    // ПРИЖАТАЯ РАМОЧКА ЗВУКА И РАСПОРЯДИТЕЛЕЙ
+    // --- БЛОК ОБСЛУЖИВАНИЯ (Сплошной серый фон без пунктиров) ---
     let attendantsArr = [data.duty_attendant_1, data.duty_attendant_2].filter(Boolean);
     let soundsArr = [data.duty_sound_1, data.duty_sound_2].filter(Boolean);
     let attendantsStr = attendantsArr.length > 0 ? attendantsArr.join(', ') : '';
@@ -562,7 +567,7 @@ function buildCompactWeekHtml(data, weekRaw, isLast = false) {
     let dutiesHtml = '';
     if (attendantsStr || soundsStr) {
         dutiesHtml = `
-        <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; font-size: 11px; color: #0f172a;">
+        <div style="margin-top: 10px; padding: 6px 12px; border-radius: 6px; background-color: #f1f5f9; display: flex; justify-content: space-between; font-size: 11px; color: #0f172a;">
             <div style="flex:1;">${attendantsStr ? `<span style="color: #64748b; font-size: 9px; text-transform: uppercase; font-weight: bold; margin-right: 4px;">${window.t('attendant')}:</span><strong>${attendantsStr}</strong>` : ''}</div>
             <div style="flex:1; text-align:right;">${soundsStr ? `<span style="color: #64748b; font-size: 9px; text-transform: uppercase; font-weight: bold; margin-right: 4px;">${window.t('sound')}:</span><strong>${soundsStr}</strong>` : ''}</div>
         </div>
@@ -570,11 +575,13 @@ function buildCompactWeekHtml(data, weekRaw, isLast = false) {
     }
 
     return `
-    <div style="flex: 1; border-bottom: ${borderStyle}; padding-bottom: 6px; display: flex; flex-direction: column;">
-        <div style="text-align:center; font-weight:900; font-size:16px; margin-bottom:4px; text-transform:uppercase; color: #0f172a;">${formatWeekForPrint(weekRaw)}</div>
-        <div style="display:flex; gap:35px; flex: 1;">
-            <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-start;">${leftCol}</div>
-            <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-start;">${rightCol}</div>
+    <div style="flex: 1; border-bottom: ${borderStyle}; padding-bottom: 12px; display: flex; flex-direction: column;">
+        <div style="text-align:center; font-weight:900; font-size:16px; margin-bottom:8px; text-transform:uppercase; color: #0f172a;">${formatWeekForPrint(weekRaw)}</div>
+        <div style="display:flex; gap:15px; flex: 1;">
+            <!-- Рамка вокруг левой колонки (Будние дни) -->
+            <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-start; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px;">${leftCol}</div>
+            <!-- Рамка вокруг правой колонки (Выходные) -->
+            <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-start; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px;">${rightCol}</div>
         </div>
         ${dutiesHtml}
     </div>
