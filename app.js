@@ -986,7 +986,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         
         if (m.type === "Чтение Библии" || m.type === "Čtení Bible") {
             description = currentLang === 'ru'
-                ? "Это учебное задание назначается учащемуся мужского пола. Учащийся зачитывает назначенный отрывок. Вступление и заключение не требуются. Цель председателя встречи — помочь учащимся читать грамотно, бегло, в естественной манере, с пониманием, правильной интонацией, паузами и правильно делать смысловое ударение. Поскольку библейские отрывки могут быть разной длины, при назначении этого задания руководителю встречи нужно учитывать способности учащегося. <div class='mt-2 font-bold'>Указания для встречи «Наша христианская жизнь и служение»</div>"
+                ? "Это учебное задание назначается учащемуся мужского пола. Учащийся зачитывает назначенный отрывок. Вступление и заключение не требуются. Цель председателя встречи — помочь учащимся читать грамотно, бегло, в естественной манере, с пониманием, правильной интонацией, паузами и правильно делать смысловое ударение. Поскольку библейские отрывки могут быть разной длины, при назначении этого задание руководителю встречи нужно учитывать способности учащегося. <div class='mt-2 font-bold'>Указания для встречи «Наша христианская жизнь и служение»</div>"
                 : "CZ";
         } else if (m.type === "Начинайте разговор" || m.type === "Zahájení rozhovoru") {
             description = currentLang === 'ru' 
@@ -1081,6 +1081,29 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         </div>
     `;
 
+    // === ВЫВОДИМ РАСПОРЯДИТЕЛЕЙ И ЗВУК ВНИЗУ КАРТОЧКИ ===
+    const attendantsArr = [d.duty_attendant_1, d.duty_attendant_2].filter(Boolean);
+    const soundsArr = [d.duty_sound_1, d.duty_sound_2].filter(Boolean);
+    let dutiesBlock = '';
+
+    if (attendantsArr.length > 0 || soundsArr.length > 0) {
+        dutiesBlock = `
+            <div class="mt-4 pt-3 border-t border-slate-300 border-dashed grid grid-cols-2 gap-2 text-center bg-slate-50 rounded-xl p-2 shadow-inner mx-2 mb-2">
+                ${attendantsArr.length > 0 ? `
+                <div class="flex flex-col items-center justify-center">
+                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-400">Распорядители</span>
+                    <span class="text-[10px] md:text-xs font-bold text-slate-800 leading-tight mt-0.5">${attendantsArr.join('<br>')}</span>
+                </div>` : '<div></div>'}
+                
+                ${soundsArr.length > 0 ? `
+                <div class="flex flex-col items-center justify-center border-l border-slate-200">
+                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-400">Звук / Видео</span>
+                    <span class="text-[10px] md:text-xs font-bold text-slate-800 leading-tight mt-0.5">${soundsArr.join('<br>')}</span>
+                </div>` : '<div></div>'}
+            </div>
+        `;
+    }
+
     return `
         <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-2 px-1 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
             <div class="flex flex-col gap-1 pb-2 mb-1.5 mx-2 border-b border-slate-300">
@@ -1114,6 +1137,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 
                 ${rowUnnumbered(window.t('closing_prayer'), d.mw_prayer_name)}
             </div>
+            ${dutiesBlock}
         </div>
 
         <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-2 px-1 ${pastCardClass}">
@@ -1136,6 +1160,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 
                 ${rowUnnumbered(window.t('closing_prayer'), d.we_prayer_name)}
             </div>
+            ${dutiesBlock}
         </div>
     `;
 }
