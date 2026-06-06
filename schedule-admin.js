@@ -14,6 +14,7 @@ const dict = {
         "success_pub": "График опубликован!", "success_draft": "Черновик сохранен", "error_save": "Ошибка сохранения!",
         "confirm_del": "Точно удалить этот график навсегда?", "success_del": "График успешно удален!", "error_del": "Ошибка удаления!",
         "part": "Задание", "assistant_short": "Пом:", "conductor": "Ведущий", "reader": "Чтец",
+        "attendants_and_sound": "Обслуживание встреч", "attendant": "Распорядитель", "sound": "Звук / Видео",
         "months": ["Января", "Февраля", "Марта", "Апреля", "Мая", "Июня", "Июля", "Августа", "Сентября", "Октября", "Ноября", "Декабря"]
     },
     cs: {
@@ -28,6 +29,7 @@ const dict = {
         "success_pub": "Rozvrh byl publikován!", "success_draft": "Koncept byl uložen", "error_save": "Chyba při ukládání!",
         "confirm_del": "Opravdu chcete tento rozvrh trvale smazat?", "success_del": "Rozvrh byl úspěšně smazán!", "error_del": "Chyba při mazání!",
         "part": "Úkol", "assistant_short": "Pom:", "conductor": "Předsedající", "reader": "Čte",
+        "attendants_and_sound": "Zajištění shromáždění", "attendant": "Pořadatel", "sound": "Zvuk / Video",
         "months": ["Ledna", "Února", "Března", "Dubna", "Května", "Června", "Července", "Srpna", "Září", "Října", "Listopadu", "Prosince"]
     }
 };
@@ -80,7 +82,6 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
     }
 }).catch(err => {
     console.error("Ошибка при проверке доступа:", err);
-    // На всякий случай все равно загружаем неделю, чтобы форма не зависла
     setCurrentWeek();
 });
 
@@ -116,7 +117,6 @@ async function loadSchedule() {
     
     let weekIdRaw = weekSelector.value;
     
-    // Если поле недели пустое (сбросилось), ставим текущую неделю принудительно
     if(!weekIdRaw) {
         weekIdRaw = getISOWeekString(new Date());
         weekSelector.value = weekIdRaw;
@@ -170,12 +170,17 @@ async function loadSchedule() {
             document.getElementById('mw-cbs-conductor').value = d.mw_cbs_conductor || '';
             document.getElementById('mw-cbs-reader').value = d.mw_cbs_reader || '';
             document.getElementById('mw-prayer-name').value = d.mw_prayer_name || '';
+            
             document.getElementById('we-opening-name').value = d.we_opening_name || '';
             document.getElementById('we-talk-title').value = d.we_talk_title || '';
             document.getElementById('we-talk-speaker').value = d.we_talk_speaker || '';
             document.getElementById('we-wt-conductor').value = d.we_wt_conductor || '';
             document.getElementById('we-wt-reader').value = d.we_wt_reader || '';
             document.getElementById('we-prayer-name').value = d.we_prayer_name || '';
+
+            // НОВЫЕ ПОЛЯ (Звук и Распорядитель)
+            document.getElementById('duty-attendant').value = d.duty_attendant || '';
+            document.getElementById('duty-sound').value = d.duty_sound || '';
         } else {
             document.getElementById('delete-btn').classList.add('hidden');
             document.getElementById('delete-btn').classList.remove('inline-block');
@@ -392,6 +397,10 @@ window.saveSchedule = async (isPublished) => {
         we_wt_conductor: document.getElementById('we-wt-conductor').value.trim(),
         we_wt_reader: document.getElementById('we-wt-reader').value.trim(),
         we_prayer_name: document.getElementById('we-prayer-name').value.trim(),
+
+        // НОВЫЕ ПОЛЯ
+        duty_attendant: document.getElementById('duty-attendant').value.trim(),
+        duty_sound: document.getElementById('duty-sound').value.trim(),
     };
 
     try {
@@ -533,6 +542,17 @@ function buildCompactWeekHtml(data, weekRaw, isLast = false) {
     }
     rightCol += row(window.t('closing_prayer'), data.we_prayer_name);
 
+    // Блок обязанностей (Звук, Распорядитель) выводится внизу карточки
+    let dutiesHtml = '';
+    if ((data.duty_attendant && data.duty_attendant.trim() !== '') || (data.duty_sound && data.duty_sound.trim() !== '')) {
+        dutiesHtml = `
+        <div style="margin-top: 8px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 4px; display: flex; justify-content: space-around; align-items: center; font-size: 11px; background-color: #f8fafc; color: #0f172a;">
+            ${data.duty_attendant ? `<div><span style="color: #64748b; margin-right: 4px; font-size: 10px; text-transform: uppercase; font-weight: bold;">${window.t('attendant')}:</span><strong style="font-size: 12px;">${data.duty_attendant}</strong></div>` : ''}
+            ${data.duty_sound ? `<div><span style="color: #64748b; margin-right: 4px; font-size: 10px; text-transform: uppercase; font-weight: bold;">${window.t('sound')}:</span><strong style="font-size: 12px;">${data.duty_sound}</strong></div>` : ''}
+        </div>
+        `;
+    }
+
     return `
     <div style="flex: 1; border-bottom: ${borderStyle}; padding-bottom: 10px; display: flex; flex-direction: column;">
         <div style="text-align:center; font-weight:900; font-size:16px; margin-bottom:6px; text-transform:uppercase; color: #0f172a;">${formatWeekForPrint(weekRaw)}</div>
@@ -540,6 +560,7 @@ function buildCompactWeekHtml(data, weekRaw, isLast = false) {
             <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-start;">${leftCol}</div>
             <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-start;">${rightCol}</div>
         </div>
+        ${dutiesHtml}
     </div>
     `;
 }
@@ -576,7 +597,9 @@ window.printSchedule = async () => {
             we_talk_speaker: document.getElementById('we-talk-speaker').value.trim(),
             we_wt_conductor: document.getElementById('we-wt-conductor').value.trim(),
             we_wt_reader: document.getElementById('we-wt-reader').value.trim(),
-            we_prayer_name: document.getElementById('we-prayer-name').value.trim()
+            we_prayer_name: document.getElementById('we-prayer-name').value.trim(),
+            duty_attendant: document.getElementById('duty-attendant').value.trim(),
+            duty_sound: document.getElementById('duty-sound').value.trim()
         };
 
         const getWData = async (raw) => {
