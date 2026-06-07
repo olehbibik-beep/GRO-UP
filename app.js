@@ -908,7 +908,7 @@ function weekToDateString(weekId) {
 }
 
 // ============================================
-// ГЕНЕРАТОР КАРТОЧЕК РАСПИСАНИЯ (С ИСПРАВЛЕННЫМИ ЗАГОЛОВКАМИ)
+// ГЕНЕРАТОР КАРТОЧЕК РАСПИСАНИЯ
 // ============================================
 function buildScheduleCards(d, myName, currentWeekStr) {
     const weekLabel = weekToDateString(d.realWeekId || d.weekId);
@@ -960,7 +960,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     };
 
-    // --- ИСПРАВЛЕННЫЙ ГЕНЕРАТОР ЦВЕТНЫХ ЗАГОЛОВКОВ ---
     const buildHeader = (title, bgColor) => `
         <div class="w-full rounded-lg shadow-sm mt-2 mb-1.5" style="background-color: ${bgColor}; padding: 6px 12px; display: block;">
             <div class="text-white text-[10px] md:text-xs font-black uppercase tracking-widest" style="line-height: 1.2; text-align: left;">${title}</div>
@@ -1084,8 +1083,9 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     }
 
+    // ВАЖНО: Добавлен snap-always, чтобы карусель останавливалась на каждой карточке!
     return `
-        <div class="w-[90vw] md:w-full shrink-0 snap-center flex flex-col bg-transparent pb-2 px-1 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
+        <div class="w-[90vw] md:w-full shrink-0 snap-center snap-always flex flex-col bg-transparent pb-2 px-1 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
             
             <div class="flex flex-col gap-1 pb-2 mb-3 mx-2 border-b border-slate-300">
                 <div class="flex items-center justify-between w-full">
@@ -1094,8 +1094,9 @@ function buildScheduleCards(d, myName, currentWeekStr) {
                 </div>
             </div>
 
-            <div class="inner-week-columns flex flex-col md:flex-row gap-6 md:gap-4 w-full px-2">
-                <div class="flex-1 flex flex-col space-y-0">
+            <div class="inner-week-columns flex flex-col md:flex-row gap-0 md:gap-4 w-full px-2">
+                
+                <div class="flex-1 flex flex-col space-y-0 pb-4 md:pb-0">
                     ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
 
                     ${buildHeader(window.t('treasures_title'), '#0d9488')}
@@ -1113,7 +1114,9 @@ function buildScheduleCards(d, myName, currentWeekStr) {
                     ${rowUnnumbered(window.t('closing_prayer'), d.mw_prayer_name)}
                 </div>
 
-                <div class="flex-1 flex flex-col space-y-0">
+                <div class="md:hidden w-full border-t-2 border-slate-200 border-dashed my-2"></div>
+
+                <div class="flex-1 flex flex-col space-y-0 pt-2 md:pt-0">
                     ${buildHeader(window.t('weekend_meeting'), '#475569')}
                     ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
                     ${we_talk}
@@ -1128,7 +1131,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 }
 
 // ============================================
-// ФУНКЦИЯ СОХРАНЕНИЯ РАСПИСАНИЯ В PNG (С КРАСИВЫМИ SVG-УВЕДОМЛЕНИЯМИ)
+// ФУНКЦИЯ СОХРАНЕНИЯ РАСПИСАНИЯ В PNG
 // ============================================
 window.downloadScheduleAsPNG = async () => {
     const originalContainer = document.getElementById('meeting-program-list');
@@ -1138,20 +1141,16 @@ window.downloadScheduleAsPNG = async () => {
         return;
     }
 
-    // --- 1. КРАСИВОЕ SVG-УВЕДОМЛЕНИЕ ЗАГРУЗКИ ---
+    // --- ФИРМЕННАЯ ЗАГРУЗКА ---
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300';
     overlay.innerHTML = `
-        <div class="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center justify-center animate-pulse">
-            <svg class="w-16 h-16 text-indigo-500 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
+        <div class="bg-white px-8 py-6 rounded-3xl shadow-2xl flex flex-col items-center justify-center">
+            <p class="text-indigo-600 text-sm font-black uppercase tracking-widest animate-pulse">Создание PNG...</p>
         </div>
     `;
     document.body.appendChild(overlay);
 
-    // Даем браузеру долю секунды, чтобы показать оверлей
     await new Promise(r => setTimeout(r, 100));
 
     const tempDiv = document.createElement('div');
@@ -1188,6 +1187,7 @@ window.downloadScheduleAsPNG = async () => {
             .replace(/w-\[90vw\]/g, '')
             .replace(/md:w-full/g, '')
             .replace(/snap-center/g, '')
+            .replace(/snap-always/g, '')
             .replace(/shrink-0/g, '');
             
         clone.style.width = '100%';
@@ -1203,9 +1203,13 @@ window.downloadScheduleAsPNG = async () => {
         if(innerGrid) {
             innerGrid.className = '';
             innerGrid.style.display = 'flex';
-            innerGrid.style.flexDirection = 'column'; // Выстраиваем колонки друг под другом для компактности в сетке
+            innerGrid.style.flexDirection = 'column'; 
             innerGrid.style.gap = '16px';
             innerGrid.style.width = '100%';
+            
+            // На картинке мобильный разделитель не нужен, убираем его
+            const mobileDivider = innerGrid.querySelector('.border-dashed');
+            if (mobileDivider) mobileDivider.remove();
         }
 
         const infoIcons = clone.querySelectorAll('[title="Информация"]');
@@ -1236,24 +1240,13 @@ window.downloadScheduleAsPNG = async () => {
         link.href = canvas.toDataURL('image/png');
         link.click();
         
-        // --- 2. КРАСИВОЕ SVG-УВЕДОМЛЕНИЕ УСПЕХА ("ПАЛЕЦ ВВЕРХ") ---
-        overlay.innerHTML = `
-            <div class="bg-white p-8 rounded-3xl shadow-2xl flex items-center justify-center transform scale-110 transition-transform duration-300">
-                <svg class="w-20 h-20 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.514" />
-                </svg>
-            </div>
-        `;
-        setTimeout(() => {
-            overlay.classList.add('opacity-0');
-            setTimeout(() => overlay.remove(), 300);
-        }, 1500);
-
+        window.showToast("Картинка сохранена! ✅", "success");
     } catch (e) {
         console.error(e);
-        overlay.remove();
         alert("Ошибка при создании картинки.");
     } finally {
+        // Убираем оверлей сразу без "пальца вверх"
+        overlay.remove();
         if (document.body.contains(tempDiv)) {
             document.body.removeChild(tempDiv);
         }
