@@ -32,7 +32,7 @@
             }
         }
     </script>
-    <style>
+   <style>
         ::-webkit-scrollbar { display: none; }
         
         /* Жесткое отключение pull-to-refresh на мобильных */
@@ -41,24 +41,12 @@
             overscroll-behavior-x: none !important;
         }
         
-        /* Запрещаем свайп-обновление внутри самого приложения */
-        main {
-            overscroll-behavior-y: contain !important; 
-        }
-
         body { -ms-overflow-style: none; scrollbar-width: none; overflow: hidden; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .custom-scrollbar::-webkit-scrollbar { display: none; }
         .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .leaflet-container { z-index: 10; font-family: inherit; }
-
-        /* Выравниваем отступ справа для последней карточки в карусели */
-        #meeting-program-list::after {
-            content: '';
-            flex: 0 0 1px;
-            padding-right: 1.5rem;
-        }
     </style>
 </head>
 <body class="bg-ui-bg h-[100dvh] font-sans text-slate-800 overflow-hidden flex flex-col md:flex-row w-full">
