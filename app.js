@@ -908,7 +908,7 @@ function weekToDateString(weekId) {
 }
 
 // ============================================
-// ГЕНЕРАТОР КАРТОЧЕК РАСПИСАНИЯ (ОБЪЕДИНЕННАЯ НЕДЕЛЯ)
+// ГЕНЕРАТОР КАРТОЧЕК РАСПИСАНИЯ (С ИСПРАВЛЕННЫМИ ЗАГОЛОВКАМИ)
 // ============================================
 function buildScheduleCards(d, myName, currentWeekStr) {
     const weekLabel = weekToDateString(d.realWeekId || d.weekId);
@@ -960,6 +960,13 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     };
 
+    // --- ИСПРАВЛЕННЫЙ ГЕНЕРАТОР ЦВЕТНЫХ ЗАГОЛОВКОВ ---
+    const buildHeader = (title, bgColor) => `
+        <div class="w-full rounded-lg shadow-sm mt-2 mb-1.5" style="background-color: ${bgColor}; padding: 6px 12px; display: block;">
+            <div class="text-white text-[10px] md:text-xs font-black uppercase tracking-widest" style="line-height: 1.2; text-align: left;">${title}</div>
+        </div>
+    `;
+
     const treasure1Me = d.mw_treasure_name === myName;
     const t1TitleColor = treasure1Me ? 'font-black text-black' : 'font-bold text-slate-800';
     const t1NameColor = treasure1Me ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
@@ -984,7 +991,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         const translatedType = translateDbString(m.type || window.t('part'));
         
         let description = "";
-        if (m.type === "Чтение Библии" || m.type === "Čtení Bible" || m.type === "Чтение Библии") description = "Это учебное задание назначается учащемуся мужского пола...";
+        if (m.type === "Чтение Библии" || m.type === "Čtení Bible") description = "Это учебное задание назначается учащемуся мужского пола...";
         else if (m.type === "Начинайте разговор" || m.type === "Zahájení rozhovoru") description = "Это учебное задание поручается учащемуся мужского или женского пола...";
         else if (m.type === "Развивайте интерес" || m.type === "Rozvíjení zájmu") description = "Это учебное задание поручается учащемуся мужского или женского пола...";
         else if (m.type === "Подготавливайте учеников" || m.type === "Pomáhej lidem stát se učedníky" || m.type === "Činění učedníků") description = "Это учебное задание поручается учащемуся мужского или женского пола...";
@@ -1055,30 +1062,28 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         </div>
     `;
 
-    // === БЛОК: РАСПОРЯДИТЕЛЕЙ И ЗВУК НА ВСЮ НЕДЕЛЮ ===
     const attendantsArr = [d.duty_attendant_1, d.duty_attendant_2].filter(Boolean);
     const soundsArr = [d.duty_sound_1, d.duty_sound_2].filter(Boolean);
     let dutiesBlock = '';
 
     if (attendantsArr.length > 0 || soundsArr.length > 0) {
         dutiesBlock = `
-            <div class="mt-4 pt-3 border-t border-slate-300 border-dashed grid grid-cols-2 gap-2 text-center bg-slate-100 rounded-xl p-3 mx-2 mb-2">
+            <div class="mt-3 grid grid-cols-2 gap-2 text-center bg-slate-200/60 rounded-xl p-2.5 mx-2 mb-2">
                 ${attendantsArr.length > 0 ? `
                 <div class="flex flex-col items-center justify-center">
-                    <span class="text-[9px] font-black uppercase tracking-widest text-slate-500">Распорядители</span>
-                    <span class="text-xs font-bold text-slate-800 leading-tight mt-0.5">${attendantsArr.join(', ')}</span>
+                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-500">Распорядители</span>
+                    <span class="text-[10px] md:text-xs font-bold text-slate-800 leading-tight mt-0.5">${attendantsArr.join('<br>')}</span>
                 </div>` : '<div></div>'}
                 
                 ${soundsArr.length > 0 ? `
                 <div class="flex flex-col items-center justify-center border-l border-slate-300">
-                    <span class="text-[9px] font-black uppercase tracking-widest text-slate-500">Звук / Видео</span>
-                    <span class="text-xs font-bold text-slate-800 leading-tight mt-0.5">${soundsArr.join(', ')}</span>
+                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-500">Звук / Видео</span>
+                    <span class="text-[10px] md:text-xs font-bold text-slate-800 leading-tight mt-0.5">${soundsArr.join('<br>')}</span>
                 </div>` : '<div></div>'}
             </div>
         `;
     }
 
-    // ВОЗВРАЩАЕМ ЕДИНУЮ КАРТОЧКУ НЕДЕЛИ (ОНА АДАПТИВНА: МОБИЛКА - КОЛОНКА, ПК - 2 КОЛОНКИ СБОКУ)
     return `
         <div class="w-[90vw] md:w-full shrink-0 snap-center flex flex-col bg-transparent pb-2 px-1 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
             
@@ -1090,25 +1095,18 @@ function buildScheduleCards(d, myName, currentWeekStr) {
             </div>
 
             <div class="inner-week-columns flex flex-col md:flex-row gap-6 md:gap-4 w-full px-2">
-                
                 <div class="flex-1 flex flex-col space-y-0">
                     ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
 
-                    <div class="bg-[#0d9488] text-white py-1 px-3 mt-1.5 mb-0.5 flex items-center rounded-lg shadow-sm w-full">
-                        <span class="text-[10px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('treasures_title')}</span>
-                    </div>
+                    ${buildHeader(window.t('treasures_title'), '#0d9488')}
                     ${treasure1}
                     ${treasure2}
                     ${treasure3}
 
-                    <div class="bg-[#d97706] text-white py-1 px-3 mt-1.5 mb-0.5 flex items-center rounded-lg shadow-sm w-full">
-                        <span class="text-[10px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('ministry_skills')}</span>
-                    </div>
+                    ${buildHeader(window.t('ministry_skills'), '#d97706')}
                     ${minRows}
 
-                    <div class="bg-[#b91c1c] text-white py-1 px-3 mt-1.5 mb-0.5 flex items-center rounded-lg shadow-sm w-full">
-                        <span class="text-[10px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('christian_living')}</span>
-                    </div>
+                    ${buildHeader(window.t('christian_living'), '#b91c1c')}
                     ${livRows}
                     ${cbsRow}
 
@@ -1116,10 +1114,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
                 </div>
 
                 <div class="flex-1 flex flex-col space-y-0">
-                    <div class="bg-[#475569] text-white py-1 px-3 mt-0 mb-0.5 flex items-center rounded-lg shadow-sm w-full">
-                        <span class="text-[10px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('weekend_meeting')}</span>
-                    </div>
-                    
+                    ${buildHeader(window.t('weekend_meeting'), '#475569')}
                     ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
                     ${we_talk}
                     ${wtStudyRow}
@@ -1128,13 +1123,12 @@ function buildScheduleCards(d, myName, currentWeekStr) {
             </div>
 
             ${dutiesBlock}
-
         </div>
     `;
 }
 
 // ============================================
-// ФУНКЦИЯ СОХРАНЕНИЯ РАСПИСАНИЯ В PNG (ДЛЯ ОБЪЕДИНЕННОЙ КАРТОЧКИ)
+// ФУНКЦИЯ СОХРАНЕНИЯ РАСПИСАНИЯ В PNG (С КРАСИВЫМИ SVG-УВЕДОМЛЕНИЯМИ)
 // ============================================
 window.downloadScheduleAsPNG = async () => {
     const originalContainer = document.getElementById('meeting-program-list');
@@ -1144,21 +1138,37 @@ window.downloadScheduleAsPNG = async () => {
         return;
     }
 
-    window.showToast("Создаем картинку, подождите...", "info");
+    // --- 1. КРАСИВОЕ SVG-УВЕДОМЛЕНИЕ ЗАГРУЗКИ ---
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300';
+    overlay.innerHTML = `
+        <div class="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center justify-center animate-pulse">
+            <svg class="w-16 h-16 text-indigo-500 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // Даем браузеру долю секунды, чтобы показать оверлей
+    await new Promise(r => setTimeout(r, 100));
 
     const tempDiv = document.createElement('div');
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
     tempDiv.style.top = '0';
-    tempDiv.style.width = '800px'; 
+    tempDiv.style.width = '850px'; 
     tempDiv.style.backgroundColor = '#f1f5f9'; 
     tempDiv.style.padding = '30px';
-    tempDiv.style.display = 'flex';
-    tempDiv.style.flexDirection = 'column'; // Выстраиваем недели друг под другом
+    tempDiv.style.display = 'grid';
+    tempDiv.style.gridTemplateColumns = '1fr 1fr'; 
     tempDiv.style.gap = '20px'; 
     tempDiv.style.fontFamily = 'sans-serif';
+    tempDiv.style.alignItems = 'start'; 
 
     const titleContainer = document.createElement('div');
+    titleContainer.style.gridColumn = '1 / -1'; 
     titleContainer.style.textAlign = 'center';
     titleContainer.style.marginBottom = '10px';
     titleContainer.innerHTML = `
@@ -1170,15 +1180,16 @@ window.downloadScheduleAsPNG = async () => {
     let cardsAdded = 0;
     Array.from(originalContainer.children).forEach(card => {
         if (card.tagName === 'P') return; 
-        
-        // ПРОПУСКАЕМ ПРОШЛЫЕ НЕДЕЛИ
-        if (card.classList.contains('opacity-50') || card.classList.contains('grayscale')) {
-            return;
-        }
+        if (card.classList.contains('opacity-50') || card.classList.contains('grayscale')) return;
 
         const clone = card.cloneNode(true);
         
-        clone.className = '';
+        clone.className = clone.className
+            .replace(/w-\[90vw\]/g, '')
+            .replace(/md:w-full/g, '')
+            .replace(/snap-center/g, '')
+            .replace(/shrink-0/g, '');
+            
         clone.style.width = '100%';
         clone.style.backgroundColor = '#ffffff'; 
         clone.style.border = '1px solid #cbd5e1';
@@ -1186,18 +1197,15 @@ window.downloadScheduleAsPNG = async () => {
         clone.style.padding = '16px';
         clone.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
         
-        // Принудительно делаем 2 колонки внутри клона для PNG (слева будни, справа выходные)
+        clone.classList.remove('current-week-marker');
+        
         const innerGrid = clone.querySelector('.inner-week-columns');
         if(innerGrid) {
             innerGrid.className = '';
             innerGrid.style.display = 'flex';
-            innerGrid.style.flexDirection = 'row';
-            innerGrid.style.gap = '20px';
+            innerGrid.style.flexDirection = 'column'; // Выстраиваем колонки друг под другом для компактности в сетке
+            innerGrid.style.gap = '16px';
             innerGrid.style.width = '100%';
-            
-            Array.from(innerGrid.children).forEach(col => {
-                col.style.flex = '1';
-            });
         }
 
         const infoIcons = clone.querySelectorAll('[title="Информация"]');
@@ -1208,6 +1216,7 @@ window.downloadScheduleAsPNG = async () => {
     });
 
     if (cardsAdded === 0) {
+        overlay.remove();
         alert("Нет актуальных или будущих расписаний для сохранения!");
         return;
     }
@@ -1227,9 +1236,22 @@ window.downloadScheduleAsPNG = async () => {
         link.href = canvas.toDataURL('image/png');
         link.click();
         
-        window.showToast("Картинка сохранена! ✅", "success");
+        // --- 2. КРАСИВОЕ SVG-УВЕДОМЛЕНИЕ УСПЕХА ("ПАЛЕЦ ВВЕРХ") ---
+        overlay.innerHTML = `
+            <div class="bg-white p-8 rounded-3xl shadow-2xl flex items-center justify-center transform scale-110 transition-transform duration-300">
+                <svg class="w-20 h-20 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.514" />
+                </svg>
+            </div>
+        `;
+        setTimeout(() => {
+            overlay.classList.add('opacity-0');
+            setTimeout(() => overlay.remove(), 300);
+        }, 1500);
+
     } catch (e) {
         console.error(e);
+        overlay.remove();
         alert("Ошибка при создании картинки.");
     } finally {
         if (document.body.contains(tempDiv)) {
