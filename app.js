@@ -949,11 +949,11 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     };
 
-    // Идеально отцентрированные заголовки с иконками для телефона
+    // ИДЕАЛЬНОЕ ЦЕНТРИРОВАНИЕ ДЛЯ ПРИЛОЖЕНИЯ (УБРАЛ translateY)
     const buildHeader = (title, bgColor, safeClass, iconSvg) => `
-        <div class="w-full rounded-md shadow-sm mt-2 mb-1.5 ${safeClass} flex items-center gap-1.5 px-3 py-1.5" style="background-color: ${bgColor};">
-            <div class="flex items-center justify-center text-white/90 w-4 h-4">${iconSvg}</div>
-            <span class="text-white text-[10px] md:text-xs font-black uppercase tracking-widest leading-none" style="transform: translateY(1px);">${title}</span>
+        <div class="w-full rounded-md shadow-sm mt-2 mb-1.5 ${safeClass} flex items-center px-3 py-1.5 min-h-[28px]" style="background-color: ${bgColor};">
+            <div class="flex items-center justify-center text-white/90 w-4 h-4 shrink-0">${iconSvg}</div>
+            <div class="text-white text-[10px] md:text-xs font-black uppercase tracking-widest leading-none ml-1.5 flex items-center h-full pt-[1px]">${title}</div>
         </div>
     `;
 
@@ -1079,7 +1079,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     }
 
-    // Идеальная ширина для телефона: w-[calc(100vw-32px)], оставляет ровно по 16px с каждой стороны!
     return `
         <div class="w-[calc(100vw-32px)] md:w-full shrink-0 snap-center snap-always scroll-mt-40 flex flex-col bg-transparent pb-2 px-0 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
             
@@ -1142,11 +1141,15 @@ window.downloadScheduleAsPNG = async () => {
         return;
     }
 
+    // --- ФИРМЕННАЯ ЗАГРУЗКА (ПОЛОСКА БЕЗ ЛОГОТИПА) ---
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300';
     overlay.innerHTML = `
-        <div class="bg-white px-8 py-6 rounded-3xl shadow-2xl flex flex-col items-center justify-center">
-            <p class="text-indigo-600 text-sm font-black uppercase tracking-widest animate-pulse">Создание PNG...</p>
+        <div class="bg-white px-10 py-8 rounded-3xl shadow-2xl flex flex-col items-center justify-center">
+            <div class="w-24 h-[4px] bg-slate-100 rounded-full overflow-hidden mb-4">
+                <div class="w-full h-full segmented-loader-line"></div>
+            </div>
+            <p class="text-slate-500 text-[10px] font-black uppercase tracking-widest animate-pulse">Создание PNG...</p>
         </div>
     `;
     document.body.appendChild(overlay);
@@ -1177,11 +1180,10 @@ window.downloadScheduleAsPNG = async () => {
         `;
         tempDiv.appendChild(titleContainer);
 
-        // ИДЕАЛЬНО ОТЦЕНТРИРОВАННЫЙ ЗАГОЛОВОК ДЛЯ HTML2CANVAS
         const sectionHeader = (title, bgColor, iconSvg) => {
-            return `<div style="margin-top:6px; margin-bottom:6px; background:${bgColor}; border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; gap: 6px;">
-                        <div style="display: flex; align-items: center; color: white;">${iconSvg}</div>
-                        <div style="color:white; font-weight:900; font-size:11px; text-transform:uppercase; letter-spacing: 0.5px; line-height: 1; padding-top: 2px;">${title}</div>
+            return `<div style="margin-top:6px; margin-bottom:6px; background:${bgColor}; border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; gap: 6px; min-height: 28px;">
+                        <div style="display: flex; align-items: center; justify-content: center; color: white;">${iconSvg}</div>
+                        <div style="color:white; font-weight:900; font-size:11px; text-transform:uppercase; letter-spacing: 0.5px; line-height: 1; display: flex; align-items: center; margin-top: 1px;">${title}</div>
                     </div>`;
         };
 
