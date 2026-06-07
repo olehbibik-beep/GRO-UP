@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, getDoc, addDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+// ВАЖНО: Добавили writeBatch для массового удаления!
+import { getFirestore, collection, onSnapshot, doc, getDoc, addDoc, deleteDoc, query, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const dict = {
     ru: {
@@ -9,7 +10,10 @@ const dict = {
         "repeat_weekly": "Повторять еженедельно (12 нед.)", "publish": "Опубликовать",
         "schedule_title": "Расписание встреч", "show_other_groups": "Показать другие группы",
         "success": "Успешно!", "error_general": "Ошибка!", "confirm_delete": "Удалить событие?",
-        "loading": "Загрузка...", "history_empty": "Запланированных встреч нет"
+        "loading": "Загрузка...", "history_empty": "Запланированных встреч нет",
+        "clear_past": "Очистить архив", "confirm_clear": "Удалить все прошедшие встречи из базы данных? Это действие нельзя отменить.",
+        "delete_title": "Удалить встречу", "delete_desc": "Как вы хотите удалить эту встречу?",
+        "delete_one": "Только эту встречу", "delete_series": "Эту и будущие из серии", "cancel": "Отмена"
     },
     cs: {
         "calendar_title": "Rozvrh schůzek", "btn_back": "Zpět", "date": "Datum", "time": "Čas",
@@ -18,7 +22,10 @@ const dict = {
         "repeat_weekly": "Opakovat týdně (12 týd.)", "publish": "Publikovat",
         "schedule_title": "Rozvrh schůzek", "show_other_groups": "Zobrazit ostatní skupiny",
         "success": "Úspěšně!", "error_general": "Došlo k chybě!", "confirm_delete": "Smazat událost?",
-        "loading": "Načítání...", "history_empty": "Žádné naplánované schůzky"
+        "loading": "Načítání...", "history_empty": "Žádné naplánované schůzky",
+        "clear_past": "Vymazat archiv", "confirm_clear": "Smazat všechny minulé schůzky z databáze? Tuto akci nelze vrátit zpět.",
+        "delete_title": "Smazat schůzku", "delete_desc": "Jak chcete tuto schůzku smazat?",
+        "delete_one": "Pouze tuto schůzku", "delete_series": "Tuto a budoucí ze série", "cancel": "Zrušit"
     }
 };
 
@@ -69,7 +76,7 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
         document.getElementById('global-loader').style.opacity = '0';
         setTimeout(() => document.getElementById('global-loader').style.display = 'none', 500);
         initEventsListener();
-        loadBrothers(); // Выгружаем братьев для подсказок
+        loadBrothers(); 
     }
 });
 
@@ -110,7 +117,6 @@ window.forceRenderEvents = () => {
     const now = new Date();
     const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
-    // Сначала фильтруем нужные события
     const filteredEvents = cachedEvents.filter(ev => {
         if (ev.date < todayStr) return false; 
         return (ev.group === "Все" || ev.group === "Všechny" || ev.group == userGroup || showAll);
@@ -121,7 +127,6 @@ window.forceRenderEvents = () => {
         return;
     }
 
-    // Группируем события по месяцам
     const groupedEvents = {};
     filteredEvents.forEach(ev => {
         const dateObj = new Date(ev.date);
@@ -130,7 +135,6 @@ window.forceRenderEvents = () => {
         groupedEvents[monthStr].push(ev);
     });
 
-    // Отрисовываем аккордеоны (месяца)
     for (const [monthStr, events] of Object.entries(groupedEvents)) {
         html += `
             <details class="group bg-white border border-slate-200 rounded-md mb-3 overflow-hidden">
@@ -142,7 +146,7 @@ window.forceRenderEvents = () => {
                         <span class="font-black text-sm uppercase tracking-widest">${monthStr}</span>
                     </div>
                     <div class="flex items-center gap-3">
-                        <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest bg-white border border-indigo-200 px-2 py-0.5 rounded-full">${events.length} встреч</span>
+                        <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest bg-white border border-indigo-200 px-2 py-0.5 rounded-full">${events.length}</span>
                         <svg class="w-5 h-5 text-indigo-400 group-open:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
@@ -156,7 +160,6 @@ window.forceRenderEvents = () => {
             const dayNum = dateObj.getDate();
             const weekday = dateObj.toLocaleDateString(localeFormat, { weekday: 'short' });
             
-            // Иконка звездочки (без эмодзи)
             const isSpecial = ev.isSpecial ? `
                 <svg class="w-4 h-4 text-rose-500 inline-block ml-1" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
@@ -165,7 +168,6 @@ window.forceRenderEvents = () => {
             const groupBadge = (ev.group === "Все" || ev.group === "Všechny") ? window.t('all_groups') : ev.group;
             const leaderHtml = ev.leader ? `<span class="text-[10px] font-bold text-indigo-400 mt-0.5 block truncate">Вед: ${ev.leader}</span>` : '';
             
-            // Календарный блок для даты
             const dateBlock = `
                 <div class="flex flex-col items-center justify-center w-12 h-12 bg-slate-100 border border-slate-200 rounded shrink-0">
                     <span class="text-[8px] uppercase font-bold text-slate-500 leading-none mb-0.5 tracking-widest">${weekday}</span>
@@ -173,6 +175,7 @@ window.forceRenderEvents = () => {
                 </div>
             `;
 
+            // ТЕПЕРЬ МЫ ВЫЗЫВАЕМ openDeleteModal(id) ВМЕСТО deleteEvent
             html += `
                 <div class="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
                     <div class="flex items-start gap-3 w-full">
@@ -188,7 +191,7 @@ window.forceRenderEvents = () => {
                             </div>
                         </div>
                     </div>
-                    <button onclick="deleteEvent('${ev.id}')" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors outline-none shrink-0 border border-transparent hover:border-red-200 ml-2">
+                    <button onclick="openDeleteModal('${ev.id}')" class="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-md transition-colors outline-none shrink-0 border border-transparent hover:border-rose-200 ml-2">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                 </div>
@@ -201,14 +204,97 @@ window.forceRenderEvents = () => {
         `;
     }
     
-    // Оборачиваем всё в контейнер, чтобы отменить старую обводку всего блока
     list.innerHTML = `<div class="p-4 bg-slate-50 border-t border-slate-200">${html}</div>`;
 };
 
-window.deleteEvent = async (id) => {
-    if(confirm(window.t('confirm_delete'))) {
-        try { await deleteDoc(doc(db, "events", id)); window.showToast(window.t('success')); }
-        catch(e) { alert(window.t('error_general')); }
+// ==========================================
+// УМНОЕ УДАЛЕНИЕ (Только эта ИЛИ Серия)
+// ==========================================
+window.openDeleteModal = (id) => {
+    const ev = cachedEvents.find(e => e.id === id);
+    if(!ev) return;
+
+    // Ищем будущие события из этой же серии (такое же название, группа и время)
+    const series = cachedEvents.filter(e => e.title === ev.title && e.time === ev.time && e.group === ev.group && e.date >= ev.date);
+
+    document.getElementById('delete-modal').classList.remove('hidden');
+    document.getElementById('delete-modal').classList.add('flex');
+
+    const btnOne = document.getElementById('btn-del-one');
+    const btnSeries = document.getElementById('btn-del-series');
+
+    btnOne.onclick = () => confirmDeleteOne(id);
+
+    if(series.length > 1) {
+        btnSeries.style.display = 'block';
+        btnSeries.innerText = `${window.t('delete_series')} (${series.length})`;
+        btnSeries.onclick = () => confirmDeleteSeries(series.map(e => e.id));
+    } else {
+        btnSeries.style.display = 'none';
+    }
+};
+
+window.closeDeleteModal = () => {
+    document.getElementById('delete-modal').classList.add('hidden');
+    document.getElementById('delete-modal').classList.remove('flex');
+}
+
+window.confirmDeleteOne = async (id) => {
+    closeDeleteModal();
+    try {
+        await deleteDoc(doc(db, "events", id));
+        window.showToast(window.t('success'));
+    } catch(e) { alert(window.t('error_general')); }
+};
+
+window.confirmDeleteSeries = async (ids) => {
+    closeDeleteModal();
+    try {
+        const batch = writeBatch(db);
+        ids.forEach(id => {
+            batch.delete(doc(db, "events", id));
+        });
+        await batch.commit(); // Удаляем всю серию одним махом
+        window.showToast(window.t('success'));
+    } catch(e) {
+        console.error(e);
+        alert(window.t('error_general'));
+    }
+};
+
+// ==========================================
+// ОЧИСТКА АРХИВА (Удаление всех прошедших)
+// ==========================================
+window.clearPastEvents = async () => {
+    if(!confirm(window.t('confirm_clear'))) return;
+    
+    const now = new Date();
+    const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+
+    // Находим все события, которые старше сегодняшнего дня
+    const pastEvents = cachedEvents.filter(ev => ev.date < todayStr);
+    
+    if(pastEvents.length === 0) {
+        window.showToast("Архив уже пуст");
+        return;
+    }
+
+    try {
+        // Firebase Batch может удалять максимум 500 документов за раз, разбиваем на части
+        const chunks = [];
+        for (let i = 0; i < pastEvents.length; i += 500) {
+            chunks.push(pastEvents.slice(i, i + 500));
+        }
+
+        for (const chunk of chunks) {
+            const batch = writeBatch(db);
+            chunk.forEach(ev => batch.delete(doc(db, "events", ev.id)));
+            await batch.commit();
+        }
+        window.showToast(window.t('success'));
+    } catch(e) {
+        console.error(e);
+        alert(window.t('error_general'));
     }
 };
 
@@ -229,7 +315,6 @@ document.getElementById('add-event-form').addEventListener('submit', async (e) =
         const baseDate = new Date(date);
         const numEvents = repeatWeekly ? 12 : 1; 
         
-        // ПРОВЕРКА НА ДУБЛИКАТЫ ПЕРЕД СОХРАНЕНИЕМ
         let conflictFound = false;
         let conflictDateStr = '';
 
@@ -239,7 +324,6 @@ document.getElementById('add-event-form').addEventListener('submit', async (e) =
             const tz = checkDate.getTimezoneOffset() * 60000;
             const dStr = new Date(checkDate.getTime() - tz).toISOString().split('T')[0];
 
-            // Ищем, есть ли уже событие в этот день, в это время, для этой же группы
             const exists = cachedEvents.find(ev => ev.date === dStr && ev.time === time && ev.group === group);
             if (exists) {
                 conflictFound = true;
@@ -249,16 +333,16 @@ document.getElementById('add-event-form').addEventListener('submit', async (e) =
             }
         }
 
-        // Если нашли совпадение, спрашиваем подтверждение
         if (conflictFound) {
             const proceed = confirm(`⚠️ Внимание!\nНа ${conflictDateStr} в ${time} уже запланирована встреча для группы "${group}".\n\nВы точно хотите добавить дубликат?`);
             if (!proceed) {
                 btn.disabled = false;
-                return; // Отменяем сохранение
+                return; 
             }
         }
 
-        // Если всё чисто или админ подтвердил — сохраняем
+        const batch = writeBatch(db); // Используем Batch для массового добавления!
+
         for(let i = 0; i < numEvents; i++) {
             const eventDate = new Date(baseDate);
             eventDate.setDate(baseDate.getDate() + (i * 7));
@@ -266,7 +350,8 @@ document.getElementById('add-event-form').addEventListener('submit', async (e) =
             const tzOffset = eventDate.getTimezoneOffset() * 60000;
             const dateStr = new Date(eventDate.getTime() - tzOffset).toISOString().split('T')[0];
             
-            await addDoc(collection(db, "events"), {
+            const newDocRef = doc(collection(db, "events"));
+            batch.set(newDocRef, {
                 date: dateStr,
                 time: time,
                 title: title,
@@ -276,6 +361,8 @@ document.getElementById('add-event-form').addEventListener('submit', async (e) =
                 createdAt: new Date().toISOString()
             });
         }
+        
+        await batch.commit();
         
         window.showToast(window.t('success'));
         document.getElementById('add-event-form').reset();
