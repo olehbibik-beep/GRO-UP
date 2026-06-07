@@ -2298,12 +2298,11 @@ if (mainElem) {
 }
 
 // ============================================
-// ФУНКЦИЯ СОХРАНЕНИЯ РАСПИСАНИЯ В PNG
+// ФУНКЦИЯ СОХРАНЕНИЯ РАСПИСАНИЯ В PNG (2 КОЛОНКИ, ТОЛЬКО АКТУАЛЬНЫЕ)
 // ============================================
 window.downloadScheduleAsPNG = async () => {
     const originalContainer = document.getElementById('meeting-program-list');
     
-    // Если расписания нет, ничего не делаем
     if (!originalContainer || originalContainer.children.length === 0 || originalContainer.innerText.includes('Нет опубликованных')) {
         alert("Нет расписания для сохранения!");
         return;
@@ -2312,68 +2311,83 @@ window.downloadScheduleAsPNG = async () => {
     // 1. Показываем уведомление
     window.showToast("Создаем картинку, подождите...", "info");
 
-    // 2. Создаем временный невидимый контейнер для правильной компоновки
+    // 2. Создаем временный невидимый контейнер с CSS Grid (2 колонки)
     const tempDiv = document.createElement('div');
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
     tempDiv.style.top = '0';
-    tempDiv.style.width = '450px'; // Фиксированная ширина для идеальных пропорций на мобильных
-    tempDiv.style.backgroundColor = '#f8fafc'; // Светло-серый фон
-    tempDiv.style.padding = '24px';
-    tempDiv.style.display = 'flex';
-    tempDiv.style.flexDirection = 'column';
-    tempDiv.style.gap = '16px'; // Отступы между карточками
+    tempDiv.style.width = '850px'; // Широкий холст для двух колонок
+    tempDiv.style.backgroundColor = '#f1f5f9'; // Чуть более серый фон для контраста
+    tempDiv.style.padding = '30px';
+    tempDiv.style.display = 'grid';
+    tempDiv.style.gridTemplateColumns = '1fr 1fr'; // ДВЕ ОДИНАКОВЫЕ КОЛОНКИ
+    tempDiv.style.gap = '20px'; // Отступы между карточками
     tempDiv.style.fontFamily = 'sans-serif';
+    tempDiv.style.alignItems = 'start'; // Чтобы карточки не растягивались по высоте друг друга
 
-    // 3. Добавляем красивый заголовок на картинку
-    const title = document.createElement('h2');
-    title.innerHTML = `ПРОГРАММА ВСТРЕЧ<br><span style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Сгенерировано в GRO-UP</span>`;
-    title.style.textAlign = 'center';
-    title.style.fontWeight = '900';
-    title.style.fontSize = '22px';
-    title.style.marginBottom = '8px';
-    title.style.color = '#0f172a';
-    title.style.lineHeight = '1.3';
-    tempDiv.appendChild(title);
+    // 3. Добавляем красивый заголовок (растягиваем его на обе колонки)
+    const titleContainer = document.createElement('div');
+    titleContainer.style.gridColumn = '1 / -1'; // Занять всю ширину
+    titleContainer.style.textAlign = 'center';
+    titleContainer.style.marginBottom = '10px';
+    titleContainer.innerHTML = `
+        <h2 style="font-weight: 900; font-size: 26px; color: #0f172a; margin: 0; line-height: 1.2; text-transform: uppercase;">Программа встреч</h2>
+        <span style="font-size: 13px; color: #64748b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Сгенерировано в GRO-UP</span>
+    `;
+    tempDiv.appendChild(titleContainer);
 
-    // 4. Клонируем все карточки (чтобы они выстроились в одну колонку)
+    // 4. Клонируем только АКТУАЛЬНЫЕ карточки
+    let cardsAdded = 0;
     Array.from(originalContainer.children).forEach(card => {
+        // Пропускаем текст "Загрузка..."
         if (card.tagName === 'P') return; 
         
+        // ПРОПУСКАЕМ ПРОШЛЫЕ НЕДЕЛИ (ищем класс opacity-50)
+        if (card.classList.contains('opacity-50') || card.classList.contains('grayscale')) {
+            return;
+        }
+
         const clone = card.cloneNode(true);
-        // Убираем мобильные классы карусели и делаем ширину 100%
+        
+        // Убираем мобильные классы ширины, пусть Grid сам управляет шириной
         clone.className = clone.className
-            .replace(/w-\[88vw\]/g, 'w-full')
-            .replace(/md:w-\[calc\(.*\)\]/g, 'w-full')
-            .replace(/snap-center/g, '');
+            .replace(/w-\[88vw\]/g, '')
+            .replace(/md:w-\[calc\(.*\)\]/g, '')
+            .replace(/snap-center/g, '')
+            .replace(/shrink-0/g, '');
             
+        // Задаем стили карточки, чтобы она красиво выделялась на фоне
         clone.style.width = '100%';
-        clone.style.backgroundColor = 'transparent'; 
-        clone.style.borderBottom = '1px dashed #cbd5e1'; // Разделитель
-        clone.style.paddingBottom = '16px';
+        clone.style.backgroundColor = '#ffffff'; 
+        clone.style.border = '1px solid #cbd5e1';
+        clone.style.borderRadius = '16px';
+        clone.style.padding = '16px';
+        clone.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
         
-        // Убираем класс мерцания и полупрозрачности
-        clone.classList.remove('current-week-marker', 'opacity-50', 'grayscale');
+        // Убираем моргание маркера текущей недели (на картинке оно не нужно)
+        clone.classList.remove('current-week-marker');
         
-        // Убираем иконки "Инфо" (так как на картинке на них нельзя нажать)
+        // Убираем иконки "Инфо" с буквой "i", на картинке на них не нажать
         const infoIcons = clone.querySelectorAll('[title="Информация"]');
         infoIcons.forEach(icon => icon.remove());
 
         tempDiv.appendChild(clone);
+        cardsAdded++;
     });
 
-    // Убираем нижнюю черту у последней карточки
-    tempDiv.lastElementChild.style.borderBottom = 'none';
-    tempDiv.lastElementChild.style.paddingBottom = '0';
+    // Если нет ни одной актуальной/будущей недели
+    if (cardsAdded === 0) {
+        alert("Нет актуальных или будущих расписаний для сохранения!");
+        return;
+    }
 
     document.body.appendChild(tempDiv);
 
     try {
         // 5. Делаем скриншот с помощью html2canvas
-        // Подключаем как 'window.html2canvas' на случай конфликтов
         const canvas = await window.html2canvas(tempDiv, {
             scale: 2, // Высокое разрешение для четкого текста
-            backgroundColor: '#f8fafc',
+            backgroundColor: '#f1f5f9',
             useCORS: true, 
             logging: false
         });
@@ -2390,7 +2404,9 @@ window.downloadScheduleAsPNG = async () => {
         alert("Ошибка при создании картинки.");
     } finally {
         // Обязательно удаляем временный блок
-        document.body.removeChild(tempDiv);
+        if (document.body.contains(tempDiv)) {
+            document.body.removeChild(tempDiv);
+        }
     }
 };
 
