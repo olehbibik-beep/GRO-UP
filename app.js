@@ -2403,5 +2403,90 @@ if (mainElem) {
     });
 }
 
+// ============================================
+// ФИРМЕННАЯ ТЯНУЧКА ОБНОВЛЕНИЯ (PULL-TO-REFRESH)
+// ============================================
+const initPullToRefresh = () => {
+    const ptrEl = document.getElementById('custom-ptr');
+    const ptrIcon = document.getElementById('ptr-icon');
+    const ptrText = document.getElementById('ptr-text');
+    const mainDash = document.getElementById('main-dashboard');
+    
+    if (!mainDash || !ptrEl) return;
+
+    let startY = 0;
+    let currentY = 0;
+    let isPulling = false;
+    
+    // НАСТРОЙКА: Насколько пикселей нужно потянуть вниз, чтобы обновить
+    // Увеличь эту цифру, если хочешь, чтобы тянуть нужно было еще длиннее
+    const triggerDistance = 150; 
+
+    mainDash.addEventListener('touchstart', (e) => {
+        if (mainDash.scrollTop <= 0) {
+            startY = e.touches[0].clientY;
+            isPulling = false;
+            ptrEl.style.transition = 'none';
+        }
+    }, { passive: true });
+
+    mainDash.addEventListener('touchmove', (e) => {
+        if (startY === 0) return;
+        if (mainDash.scrollTop > 0) return; // Если прокрутили вниз, отменяем
+        
+        currentY = e.touches[0].clientY;
+        let distance = currentY - startY;
+
+        if (distance > 0) {
+            isPulling = true;
+            
+            // Замедление (сопротивление тяге, чтобы чувствовалось упруго)
+            let pullDistance = distance * 0.35; 
+            
+            ptrEl.style.transform = `translateY(${pullDistance - 80}px)`; // -80 чтобы начинал выезжать из-за края
+
+            if (pullDistance > triggerDistance) {
+                ptrIcon.style.transform = 'rotate(180deg)';
+                ptrText.innerText = "Отпустите для обновления";
+            } else {
+                ptrIcon.style.transform = 'rotate(0deg)';
+                ptrText.innerText = "Потяните сильнее";
+            }
+        }
+    }, { passive: true });
+
+    mainDash.addEventListener('touchend', () => {
+        if (isPulling) {
+            ptrEl.style.transition = 'transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)';
+            let pullDistance = (currentY - startY) * 0.35;
+            
+            if (pullDistance > triggerDistance) {
+                ptrText.innerText = "Обновление...";
+                ptrIcon.style.transform = 'rotate(0deg)';
+                ptrIcon.classList.add('animate-spin');
+                ptrIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />`;
+                ptrEl.style.transform = `translateY(20px)`;
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
+            } else {
+                // Если не дотянули - прячем обратно
+                ptrEl.style.transform = `translateY(-150%)`;
+            }
+        }
+        startY = 0;
+        currentY = 0;
+        isPulling = false;
+    }, { passive: true });
+};
+
+// Запускаем при загрузке документа
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPullToRefresh);
+} else {
+    initPullToRefresh();
+}
+
 window.openInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('hidden', 'flex');
 window.closeInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('flex', 'hidden');
