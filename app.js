@@ -2297,5 +2297,102 @@ if (mainElem) {
     });
 }
 
+// ============================================
+// ФУНКЦИЯ СОХРАНЕНИЯ РАСПИСАНИЯ В PNG
+// ============================================
+window.downloadScheduleAsPNG = async () => {
+    const originalContainer = document.getElementById('meeting-program-list');
+    
+    // Если расписания нет, ничего не делаем
+    if (!originalContainer || originalContainer.children.length === 0 || originalContainer.innerText.includes('Нет опубликованных')) {
+        alert("Нет расписания для сохранения!");
+        return;
+    }
+
+    // 1. Показываем уведомление
+    window.showToast("Создаем картинку, подождите...", "info");
+
+    // 2. Создаем временный невидимый контейнер для правильной компоновки
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.top = '0';
+    tempDiv.style.width = '450px'; // Фиксированная ширина для идеальных пропорций на мобильных
+    tempDiv.style.backgroundColor = '#f8fafc'; // Светло-серый фон
+    tempDiv.style.padding = '24px';
+    tempDiv.style.display = 'flex';
+    tempDiv.style.flexDirection = 'column';
+    tempDiv.style.gap = '16px'; // Отступы между карточками
+    tempDiv.style.fontFamily = 'sans-serif';
+
+    // 3. Добавляем красивый заголовок на картинку
+    const title = document.createElement('h2');
+    title.innerHTML = `ПРОГРАММА ВСТРЕЧ<br><span style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Сгенерировано в GRO-UP</span>`;
+    title.style.textAlign = 'center';
+    title.style.fontWeight = '900';
+    title.style.fontSize = '22px';
+    title.style.marginBottom = '8px';
+    title.style.color = '#0f172a';
+    title.style.lineHeight = '1.3';
+    tempDiv.appendChild(title);
+
+    // 4. Клонируем все карточки (чтобы они выстроились в одну колонку)
+    Array.from(originalContainer.children).forEach(card => {
+        if (card.tagName === 'P') return; 
+        
+        const clone = card.cloneNode(true);
+        // Убираем мобильные классы карусели и делаем ширину 100%
+        clone.className = clone.className
+            .replace(/w-\[88vw\]/g, 'w-full')
+            .replace(/md:w-\[calc\(.*\)\]/g, 'w-full')
+            .replace(/snap-center/g, '');
+            
+        clone.style.width = '100%';
+        clone.style.backgroundColor = 'transparent'; 
+        clone.style.borderBottom = '1px dashed #cbd5e1'; // Разделитель
+        clone.style.paddingBottom = '16px';
+        
+        // Убираем класс мерцания и полупрозрачности
+        clone.classList.remove('current-week-marker', 'opacity-50', 'grayscale');
+        
+        // Убираем иконки "Инфо" (так как на картинке на них нельзя нажать)
+        const infoIcons = clone.querySelectorAll('[title="Информация"]');
+        infoIcons.forEach(icon => icon.remove());
+
+        tempDiv.appendChild(clone);
+    });
+
+    // Убираем нижнюю черту у последней карточки
+    tempDiv.lastElementChild.style.borderBottom = 'none';
+    tempDiv.lastElementChild.style.paddingBottom = '0';
+
+    document.body.appendChild(tempDiv);
+
+    try {
+        // 5. Делаем скриншот с помощью html2canvas
+        // Подключаем как 'window.html2canvas' на случай конфликтов
+        const canvas = await window.html2canvas(tempDiv, {
+            scale: 2, // Высокое разрешение для четкого текста
+            backgroundColor: '#f8fafc',
+            useCORS: true, 
+            logging: false
+        });
+        
+        // 6. Скачиваем картинку
+        const link = document.createElement('a');
+        link.download = `Расписание_Собрания_${new Date().toLocaleDateString('ru-RU')}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+        window.showToast("Картинка сохранена! ✅", "success");
+    } catch (e) {
+        console.error(e);
+        alert("Ошибка при создании картинки.");
+    } finally {
+        // Обязательно удаляем временный блок
+        document.body.removeChild(tempDiv);
+    }
+};
+
 window.openInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('hidden', 'flex');
 window.closeInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('flex', 'hidden');
