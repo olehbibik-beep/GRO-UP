@@ -921,17 +921,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     
     let partCounter = 1;
 
-    const getInfoIcon = (infoHtml) => {
-        const safeHtml = infoHtml.replace(/"/g, '&quot;');
-        return `
-            <div class="shrink-0 ml-2 p-1.5" data-info="${safeHtml}" onclick="openTaskInfoModal(this.getAttribute('data-info'))" title="Информация">
-                <svg class="w-4 h-4 text-slate-400 hover:text-indigo-500 transition-colors pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-        `;
-    };
-
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
@@ -1083,9 +1072,10 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     }
 
-    // ВАЖНО: Добавлен snap-always, чтобы карусель останавливалась на каждой карточке!
+    // ВАЖНО: scroll-mt-40 предотвращает прыжок экрана вверх под шапку. 
+    // w-[85vw] делает карточку чуть уже, чтобы отступы по бокам были ровными.
     return `
-        <div class="w-[90vw] md:w-full shrink-0 snap-center snap-always flex flex-col bg-transparent pb-2 px-1 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
+        <div class="w-[85vw] md:w-full shrink-0 snap-center snap-always scroll-mt-40 flex flex-col bg-transparent pb-2 px-1 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
             
             <div class="flex flex-col gap-1 pb-2 mb-3 mx-2 border-b border-slate-300">
                 <div class="flex items-center justify-between w-full">
@@ -1176,6 +1166,20 @@ window.downloadScheduleAsPNG = async () => {
     `;
     tempDiv.appendChild(titleContainer);
 
+    // --- ИСПРАВЛЕННЫЙ ВЫРАВНИВАТЕЛЬ ТЕКСТА ДЛЯ PNG ---
+    // Используем inline-block и vertical-align: middle, чтобы html2canvas не ронял текст вниз
+    const sectionHeader = (title, bgColor, iconSvg) => {
+        return `<div style="margin-top:6px; margin-bottom:6px; background:${bgColor}; border-radius: 4px; padding: 5px 8px; white-space: nowrap;">
+                    <div style="display: inline-block; vertical-align: middle; line-height: 1;">${iconSvg}</div>
+                    <div style="display: inline-block; vertical-align: middle; color:white; font-weight:900; font-size:11px; text-transform:uppercase; margin-left:4px; line-height: 1; letter-spacing: 0.5px; position: relative; top: 1px;">${title}</div>
+                </div>`;
+    };
+
+    const iconTreasure = `<svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`;
+    const iconMinistry = `<svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>`;
+    const iconLiving = `<svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>`;
+    const iconWeekend = `<svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>`;
+
     let cardsAdded = 0;
     Array.from(originalContainer.children).forEach(card => {
         if (card.tagName === 'P') return; 
@@ -1184,10 +1188,11 @@ window.downloadScheduleAsPNG = async () => {
         const clone = card.cloneNode(true);
         
         clone.className = clone.className
-            .replace(/w-\[90vw\]/g, '')
+            .replace(/w-\[85vw\]/g, '')
             .replace(/md:w-full/g, '')
             .replace(/snap-center/g, '')
             .replace(/snap-always/g, '')
+            .replace(/scroll-mt-40/g, '')
             .replace(/shrink-0/g, '');
             
         clone.style.width = '100%';
@@ -1198,6 +1203,21 @@ window.downloadScheduleAsPNG = async () => {
         clone.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
         
         clone.classList.remove('current-week-marker');
+
+        // ЗАМЕНЯЕМ ВСЕ ЗАГОЛОВКИ НА СОВМЕСТИМЫЕ С PNG
+        const headersToReplace = [
+            { bg: 'bg-[#0d9488]', title: window.t('treasures_title'), color: '#0d9488', icon: iconTreasure },
+            { bg: 'bg-[#d97706]', title: window.t('ministry_skills'), color: '#d97706', icon: iconMinistry },
+            { bg: 'bg-[#b91c1c]', title: window.t('christian_living'), color: '#b91c1c', icon: iconLiving },
+            { bg: 'bg-[#475569]', title: window.t('weekend_meeting'), color: '#475569', icon: iconWeekend }
+        ];
+
+        headersToReplace.forEach(hData => {
+            const el = clone.querySelector(`.${hData.bg.replace('[', '\\[').replace(']', '\\]')}`);
+            if (el) {
+                el.outerHTML = sectionHeader(hData.title, hData.color, hData.icon);
+            }
+        });
         
         const innerGrid = clone.querySelector('.inner-week-columns');
         if(innerGrid) {
@@ -1207,7 +1227,6 @@ window.downloadScheduleAsPNG = async () => {
             innerGrid.style.gap = '16px';
             innerGrid.style.width = '100%';
             
-            // На картинке мобильный разделитель не нужен, убираем его
             const mobileDivider = innerGrid.querySelector('.border-dashed');
             if (mobileDivider) mobileDivider.remove();
         }
@@ -1245,24 +1264,12 @@ window.downloadScheduleAsPNG = async () => {
         console.error(e);
         alert("Ошибка при создании картинки.");
     } finally {
-        // Убираем оверлей сразу без "пальца вверх"
         overlay.remove();
         if (document.body.contains(tempDiv)) {
             document.body.removeChild(tempDiv);
         }
     }
 };
-
-let userMapInstance = null;
-let userPolygonLayer = null;
-
-
-window.addEventListener('popstate', (event) => {
-    const modal = document.getElementById('terr-map-modal');
-    if (modal && !modal.classList.contains('hidden')) {
-        modal.classList.replace('flex', 'hidden');
-    }
-});
 
 
 function loadPersonalData() {
