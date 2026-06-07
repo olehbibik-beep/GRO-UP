@@ -22,7 +22,7 @@
         body { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-ui-bg text-slate-800 min-h-screen font-sans pb-20 md:pb-0">
+<body class="bg-ui-bg text-slate-800 min-h-screen font-sans pb-20 md:pb-0 relative">
 
     <div id="global-loader" class="fixed inset-0 bg-ui-bg z-[200] flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="animate-spin rounded-full h-10 w-10 border-4 border-slate-300 border-t-slate-800 mb-4"></div>
@@ -91,18 +91,34 @@
         </div>
 
         <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
-            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <div class="p-4 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center bg-slate-50 gap-3">
                 <h2 class="font-black text-slate-800 text-base md:text-lg" data-lang="schedule_title">Расписание встреч</h2>
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" id="show-all-groups" onchange="window.forceRenderEvents()" class="w-4 h-4 accent-indigo-500">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest" data-lang="show_other_groups">Другие группы</span>
-                </label>
+                <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+                    <button onclick="clearPastEvents()" class="text-[10px] font-bold text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded uppercase tracking-widest transition-colors outline-none shadow-sm shrink-0" data-lang="clear_past">Очистить архив</button>
+                    <label class="flex items-center gap-2 cursor-pointer shrink-0">
+                        <input type="checkbox" id="show-all-groups" onchange="window.forceRenderEvents()" class="w-4 h-4 accent-indigo-500">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest" data-lang="show_other_groups">Другие группы</span>
+                    </label>
+                </div>
             </div>
             <div id="events-list" class="divide-y divide-slate-100"></div>
         </div>
     </main>
+
+    <div id="delete-modal" class="fixed inset-0 bg-slate-900/60 z-[150] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeDeleteModal()">
+        <div class="bg-white rounded-xl p-6 w-full max-w-sm flex flex-col shadow-2xl" onclick="event.stopPropagation()">
+            <h3 class="font-black text-xl text-slate-800 mb-2" data-lang="delete_title">Удаление встречи</h3>
+            <p class="text-sm font-medium text-slate-500 mb-6" data-lang="delete_desc">Как вы хотите удалить эту встречу?</p>
+            
+            <div class="flex flex-col gap-3">
+                <button id="btn-del-one" class="bg-slate-100 text-slate-700 border border-slate-200 font-bold p-3 rounded-xl hover:bg-slate-200 transition-colors shadow-sm outline-none" data-lang="delete_one">Только эту встречу</button>
+                <button id="btn-del-series" class="bg-rose-500 text-white font-bold p-3 rounded-xl hover:bg-rose-600 transition-colors shadow-sm outline-none hidden">Всю серию</button>
+                <button onclick="closeDeleteModal()" class="text-slate-400 font-bold p-2 mt-2 hover:text-slate-600 uppercase text-xs tracking-widest outline-none" data-lang="cancel">Отмена</button>
+            </div>
+        </div>
+    </div>
     
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
-    <script type="module" src="calendar.js?v=65"></script>
+    <script type="module" src="calendar.js?v=68"></script>
 </body>
 </html>
