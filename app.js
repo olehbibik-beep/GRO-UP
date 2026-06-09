@@ -176,7 +176,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app); 
+const storage = getStorage(app);
 
 let messaging = null;
 try { messaging = getMessaging(app); } catch (e) {}
