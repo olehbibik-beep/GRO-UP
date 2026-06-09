@@ -949,9 +949,8 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     };
 
-    // ИДЕАЛЬНОЕ ЦЕНТРИРОВАНИЕ ДЛЯ ПРИЛОЖЕНИЯ (УБРАЛ translateY)
     const buildHeader = (title, bgColor, safeClass, iconSvg) => `
-        <div class="w-full rounded-md shadow-sm mt-2 mb-1.5 ${safeClass} flex items-center px-3 py-1.5 min-h-[28px]" style="background-color: ${bgColor};">
+        <div class="w-full rounded-md shadow-sm mt-2 mb-1.5 ${safeClass} flex items-center gap-1.5 px-3 py-1.5 min-h-[28px]" style="background-color: ${bgColor};">
             <div class="flex items-center justify-center text-white/90 w-4 h-4 shrink-0">${iconSvg}</div>
             <div class="text-white text-[10px] md:text-xs font-black uppercase tracking-widest leading-none ml-1.5 flex items-center h-full pt-[1px]">${title}</div>
         </div>
@@ -985,18 +984,27 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         const assistStr = m.assistant ? ` <span class="opacity-70 ml-1">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
         const translatedType = translateDbString(m.type || window.t('part'));
         
+        // ПОЛНЫЕ ОФИЦИАЛЬНЫЕ ИНСТРУКЦИИ
         let description = "";
-        if (m.type === "Чтение Библии" || m.type === "Čtení Bible") description = "Это учебное задание назначается учащемуся мужского пола...";
-        else if (m.type === "Начинайте разговор" || m.type === "Zahájení rozhovoru") description = "Это учебное задание поручается учащемуся мужского или женского пола...";
-        else if (m.type === "Развивайте интерес" || m.type === "Rozvíjení zájmu") description = "Это учебное задание поручается учащемуся мужского или женского пола...";
-        else if (m.type === "Подготавливайте учеников" || m.type === "Pomáhej lidem stát se učedníky" || m.type === "Činění učedníků") description = "Это учебное задание поручается учащемуся мужского или женского пола...";
-        else if (m.type === "Объясняйте свои взгляды" || m.type === "Vysvětlování své víry") description = "Если это задание преподносится в виде речи, оно поручается учащемуся мужского пола...";
-        else if (m.type === "Речь" || m.type === "Proslov" || m.type === "Речь 10 мин." || m.type === "Proslov 10 min.") description = "Это учебное задание поручается учащемуся мужского пола...";
+        if (m.type === "Чтение Библии" || m.type === "Čtení Bible") {
+            description = "Это учебное задание назначается учащемуся мужского пола. Учащийся зачитывает назначенный отрывок. Вступление и заключение не требуются. Цель председателя встречи — помочь учащимся читать грамотно, бегло, в естественной манере, с пониманием, правильной интонацией, паузами и правильно делать смысловое ударение. Поскольку библейские отрывки могут быть разной длины, при назначении этого задание руководителю встречи нужно учитывать способности учащегося.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
+        } else if (m.type === "Начинайте разговор" || m.type === "Zahájení rozhovoru") {
+            description = "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим или членом его семьи. Участники могут сидеть или стоять.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
+        } else if (m.type === "Развивайте интерес" || m.type === "Rozvíjení zájmu") {
+            description = "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим. Участники могут сидеть или стоять. Учащемуся необходимо продемонстрировать, как продолжить предыдущую беседу.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
+        } else if (m.type === "Подготавливайте учеников" || m.type === "Pomáhej lidem stát se učedníky" || m.type === "Činění učedníků") {
+            description = "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим. Участники могут сидеть или стоять. Если демонстрируется часть изучения, которое уже проводится, нет необходимости делать вступление или заключение. Необязательно зачитывать весь рассматриваемый материал, хотя это и допускается.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
+        } else if (m.type === "Объясняйте свои взгляды" || m.type === "Vysvětlování své víry") {
+            description = "Если это задание преподносится в виде речи, оно поручается учащемуся мужского пола. Если в виде демонстрации — мужского или женского пола. Помощник должен быть одного пола с выступающим или членом его семьи. Учащемуся нужно ясно и тактично ответить на вопрос по теме, используя информацию из ссылки к заданию. Учащийся может сам решить, будет ли он ссылаться на указанную публикацию.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
+        } else if (m.type === "Речь" || m.type === "Proslov" || m.type === "Речь 10 мин." || m.type === "Proslov 10 min.") {
+            description = "Это учебное задание поручается учащемуся мужского пола и преподносится в виде речи, обращённой к собранию. Учащемуся нужно обратить внимание на то, как применить материал в служении. Он может обсудить примеры или использовать любой из дополнительных стихов, приведённых в уроке.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
+        }
 
-        const descHtml = description ? `<div class="mt-4 pt-3 border-t border-slate-100"><div class="text-[11px] font-medium text-slate-500 leading-relaxed">${description}</div></div>` : "";
+        const descHtml = description ? `<div class="mt-4 pt-3 border-t border-slate-100"><div class="text-[12px] md:text-sm font-medium text-slate-500 leading-relaxed">${description}</div></div>` : "";
+        
         const extraInfo = m.lesson 
-            ? `<span class="font-black text-slate-800 block mb-3 text-base">${translatedType}</span><span class="text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-100 self-start inline-block">${window.t('lesson')} ${m.lesson}</span>${descHtml}` 
-            : `<span class="font-black text-slate-800 text-base">${translatedType}</span>${descHtml}`;
+            ? `<span class="font-black text-slate-800 block mb-3 text-base md:text-lg">${translatedType}</span><span class="text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-100 self-start inline-block">Урок ${m.lesson}</span>${descHtml}` 
+            : `<span class="font-black text-slate-800 text-base md:text-lg">${translatedType}</span>${descHtml}`;
 
         const safeHtml = extraInfo.replace(/"/g, '&quot;');
 
