@@ -710,132 +710,15 @@ window.setupNotifications = async () => {
     }
 };
 
-const TOP_ROLES = ["Владелец", "Админ"]; 
-let hasFullAccess = false;
-let currentUserData = null;
-
-if (userId) {
-    onSnapshot(doc(db, "users", userId), async (docSnap) => {
-        if (!docSnap.exists()) { if (navigator.onLine) window.logout(); return; }
-        currentUserData = docSnap.data();
-
-        const pendingScreen = document.getElementById('pending-screen');
-        const mainDashboard = document.getElementById('main-dashboard');
-
-        if (currentUserData.status === 'pending') {
-            if(pendingScreen) { pendingScreen.classList.remove('hidden'); pendingScreen.classList.add('flex'); }
-            if(mainDashboard) { mainDashboard.style.display = 'none'; }
-        } else if (currentUserData.status === 'blocked') {
-            document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">${window.t('access_denied')}</h1></div>`;
-        } else {
-            if(pendingScreen) { pendingScreen.classList.add('hidden'); pendingScreen.classList.remove('flex'); }
-            if(mainDashboard) { mainDashboard.style.display = 'block'; }
-            
-            let userRoles = currentUserData.roles || [];
-            const pushBtn = document.getElementById('push-btn');
-            if (pushBtn && messaging) {
-                if (Notification.permission !== 'granted' || !currentUserData.pushToken) { pushBtn.style.display = 'flex'; } 
-                else { pushBtn.style.display = 'none'; }
-            }
-
-            hasFullAccess = userRoles.some(r => TOP_ROLES.includes(r));
-            
-            const setAdminLink = (id, condition) => {
-                const btn = document.getElementById(id);
-                if (btn) {
-                    if (condition) { btn.classList.remove('hidden'); btn.classList.add('flex'); }
-                    else { btn.classList.add('hidden'); btn.classList.remove('flex'); }
-                }
-            };
-
-            setAdminLink('profile-admin-btn', hasFullAccess);
-            setAdminLink('profile-reports-btn', hasFullAccess || userRoles.includes("Надзиратель группы"));
-            setAdminLink('profile-calendar-btn', hasFullAccess || userRoles.includes("Надзиратель группы"));
-            setAdminLink('profile-duties-btn', hasFullAccess || userRoles.includes("Надзиратель группы"));
-            setAdminLink('profile-terr-btn', hasFullAccess || userRoles.includes("Ответственный за участки"));
-            setAdminLink('profile-school-btn', hasFullAccess || userRoles.includes("Ответственный за школу"));
-            setAdminLink('profile-stand-admin-btn', hasFullAccess || userRoles.includes("Ответственный за стенды"));
-            setAdminLink('profile-schedule-btn', hasFullAccess || userRoles.includes("Ответственный за график"));
-
-            const profileAdminLinks = document.getElementById('profile-admin-links');
-            if(profileAdminLinks) {
-                if(hasFullAccess || userRoles.includes("Ответственный за стенды") || userRoles.includes("Ответственный за график") || userRoles.includes("Надзиратель группы") || userRoles.includes("Ответственный за участки") || userRoles.includes("Ответственный за школу")) { 
-                    profileAdminLinks.classList.remove('hidden'); profileAdminLinks.classList.add('grid'); 
-                } else { 
-                    profileAdminLinks.classList.add('hidden'); profileAdminLinks.classList.remove('grid'); 
-                }
-            }
-
-            try { loadPersonalData(); } catch(e) {}
-            try { loadProfileData(); } catch(e) {}
-            renderStandCard();
-            listenForMessages(); 
-            
-            if(!document.querySelector('.tab-content.active')) {
-                window.switchTab('home');
-            }
-        }
-    });
-}
-
-async function loadProfileData() {
-    const pName = document.getElementById('profile-name');
-    const pGroup = document.getElementById('profile-group');
-    const pOverseer = document.getElementById('profile-overseer');
-
-    if(pName) pName.innerText = currentUserData.name || "Имя";
-    let roles = currentUserData.roles || ["Возвещатель"];
-    const rolesContainer = document.getElementById('profile-roles-container');
-    
-    if (rolesContainer) {
-        rolesContainer.innerHTML = roles.map(r => {
-            let colorClass = "bg-slate-100 text-slate-500 border border-slate-200"; 
-            let iconHtml = ""; 
-
-            if(r === "Старейшина") colorClass = "bg-amber-100 text-amber-700 border border-amber-200";
-            else if(r === "Помощник собрания") colorClass = "bg-sky-100 text-sky-700 border border-sky-200";
-            else if(r === "Пионер") colorClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
-            else if(r === "Админ" || r === "Владелец") colorClass = "bg-rose-100 text-rose-700 border border-rose-200";
-            else if(r === "Ответственный за график") colorClass = "bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200";
-            else if(r === "Надзиратель группы") colorClass = "bg-purple-100 text-purple-700 border border-purple-200";
-            else if(r === "Ответственный за участки") colorClass = "bg-teal-100 text-teal-700 border border-teal-200";
-            else if(r === "Ответственный за школу") colorClass = "bg-indigo-100 text-indigo-700 border border-indigo-200";
-            else if(r === "Ответственный за стенды") colorClass = "bg-blue-100 text-blue-700 border border-blue-200";
-            else if(r === "Служение со стендом") {
-                colorClass = "bg-indigo-100 text-indigo-700 border-indigo-200";
-                iconHtml = `<svg class="w-3 h-3 inline mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 4h10v14H7V4zM10 8h4M10 12h4" /><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 21v-3m4 3v-3" /></svg>`;
-            }
-
-            if(r === "Участник школы") return '';
-            
-            return `<span class="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${colorClass}">${iconHtml}${r}</span>`;
-        }).join('');
-    }
-    
-    onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
-        const congEl = document.getElementById('profile-congregation');
-        const dashZoomId = document.getElementById('dash-zoom-id');
-        const dashZoomPass = document.getElementById('dash-zoom-pass');
-        
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            if(congEl) congEl.innerText = data.name || "МАРИАНСКИЕ ЛАЗНЕ";
-            currentZoomData.id = data.zoomId || "";
-            currentZoomData.pass = data.zoomPass || "";
-            if (dashZoomId) dashZoomId.innerText = currentZoomData.id || "-";
-            if (dashZoomPass) dashZoomPass.innerText = currentZoomData.pass || "-";
-        }
-    });
-
-    const myGroup = currentUserData.group || window.t('no_group');
-    if(pGroup) pGroup.innerText = `№ ${myGroup}`;
-    try {
-        if (myGroup !== window.t('no_group') && pOverseer) {
-            const q = query(collection(db, "users"), where("group", "==", myGroup), where("roles", "array-contains", "Надзиратель группы"));
-            const snap = await getDocs(q);
-            pOverseer.innerText = snap.empty ? "-" : snap.docs[0].data().name;
-        } else if (pOverseer) { pOverseer.innerText = "-"; }
-    } catch(e) {}
+if (messaging) {
+    try { 
+        onMessage(messaging, (payload) => { 
+            const title = payload.notification?.title || payload.data?.title || "Уведомление";
+            const body = payload.notification?.body || payload.data?.body || "";
+            window.showToast(`🔔 ${title}\n${body}`, 'info'); 
+            if (Notification.permission === 'granted') new Notification(title, { body: body, icon: 'icon-512.png' });
+        }); 
+    } catch (e) {}
 }
 
 function loadPersonalData() {
@@ -1071,6 +954,7 @@ function loadPersonalData() {
 
                 html += `
                 <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col relative group transition-shadow hover:shadow-md">
+                    
                     <div ${clickAction} class="p-4 pb-2 cursor-pointer hover:bg-slate-50 transition-colors flex-grow">
                         <div class="flex justify-between items-start mb-2">
                             <div>
@@ -1083,6 +967,7 @@ function loadPersonalData() {
                         </div>
                         ${cityStr}
                     </div>
+
                     <div class="px-4 pb-4 cursor-pointer hover:bg-slate-50 transition-colors" ${clickAction}>
                         <div class="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
                             <div class="${progressColor} h-1.5 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
@@ -1092,12 +977,14 @@ function loadPersonalData() {
                             <span class="text-[9px] font-black ${daysLeft <= 10 ? 'text-rose-500' : 'text-slate-500'} uppercase tracking-widest">Ост: ${daysLeft} дн.</span>
                         </div>
                     </div>
+
                     <div class="p-2 bg-slate-50 border-t border-slate-100 mt-auto">
                         <button onclick="markTerritoryReturned('${docSnap.id}')" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-black uppercase tracking-widest py-2.5 rounded-lg text-[10px] transition-colors outline-none border border-rose-100 shadow-sm flex items-center justify-center gap-1.5">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
                             ${window.t('return_terr_btn')}
                         </button>
                     </div>
+
                 </div>
                 `;
             });
@@ -1106,6 +993,15 @@ function loadPersonalData() {
             else container.innerHTML = html;
         });
     } catch(e) {}
+
+    window.markTerritoryReturned = async (id) => {
+        if (confirm('Точно сдать этот участок?')) { 
+            try {
+                await updateDoc(doc(db, "territories", id), { status: 'returned', returnedAt: new Date().toISOString() });
+                window.showToast("Участок сдан! ✅", "success");
+            } catch (e) { alert("Ошибка сети!"); }
+        }
+    };
 
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
