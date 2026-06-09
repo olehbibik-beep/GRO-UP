@@ -188,6 +188,7 @@ if (!userId) {
     window.location.href = 'login.html';
 }
 
+// ГЛОБАЛЬНЫЕ ФУНКЦИИ ОКНА И НАВИГАЦИИ
 window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
 window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
 window.openDutiesModal = () => document.getElementById('duties-modal').classList.replace('hidden', 'flex');
@@ -563,162 +564,132 @@ let myStands = [];
 let unsubStandReqs = null;
 let unsubStands = null;
 
-function renderStandCard() {
-    const container = document.getElementById('stand-widget-container');
-    if (!container) return;
-    if (unsubStandReqs) unsubStandReqs();
-    if (unsubStands) unsubStands();
+const TOP_ROLES = ["Владелец", "Админ"]; 
+let hasFullAccess = false;
+let currentUserData = null;
 
-    unsubStandReqs = onSnapshot(query(collection(db, "requests"), where("userId", "==", userId), where("type", "==", "stand")), (snap) => {
-        isStandReqPending = !snap.empty;
-        updateStandWidgetUI();
-    });
-    unsubStands = onSnapshot(query(collection(db, "stands"), where("userId", "==", userId)), (snap) => {
-        myStands = [];
-        snap.forEach(doc => myStands.push(doc.data()));
-        updateStandWidgetUI();
-    });
-}
+if (userId) {
+    onSnapshot(doc(db, "users", userId), async (docSnap) => {
+        if (!docSnap.exists()) { if (navigator.onLine) window.logout(); return; }
+        currentUserData = docSnap.data();
 
-function updateStandWidgetUI() {
-    const container = document.getElementById('stand-widget-container');
-    if (!container) return;
+        const pendingScreen = document.getElementById('pending-screen');
+        const mainDashboard = document.getElementById('main-dashboard');
 
-    const roles = currentUserData.roles || [];
-    const isApprovedForStand = roles.includes('Служение со стендом') || roles.includes('Владелец') || roles.includes('Админ');
-
-    const today = new Date();
-    const tzOffset = today.getTimezoneOffset() * 60000;
-    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
-    const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
-
-    let upcomingShifts = [];
-    let monthCount = 0;
-
-    myStands.forEach(data => {
-        if (data.date >= firstDayStr && data.date.startsWith(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`)) monthCount++;
-        if (data.date >= todayStr) upcomingShifts.push(data);
-    });
-
-    upcomingShifts.sort((a, b) => a.date.localeCompare(b.date));
-
-    let shiftsHtml = '';
-    if (upcomingShifts.length > 0) {
-        shiftsHtml = upcomingShifts.slice(0, 3).map(shift => {
-            const d = new Date(shift.date);
-            const dateStr = d.toLocaleDateString(localStorage.getItem('app_lang') === 'cs' ? 'cs-CZ' : 'ru-RU', { day: 'numeric', month: 'short' });
+        if (currentUserData.status === 'pending') {
+            if(pendingScreen) { pendingScreen.classList.remove('hidden'); pendingScreen.classList.add('flex'); }
+            if(mainDashboard) { mainDashboard.style.display = 'none'; }
+        } else if (currentUserData.status === 'blocked') {
+            document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-red-100"><h1 class="text-3xl text-red-600 font-black">${window.t('access_denied')}</h1></div>`;
+        } else {
+            if(pendingScreen) { pendingScreen.classList.add('hidden'); pendingScreen.classList.remove('flex'); }
+            if(mainDashboard) { mainDashboard.style.display = 'block'; }
             
-            return `
-                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
-                    <div class="flex flex-col">
-                        <span class="font-bold text-slate-800 text-sm">${dateStr}</span>
-                        <span class="text-[10px] text-slate-500 uppercase font-black tracking-widest">${shift.time}</span>
-                    </div>
-                    <span class="text-xs font-bold text-theme-modBtnText truncate pl-4 text-right max-w-[50%]">${shift.point || 'Стенд'}</span>
-                </div>
-            `;
-        }).join('');
-    } else {
-        shiftsHtml = '<p class="text-slate-400 text-sm italic py-4 text-center">У вас пока нет записей</p>';
-    }
+            let userRoles = currentUserData.roles || [];
+            const pushBtn = document.getElementById('push-btn');
+            if (pushBtn && messaging) {
+                if (Notification.permission !== 'granted' || !currentUserData.pushToken) { pushBtn.style.display = 'flex'; } 
+                else { pushBtn.style.display = 'none'; }
+            }
 
-    let btnHtml = '';
-    if (isApprovedForStand) {
-        btnHtml = `<button onclick="window.location.href='stand.html'" class="w-full bg-theme-modBtnBg hover:bg-theme-modBtnHover text-theme-modBtnText font-black uppercase tracking-widest py-3 rounded-xl text-xs transition-colors shadow-sm outline-none mb-5">Записаться</button>`;
-    } else if (isStandReqPending) {
-        btnHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black uppercase tracking-widest py-3 rounded-xl text-xs shadow-sm outline-none mb-5 cursor-not-allowed">Заявка на рассмотрении</button>`;
-    } else {
-        btnHtml = `<button onclick="requestStand(this)" class="w-full bg-theme-modBtnBg hover:bg-theme-modBtnHover text-theme-modBtnText font-black uppercase tracking-widest py-3 rounded-xl text-xs transition-colors shadow-sm outline-none mb-5">Подать заявку</button>`;
-    }
+            hasFullAccess = userRoles.some(r => TOP_ROLES.includes(r));
+            
+            const setAdminLink = (id, condition) => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    if (condition) { btn.classList.remove('hidden'); btn.classList.add('flex'); }
+                    else { btn.classList.add('hidden'); btn.classList.remove('flex'); }
+                }
+            };
 
-    container.innerHTML = `
-        <div class="bg-theme-card p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-black text-theme-text flex items-center gap-2 text-xl">
-                    <svg class="w-6 h-6 text-theme-modIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                    <span data-lang="stand_ministry">Служение со стендом</span>
-                </h3>
-            </div>
-            ${btnHtml}
-            <div class="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400 tracking-widest border-b border-slate-100 pb-2 mb-3">
-                <span>Смен в этом месяце</span>
-                <span class="bg-theme-modBtnBg text-theme-modBtnText px-2 py-0.5 rounded font-black">${monthCount}</span>
-            </div>
-            <div id="stand-shifts-list" class="space-y-2">
-                ${shiftsHtml}
-            </div>
-        </div>
-    `;
+            setAdminLink('profile-admin-btn', hasFullAccess);
+            setAdminLink('profile-reports-btn', hasFullAccess || userRoles.includes("Надзиратель группы"));
+            setAdminLink('profile-calendar-btn', hasFullAccess || userRoles.includes("Надзиратель группы"));
+            setAdminLink('profile-duties-btn', hasFullAccess || userRoles.includes("Надзиратель группы"));
+            setAdminLink('profile-terr-btn', hasFullAccess || userRoles.includes("Ответственный за участки"));
+            setAdminLink('profile-school-btn', hasFullAccess || userRoles.includes("Ответственный за школу"));
+            setAdminLink('profile-stand-admin-btn', hasFullAccess || userRoles.includes("Ответственный за стенды"));
+            setAdminLink('profile-schedule-btn', hasFullAccess || userRoles.includes("Ответственный за график"));
+
+            const profileAdminLinks = document.getElementById('profile-admin-links');
+            if(profileAdminLinks) {
+                if(hasFullAccess || userRoles.includes("Ответственный за стенды") || userRoles.includes("Ответственный за график") || userRoles.includes("Надзиратель группы") || userRoles.includes("Ответственный за участки") || userRoles.includes("Ответственный за школу")) { 
+                    profileAdminLinks.classList.remove('hidden'); profileAdminLinks.classList.add('grid'); 
+                } else { 
+                    profileAdminLinks.classList.add('hidden'); profileAdminLinks.classList.remove('grid'); 
+                }
+            }
+
+            try { loadPersonalData(); } catch(e) {}
+            try { loadProfileData(); } catch(e) {}
+            renderStandCard();
+            listenForMessages(); 
+            
+            if(!document.querySelector('.tab-content.active')) {
+                window.switchTab('home');
+            }
+        }
+    });
 }
 
-window.requestStand = async (btn) => {
-    btn.innerText = "..."; btn.disabled = true;
-    try {
-        await addDoc(collection(db, "requests"), { type: "stand", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
-        btn.classList.replace('bg-theme-modBtnBg', 'bg-emerald-500');
-        btn.classList.replace('text-theme-modBtnText', 'text-white');
-        btn.innerHTML = `✅ ${window.t('success')}`;
-        setTimeout(() => { 
-            btn.classList.replace('bg-emerald-500', 'bg-slate-100'); 
-            btn.classList.replace('text-white', 'text-slate-400'); 
-            btn.innerText = window.t('stand_pending'); 
-        }, 2000);
-    } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
-};
+async function loadProfileData() {
+    const pName = document.getElementById('profile-name');
+    const pGroup = document.getElementById('profile-group');
+    const pOverseer = document.getElementById('profile-overseer');
 
-window.setupNotifications = async () => {
-    const pushBtn = document.getElementById('push-btn');
-    if (!messaging) return alert("❌ Ваше устройство или браузер не поддерживает Push-уведомления.");
+    if(pName) pName.innerText = currentUserData.name || "Имя";
+    let roles = currentUserData.roles || ["Возвещатель"];
+    const rolesContainer = document.getElementById('profile-roles-container');
     
-    try {
-        if (!('Notification' in window)) return alert("❌ " + window.t('alert_no_notifications'));
-        if (pushBtn) pushBtn.innerHTML = '⏳'; 
-        
-        let permission = Notification.permission;
-        if (permission === 'denied') throw new Error("Уведомления заблокированы! Разрешите их в настройках телефона (браузера).");
-        if (permission !== 'granted') {
-            const req = Notification.requestPermission();
-            permission = (req instanceof Promise) ? await req : await new Promise(res => Notification.requestPermission(res));
-        }
-        if (permission !== 'granted') throw new Error("Нет разрешения на пуши");
-        
-        let registration = await navigator.serviceWorker.getRegistration();
-        if (!registration) registration = await navigator.serviceWorker.register('./sw.js');
-        
-        const token = await getToken(messaging, { 
-            vapidKey: 'BEdzEcHp_7Ero4qy1TulERNB7KDAymZBty7omUcHU2SNlMGTAwPM_MAO7qriZsmL-8ehVsU5pX2OtemKQhC-Tqk', 
-            serviceWorkerRegistration: registration 
-        });
+    if (rolesContainer) {
+        rolesContainer.innerHTML = roles.map(r => {
+            let colorClass = "bg-slate-100 text-slate-500 border border-slate-200"; 
+            let iconHtml = ""; 
 
-        if (token) {
-            await updateDoc(doc(db, "users", userId), { pushToken: token });
-            window.showToast("✅ " + window.t('toast_notifications_enabled'), "success");
-            if (pushBtn) pushBtn.style.display = 'none';
-        } else {
-            throw new Error("Сбой Google FCM: токен пуст.");
-        }
-    } catch (error) { 
-        if (error.message.includes('active service worker')) {
-            alert("⏳ Настраиваем связь...\n\nПриложение сейчас перезагрузится. После этого нажмите на колокольчик еще раз!");
-            window.location.reload();
-        } else {
-            alert("❌ ОШИБКА: " + error.message); 
-            if (pushBtn) pushBtn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`;
-        }
+            if(r === "Старейшина") colorClass = "bg-amber-100 text-amber-700 border border-amber-200";
+            else if(r === "Помощник собрания") colorClass = "bg-sky-100 text-sky-700 border border-sky-200";
+            else if(r === "Пионер") colorClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
+            else if(r === "Админ" || r === "Владелец") colorClass = "bg-rose-100 text-rose-700 border border-rose-200";
+            else if(r === "Ответственный за график") colorClass = "bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200";
+            else if(r === "Надзиратель группы") colorClass = "bg-purple-100 text-purple-700 border border-purple-200";
+            else if(r === "Ответственный за участки") colorClass = "bg-teal-100 text-teal-700 border border-teal-200";
+            else if(r === "Ответственный за школу") colorClass = "bg-indigo-100 text-indigo-700 border border-indigo-200";
+            else if(r === "Ответственный за стенды") colorClass = "bg-blue-100 text-blue-700 border border-blue-200";
+            else if(r === "Служение со стендом") {
+                colorClass = "bg-indigo-100 text-indigo-700 border-indigo-200";
+                iconHtml = `<svg class="w-3 h-3 inline mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 4h10v14H7V4zM10 8h4M10 12h4" /><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 21v-3m4 3v-3" /></svg>`;
+            }
+
+            if(r === "Участник школы") return '';
+            
+            return `<span class="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${colorClass}">${iconHtml}${r}</span>`;
+        }).join('');
     }
-};
+    
+    onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
+        const congEl = document.getElementById('profile-congregation');
+        const dashZoomId = document.getElementById('dash-zoom-id');
+        const dashZoomPass = document.getElementById('dash-zoom-pass');
+        
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if(congEl) congEl.innerText = data.name || "МАРИАНСКИЕ ЛАЗНЕ";
+            currentZoomData.id = data.zoomId || "";
+            currentZoomData.pass = data.zoomPass || "";
+            if (dashZoomId) dashZoomId.innerText = currentZoomData.id || "-";
+            if (dashZoomPass) dashZoomPass.innerText = currentZoomData.pass || "-";
+        }
+    });
 
-if (messaging) {
-    try { 
-        onMessage(messaging, (payload) => { 
-            const title = payload.notification?.title || payload.data?.title || "Уведомление";
-            const body = payload.notification?.body || payload.data?.body || "";
-            window.showToast(`🔔 ${title}\n${body}`, 'info'); 
-            if (Notification.permission === 'granted') new Notification(title, { body: body, icon: 'icon-512.png' });
-        }); 
-    } catch (e) {}
+    const myGroup = currentUserData.group || window.t('no_group');
+    if(pGroup) pGroup.innerText = `№ ${myGroup}`;
+    try {
+        if (myGroup !== window.t('no_group') && pOverseer) {
+            const q = query(collection(db, "users"), where("group", "==", myGroup), where("roles", "array-contains", "Надзиратель группы"));
+            const snap = await getDocs(q);
+            pOverseer.innerText = snap.empty ? "-" : snap.docs[0].data().name;
+        } else if (pOverseer) { pOverseer.innerText = "-"; }
+    } catch(e) {}
 }
 
 function loadPersonalData() {
@@ -954,7 +925,6 @@ function loadPersonalData() {
 
                 html += `
                 <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col relative group transition-shadow hover:shadow-md">
-                    
                     <div ${clickAction} class="p-4 pb-2 cursor-pointer hover:bg-slate-50 transition-colors flex-grow">
                         <div class="flex justify-between items-start mb-2">
                             <div>
@@ -967,7 +937,6 @@ function loadPersonalData() {
                         </div>
                         ${cityStr}
                     </div>
-
                     <div class="px-4 pb-4 cursor-pointer hover:bg-slate-50 transition-colors" ${clickAction}>
                         <div class="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
                             <div class="${progressColor} h-1.5 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
@@ -977,14 +946,12 @@ function loadPersonalData() {
                             <span class="text-[9px] font-black ${daysLeft <= 10 ? 'text-rose-500' : 'text-slate-500'} uppercase tracking-widest">Ост: ${daysLeft} дн.</span>
                         </div>
                     </div>
-
                     <div class="p-2 bg-slate-50 border-t border-slate-100 mt-auto">
                         <button onclick="markTerritoryReturned('${docSnap.id}')" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-black uppercase tracking-widest py-2.5 rounded-lg text-[10px] transition-colors outline-none border border-rose-100 shadow-sm flex items-center justify-center gap-1.5">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
                             ${window.t('return_terr_btn')}
                         </button>
                     </div>
-
                 </div>
                 `;
             });
@@ -993,15 +960,6 @@ function loadPersonalData() {
             else container.innerHTML = html;
         });
     } catch(e) {}
-
-    window.markTerritoryReturned = async (id) => {
-        if (confirm('Точно сдать этот участок?')) { 
-            try {
-                await updateDoc(doc(db, "territories", id), { status: 'returned', returnedAt: new Date().toISOString() });
-                window.showToast("Участок сдан! ✅", "success");
-            } catch (e) { alert("Ошибка сети!"); }
-        }
-    };
 
     try {
         const tasksQuery = query(collection(db, "personal_tasks"), orderBy("date", "asc"));
@@ -1811,9 +1769,7 @@ const initPullToRefresh = () => {
 
         if (distance > 0) {
             isPulling = true;
-            
             let pullDistance = distance * 0.35; 
-            
             ptrEl.style.transform = `translateY(${pullDistance - 80}px)`; 
 
             if (pullDistance > triggerDistance) {
