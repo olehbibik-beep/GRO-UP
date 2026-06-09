@@ -21,12 +21,28 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
+   <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        ui: { bg: '#D7D9E0', nav: '#0f172a', report: '#9333ea', news: '#0ea5e9', success: '#10b981' }
+                        theme: {
+                            // --- БАЗОВЫЕ ЦВЕТА ---
+                            bg: '#cbd5e1',          // Фон приложения за карточками
+                            card: '#ffffff',        // Цвет самих карточек
+                            text: '#1e293b',        // Главный текст заголовков
+                            nav: '#0f172a',         // Цвет нижнего меню
+
+                            // --- ПРОГРАММА И ОТЧЕТЫ ---
+                            programIcon: '#6366f1', // Иконка "Программа" (синяя)
+                            reportIcon: '#9333ea',  // Иконка "Мой отчет" (фиолетовая)
+                            
+                            // --- ЕДИНЫЙ СТИЛЬ: СТЕНДЫ И УЧАСТКИ ---
+                            modIcon: '#10b981',     // Цвет иконок стенда и участков (Изумрудный)
+                            modBtnBg: '#d1fae5',    // Бледно-зеленый фон больших кнопок
+                            modBtnHover: '#a7f3d0', // Цвет кнопки при нажатии
+                            modBtnText: '#047857',  // Темно-зеленый текст на кнопках
+                        }
                     }
                 }
             }
