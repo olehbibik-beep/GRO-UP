@@ -4,7 +4,7 @@
   "description": "Приложение для нашего собрания",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#cbd5e1",
+  "background_color": "#56bc7b",
   "theme_color": "#0f172a",
   "icons": [
     {
