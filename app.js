@@ -188,8 +188,171 @@ if (!userId) {
     window.location.href = 'login.html';
 }
 
+// ГЛОБАЛЬНЫЕ ФУНКЦИИ ОКНА И НАВИГАЦИИ
 window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
-window.openReportHistory = () => document.getElementById('report-history-modal').classList.replace('hidden', 'flex');
+// --- ЛОГИКА АРХИВА ОТЧЕТОВ И КОРРЕКТИРОВОК ---
+window.openReportHistory = async () => {
+    const modal = document.getElementById('report-history-modal');
+    if (modal) modal.classList.replace('hidden', 'flex');
+
+    const container = document.getElementById('report-history-list') || document.getElementById('archive-list');
+    if (!container) return;
+
+    container.innerHTML = `<p class="text-center py-6 text-slate-400 text-sm font-bold uppercase tracking-widest animate-pulse">${window.t('loading_archive') || 'Загрузка...'}</p>`;
+
+    try {
+        const q = query(collection(db, "reports"), where("userId", "==", userId));
+        const snapshot = await getDocs(q);
+
+        let reports = [];
+        snapshot.forEach(docSnap => {
+            reports.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        reports.sort((a, b) => b.month.localeCompare(a.month));
+
+        if (reports.length === 0) {
+            container.innerHTML = `<p class="text-center py-8 text-slate-400 text-xs font-bold uppercase tracking-widest">${window.t('archive_empty') || 'Архив пуст'}</p>`;
+            return;
+        }
+
+        let html = '';
+        reports.forEach(r => {
+            const isParticipated = r.participated ? 'Да' : 'Нет';
+            const hours = r.hours || 0;
+            const studies = r.studies || 0;
+            const credit = r.credit || r.pubs || 0; 
+            
+            const [year, monthNum] = r.month.split('-');
+            const monthName = window.t('months')[parseInt(monthNum, 10) - 1];
+
+            html += `
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-3 shadow-sm relative">
+                    <h4 class="font-black text-slate-800 text-sm uppercase tracking-widest mb-3 border-b border-slate-200 pb-2">${monthName} ${year}</h4>
+                    <div class="grid grid-cols-2 gap-y-2 gap-x-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                        <div class="flex justify-between border-b border-slate-100 pb-1">Служил(а): <span class="font-black text-slate-800">${isParticipated}</span></div>
+                        <div class="flex justify-between border-b border-slate-100 pb-1">Часы: <span class="font-black text-slate-800">${hours}</span></div>
+                        <div class="flex justify-between border-b border-slate-100 pb-1">Изучения: <span class="font-black text-slate-800">${studies}</span></div>
+                        <div class="flex justify-between border-b border-slate-100 pb-1">Кредит: <span class="font-black text-slate-800">${credit}</span></div>
+                    </div>
+                    
+                    <button id="btn-edit-${r.id}" onclick="toggleEditHours('${r.id}', true)" class="text-[10px] bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 font-black uppercase tracking-widest px-3 py-2 rounded-lg w-full transition-colors mt-2 shadow-sm outline-none">Изменить часы</button>
+
+                    <div id="form-edit-${r.id}" class="hidden mt-2 flex gap-2">
+                        <input type="number" id="input-hours-${r.id}" value="${hours}" min="0" class="w-16 bg-white border border-slate-300 rounded-lg text-center font-black text-slate-800 text-sm outline-none focus:border-indigo-500 shadow-inner">
+                        <button onclick="saveNewHours('${r.id}')" class="flex-grow bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest rounded-lg transition-colors shadow-sm outline-none">Сохранить</button>
+                        <button onclick="toggleEditHours('${r.id}', false)" class="w-10 bg-slate-200 hover:bg-slate-300 text-slate-500 font-black rounded-lg transition-colors shadow-sm outline-none flex items-center justify-center">✕</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error(error);
+        container.innerHTML = `<p class="text-center py-6 text-red-500 text-xs font-bold uppercase tracking-widest">Ошибка загрузки данных</p>`;
+    }
+};
+
+// Функция скрытия/показа встроенного редактора
+window.toggleEditHours = (id, show) => {
+    if (show) {
+        document.getElementById(`btn-edit-${id}`).classList.add('hidden');
+        document.getElementById(`form-edit-${id}`).classList.remove('hidden');
+        document.getElementById(`form-edit-${id}`).classList.add('flex');
+    } else {
+        document.getElementById(`btn-edit-${id}`).classList.remove('hidden');
+        document.getElementById(`form-edit-${id}`).classList.add('hidden');
+        document.getElementById(`form-edit-${id}`).classList.remove('flex');
+    }
+};
+
+// Функция сохранения новых часов напрямую
+window.saveNewHours = async (reportId) => {
+    const inputEl = document.getElementById(`input-hours-${reportId}`);
+    if (!inputEl) return;
+    
+    const val = inputEl.value;
+    if (val === '') return;
+    
+    const hoursNum = Number(val);
+    if (isNaN(hoursNum) || hoursNum < 0) {
+        alert("Пожалуйста, введите корректное число.");
+        return;
+    }
+
+    const btn = inputEl.nextElementSibling;
+    const originalText = btn.innerText;
+    btn.innerText = '...';
+    btn.disabled = true;
+
+    try {
+        await updateDoc(doc(db, "reports", reportId), {
+            hours: hoursNum,
+            participated: hoursNum > 0 ? true : false,
+            updatedAt: new Date().toISOString()
+        });
+        
+        window.showToast("Часы успешно обновлены! ✅");
+        window.openReportHistory(); // Сразу перерисовываем архив, чтобы показать новые цифры
+    } catch(e) {
+        alert("Ошибка при обновлении часов. Проверьте интернет.");
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+};
+// --- КОНЕЦ БЛОКА АРХИВА ---
+
+// Функция прямой перезаписи часов
+window.sendCorrection = async (reportId) => {
+    const newHours = prompt("Введите новое количество часов (это число заменит старое):");
+    
+    // Если пользователь нажал "Отмена" или ничего не ввел
+    if (newHours === null || newHours.trim() === "") return;
+
+    const hoursNum = Number(newHours);
+    
+    // Проверка на дурака (если ввели буквы)
+    if (isNaN(hoursNum) || hoursNum < 0) {
+        alert("Пожалуйста, введите корректное число.");
+        return;
+    }
+
+    try {
+        // Перезаписываем часы. Если часов больше 0, автоматически ставим галочку "Служил(а)"
+        await updateDoc(doc(db, "reports", reportId), {
+            hours: hoursNum,
+            participated: hoursNum > 0 ? true : false,
+            updatedAt: new Date().toISOString()
+        });
+        
+        window.showToast("Часы успешно обновлены! ✅");
+        window.openReportHistory(); // Сразу перерисовываем архив, чтобы показать новые цифры
+    } catch(e) {
+        alert("Ошибка при обновлении часов. Проверьте интернет.");
+    }
+};
+// --- КОНЕЦ БЛОКА АРХИВА ---
+
+// Функция отправки корректировки
+window.sendCorrection = async (reportId) => {
+    const text = prompt("Опишите корректировку (Например: Забыл добавить 2 часа и 1 изучение):");
+    if (!text || !text.trim()) return;
+
+    try {
+        // Записываем корректировку прямо в документ отчета
+        await updateDoc(doc(db, "reports", reportId), {
+            correction: text.trim(),
+            correctionDate: new Date().toISOString()
+        });
+        window.showToast("Корректировка отправлена секретарю! ✅");
+        window.openReportHistory(); // Обновляем модальное окно, чтобы показать статус
+    } catch(e) {
+        alert("Ошибка при отправке корректировки. Проверьте интернет.");
+    }
+};
+// --- КОНЕЦ БЛОКА АРХИВА ---
 window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
 window.openDutiesModal = () => document.getElementById('duties-modal').classList.replace('hidden', 'flex');
 window.openInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('hidden', 'flex');
@@ -203,7 +366,6 @@ window.closeModals = () => {
     const m5 = document.getElementById('take-terr-modal'); if(m5) m5.classList.replace('flex', 'hidden');
     const m6 = document.getElementById('info-details-modal'); if(m6) m6.classList.replace('flex', 'hidden');
     const m7 = document.getElementById('task-info-modal'); if(m7) m7.classList.replace('flex', 'hidden');
-    const m8 = document.getElementById('terr-map-modal'); if(m8) m8.classList.replace('flex', 'hidden');
 };
 window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
 
@@ -341,14 +503,34 @@ const currentMonthStr = d.toLocaleDateString(localeFormat, { month: 'long', year
 const monthLabel = document.getElementById('current-month-label');
 if (monthLabel) monthLabel.innerText = currentMonthStr;
 
+window.scrollToCurrentWeek = () => {
+    const container = document.getElementById('meeting-program-list');
+    if (!container || container.offsetParent === null) return; 
+
+    let activeCard = container.querySelector('.current-week-marker');
+    if (!activeCard) {
+        const allCards = Array.from(container.children);
+        activeCard = allCards.find(card => !card.classList.contains('grayscale'));
+    }
+    if (!activeCard && container.children.length > 0) {
+        const len = container.children.length;
+        activeCard = len > 1 ? container.children[len - 2] : container.lastElementChild;
+    }
+    if (activeCard) {
+        activeCard.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+    }
+};
+
 window.switchTab = (tabId, btnElement) => {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tabId}`);
     if(targetTab) targetTab.classList.add('active');
+    
     document.querySelectorAll('.nav-icon-container').forEach(icon => {
         icon.classList.remove('bg-slate-700', 'text-white', 'shadow-inner');
         icon.classList.add('text-slate-500');
     });
+    
     if(!btnElement) btnElement = document.querySelector(`nav button[onclick="switchTab('${tabId}', this)"]`);
     if(btnElement) {
         const icon = btnElement.querySelector('.nav-icon-container');
@@ -356,6 +538,12 @@ window.switchTab = (tabId, btnElement) => {
             icon.classList.remove('text-slate-500'); 
             icon.classList.add('bg-slate-700', 'text-white', 'shadow-inner');
         }
+    }
+
+    if (tabId === 'tasks') {
+        setTimeout(() => {
+            if (window.scrollToCurrentWeek) window.scrollToCurrentWeek();
+        }, 50);
     }
 };
 
@@ -398,7 +586,7 @@ window.submitReport = async () => {
 let unsubMessages = null;
 window.activeMessageId = null;
 
-window.listenForMessages = function() {
+function listenForMessages() {
     if (unsubMessages) unsubMessages();
     unsubMessages = onSnapshot(query(collection(db, "user_messages"), where("userId", "==", userId), where("read", "==", false)), (msgSnap) => {
         if (!msgSnap.empty) {
@@ -412,7 +600,7 @@ window.listenForMessages = function() {
             }
         }
     });
-};
+}
 
 window.markMessageRead = async () => {
     if(window.activeMessageId) {
@@ -429,6 +617,12 @@ window.markMessageRead = async () => {
         btn.disabled = false;
     }
 };
+
+let isStandReqPending = false;
+let myStands = [];
+let unsubStandReqs = null;
+let unsubStands = null;
+
 if (userId) {
     onSnapshot(doc(db, "users", userId), async (docSnap) => {
         if (!docSnap.exists()) { if (navigator.onLine) window.logout(); return; }
@@ -481,10 +675,10 @@ if (userId) {
                 }
             }
 
-            try { window.loadPersonalData(); } catch(e) {}
-            try { window.loadProfileData(); } catch(e) {}
-            window.renderStandCard();
-            window.listenForMessages(); 
+            try { loadPersonalData(); } catch(e) {}
+            try { loadProfileData(); } catch(e) {}
+            renderStandCard();
+            listenForMessages(); 
             
             if(!document.querySelector('.tab-content.active')) {
                 window.switchTab('home');
@@ -493,7 +687,7 @@ if (userId) {
     });
 }
 
-window.loadProfileData = async function() {
+async function loadProfileData() {
     const pName = document.getElementById('profile-name');
     const pGroup = document.getElementById('profile-group');
     const pOverseer = document.getElementById('profile-overseer');
@@ -501,16 +695,30 @@ window.loadProfileData = async function() {
     if(pName) pName.innerText = currentUserData.name || "Имя";
     let roles = currentUserData.roles || ["Возвещатель"];
     const rolesContainer = document.getElementById('profile-roles-container');
+    
     if (rolesContainer) {
         rolesContainer.innerHTML = roles.map(r => {
             let colorClass = "bg-slate-100 text-slate-500 border border-slate-200"; 
+            let iconHtml = ""; 
+
             if(r === "Старейшина") colorClass = "bg-amber-100 text-amber-700 border border-amber-200";
             else if(r === "Помощник собрания") colorClass = "bg-sky-100 text-sky-700 border border-sky-200";
             else if(r === "Пионер") colorClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
             else if(r === "Админ" || r === "Владелец") colorClass = "bg-rose-100 text-rose-700 border border-rose-200";
             else if(r === "Ответственный за график") colorClass = "bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200";
-            if(["Ответственный за участки", "Ответственный за школу", "Участник школы", "Надзиратель группы", "Служение со стендом"].includes(r)) return '';
-            return `<span class="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${colorClass}">${r}</span>`;
+            else if(r === "Надзиратель группы") colorClass = "bg-purple-100 text-purple-700 border border-purple-200";
+            else if(r === "Ответственный за участки") colorClass = "bg-teal-100 text-teal-700 border border-teal-200";
+            else if(r === "Ответственный за школу") colorClass = "bg-indigo-100 text-indigo-700 border border-indigo-200";
+            else if(r === "Ответственный за стенды") colorClass = "bg-blue-100 text-blue-700 border border-blue-200";
+            else if(r === "Служение со стендом") {
+                colorClass = "bg-indigo-100 text-indigo-700 border-indigo-200";
+                iconHtml = `<svg class="w-3 h-3 inline mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 4h10v14H7V4zM10 8h4M10 12h4" /><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 21v-3m4 3v-3" /></svg>`;
+            }
+
+            // Скрываем только "Участник школы", так как это есть у всех и просто засоряет интерфейс
+            if(r === "Участник школы") return '';
+            
+            return `<span class="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${colorClass}">${iconHtml}${r}</span>`;
         }).join('');
     }
     
@@ -538,14 +746,9 @@ window.loadProfileData = async function() {
             pOverseer.innerText = snap.empty ? "-" : snap.docs[0].data().name;
         } else if (pOverseer) { pOverseer.innerText = "-"; }
     } catch(e) {}
-};
+}
 
-let isStandReqPending = false;
-let myStands = [];
-let unsubStandReqs = null;
-let unsubStands = null;
-
-window.renderStandCard = function() {
+function renderStandCard() {
     const container = document.getElementById('stand-widget-container');
     if (!container) return;
     if (unsubStandReqs) unsubStandReqs();
@@ -553,16 +756,16 @@ window.renderStandCard = function() {
 
     unsubStandReqs = onSnapshot(query(collection(db, "requests"), where("userId", "==", userId), where("type", "==", "stand")), (snap) => {
         isStandReqPending = !snap.empty;
-        window.updateStandWidgetUI();
+        updateStandWidgetUI();
     });
     unsubStands = onSnapshot(query(collection(db, "stands"), where("userId", "==", userId)), (snap) => {
         myStands = [];
         snap.forEach(doc => myStands.push(doc.data()));
-        window.updateStandWidgetUI();
+        updateStandWidgetUI();
     });
-};
+}
 
-window.updateStandWidgetUI = function() {
+function updateStandWidgetUI() {
     const container = document.getElementById('stand-widget-container');
     if (!container) return;
 
@@ -646,7 +849,7 @@ window.updateStandWidgetUI = function() {
         }
     } else {
         if (isStandReqPending) buttonHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none mt-3 shadow-sm">${window.t('stand_pending')}</button>`;
-        else buttonHtml = `<button onclick="window.requestStand(this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mt-3 shadow-sm">${window.t('stand_apply')}</button>`;
+        else buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mt-3 shadow-sm">${window.t('stand_apply')}</button>`;
         contentHtml = `<div class="w-full h-24 bg-slate-50 border border-slate-200 flex items-center justify-center rounded-md mt-3 shadow-sm"><svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 00-2-2H6a2 2 0 00-2-2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>`;
     }
 
@@ -654,7 +857,7 @@ window.updateStandWidgetUI = function() {
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden p-4 w-full shadow-sm">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                 <h3 class="font-black text-slate-800 text-base md:text-lg flex items-center gap-2">
-                    <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                    <svg class="w-5 h-5 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                     ${window.t('stand_title')}
                 </h3>
             </div>
@@ -662,27 +865,27 @@ window.updateStandWidgetUI = function() {
             ${buttonHtml}
         </div>
     `;
-};
+}
 
 window.requestStand = async (btn) => {
     btn.innerText = "..."; btn.disabled = true;
     try {
         await addDoc(collection(db, "requests"), { type: "stand", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
-        btn.classList.replace('bg-emerald-500', 'bg-emerald-500');
+        btn.classList.replace('bg-slate-800', 'bg-emerald-500');
         btn.innerHTML = `✅ ${window.t('success')}`;
         setTimeout(() => { btn.classList.replace('bg-emerald-500', 'bg-slate-100'); btn.classList.replace('text-white', 'text-slate-400'); btn.innerText = window.t('stand_pending'); }, 2000);
     } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
 };
 
-window.getISOWeekString = function(dateObj) {
+function getISOWeekString(dateObj) {
     const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
     const weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
     return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-};
+}
 
-window.weekToDateString = function(weekId) {
+function weekToDateString(weekId) {
     if(!weekId) return "";
     const [year, weekStr] = weekId.split('-W');
     const w = parseInt(weekStr, 10);
@@ -702,26 +905,32 @@ window.weekToDateString = function(weekId) {
     } else {
         return `${monday.getDate()} ${m1} - ${sunday.getDate()} ${m2}`;
     }
-};
+}
 
-window.buildScheduleCards = function(d, myName, currentWeekStr) {
-    const weekLabel = window.weekToDateString(d.realWeekId || d.weekId);
+// ============================================
+// ГЕНЕРАТОР КАРТОЧЕК РАСПИСАНИЯ
+// ============================================
+function buildScheduleCards(d, myName, currentWeekStr) {
+    const weekLabel = weekToDateString(d.realWeekId || d.weekId);
     const isCurrentWeek = (d.realWeekId || d.weekId.split('-')[0]+'-'+d.weekId.split('-')[1]) === currentWeekStr;
-    const weekStatus = isCurrentWeek ? window.t('current_week') : window.t('future_week');
-    const statusColor = isCurrentWeek ? 'text-emerald-600' : 'text-slate-500';
+    const isPastWeek = (d.realWeekId || d.weekId.split('-')[0]+'-'+d.weekId.split('-')[1]) < currentWeekStr;
+    
+    const weekStatus = isCurrentWeek ? window.t('current_week') : (isPastWeek ? "ПРОШЛАЯ" : window.t('future_week'));
+    const statusColor = isCurrentWeek ? 'text-emerald-600' : (isPastWeek ? 'text-slate-400' : 'text-slate-500');
+    const pastCardClass = isPastWeek ? 'opacity-50 grayscale' : '';
     
     let partCounter = 1;
 
     const row = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-900';
-        const nameColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
+        const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
+        const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
 
         return `
-            <div class="flex flex-col py-2 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
-                <span class="text-sm md:text-base ${titleColor} leading-tight">${partCounter++}. ${translateDbString(title)}</span>
-                <span class="text-sm md:text-base ${nameColor} mt-1 ml-4">${person || '-'}</span>
+            <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+                <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translateDbString(title)}</span>
+                <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${person || '-'}</span>
             </div>
         `;
     };
@@ -729,25 +938,39 @@ window.buildScheduleCards = function(d, myName, currentWeekStr) {
     const rowUnnumbered = (title, person) => {
         if(!person && !title) return '';
         const isMe = person === myName;
-        const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-900';
-        const nameColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
+        const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
+        const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
 
         return `
-            <div class="flex flex-col py-2 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
-                <span class="text-sm md:text-base ${titleColor} leading-tight">${translateDbString(title)}</span>
-                <span class="text-sm md:text-base ${nameColor} mt-1 ml-4">${person || '-'}</span>
+            <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+                <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${translateDbString(title)}</span>
+                <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${person || '-'}</span>
             </div>
         `;
     };
 
+    // ИДЕАЛЬНОЕ ЦЕНТРИРОВАНИЕ ДЛЯ ПРИЛОЖЕНИЯ (УБРАЛ translateY)
+    const buildHeader = (title, bgColor, safeClass, iconSvg) => `
+        <div class="w-full rounded-md shadow-sm mt-2 mb-1.5 ${safeClass} flex items-center px-3 py-1.5 min-h-[28px]" style="background-color: ${bgColor};">
+            <div class="flex items-center justify-center text-white/90 w-4 h-4 shrink-0">${iconSvg}</div>
+            <div class="text-white text-[10px] md:text-xs font-black uppercase tracking-widest leading-none ml-1.5 flex items-center h-full pt-[1px]">${title}</div>
+        </div>
+    `;
+
+    const iconTreasure = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`;
+    const iconMinistry = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>`;
+    const iconLiving = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>`;
+    const iconWeekend = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>`;
+
     const treasure1Me = d.mw_treasure_name === myName;
-    const t1TitleColor = treasure1Me ? 'font-black text-black' : 'font-bold text-slate-900';
-    const t1NameColor = treasure1Me ? 'font-black text-black' : 'font-bold text-slate-800';
+    const t1TitleColor = treasure1Me ? 'font-black text-black' : 'font-bold text-slate-800';
+    const t1NameColor = treasure1Me ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+    const t1Title = translateDbString(d.mw_treasure_title || window.t('talk_10_min'));
     
     const treasure1 = `
-        <div class="flex flex-col py-2 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
-            <span class="text-sm md:text-base ${t1TitleColor} leading-tight">${partCounter++}. ${translateDbString(d.mw_treasure_title || window.t('talk_10_min'))}</span>
-            <span class="text-sm md:text-base ${t1NameColor} mt-1 ml-4">${d.mw_treasure_name || '-'}</span>
+        <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+            <span class="text-[13px] md:text-sm ${t1TitleColor} leading-tight">${partCounter++}. ${t1Title}</span>
+            <span class="text-[13px] md:text-sm ${t1NameColor} mt-0.5 ml-4">${d.mw_treasure_name || '-'}</span>
         </div>
     `;
 
@@ -757,43 +980,40 @@ window.buildScheduleCards = function(d, myName, currentWeekStr) {
     const minRowsRaw = (d.ministryParts || []).map((m) => {
         if(!m.student && !m.assistant && !m.type) return '';
         const isMe = (m.student === myName || m.assistant === myName);
-        const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-900';
-        const nameColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
+        const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
+        const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
         const assistStr = m.assistant ? ` <span class="opacity-70 ml-1">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
         const translatedType = translateDbString(m.type || window.t('part'));
         
         let description = "";
-        if (m.type === "Чтение Библии" || m.type === "Čtení Bible") description = "Это учебное задание назначается учащемуся мужского пола. Учащийся зачитывает назначенный отрывок. Вступление и заключение не требуются.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
-        else if (m.type === "Начинайте разговор" || m.type === "Zahájení rozhovoru") description = "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим или членом его семьи.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
-        else if (m.type === "Развивайте интерес" || m.type === "Rozvíjení zájmu") description = "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
-        else if (m.type === "Подготавливайте учеников" || m.type === "Pomáhej lidem stát se učedníky" || m.type === "Činění učedníků") description = "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
-        else if (m.type === "Объясняйте свои взгляды" || m.type === "Vysvětlování své víry") description = "Если это задание преподносится в виде речи, оно поручается учащемуся мужского пола. Если в виде демонстрации — мужского или женского пола.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
-        else if (m.type === "Речь" || m.type === "Proslov" || m.type === "Речь 10 мин." || m.type === "Proslov 10 min.") description = "Это учебное задание поручается учащемуся мужского пола и преподносится в виде речи, обращённой к собранию.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
+        if (m.type === "Чтение Библии" || m.type === "Čtení Bible") description = "Это учебное задание назначается учащемуся мужского пола...";
+        else if (m.type === "Начинайте разговор" || m.type === "Zahájení rozhovoru") description = "Это учебное задание поручается учащемуся мужского или женского пола...";
+        else if (m.type === "Развивайте интерес" || m.type === "Rozvíjení zájmu") description = "Это учебное задание поручается учащемуся мужского или женского пола...";
+        else if (m.type === "Подготавливайте учеников" || m.type === "Pomáhej lidem stát se učedníky" || m.type === "Činění učedníků") description = "Это учебное задание поручается учащемуся мужского или женского пола...";
+        else if (m.type === "Объясняйте свои взгляды" || m.type === "Vysvětlování své víry") description = "Если это задание преподносится в виде речи, оно поручается учащемуся мужского пола...";
+        else if (m.type === "Речь" || m.type === "Proslov" || m.type === "Речь 10 мин." || m.type === "Proslov 10 min.") description = "Это учебное задание поручается учащемуся мужского пола...";
 
-        const descHtml = description ? `<div class="mt-3 pt-2 border-t border-slate-200/50"><div class="text-[11px] md:text-xs font-medium text-slate-500 leading-relaxed">${description}</div></div>` : "";
-        const extraInfo = m.lesson ? `<span class="font-black text-slate-800 block mb-2 text-base md:text-lg">${translatedType}</span><span class="text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-100 self-start inline-block">Урок ${m.lesson}</span>${descHtml}` : `<span class="font-black text-slate-800 text-base md:text-lg">${translatedType}</span>${descHtml}`;
+        const descHtml = description ? `<div class="mt-4 pt-3 border-t border-slate-100"><div class="text-[11px] font-medium text-slate-500 leading-relaxed">${description}</div></div>` : "";
+        const extraInfo = m.lesson 
+            ? `<span class="font-black text-slate-800 block mb-3 text-base">${translatedType}</span><span class="text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-100 self-start inline-block">${window.t('lesson')} ${m.lesson}</span>${descHtml}` 
+            : `<span class="font-black text-slate-800 text-base">${translatedType}</span>${descHtml}`;
+
         const safeHtml = extraInfo.replace(/"/g, '&quot;');
 
         return `
-            <div data-info="${safeHtml}" onclick="openTaskInfoModal(this.getAttribute('data-info'))" class="flex flex-col py-2.5 px-3 border-b border-slate-200/50 last:border-0 hover:bg-white active:bg-white transition-colors cursor-pointer group">
-                <div class="flex justify-between items-center">
-                    <div class="flex flex-col">
-                        <span class="text-sm md:text-base ${titleColor} leading-tight">${partCounter++}. ${translatedType}</span>
-                        <span class="text-sm md:text-base ${nameColor} mt-1 ml-4">${m.student || '-'}${assistStr}</span>
-                    </div>
-                    <div class="shrink-0 ml-3 text-slate-300 group-hover:text-indigo-400 transition-colors pointer-events-none">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
+            <div data-info="${safeHtml}" onclick="openTaskInfoModal(this.getAttribute('data-info'))" style="-webkit-tap-highlight-color: transparent;" class="flex items-center justify-between py-2.5 px-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer group">
+                <div class="flex flex-col min-w-0 pointer-events-none">
+                    <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translatedType}</span>
+                    <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${m.student || '-'}${assistStr}</span>
+                </div>
+                <div class="shrink-0 ml-3 text-slate-300 group-hover:text-indigo-400 transition-colors pointer-events-none">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
             </div>
         `;
     }).join('');
 
-    const minRows = minRowsRaw ? `
-        <div class="flex flex-col bg-white/60 border border-slate-200/50 shadow-sm rounded-xl mt-1.5 mb-2 mx-1 overflow-hidden">
-            ${minRowsRaw}
-        </div>
-    ` : '';
+    const minRows = minRowsRaw ? `<div class="flex flex-col bg-white rounded-xl mt-1.5 mb-2 mx-0 overflow-hidden shadow-sm border border-slate-200/80">${minRowsRaw}</div>` : '';
 
     const livRows = (d.livingParts || []).map((m) => {
         if(!m.title && !m.name) return '';
@@ -802,95 +1022,112 @@ window.buildScheduleCards = function(d, myName, currentWeekStr) {
 
     const cbsNum = partCounter++;
     const isCbsMe = (d.mw_cbs_conductor === myName || d.mw_cbs_reader === myName);
-    const cbsTitleColor = isCbsMe ? 'font-black text-black' : 'font-bold text-slate-900';
-    const cbsNameColor = isCbsMe ? 'font-black text-black' : 'font-bold text-slate-800';
+    const cbsTitleColor = isCbsMe ? 'font-black text-black' : 'font-bold text-slate-800';
+    const cbsNameColor = isCbsMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
     const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
+    const cbsRow = `
+        <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+            <span class="text-[13px] md:text-sm ${cbsTitleColor} leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-xs font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
+            <span class="text-[13px] md:text-sm ${cbsNameColor} mt-0.5 ml-4">${d.mw_cbs_conductor || '-'}${readStr}</span>
+        </div>
+    `;
+
     const weTalkMe = d.we_talk_speaker === myName;
-    const wtTitleColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-900';
-    const wtNameColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-800';
+    const wtTitleColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-800';
+    const wtNameColor = weTalkMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+    const talkTitle = translateDbString(d.we_talk_title || window.t('public_talk'));
 
     const we_talk = `
-        <div class="flex flex-col py-2.5 px-3 bg-white/60 hover:bg-white active:bg-white border border-slate-200/50 shadow-sm transition-colors rounded-xl mt-2 mb-1 mx-1 cursor-pointer">
-            <span class="text-sm md:text-base ${wtTitleColor} uppercase leading-tight">${translateDbString(d.we_talk_title || window.t('public_talk'))}</span>
-            <span class="text-sm md:text-base ${wtNameColor} mt-1 ml-4">${d.we_talk_speaker || '-'}</span>
+        <div class="flex flex-col py-1.5 px-3 bg-white/60 hover:bg-white border border-slate-200/50 shadow-sm rounded-xl mt-1.5 mb-1 mx-0">
+            <span class="text-[13px] md:text-sm ${wtTitleColor} uppercase leading-tight">${talkTitle}</span>
+            <span class="text-[13px] md:text-sm ${wtNameColor} mt-0.5 ml-4">${d.we_talk_speaker || '-'}</span>
         </div>
     `;
 
     const isWtMe = (d.we_wt_conductor === myName || d.we_wt_reader === myName);
-    const wtStudyTitleColor = isWtMe ? 'font-black text-black' : 'font-bold text-slate-900';
-    const wtStudyNameColor = isWtMe ? 'font-black text-black' : 'font-bold text-slate-800';
+    const wtStudyTitleColor = isWtMe ? 'font-black text-black' : 'font-bold text-slate-800';
+    const wtStudyNameColor = isWtMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
     const we_wt_read_str = d.we_wt_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.we_wt_reader})</span>` : '';
 
-    return `
-        <div ${isCurrentWeek ? 'id="current-week-card"' : ''} class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-4 px-1">
-            
-            <div class="flex flex-col gap-1 pb-3 mb-2 mx-2 border-b border-slate-300">
-                <div class="flex items-center justify-between w-full">
-                    <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
-                    <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
-                </div>
-            </div>
-            
-            <div class="flex-grow flex flex-col space-y-0.5">
-                ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
-
-                <div class="bg-[#0d9488] text-white py-1.5 px-3 mt-3 mb-1 flex items-center rounded-lg shadow-sm w-full">
-                    <span class="text-[11px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('treasures_title')}</span>
-                </div>
-                ${treasure1}
-                ${treasure2}
-                ${treasure3}
-
-                <div class="bg-[#d97706] text-white py-1.5 px-3 mt-3 mb-1 flex items-center rounded-lg shadow-sm w-full">
-                    <span class="text-[11px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('ministry_skills')}</span>
-                </div>
-                
-                ${minRows}
-
-                <div class="bg-[#b91c1c] text-white py-1.5 px-3 mt-3 mb-1 flex items-center rounded-lg shadow-sm w-full">
-                    <span class="text-[11px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('christian_living')}</span>
-                </div>
-                ${livRows}
-                
-                <div class="flex flex-col py-2 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
-                    <span class="text-sm md:text-base ${cbsTitleColor} leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-xs font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
-                    <span class="text-sm md:text-base ${cbsNameColor} mt-1 ml-4">${d.mw_cbs_conductor || '-'}${readStr}</span>
-                </div>
-
-                ${rowUnnumbered(window.t('closing_prayer'), d.mw_prayer_name)}
-            </div>
-        </div>
-
-        <div class="w-[88vw] md:w-[calc(50%-0.75rem)] shrink-0 snap-center flex flex-col bg-transparent pb-4 px-1">
-            
-            <div class="flex flex-col gap-1 pb-3 mb-2 mx-2 border-b border-slate-300">
-                <div class="flex items-center justify-between w-full">
-                    <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
-                    <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
-                </div>
-            </div>
-
-            <div class="flex-grow flex flex-col space-y-0.5">
-                <div class="bg-[#475569] text-white py-1.5 px-3 mt-0 mb-1 flex items-center rounded-lg shadow-sm w-full">
-                    <span class="text-[11px] md:text-xs font-black uppercase tracking-widest leading-none">${window.t('weekend_meeting')}</span>
-                </div>
-                
-                ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
-                
-                ${we_talk}
-                
-                <div class="flex flex-col py-2 px-2 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg mt-2">
-                    <span class="text-sm md:text-base ${wtStudyTitleColor} leading-tight">${window.t('watchtower_study')}</span>
-                    <span class="text-sm md:text-base ${wtStudyNameColor} mt-1 ml-4">${d.we_wt_conductor || '-'}${we_wt_read_str}</span>
-                </div>
-
-                ${rowUnnumbered(window.t('closing_prayer'), d.we_prayer_name)}
-            </div>
+    const wtStudyRow = `
+        <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg mt-1.5">
+            <span class="text-[13px] md:text-sm ${wtStudyTitleColor} leading-tight">${window.t('watchtower_study')}</span>
+            <span class="text-[13px] md:text-sm ${wtStudyNameColor} mt-0.5 ml-4">${d.we_wt_conductor || '-'}${we_wt_read_str}</span>
         </div>
     `;
-};
 
+    const attendantsArr = [d.duty_attendant_1, d.duty_attendant_2].filter(Boolean);
+    const soundsArr = [d.duty_sound_1, d.duty_sound_2].filter(Boolean);
+    let dutiesBlock = '';
+
+    if (attendantsArr.length > 0 || soundsArr.length > 0) {
+        dutiesBlock = `
+            <div class="mt-3 grid grid-cols-2 gap-2 text-center bg-slate-200/60 rounded-xl p-2.5 mx-0 mb-2">
+                ${attendantsArr.length > 0 ? `
+                <div class="flex flex-col items-center justify-center">
+                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-500">Распорядители</span>
+                    <span class="text-[10px] md:text-xs font-bold text-slate-800 leading-tight mt-0.5">${attendantsArr.join('<br>')}</span>
+                </div>` : '<div></div>'}
+                
+                ${soundsArr.length > 0 ? `
+                <div class="flex flex-col items-center justify-center border-l border-slate-300">
+                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-500">Звук / Видео</span>
+                    <span class="text-[10px] md:text-xs font-bold text-slate-800 leading-tight mt-0.5">${soundsArr.join('<br>')}</span>
+                </div>` : '<div></div>'}
+            </div>
+        `;
+    }
+
+    return `
+        <div class="w-[calc(100vw-32px)] md:w-full shrink-0 snap-center snap-always scroll-mt-40 flex flex-col bg-transparent pb-2 px-0 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
+            
+            <div class="flex flex-col gap-1 pb-2 mb-3 mx-1 border-b border-slate-300">
+                <div class="flex items-center justify-between w-full">
+                    <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
+                    <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
+                </div>
+            </div>
+
+            <div class="inner-week-columns flex flex-col md:flex-row gap-0 md:gap-4 w-full px-1">
+                
+                <div class="flex-1 flex flex-col space-y-0 pb-4 md:pb-0">
+                    ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
+
+                    ${buildHeader(window.t('treasures_title'), '#0d9488', 'h-treasure', iconTreasure)}
+                    ${treasure1}
+                    ${treasure2}
+                    ${treasure3}
+
+                    ${buildHeader(window.t('ministry_skills'), '#d97706', 'h-ministry', iconMinistry)}
+                    ${minRows}
+
+                    ${buildHeader(window.t('christian_living'), '#b91c1c', 'h-living', iconLiving)}
+                    ${livRows}
+                    ${cbsRow}
+
+                    ${rowUnnumbered(window.t('closing_prayer'), d.mw_prayer_name)}
+                </div>
+
+                <div class="md:hidden w-full border-t-2 border-slate-200 border-dashed my-2"></div>
+
+                <div class="flex-1 flex flex-col space-y-0 pt-2 md:pt-0">
+                    ${buildHeader(window.t('weekend_meeting'), '#475569', 'h-weekend', iconWeekend)}
+                    ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
+                    ${we_talk}
+                    ${wtStudyRow}
+                    ${rowUnnumbered(window.t('closing_prayer'), d.we_prayer_name)}
+                </div>
+            </div>
+
+            ${dutiesBlock}
+        </div>
+    `;
+}
+
+// ============================================
+// ФУНКЦИЯ СОХРАНЕНИЯ РАСПИСАНИЯ В PNG
+// ============================================
 window.downloadScheduleAsPNG = async () => {
     if (typeof window.html2canvas !== 'function') {
         alert("Подождите пару секунд, инструмент загружается...");
@@ -904,6 +1141,7 @@ window.downloadScheduleAsPNG = async () => {
         return;
     }
 
+    // --- ФИРМЕННАЯ ЗАГРУЗКА (ПОЛОСКА БЕЗ ЛОГОТИПА) ---
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300';
     overlay.innerHTML = `
@@ -942,11 +1180,17 @@ window.downloadScheduleAsPNG = async () => {
         `;
         tempDiv.appendChild(titleContainer);
 
-        const sectionHeader = (title, bgColor) => {
-            return `<div style="margin-top:6px; margin-bottom:6px; background:${bgColor}; border-radius: 6px; padding: 6px 10px; display: table; width: 100%;">
-                        <div style="display: table-cell; vertical-align: middle; color:white; font-weight:900; font-size:11px; text-transform:uppercase; letter-spacing: 0.5px;">${title}</div>
+        const sectionHeader = (title, bgColor, iconSvg) => {
+            return `<div style="margin-top:6px; margin-bottom:6px; background:${bgColor}; border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; gap: 6px; min-height: 28px;">
+                        <div style="display: flex; align-items: center; justify-content: center; color: white;">${iconSvg}</div>
+                        <div style="color:white; font-weight:900; font-size:11px; text-transform:uppercase; letter-spacing: 0.5px; line-height: 1; display: flex; align-items: center; margin-top: 1px;">${title}</div>
                     </div>`;
         };
+
+        const iconTreasure = `<svg style="width:14px;height:14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`;
+        const iconMinistry = `<svg style="width:14px;height:14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>`;
+        const iconLiving = `<svg style="width:14px;height:14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>`;
+        const iconWeekend = `<svg style="width:14px;height:14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>`;
 
         let cardsAdded = 0;
         Array.from(originalContainer.children).forEach(card => {
@@ -957,9 +1201,10 @@ window.downloadScheduleAsPNG = async () => {
             
             clone.className = clone.className
                 .replace(/w-\[calc\(100vw-32px\)\]/g, '')
-                .replace(/w-\[88vw\]/g, '')
-                .replace(/md:w-\[calc\(50%-0\.75rem\)\]/g, '')
+                .replace(/md:w-full/g, '')
                 .replace(/snap-center/g, '')
+                .replace(/snap-always/g, '')
+                .replace(/scroll-mt-40/g, '')
                 .replace(/shrink-0/g, '');
                 
             clone.style.width = '100%';
@@ -969,25 +1214,36 @@ window.downloadScheduleAsPNG = async () => {
             clone.style.padding = '16px';
             clone.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
             
-            clone.removeAttribute('id');
+            clone.classList.remove('current-week-marker');
 
-            const hTreasure = clone.querySelector('.bg-\\[\\#0d9488\\]');
-            if (hTreasure) hTreasure.outerHTML = sectionHeader(window.t('treasures_title'), '#0d9488');
+            const headersToReplace = [
+                { selector: '.h-treasure', title: window.t('treasures_title'), color: '#0d9488', icon: iconTreasure },
+                { selector: '.h-ministry', title: window.t('ministry_skills'), color: '#d97706', icon: iconMinistry },
+                { selector: '.h-living', title: window.t('christian_living'), color: '#b91c1c', icon: iconLiving },
+                { selector: '.h-weekend', title: window.t('weekend_meeting'), color: '#475569', icon: iconWeekend }
+            ];
+
+            headersToReplace.forEach(hData => {
+                const el = clone.querySelector(hData.selector);
+                if (el) {
+                    el.outerHTML = sectionHeader(hData.title, hData.color, hData.icon);
+                }
+            });
             
-            const hMinistry = clone.querySelector('.bg-\\[\\#d97706\\]');
-            if (hMinistry) hMinistry.outerHTML = sectionHeader(window.t('ministry_skills'), '#d97706');
-            
-            const hLiving = clone.querySelector('.bg-\\[\\#b91c1c\\]');
-            if (hLiving) hLiving.outerHTML = sectionHeader(window.t('christian_living'), '#b91c1c');
-            
-            const hWeekend = clone.querySelector('.bg-\\[\\#475569\\]');
-            if (hWeekend) hWeekend.outerHTML = sectionHeader(window.t('weekend_meeting'), '#475569');
+            const innerGrid = clone.querySelector('.inner-week-columns');
+            if(innerGrid) {
+                innerGrid.className = '';
+                innerGrid.style.display = 'flex';
+                innerGrid.style.flexDirection = 'column'; 
+                innerGrid.style.gap = '16px';
+                innerGrid.style.width = '100%';
+                
+                const mobileDivider = innerGrid.querySelector('.border-dashed');
+                if (mobileDivider) mobileDivider.remove();
+            }
 
             const infoIcons = clone.querySelectorAll('[title="Информация"]');
             infoIcons.forEach(icon => icon.remove());
-            
-            const infoSvgs = clone.querySelectorAll('svg');
-            infoSvgs.forEach(icon => icon.remove());
 
             tempDiv.appendChild(clone);
             cardsAdded++;
@@ -1026,43 +1282,8 @@ window.downloadScheduleAsPNG = async () => {
     }
 };
 
-let userMapInstance = null;
-let userPolygonLayer = null;
 
-window.openTerritoryMap = (numStr) => {
-    const mapData = window.allMapsCache[numStr];
-    if (!mapData || !mapData.polygon) return alert("Для этого участка еще не нарисована карта!");
-
-    document.getElementById('terr-map-title').innerText = `Участок № ${numStr} (${mapData.city})`;
-    document.getElementById('terr-map-modal').classList.replace('hidden', 'flex');
-
-    if (!userMapInstance) {
-        userMapInstance = L.map('user-view-map').setView([49.974, 12.700], 14);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: ''
-        }).addTo(userMapInstance);
-    }
-
-    setTimeout(() => {
-        userMapInstance.invalidateSize();
-        if (userPolygonLayer) userMapInstance.removeLayer(userPolygonLayer);
-
-        const latlngs = mapData.polygon.map(p => [p.lat, p.lng]);
-        userPolygonLayer = L.polygon(latlngs, {
-            color: '#10b981',
-            fillColor: '#10b981',
-            fillOpacity: 0.35,
-            weight: 3
-        }).addTo(userMapInstance);
-
-        userMapInstance.fitBounds(userPolygonLayer.getBounds(), { padding: [20, 20] });
-    }, 100);
-};
-
-window.closeTerritoryMap = () => {
-    document.getElementById('terr-map-modal').classList.replace('flex', 'hidden');
-};
-window.loadPersonalData = function() {
+function loadPersonalData() {
     try {
         onSnapshot(collection(db, "territory_maps"), (mapSnap) => {
             window.allMapsCache = {};
@@ -1119,17 +1340,22 @@ window.loadPersonalData = function() {
             let schedules = Object.values(schedulesMap);
             schedules.sort((a,b) => a.realWeekId.localeCompare(b.realWeekId));
 
-            const currentWeekStr = window.getISOWeekString(new Date()); 
-            const upcomingSchedules = schedules.filter(s => s.realWeekId >= currentWeekStr);
-
+            const currentWeekStr = getISOWeekString(new Date()); 
+            
             let html = '';
-            upcomingSchedules.forEach(s => {
-                html += window.buildScheduleCards(s, currentUserData.name, currentWeekStr);
+            schedules.forEach(s => {
+                html += buildScheduleCards(s, currentUserData.name, currentWeekStr);
             });
 
             container.innerHTML = html || `<p class="text-slate-400 text-sm italic text-center py-4 w-full">${window.t('no_schedule')}</p>`;
+            
+            setTimeout(() => {
+                if (window.scrollToCurrentWeek) window.scrollToCurrentWeek();
+            }, 300);
         });
     } catch(e) { console.error(e); }
+
+    window.openDutiesModal = () => document.getElementById('duties-modal').classList.replace('hidden', 'flex');
 
     try {
         const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
@@ -1145,8 +1371,10 @@ window.loadPersonalData = function() {
 
             snapshot.forEach(docSnap => {
                 const d = docSnap.data();
+                
                 if (!d.rawDate) return;
                 
+                // Железобетонный парсинг даты
                 const [ry, rm, rd] = d.rawDate.split('-');
                 const dutyStart = new Date(ry, rm - 1, rd, 0, 0, 0);
                 
@@ -1164,8 +1392,8 @@ window.loadPersonalData = function() {
                 }
 
                 let typeStr = d.type;
-                if (typeStr === 'Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
-                if (typeStr === 'Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
+                if (typeStr === 'Уборка зала' || typeStr === '🧹 Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
+                if (typeStr === 'Специальное событие' || typeStr === '⭐ Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
                 const groupStr = d.group === "Все" || d.group === window.t('all_groups') ? window.t('all_groups') : d.group;
 
                 const myGroup = currentUserData ? currentUserData.group : window.t('no_group');
@@ -1211,12 +1439,13 @@ window.loadPersonalData = function() {
                 }
 
                 let typeStr = currentDuty.type;
-                if (typeStr === 'Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
-                if (typeStr === 'Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
+                if (typeStr === 'Уборка зала' || typeStr === '🧹 Уборка зала') typeStr = window.t('opt_cleaning').replace('🧹 ','');
+                if (typeStr === 'Специальное событие' || typeStr === '⭐ Специальное событие') typeStr = window.t('opt_special_event').replace('⭐ ','');
                 const groupStr = currentDuty.group === "Все" || currentDuty.group === window.t('all_groups') ? window.t('all_groups') : currentDuty.group;
 
                 const [ry, rm, rd] = currentDuty.rawDate.split('-');
                 const dutyStart = new Date(ry, rm - 1, rd, 0, 0, 0);
+                
                 const dutyEnd = new Date(dutyStart); 
                 dutyEnd.setDate(dutyStart.getDate() + 6);
                 
@@ -1243,6 +1472,10 @@ window.loadPersonalData = function() {
                     </div>
                 `;
             }
+            if (myDutyFound && isCleaningDay && !sessionStorage.getItem('duty_toast_shown')) {
+                window.showToast(window.t('duty_reminder'), 'warning');
+                sessionStorage.setItem('duty_toast_shown', 'true');
+            }
         });
     } catch(e) {}
 
@@ -1258,69 +1491,55 @@ window.loadPersonalData = function() {
                 const terr = docSnap.data();
                 if (terr.status === 'returned') return;
                 activeCount++;
-                
-                const takenDate = new Date(terr.issuedAt || new Date());
-                const now = new Date();
-                const daysTotal = 90; 
-                const daysPassed = Math.floor((now - takenDate) / (1000 * 60 * 60 * 24));
-                let daysLeft = daysTotal - daysPassed;
-                if (daysLeft < 0) daysLeft = 0;
-                
-                const progressPercent = Math.min(100, Math.max(0, (daysPassed / daysTotal) * 100));
-                const takenStr = takenDate.toLocaleDateString(localeFormat, { day: 'numeric', month: 'short' });
-                
-                let progressColor = 'bg-emerald-400';
-                if (daysLeft <= 30) progressColor = 'bg-amber-400'; 
-                if (daysLeft <= 10) progressColor = 'bg-rose-500';  
+                let diffDays = 0;
+                if (terr.issuedAt) {
+                    const t = new Date(terr.issuedAt).getTime();
+                    if (!isNaN(t)) diffDays = Math.floor((Date.now() - t) / (1000 * 60 * 60 * 24));
+                }
+                let barColor = "bg-emerald-500";
+                let textColor = "text-emerald-600";
+                let progress = (diffDays / 90) * 100;
+                if (progress > 100) progress = 100;
+                if (progress < 2) progress = 2; 
+                if (diffDays >= 90) { barColor = "bg-red-500"; textColor = "text-red-600"; } 
+                else if (diffDays >= 30) { barColor = "bg-amber-500"; textColor = "text-amber-600"; }
 
                 const mapData = window.allMapsCache[String(terr.number)];
                 const hasPolygon = mapData && mapData.polygon;
-                const hasUrl = mapData && mapData.url;
-                
-                let clickAction = '';
-                if (hasPolygon) clickAction = `onclick="openTerritoryMap('${terr.number}')"`;
-                else if (hasUrl) clickAction = `onclick="window.open('${mapData.url}', '_blank')"`;
-                else clickAction = `onclick="alert('Для этого участка нет карты или ссылки')"`;
+                const cityStr = mapData && mapData.city && mapData.city !== "Без города" ? `<span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mt-1">${mapData.city}</span>` : '';
 
-                const cityStr = mapData && mapData.city && mapData.city !== "Без города" 
-                    ? `<p class="text-xs text-slate-600 font-medium truncate">${mapData.city}</p>` 
-                    : `<p class="text-xs text-slate-400 font-medium truncate italic">Без города</p>`;
+ let mapBtn = '';
+                if (hasPolygon) {
+                    // НОВАЯ КНОПКА: Перебрасывает на общую карту и центрируется на участке
+                    mapBtn = `<button onclick="focusOnTerritoryOnMap('${terr.number}')" class="w-full mt-3 bg-slate-50 hover:bg-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg transition-colors outline-none shadow-sm flex items-center justify-center gap-2 border border-slate-200">Показать на карте <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg></button>`;
+                } else if (mapData && mapData.url) {
+                    // СТАРАЯ КНОПКА: Остается как есть, если это просто ссылка на сторонний сайт
+                    mapBtn = `<button onclick="window.open('${mapData.url}', '_blank')" class="w-full mt-3 bg-slate-50 hover:bg-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg transition-colors outline-none shadow-sm flex items-center justify-center gap-2 border border-slate-200"><svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg> Открыть ссылку</button>`;
+                }
 
                 html += `
-                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col relative group transition-shadow hover:shadow-md">
-                    <div ${clickAction} class="p-4 pb-2 cursor-pointer hover:bg-slate-50 transition-colors flex-grow">
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
                         <div class="flex justify-between items-start mb-2">
                             <div>
-                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">${window.t('territory_num')}</span>
-                                <h4 class="font-black text-slate-800 text-xl leading-none">${terr.number}</h4>
+                                <h3 class="font-black text-slate-800 text-lg md:text-xl">${window.t('territory_num')} ${terr.number}</h3>
+                                ${cityStr}
                             </div>
-                            <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                            <button onclick="markTerritoryReturned('${docSnap.id}')" class="text-[9px] font-bold text-slate-400 hover:text-red-500 bg-slate-100 hover:bg-red-50 px-3 py-1.5 rounded-md uppercase transition-colors outline-none shadow-sm">${window.t('return_terr_btn')}</button>
+                        </div>
+                        
+                        <div class="mt-2 flex items-center gap-3">
+                            <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex shadow-inner">
+                                <div class="${barColor} h-1.5 rounded-full transition-all" style="width: ${progress}%"></div>
                             </div>
+                            <span class="${textColor} text-[10px] font-black uppercase tracking-widest shrink-0 leading-none">${diffDays} ${window.t('days_short')}</span>
                         </div>
-                        ${cityStr}
+                        
+                        ${mapBtn}
                     </div>
-                    <div class="px-4 pb-4 cursor-pointer hover:bg-slate-50 transition-colors" ${clickAction}>
-                        <div class="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
-                            <div class="${progressColor} h-1.5 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Взят: ${takenStr}</span>
-                            <span class="text-[9px] font-black ${daysLeft <= 10 ? 'text-rose-500' : 'text-slate-500'} uppercase tracking-widest">Ост: ${daysLeft} дн.</span>
-                        </div>
-                    </div>
-                    <div class="p-2 bg-slate-50 border-t border-slate-100 mt-auto">
-                        <button onclick="markTerritoryReturned('${docSnap.id}')" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-black uppercase tracking-widest py-2.5 rounded-lg text-[10px] transition-colors outline-none border border-rose-100 shadow-sm flex items-center justify-center gap-1.5">
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
-                            ${window.t('return_terr_btn')}
-                        </button>
-                    </div>
-                </div>
                 `;
             });
-
             if (activeCount === 0) container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-xl w-full">${window.t('no_active_territories')}</p>`;
-            else container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">${html}</div>`;
+            else container.innerHTML = html;
         });
     } catch(e) {}
 
@@ -1328,7 +1547,7 @@ window.loadPersonalData = function() {
         if (confirm('Точно сдать этот участок?')) { 
             try {
                 await updateDoc(doc(db, "territories", id), { status: 'returned', returnedAt: new Date().toISOString() });
-                window.showToast("Участок сдан! ✅", "success");
+                window.showToast("Участок сдан! ✅");
             } catch (e) { alert("Ошибка сети!"); }
         }
     };
@@ -1360,10 +1579,10 @@ window.loadPersonalData = function() {
                     if (catStr === 'ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ') catStr = window.t('cat_beliefs').replace('💡 ','');
                     if (catStr === 'РЕЧЬ') catStr = window.t('cat_talk_db').replace('🎙️ ','');
 
-                    const cardHtml = `
-                        <div class="p-4 rounded-xl border ${opacityClass} mb-3 relative overflow-hidden transition-all flex flex-col justify-between min-h-[90px]">
+            const cardHtml = `
+                        <div style="border-radius: 0px !important;" class="p-4 border ${opacityClass} mb-3 relative overflow-hidden transition-all flex flex-col justify-between min-h-[90px]">
                             <div class="flex items-center gap-3 w-full">
-                                <div class="flex flex-col items-center justify-center w-12 h-12 ${isPast ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-sky-50 border-sky-100 text-sky-500'} rounded-lg border shrink-0">
+                                <div style="border-radius: 0px !important;" class="flex flex-col items-center justify-center w-12 h-12 ${isPast ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-sky-50 border-sky-100 text-sky-500'} border shrink-0">
                                     <span class="text-[8px] uppercase font-bold leading-none mb-0.5 tracking-widest">${taskDate.toLocaleDateString(localeFormat, { month: 'short' }).replace('.', '')}</span>
                                     <span class="text-xl font-black leading-none ${isPast ? 'text-slate-500' : 'text-sky-700'}">${taskDate.getDate()}</span>
                                 </div>
@@ -1373,7 +1592,7 @@ window.loadPersonalData = function() {
                                         <div class="flex items-center gap-1.5 min-w-0 w-full truncate">
                                             <span class="font-black ${isPast ? 'text-slate-500' : 'text-sky-700'} text-[10px] md:text-xs uppercase tracking-wide leading-tight truncate">${catStr}</span>
                                         </div>
-                                        <span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded shadow-sm shrink-0 whitespace-nowrap">${window.t('lesson')} ${task.lesson}</span>
+                                        <span style="border-radius: 0px !important;" class="text-[9px] font-bold text-emerald-700 bg-emerald-100 border-none px-2 py-0.5 shadow-none shrink-0 whitespace-nowrap">${window.t('lesson')} ${task.lesson}</span>
                                     </div>
                                 </div>
                             </div>
@@ -1382,6 +1601,10 @@ window.loadPersonalData = function() {
                     
                     if (!isPast) { 
                         upCount++; upList.innerHTML += cardHtml; 
+                        if (!sessionStorage.getItem('task_toast_' + docSnap.id)) {
+                            window.showToast(`📚 ${window.t('new_task_toast')} ${task.category || task.title}`, 'info');
+                            sessionStorage.setItem('task_toast_' + docSnap.id, 'true');
+                        }
                     } else { pastCount++; pastList.innerHTML += cardHtml; }
                 }
             });
@@ -1444,7 +1667,7 @@ window.loadPersonalData = function() {
                     calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50');
                 }
 
-                todayEvents.forEach(ev => {
+      todayEvents.forEach(ev => {
                     let evGroup = ev.group || window.t('no_group');
                     if (evGroup === "Все" || evGroup === "Všechny") evGroup = window.t('all_groups');
                     const hasGroup = evGroup !== window.t('no_group');
@@ -1546,6 +1769,7 @@ window.loadPersonalData = function() {
                                 </div>
                             </div>
                         `;
+                        if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) { window.showToast(window.t('new_announcement_toast'), 'info'); sessionStorage.setItem('news_toast_' + docSnap.id, 'true'); }
                     }
                 }
             });
@@ -1564,11 +1788,11 @@ window.loadPersonalData = function() {
                         ${textAreaHtml}
                         <div id="image-preview-container" class="hidden relative w-full shrink-0 mb-2 mt-2">
                             <img id="image-preview" src="" class="h-16 w-full object-cover rounded-lg border border-slate-200">
-                            <button onclick="window.removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center outline-none shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                            <button onclick="removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center outline-none shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
                         </div>
                         <div class="flex items-center justify-between gap-2 shrink-0 mt-auto pt-2 border-t border-slate-200">
-                            <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-md transition-colors flex items-center justify-center w-10 h-8 shrink-0 shadow-sm"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="window.previewImage(this)"></label>
-                            <button onclick="window.publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-4 rounded-md flex-grow transition-colors h-8 outline-none shadow-sm uppercase tracking-widest">${window.t('publish')}</button>
+                            <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-md transition-colors flex items-center justify-center w-10 h-8 shrink-0 shadow-sm"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)"></label>
+                            <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-4 rounded-md flex-grow transition-colors h-8 outline-none shadow-sm uppercase tracking-widest">${window.t('publish')}</button>
                         </div>
                     </div>
                 `;
@@ -1578,13 +1802,11 @@ window.loadPersonalData = function() {
             if(contentNews) contentNews.innerHTML = newsHTML || `<div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center mx-4 md:mx-0 shadow-sm"><p class="text-slate-400 italic text-sm text-center">${window.t('no_news')}</p></div>`;
         });
     } catch(e) {}
-};
+}
 
 window.availableTerritoriesData = [];
-window.allMapPolygons = [];
-window.isAvailableMapView = false;
-let globalAvailableMapInstance = null;
-let globalAvailableLayerGroup = null;
+window.currentTerrCityFilter = 'all';
+window.showRecommendedTerrOnly = false;
 
 window.openTakeTerrModal = async () => {
     document.getElementById('take-terr-modal').classList.replace('hidden', 'flex');
@@ -1599,6 +1821,7 @@ window.openTakeTerrModal = async () => {
         const activeSnap = await getDocs(query(collection(db, "territories"), where("status", "==", "active")));
         const activeNumbers = [];
         activeSnap.forEach(doc => activeNumbers.push(Number(doc.data().number)));
+        
         window.activeTerritoriesCount = activeNumbers.length;
 
         const returnedSnap = await getDocs(query(collection(db, "territories"), where("status", "==", "returned")));
@@ -1619,6 +1842,7 @@ window.openTakeTerrModal = async () => {
 
         const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
         const now = Date.now();
+
         let hasAnyPolygon = false; 
 
         Object.keys(window.allMapsCache).forEach(numStr => {
@@ -1637,12 +1861,25 @@ window.openTakeTerrModal = async () => {
             } else {
                 isFire = (lastW === 0) || ((now - lastW) > ninetyDaysMs);
                 status = isFire ? 'fire' : 'available';
-                window.availableTerritoriesData.push({ num: num, url: mapData.url, city: mapData.city, polygon: mapData.polygon, lastWorked: lastW, isFire: isFire });
+                
+                window.availableTerritoriesData.push({ 
+                    num: num, 
+                    url: mapData.url, 
+                    city: mapData.city,
+                    polygon: mapData.polygon,
+                    lastWorked: lastW,
+                    isFire: isFire
+                });
             }
 
             if (mapData.polygon) {
                 hasAnyPolygon = true;
-                window.allMapPolygons.push({ num: num, city: mapData.city, polygon: mapData.polygon, status: status });
+                window.allMapPolygons.push({
+                    num: num,
+                    city: mapData.city,
+                    polygon: mapData.polygon,
+                    status: status
+                });
             }
         });
 
@@ -1660,11 +1897,18 @@ window.openTakeTerrModal = async () => {
                 listContainer.classList.remove('hidden');
             }
         }
+
         window.renderAvailableTerritoriesUI(); 
+
     } catch (e) {
+        console.error(e);
         listContainer.innerHTML = `<p class="text-xs font-bold uppercase tracking-widest text-red-500 text-center py-4">Ошибка загрузки</p>`;
     }
 };
+
+window.isAvailableMapView = false;
+let globalAvailableMapInstance = null;
+let globalAvailableLayerGroup = null;
 
 window.toggleAvailableView = () => {
     window.isAvailableMapView = !window.isAvailableMapView;
@@ -1677,6 +1921,7 @@ window.toggleAvailableView = () => {
         mapContainer.classList.remove('hidden');
         btn.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg> Списком`;
         btn.className = "bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest py-2 px-3 rounded-xl transition-colors outline-none shadow-sm flex items-center gap-1.5 border border-slate-300";
+        
         window.renderGlobalAvailableMap();
     } else {
         mapContainer.classList.add('hidden');
@@ -1686,32 +1931,50 @@ window.toggleAvailableView = () => {
     }
 };
 
+// Функция переброса на общую карту с выделением участка
 window.focusOnTerritoryOnMap = (numStr) => {
+    // 1. Убеждаемся, что модальное окно открыто
     document.getElementById('take-terr-modal').classList.replace('hidden', 'flex');
+    
+    // 2. ПРИНУДИТЕЛЬНО ПРЯЧЕМ СПИСОК И ПОКАЗЫВАЕМ КАРТУ
     const listEl = document.getElementById('available-terr-list');
     const mapEl = document.getElementById('available-terr-map-container');
     const toggleBtn = document.getElementById('toggle-terr-view-btn');
     
-    if (listEl && mapEl) { listEl.classList.add('hidden'); mapEl.classList.remove('hidden'); }
-    if (toggleBtn) { toggleBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg> Списком`; }
+    if (listEl && mapEl) {
+        listEl.classList.add('hidden');
+        mapEl.classList.remove('hidden');
+    }
     
+    // Меняем иконку кнопки в шапке обратно на "Списком"
+    if (toggleBtn) {
+        toggleBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg> Списком`;
+    }
+    
+    // 3. Плавно летим к участку и "кликаем" по нему
     setTimeout(() => {
         if(globalAvailableMapInstance) globalAvailableMapInstance.invalidateSize();
+        
         const poly = window.terrMapPolygons[numStr];
         if (poly) {
             globalAvailableMapInstance.flyToBounds(poly.getBounds(), { padding: [30, 30], duration: 0.5 });
-            poly.fire('click');
+            poly.fire('click'); // Имитируем клик, чтобы открылась плашка "Взять участок"
         } else {
             alert("Участок не найден на карте!");
         }
     }, 100);
 };
 
+// === ФУНКЦИЯ 2: Общая карта свободных участков ===
 window.renderGlobalAvailableMap = () => {
     if (!globalAvailableMapInstance) {
         globalAvailableMapInstance = L.map('available-terr-map', { attributionControl: false }).setView([49.974, 12.700], 12);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(globalAvailableMapInstance);
-        globalAvailableMapInstance.on('movestart zoomstart', () => { globalAvailableMapInstance.closePopup(); });
+        
+        // НОВОЕ: Прятать окошко (плашку) при любом сдвиге или зуме карты, чтобы не мешалось
+        globalAvailableMapInstance.on('movestart zoomstart', () => {
+            globalAvailableMapInstance.closePopup();
+        });
     }
 
     setTimeout(() => {
@@ -1743,6 +2006,7 @@ window.renderGlobalAvailableMap = () => {
             document.head.insertAdjacentHTML('beforeend', styleMarkup);
         }
 
+        // === ГРАНИЦЫ СОБРАНИЯ (Mariánské Lázně) ===
         const cityBoundary = [
             [49.762638, 12.404806], [49.733720, 12.413257], [49.706275, 12.442696],
             [49.692883, 12.483003], [49.685730, 12.520048], [49.659490, 12.524038],
@@ -1808,305 +2072,421 @@ window.renderGlobalAvailableMap = () => {
             [49.787588, 12.471540], [49.762638, 12.404806]
         ];
 
-        L.polygon(cityBoundary, { color: '#3b82f6', weight: 4, fill: false, dashArray: '10, 10', interactive: false }).addTo(globalAvailableLayerGroup);
+        L.polygon(cityBoundary, {
+            color: '#3b82f6', // Яркий синий цвет (чтобы выделялся на фоне серых участков)
+            weight: 4,        // Делаем линию достаточно жирной
+            fill: false,      // Абсолютно прозрачно внутри!
+            dashArray: '10, 10', // Делаем крупный заметный пунктир
+            interactive: false // ОЧЕНЬ ВАЖНО: чтобы эта граница не перекрывала клики по мелким участкам!
+        }).addTo(globalAvailableLayerGroup);
         
-        let bounds = L.latLngBounds(); let hasPolys = false; let currentlyHighlighted = null; window.terrMapPolygons = {}; 
+        let bounds = L.latLngBounds();
+        let hasPolys = false;
+        let currentlyHighlighted = null; 
+        
+        window.terrMapPolygons = {}; 
 
         window.allMapPolygons.forEach(m => {
-            hasPolys = true; const latlngs = m.polygon.map(p => [p.lat, p.lng]);
-            let polyColor = '#64748b'; let fillOp = 0.0; let dashArr = '3, 4'; let weight = 2; let statusText = ''; let btnHtml = '';
+            hasPolys = true;
+            const latlngs = m.polygon.map(p => [p.lat, p.lng]);
+            
+            // БАЗОВЫЕ НАСТРОЙКИ (Для свободных участков)
+            let polyColor = '#64748b'; // Серый цвет границы
+            let fillOp = 0.0;          // Свободные участки полностью прозрачные
+            let dashArr = '3, 4';      // ОЧЕНЬ МЕЛКИЙ ПУНКТИР
+            let weight = 2;            
+            
+            let statusText = '';
+            let btnHtml = '';
 
-            if (m.status === 'active') { statusText = '<span class="text-slate-500 flex items-center justify-center gap-1.5 mt-2 text-[11px] bg-slate-100 py-1 rounded-md">🚧 Копаем... 👷‍♂️</span>'; polyColor = '#475569'; fillOp = 0.25; } 
-            else if (m.status === 'cooldown') { statusText = '<span class="text-purple-500 flex items-center justify-center gap-1.5 mt-2 text-[11px] bg-purple-50 py-1 rounded-md">⏳ Спит... 🛌</span>'; polyColor = '#94a3b8'; fillOp = 0.2; } 
-            else if (m.status === 'fire') { statusText = '<span class="text-rose-500 mt-1 block">Свободен (Рекомендуем)</span>'; btnHtml = `<button onclick="window.takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`; } 
-            else { statusText = '<span class="text-emerald-500 mt-1 block">Свободен</span>'; btnHtml = `<button onclick="window.takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`; }
+            // ЗАДАЕМ СТАТУСЫ, ЦВЕТА И ЭМОДЗИ
+            if (m.status === 'active') {
+                statusText = '<span class="text-slate-500 flex items-center justify-center gap-1.5 mt-2 text-[11px] bg-slate-100 py-1 rounded-md">🚧 Копаем... 👷‍♂️</span>';
+                polyColor = '#475569'; // Темно-серый
+                fillOp = 0.25;         // Серая заливка для видности!
+            } else if (m.status === 'cooldown') {
+                statusText = '<span class="text-purple-500 flex items-center justify-center gap-1.5 mt-2 text-[11px] bg-purple-50 py-1 rounded-md">⏳ Спит... 🛌</span>';
+                polyColor = '#94a3b8'; // Светло-серый
+                fillOp = 0.2;          // Легкая серая заливка
+            } else if (m.status === 'fire') {
+                statusText = '<span class="text-rose-500 mt-1 block">Свободен (Рекомендуем)</span>';
+                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
+            } else {
+                statusText = '<span class="text-emerald-500 mt-1 block">Свободен</span>';
+                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
+            }
 
-            const defaultStyle = { color: polyColor, weight: weight, dashArray: dashArr, fillColor: polyColor, fillOpacity: fillOp, opacity: 0.9 };
-            const poly = L.polygon(latlngs, defaultStyle); window.terrMapPolygons[m.num] = poly;
-            poly.bindTooltip(String(m.num), { permanent: true, direction: 'center', className: 'terr-map-label' });
-            poly.bindPopup(`<div class="text-center p-1.5 min-w-[140px] font-sans"><span class="block font-black text-2xl text-slate-800 leading-none mb-1">№ ${m.num}</span><span class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">${m.city}</span><span class="block text-[9px] font-black uppercase tracking-widest border-t border-slate-100 pt-1">${statusText}</span>${btnHtml}</div>`, { autoPan: false });
-            poly.on('click', function () { if (currentlyHighlighted) { currentlyHighlighted.poly.setStyle(currentlyHighlighted.defaultStyle); } poly.setStyle({ fillOpacity: Math.max(fillOp, 0.15), color: '#10b981', weight: 3, dashArray: '' }); currentlyHighlighted = { poly: poly, defaultStyle: defaultStyle }; });
-            poly.on('popupclose', function () { poly.setStyle(defaultStyle); if (currentlyHighlighted && currentlyHighlighted.poly === poly) currentlyHighlighted = null; });
-            poly.addTo(globalAvailableLayerGroup); bounds.extend(poly.getBounds());
+            const defaultStyle = {
+                color: polyColor,       
+                weight: weight,              
+                dashArray: dashArr,          
+                fillColor: polyColor,   
+                fillOpacity: fillOp,    
+                opacity: 0.9            
+            };
+
+            const poly = L.polygon(latlngs, defaultStyle);
+            
+            window.terrMapPolygons[m.num] = poly;
+
+            poly.bindTooltip(String(m.num), {
+                permanent: true,
+                direction: 'center',
+                className: 'terr-map-label'
+            });
+
+            const popupHtml = `
+                <div class="text-center p-1.5 min-w-[140px] font-sans">
+                    <span class="block font-black text-2xl text-slate-800 leading-none mb-1">№ ${m.num}</span>
+                    <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">${m.city}</span>
+                    <span class="block text-[9px] font-black uppercase tracking-widest border-t border-slate-100 pt-1">${statusText}</span>
+                    ${btnHtml}
+                </div>
+            `;
+            
+            // НОВОЕ: autoPan: false отключает бесячий "прыжок" карты при клике на участок
+            poly.bindPopup(popupHtml, { autoPan: false });
+
+            // КЛИК: Делаем рамку зеленой и сплошной (если участок свободен)
+            poly.on('click', function () {
+                if (currentlyHighlighted) {
+                    currentlyHighlighted.poly.setStyle(currentlyHighlighted.defaultStyle);
+                }
+                
+                poly.setStyle({
+                    fillOpacity: Math.max(fillOp, 0.15), // Оставляем базовую заливку или добавляем зеленую
+                    color: '#10b981',    
+                    weight: 3,           
+                    dashArray: ''        
+                });
+                
+                currentlyHighlighted = { poly: poly, defaultStyle: defaultStyle };
+            });
+
+            poly.on('popupclose', function () {
+                poly.setStyle(defaultStyle);
+                if (currentlyHighlighted && currentlyHighlighted.poly === poly) {
+                    currentlyHighlighted = null;
+                }
+            });
+
+            poly.addTo(globalAvailableLayerGroup);
+            bounds.extend(poly.getBounds());
         });
 
-        if (hasPolys) globalAvailableMapInstance.fitBounds(bounds, { padding: [30, 30] });
+        if (hasPolys) {
+            globalAvailableMapInstance.fitBounds(bounds, { padding: [30, 30] });
+        }
     }, 100);
 };
 
 window.renderAvailableTerritoriesUI = () => {
-    const listContainer = document.getElementById('available-terr-list'); let filtered = window.availableTerritoriesData; filtered.sort((a, b) => a.num - b.num);
-    const totalMaps = Object.keys(window.allMapsCache).length; const availableMaps = window.availableTerritoriesData.length; const takenMaps = window.activeTerritoriesCount || 0; const completedMaps = window.cooldownTerritoriesCount || 0; 
+    const listContainer = document.getElementById('available-terr-list');
     
-    let statsHtml = `<div class="grid grid-cols-4 gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-2.5 mb-4 text-center text-[8px] font-black uppercase tracking-widest text-slate-500 shadow-inner shrink-0"><div><span class="block text-slate-400 text-[7px] mb-0.5">В базе</span><span class="text-slate-800 text-xs font-black">${totalMaps}</span></div><div class="border-l border-slate-200"><span class="block text-slate-400 text-[7px] mb-0.5">В работе</span><span class="text-indigo-600 text-xs font-black">${takenMaps}</span></div><div class="border-l border-slate-200"><span class="block text-slate-400 text-[7px] mb-0.5">Пройдено</span><span class="text-purple-600 text-xs font-black">${completedMaps}</span></div><div class="border-l border-slate-200"><span class="block text-slate-400 text-[7px] mb-0.5">Свободно</span><span class="text-emerald-600 text-xs font-black">${availableMaps}</span></div></div>`;
-    
-    let gridHtml = filtered.length === 0 ? `<p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">Все участки разобраны!</p>` : '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">' + filtered.map(m => `<div ${m.polygon ? `onclick="window.focusOnTerritoryOnMap('${m.num}')"` : (m.url ? `onclick="window.open('${m.url}', '_blank')"` : `onclick="alert('Нет карты')" `)} class="bg-white border border-slate-200 rounded-xl p-4 flex justify-between items-center shadow-sm cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all active:scale-[0.98] group"><div class="flex flex-col text-left pr-2"><span class="bg-slate-800 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-md w-max mb-1.5 shadow-sm">№ ${m.num}</span><span class="font-black text-slate-700 text-sm md:text-base leading-tight">${m.city || 'Без города'}</span></div><div class="w-10 h-10 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center shrink-0 border border-slate-200 group-hover:bg-emerald-50 group-hover:text-emerald-600 group-hover:border-emerald-200 transition-colors"><svg class="w-5 h-5 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></div></div>`).join('') + '</div>';
+    let filtered = window.availableTerritoriesData;
+    filtered.sort((a, b) => a.num - b.num);
+
+    const totalMaps = Object.keys(window.allMapsCache).length;
+    const availableMaps = window.availableTerritoriesData.length;
+    const takenMaps = window.activeTerritoriesCount || 0;
+    const completedMaps = window.cooldownTerritoriesCount || 0; 
+
+    // Оставляем красивую статистику сверху
+    let statsHtml = `
+    <div class="grid grid-cols-4 gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-2.5 mb-4 text-center text-[8px] font-black uppercase tracking-widest text-slate-500 shadow-inner shrink-0">
+        <div>
+            <span class="block text-slate-400 text-[7px] mb-0.5">В базе</span>
+            <span class="text-slate-800 text-xs font-black">${totalMaps}</span>
+        </div>
+        <div class="border-l border-slate-200">
+            <span class="block text-slate-400 text-[7px] mb-0.5">В работе</span>
+            <span class="text-indigo-600 text-xs font-black">${takenMaps}</span>
+        </div>
+        <div class="border-l border-slate-200">
+            <span class="block text-slate-400 text-[7px] mb-0.5">Пройдено</span>
+            <span class="text-purple-600 text-xs font-black">${completedMaps}</span>
+        </div>
+        <div class="border-l border-slate-200">
+            <span class="block text-slate-400 text-[7px] mb-0.5">Свободно</span>
+            <span class="text-emerald-600 text-xs font-black">${availableMaps}</span>
+        </div>
+    </div>`;
+
+    let gridHtml = '';
+    if (filtered.length === 0) {
+        gridHtml = `<p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">Все доступные участки разобраны или отдыхают!</p>`;
+    } else {
+        gridHtml = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">';
+        filtered.forEach(m => {
+            const hasPolygon = !!m.polygon;
+            const cityStr = m.city ? m.city : 'Без города';
+            
+            // Логика: если есть координаты - летим на общую карту. Если просто ссылка - открываем в браузере.
+            let clickAction = '';
+            if (hasPolygon) {
+                clickAction = `onclick="focusOnTerritoryOnMap('${m.num}')"`;
+            } else if (m.url) {
+                clickAction = `onclick="window.open('${m.url}', '_blank')"`;
+            } else {
+                clickAction = `onclick="alert('Для этого участка нет карты или ссылки')"`;
+            }
+
+            // НОВАЯ КОМПАКТНАЯ КАРТОЧКА (Вся работает как кнопка)
+            gridHtml += `
+            <div ${clickAction} class="bg-white border border-slate-200 rounded-xl p-4 flex justify-between items-center shadow-sm cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all active:scale-[0.98] group">
+                
+                <div class="flex flex-col text-left pr-2">
+                    <span class="bg-slate-800 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-md w-max mb-1.5 shadow-sm">№ ${m.num}</span>
+                    <span class="font-black text-slate-700 text-sm md:text-base leading-tight">${cityStr}</span>
+                </div>
+                
+                <div class="w-10 h-10 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center shrink-0 border border-slate-200 group-hover:bg-emerald-50 group-hover:text-emerald-600 group-hover:border-emerald-200 transition-colors">
+                    <svg class="w-5 h-5 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                </div>
+                
+            </div>`;
+        });
+        gridHtml += '</div>';
+    }
+
     listContainer.innerHTML = statsHtml + gridHtml;
 };
 
-window.takeTerritory = async (num, btn) => {
-    btn.disabled = true; btn.innerText = '...';
-    try { await addDoc(collection(db, "territories"), { number: Number(num), userId: userId, userName: currentUserData.name, status: "active", issuedAt: new Date().toISOString() }); window.showToast(`Участок №${num} закреплен! ✅`, 'success'); window.closeModals(); } 
-    catch (e) { alert('Ошибка сети!'); btn.disabled = false; btn.innerText = 'ВЗЯТЬ'; }
+window.closeTakeTerrModal = () => {
+    const modal = document.getElementById('take-terr-modal');
+    if(modal) modal.classList.replace('flex', 'hidden');
 };
 
-window.previewImage = (input) => { if (input.files && input.files[0]) { selectedImageFile = input.files[0]; const reader = new FileReader(); reader.onload = (e) => { document.getElementById('image-preview').src = e.target.result; document.getElementById('image-preview-container').classList.remove('hidden'); }; reader.readAsDataURL(selectedImageFile); } };
-window.removeImage = () => { selectedImageFile = null; document.getElementById('news-image').value = ''; document.getElementById('image-preview-container').classList.add('hidden'); };
-window.openTaskInfoModal = (htmlContent) => { const modal = document.getElementById('task-info-modal'); const contentEl = document.getElementById('task-info-content'); if (modal && contentEl) { contentEl.innerHTML = htmlContent; modal.classList.replace('hidden', 'flex'); } };
-window.closeTaskInfoModal = () => document.getElementById('task-info-modal')?.classList.replace('flex', 'hidden');
+window.takeTerritory = async (num, btn) => {
+    btn.disabled = true;
+    btn.innerText = '...';
+    try {
+        await addDoc(collection(db, "territories"), {
+            number: Number(num),
+            userId: userId,
+            userName: currentUserData.name,
+            status: "active",
+            issuedAt: new Date().toISOString()
+        });
+        window.showToast(`Участок №${num} успешно закреплен! ✅`, 'success');
+        window.closeTakeTerrModal();
+    } catch (e) {
+        alert('Ошибка сети!');
+        btn.disabled = false;
+        btn.innerText = 'ВЗЯТЬ';
+    }
+};
+
+window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
+window.openQrModal = () => document.getElementById('qr-modal').classList.replace('hidden', 'flex');
+
+window.closeModals = () => {
+    const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
+    const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
+    const m3 = document.getElementById('duties-modal'); if(m3) m3.classList.replace('flex', 'hidden');
+    const m4 = document.getElementById('user-msg-modal'); if(m4) m4.classList.replace('flex', 'hidden');
+    const m5 = document.getElementById('take-terr-modal'); if(m5) m5.classList.replace('flex', 'hidden');
+    const m6 = document.getElementById('info-details-modal'); if(m6) m6.classList.replace('flex', 'hidden');
+    const m7 = document.getElementById('task-info-modal'); if(m7) m7.classList.replace('flex', 'hidden');
+};
+window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
+
+window.logout = async () => {
+    // Добавлена защита от случайного нажатия!
+    if (confirm("Выйти из аккаунта? / Odhlásit se?")) {
+        const uid = localStorage.getItem('userId');
+        if (uid) { 
+            try { await updateDoc(doc(db, "users", uid), { pushToken: "" }); } catch (e) {} 
+        }
+        localStorage.clear(); 
+        window.location.href = 'login.html'; 
+    }
+};
+
+let selectedImageFile = null;
+window.previewImage = (input) => {
+    if (input.files && input.files[0]) {
+        selectedImageFile = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('image-preview').src = e.target.result;
+            document.getElementById('image-preview-container').classList.remove('hidden');
+        };
+        reader.readAsDataURL(selectedImageFile);
+    }
+};
+
+window.removeImage = () => {
+    selectedImageFile = null;
+    document.getElementById('news-image').value = '';
+    document.getElementById('image-preview-container').classList.add('hidden');
+};
+
+window.openTaskInfoModal = (htmlContent) => {
+    const modal = document.getElementById('task-info-modal');
+    const contentEl = document.getElementById('task-info-content');
+    if (modal && contentEl) {
+        contentEl.innerHTML = htmlContent;
+        modal.classList.replace('hidden', 'flex');
+    }
+};
+
+window.closeTaskInfoModal = () => {
+    const modal = document.getElementById('task-info-modal');
+    if (modal) modal.classList.replace('flex', 'hidden');
+};
 
 window.publishNews = async () => {
     const inputRu = document.getElementById('news-input-ru'); const inputCs = document.getElementById('news-input-cs');
     const textRu = inputRu ? inputRu.value.trim() : ''; const textCs = inputCs ? inputCs.value.trim() : '';
     if (!textRu && !textCs && !selectedImageFile) return alert(window.t('alert_add_text_photo'));
-    const btn = document.getElementById('publish-news-btn'); if(btn) { btn.innerText = window.t('loading'); btn.disabled = true; }
+
+    const btn = document.getElementById('publish-news-btn');
+    if(btn) { btn.innerText = window.t('loading'); btn.disabled = true; }
+
     try {
-        let imageUrl = ""; if (selectedImageFile) { const storageRef = ref(storage, 'news/' + Date.now() + '_' + selectedImageFile.name); await uploadBytes(storageRef, selectedImageFile); imageUrl = await getDownloadURL(storageRef); }
+        let imageUrl = "";
+        if (selectedImageFile) {
+            const fileName = Date.now() + '_' + selectedImageFile.name;
+            const storageRef = ref(storage, 'news/' + fileName);
+            await uploadBytes(storageRef, selectedImageFile);
+            imageUrl = await getDownloadURL(storageRef);
+        }
+
         await addDoc(collection(db, "section_content"), { section: 'news', text_ru: textRu, text_cs: textCs, text: textRu || textCs, imageUrl: imageUrl, createdAt: new Date().toISOString() });
-        if(inputRu) inputRu.value = ''; if(inputCs) inputCs.value = ''; window.removeImage();
-        if(btn) { btn.innerHTML = `✅ ${window.t('success')}`; setTimeout(() => { btn.innerText = window.t('publish'); btn.disabled = false; }, 2000); }
+        
+        if(inputRu) inputRu.value = ''; if(inputCs) inputCs.value = '';
+        removeImage();
+        if(btn) {
+            btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success')}`;
+            setTimeout(() => { btn.innerText = window.t('publish'); btn.disabled = false; }, 2000);
+        }
     } catch (e) { alert(window.t('alert_publish_error')); if(btn) { btn.innerText = window.t('publish'); btn.disabled = false; } }
 };
 
-window.deleteNews = async (id) => { if (confirm(window.t('confirm_delete_news'))) { try { await deleteDoc(doc(db, "section_content", id)); } catch (e) { alert(window.t('error_network')); } } };
+window.deleteNews = async (id) => {
+    if (confirm(window.t('confirm_delete_news'))) { try { await deleteDoc(doc(db, "section_content", id)); } catch (e) { alert(window.t('error_network')); } }
+};
 
+let pStart = { x: 0, y: 0 };
+let pCurrent = { x: 0, y: 0 };
+const mainElem = document.getElementById('main-dashboard');
+
+if (mainElem) {
+    mainElem.addEventListener('touchstart', function(e) {
+        pStart.x = e.touches[0].screenX;
+        pStart.y = e.touches[0].screenY;
+    }, {passive: true});
+
+    mainElem.addEventListener('touchmove', function(e) {
+        pCurrent.x = e.touches[0].screenX;
+        pCurrent.y = e.touches[0].screenY;
+    }, {passive: true});
+
+    mainElem.addEventListener('touchend', function(e) {
+        if (mainElem.scrollTop <= 0) {
+            let yDiff = pCurrent.y - pStart.y;
+            let xDiff = Math.abs(pCurrent.x - pStart.x);
+            if (yDiff > 120 && xDiff < 50 && pStart.y > 0 && pCurrent.y > 0) {
+                const loader = document.getElementById('global-loader');
+                if(loader) {
+                    loader.style.display = 'flex';
+                    loader.style.opacity = '1';
+                }
+                setTimeout(() => window.location.reload(true), 300);
+            }
+        }
+        pStart = { x: 0, y: 0 };
+        pCurrent = { x: 0, y: 0 };
+    });
+}
+
+// ============================================
+// ФИРМЕННАЯ ТЯНУЧКА ОБНОВЛЕНИЯ (PULL-TO-REFRESH)
+// ============================================
 const initPullToRefresh = () => {
-    const ptrEl = document.getElementById('custom-ptr'); const ptrIcon = document.getElementById('ptr-icon'); const ptrText = document.getElementById('ptr-text'); const mainDash = document.getElementById('main-dashboard');
-    if (!mainDash || !ptrEl) return; let startY = 0; let currentY = 0; let isPulling = false; const triggerDistance = 150; 
-    mainDash.addEventListener('touchstart', (e) => { if (mainDash.scrollTop <= 0) { startY = e.touches[0].clientY; isPulling = false; ptrEl.style.transition = 'none'; } }, { passive: true });
-    mainDash.addEventListener('touchmove', (e) => {
-        if (startY === 0 || mainDash.scrollTop > 0) return; currentY = e.touches[0].clientY; let distance = currentY - startY;
-        if (distance > 0) { isPulling = true; let pullDistance = distance * 0.35; ptrEl.style.transform = `translateY(${pullDistance - 80}px)`; 
-            if (pullDistance > triggerDistance) { ptrIcon.style.transform = 'rotate(180deg)'; ptrText.innerText = "Отпустите для обновления"; } else { ptrIcon.style.transform = 'rotate(0deg)'; ptrText.innerText = "Потяните сильнее"; }
+    const ptrEl = document.getElementById('custom-ptr');
+    const ptrIcon = document.getElementById('ptr-icon');
+    const ptrText = document.getElementById('ptr-text');
+    const mainDash = document.getElementById('main-dashboard');
+    
+    if (!mainDash || !ptrEl) return;
+
+    let startY = 0;
+    let currentY = 0;
+    let isPulling = false;
+    
+    // НАСТРОЙКА: Насколько пикселей нужно потянуть вниз, чтобы обновить
+    // Увеличь эту цифру, если хочешь, чтобы тянуть нужно было еще длиннее
+    const triggerDistance = 150; 
+
+    mainDash.addEventListener('touchstart', (e) => {
+        if (mainDash.scrollTop <= 0) {
+            startY = e.touches[0].clientY;
+            isPulling = false;
+            ptrEl.style.transition = 'none';
         }
     }, { passive: true });
+
+    mainDash.addEventListener('touchmove', (e) => {
+        if (startY === 0) return;
+        if (mainDash.scrollTop > 0) return; // Если прокрутили вниз, отменяем
+        
+        currentY = e.touches[0].clientY;
+        let distance = currentY - startY;
+
+        if (distance > 0) {
+            isPulling = true;
+            
+            // Замедление (сопротивление тяге, чтобы чувствовалось упруго)
+            let pullDistance = distance * 0.35; 
+            
+            ptrEl.style.transform = `translateY(${pullDistance - 80}px)`; // -80 чтобы начинал выезжать из-за края
+
+            if (pullDistance > triggerDistance) {
+                ptrIcon.style.transform = 'rotate(180deg)';
+                ptrText.innerText = "Отпустите для обновления";
+            } else {
+                ptrIcon.style.transform = 'rotate(0deg)';
+                ptrText.innerText = "Потяните сильнее";
+            }
+        }
+    }, { passive: true });
+
     mainDash.addEventListener('touchend', () => {
         if (isPulling) {
-            ptrEl.style.transition = 'transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)'; let pullDistance = (currentY - startY) * 0.35;
-            if (pullDistance > triggerDistance) { ptrText.innerText = "Обновление..."; ptrIcon.style.transform = 'rotate(0deg)'; ptrIcon.classList.add('animate-spin'); ptrEl.style.transform = `translateY(20px)`; setTimeout(() => window.location.reload(true), 500); } 
-            else { ptrEl.style.transform = `translateY(-150%)`; }
+            ptrEl.style.transition = 'transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)';
+            let pullDistance = (currentY - startY) * 0.35;
+            
+            if (pullDistance > triggerDistance) {
+                ptrText.innerText = "Обновление...";
+                ptrIcon.style.transform = 'rotate(0deg)';
+                ptrIcon.classList.add('animate-spin');
+                ptrIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />`;
+                ptrEl.style.transform = `translateY(20px)`;
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
+            } else {
+                // Если не дотянули - прячем обратно
+                ptrEl.style.transform = `translateY(-150%)`;
+            }
         }
-        startY = 0; currentY = 0; isPulling = false;
+        startY = 0;
+        currentY = 0;
+        isPulling = false;
     }, { passive: true });
 };
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPullToRefresh); else initPullToRefresh();
-// =========================================================================
-// 🔥 ГЛОБАЛЬНЫЙ ПАТЧ ИСПРАВЛЕНИЙ (ПРОСТО ВСТАВЬ В САМЫЙ КОНЕЦ ФАЙЛА app.js)
-// =========================================================================
 
-// 1. ПОЧИНИЛИ КАРУСЕЛЬ (чтобы не пролетала, а листала по одной карточке)
-window.scrollProgram = (dir) => { 
-    const container = document.getElementById('meeting-program-list');
-    if(container && container.firstElementChild) {
-        const scrollAmount = container.firstElementChild.offsetWidth + 16;
-        container.scrollBy({ left: scrollAmount * dir, behavior: 'smooth' }); 
-    }
-};
-
-// 2. ПОЧИНИЛИ КРЕСТИК И ЗАКРЫТИЕ КАРТЫ УЧАСТКА
-window.closeTerritoryMap = () => {
-    const modal = document.getElementById('terr-map-modal');
-    if (modal) modal.classList.replace('flex', 'hidden');
-};
-
-window.closeModals = () => {
-    ['profile-modal', 'report-history-modal', 'duties-modal', 'user-msg-modal', 'take-terr-modal', 'info-details-modal', 'task-info-modal', 'terr-map-modal'].forEach(id => {
-        const m = document.getElementById(id); if(m) m.classList.replace('flex', 'hidden');
-    });
-};
-
-// 3. ПОЧИНИЛИ БЕЙДЖИКИ ПРОФИЛЯ И ОТВЕТСТВЕННОГО ЗА ГРУППУ
-window.loadProfileData = async function() {
-    const pName = document.getElementById('profile-name');
-    const pGroup = document.getElementById('profile-group');
-    const pOverseer = document.getElementById('profile-overseer');
-
-    if(pName) pName.innerText = currentUserData.name || "Имя";
-    
-    let roles = currentUserData.roles || ["Возвещатель"];
-    const rolesContainer = document.getElementById('profile-roles-container');
-    if (rolesContainer) {
-        rolesContainer.innerHTML = roles.map(r => {
-            let colorClass = "bg-slate-100 text-slate-500 border border-slate-200"; 
-            if(r === "Старейшина") colorClass = "bg-amber-100 text-amber-700 border border-amber-200";
-            else if(r === "Помощник собрания") colorClass = "bg-sky-100 text-sky-700 border border-sky-200";
-            else if(r === "Пионер") colorClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
-            else if(r === "Админ" || r === "Владелец") colorClass = "bg-rose-100 text-rose-700 border border-rose-200";
-            else if(r === "Ответственный за график") colorClass = "bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200";
-            else if(r === "Надзиратель группы") colorClass = "bg-purple-100 text-purple-700 border border-purple-200";
-            else if(r === "Ответственный за участки") colorClass = "bg-teal-100 text-teal-700 border border-teal-200";
-            else if(r === "Ответственный за школу") colorClass = "bg-indigo-100 text-indigo-700 border border-indigo-200";
-            else if(r === "Ответственный за стенды") colorClass = "bg-blue-100 text-blue-700 border border-blue-200";
-            else if(r === "Служение со стендом") colorClass = "bg-indigo-100 text-indigo-700 border-indigo-200";
-
-            if (r === "Участник школы") return ''; // Прячем лишний бейдж
-            return `<span class="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${colorClass} m-0.5">${r}</span>`;
-        }).join('');
-    }
-    
-    const myGroup = currentUserData.group || window.t('no_group');
-    if(pGroup) pGroup.innerText = `№ ${myGroup}`;
-    
-    try {
-        if (myGroup !== window.t('no_group') && pOverseer) {
-            const q = query(collection(db, "users"), where("group", "==", myGroup), where("roles", "array-contains", "Надзиратель группы"));
-            const snap = await getDocs(q);
-            pOverseer.innerText = snap.empty ? "-" : snap.docs[0].data().name;
-        } else if (pOverseer) { pOverseer.innerText = "-"; }
-    } catch(e) {}
-};
-
-// 4. ВЕРНУЛИ КРАСИВУЮ КАРТОЧКУ СТЕНДА (НОВЫЙ ДИЗАЙН)
-window.updateStandWidgetUI = function() {
-    const container = document.getElementById('stand-widget-container');
-    if (!container) return;
-
-    const roles = currentUserData?.roles || [];
-    const isApprovedForStand = roles.includes('Служение со стендом') || roles.includes('Владелец') || roles.includes('Админ');
-
-    const today = new Date();
-    const tzOffset = today.getTimezoneOffset() * 60000;
-    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
-    const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
-
-    let upcomingShifts = [];
-    let monthCount = 0;
-
-    myStands.forEach(data => {
-        if (data.date >= firstDayStr && data.date.startsWith(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`)) monthCount++;
-        if (data.date >= todayStr) upcomingShifts.push(data);
-    });
-
-    upcomingShifts.sort((a, b) => a.date.localeCompare(b.date));
-
-    let shiftsHtml = '';
-    if (upcomingShifts.length > 0) {
-        shiftsHtml = upcomingShifts.slice(0, 3).map(shift => {
-            const d = new Date(shift.date);
-            const dateStr = d.toLocaleDateString(localStorage.getItem('app_lang') === 'cs' ? 'cs-CZ' : 'ru-RU', { day: 'numeric', month: 'short' });
-            return `
-                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
-                    <div class="flex flex-col">
-                        <span class="font-bold text-slate-800 text-sm">${dateStr}</span>
-                        <span class="text-[10px] text-slate-500 uppercase font-black tracking-widest">${shift.time}</span>
-                    </div>
-                    <span class="text-xs font-bold text-theme-modBtnText truncate pl-4 text-right max-w-[50%]">${shift.point || 'Стенд'}</span>
-                </div>
-            `;
-        }).join('');
-    } else {
-        shiftsHtml = '<p class="text-slate-400 text-sm italic py-4 text-center">У вас пока нет записей</p>';
-    }
-
-    let btnHtml = '';
-    if (isApprovedForStand) {
-        btnHtml = `<button onclick="window.location.href='stand.html'" class="w-full bg-theme-modBtnBg hover:bg-theme-modBtnHover text-theme-modBtnText font-black uppercase tracking-widest py-3 rounded-xl text-xs transition-colors shadow-sm outline-none mb-5">Записаться на стенд</button>`;
-    } else if (isStandReqPending) {
-        btnHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black uppercase tracking-widest py-3 rounded-xl text-xs shadow-sm outline-none mb-5 cursor-not-allowed">Заявка на рассмотрении</button>`;
-    } else {
-        btnHtml = `<button onclick="window.requestStand(this)" class="w-full bg-theme-modBtnBg hover:bg-theme-modBtnHover text-theme-modBtnText font-black uppercase tracking-widest py-3 rounded-xl text-xs transition-colors shadow-sm outline-none mb-5">Подать заявку</button>`;
-    }
-
-    container.innerHTML = `
-        <div class="bg-theme-card p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h3 class="font-black text-theme-text flex items-center gap-2 text-xl mb-4">
-                <svg class="w-6 h-6 text-theme-modIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                <span data-lang="stand_ministry">Служение со стендом</span>
-            </h3>
-            ${btnHtml}
-            <div class="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400 tracking-widest border-b border-slate-100 pb-2 mb-3">
-                <span>Смен в этом месяце</span>
-                <span class="bg-theme-modBtnBg text-theme-modBtnText px-2 py-0.5 rounded font-black">${monthCount}</span>
-            </div>
-            <div id="stand-shifts-list" class="space-y-2">
-                ${shiftsHtml}
-            </div>
-        </div>
-    `;
-};
-
-// 5. ВЕРНУЛИ КЛИКАБЕЛЬНЫЕ КАРТОЧКИ УЧАСТКОВ С ТАЙМЛАЙНОМ И КНОПКОЙ СДАТЬ
-if (userId) {
-    onSnapshot(query(collection(db, "territories"), where("userId", "==", userId)), (snapshot) => {
-        const container = document.getElementById('territories-container');
-        if(!container) return;
-        let html = '';
-        let activeCount = 0;
-
-        snapshot.forEach(docSnap => {
-            const terr = docSnap.data();
-            if (terr.status === 'returned') return;
-            activeCount++;
-            
-            const takenDate = new Date(terr.issuedAt || new Date());
-            const now = new Date();
-            const daysTotal = 90; 
-            const daysPassed = Math.floor((now - takenDate) / (1000 * 60 * 60 * 24));
-            let daysLeft = daysTotal - daysPassed;
-            if (daysLeft < 0) daysLeft = 0;
-            
-            const progressPercent = Math.min(100, Math.max(0, (daysPassed / daysTotal) * 100));
-            const takenStr = takenDate.toLocaleDateString(localeFormat, { day: 'numeric', month: 'short' });
-            
-            let progressColor = 'bg-emerald-400';
-            if (daysLeft <= 30) progressColor = 'bg-amber-400'; 
-            if (daysLeft <= 10) progressColor = 'bg-rose-500';  
-
-            const mapData = window.allMapsCache ? window.allMapsCache[String(terr.number)] : null;
-            const hasPolygon = mapData && mapData.polygon;
-            const hasUrl = mapData && mapData.url;
-            
-            let clickAction = '';
-            if (hasPolygon) clickAction = `onclick="window.openTerritoryMap('${terr.number}')"`;
-            else if (hasUrl) clickAction = `onclick="window.open('${mapData.url}', '_blank')"`;
-            else clickAction = `onclick="alert('Для этого участка нет карты или ссылки')"`;
-
-            const cityStr = mapData && mapData.city && mapData.city !== "Без города" 
-                ? `<p class="text-xs text-slate-600 font-medium truncate mt-1">${mapData.city}</p>` 
-                : `<p class="text-xs text-slate-400 font-medium truncate italic mt-1">Без города</p>`;
-
-            html += `
-            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col relative group transition-shadow hover:shadow-md mt-4">
-                <div ${clickAction} class="p-4 pb-2 cursor-pointer hover:bg-slate-50 transition-colors flex-grow">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Участок №</span>
-                            <h4 class="font-black text-slate-800 text-xl leading-none">${terr.number}</h4>
-                            ${cityStr}
-                        </div>
-                        <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-theme-modIcon group-hover:text-white transition-colors">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
-                        </div>
-                    </div>
-                </div>
-                <div class="px-4 pb-4 cursor-pointer hover:bg-slate-50 transition-colors" ${clickAction}>
-                    <div class="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
-                        <div class="${progressColor} h-1.5 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Взят: ${takenStr}</span>
-                        <span class="text-[9px] font-black ${daysLeft <= 10 ? 'text-rose-500' : 'text-slate-500'} uppercase tracking-widest">Ост: ${daysLeft} дн.</span>
-                    </div>
-                </div>
-                <div class="p-2 bg-slate-50 border-t border-slate-100 mt-auto">
-                    <button onclick="window.markTerritoryReturned('${docSnap.id}')" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-black uppercase tracking-widest py-2.5 rounded-lg text-[10px] transition-colors outline-none border border-rose-100 shadow-sm flex items-center justify-center gap-1.5">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
-                        СДАТЬ УЧАСТОК
-                    </button>
-                </div>
-            </div>
-            `;
-        });
-
-        if (activeCount === 0) container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-xl w-full">У вас пока нет участков</p>`;
-        else container.innerHTML = html;
-    });
+// Запускаем при загрузке документа
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPullToRefresh);
+} else {
+    initPullToRefresh();
 }
 
-// 6. ТРИГГЕРЫ ПЕРЕРИСОВКИ ДЛЯ ПАТЧА
-if (window.currentUserData) {
-    window.loadProfileData();
-    window.updateStandWidgetUI();
-}
+window.openInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('hidden', 'flex');
+window.closeInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('flex', 'hidden');
