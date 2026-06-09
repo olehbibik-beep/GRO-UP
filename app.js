@@ -1807,14 +1807,6 @@ const initPullToRefresh = () => {
     }, { passive: true });
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPullToRefresh);
-} else {
-    initPullToRefresh();
-}
-window.openInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('hidden', 'flex');
-window.closeInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('flex', 'hidden');
-
 // ============================================
 // ВОССТАНОВЛЕННЫЕ ФУНКЦИИ (РАСПИСАНИЕ И СТЕНД)
 // ============================================
@@ -2331,3 +2323,11 @@ window.downloadScheduleAsPNG = async () => {
 // Чтобы браузер не кэшировал старую ошибку,
 // после вставки этого кода обнови страницу!
 // ============================================
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPullToRefresh);
+} else {
+    initPullToRefresh();
+}
+window.openInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('hidden', 'flex');
+window.closeInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('flex', 'hidden');
