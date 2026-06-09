@@ -1814,3 +1814,520 @@ if (document.readyState === 'loading') {
 }
 window.openInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('hidden', 'flex');
 window.closeInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('flex', 'hidden');
+
+// ============================================
+// ВОССТАНОВЛЕННЫЕ ФУНКЦИИ (РАСПИСАНИЕ И СТЕНД)
+// ============================================
+
+window.getISOWeekString = function(dateObj) {
+    const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+    const weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+};
+
+window.weekToDateString = function(weekId) {
+    if(!weekId) return "";
+    const [year, weekStr] = weekId.split('-W');
+    const w = parseInt(weekStr, 10);
+    const y = parseInt(year, 10);
+    const simpleDate = new Date(y, 0, 1 + (w - 1) * 7);
+    const day = simpleDate.getDay();
+    const diff = simpleDate.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(simpleDate.setDate(diff));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const m1 = window.t('months') ? window.t('months')[monday.getMonth()] : monday.getMonth()+1;
+    const m2 = window.t('months') ? window.t('months')[sunday.getMonth()] : sunday.getMonth()+1;
+
+    if (monday.getMonth() === sunday.getMonth()) {
+        return `${monday.getDate()} - ${sunday.getDate()} ${m1}`;
+    } else {
+        return `${monday.getDate()} ${m1} - ${sunday.getDate()} ${m2}`;
+    }
+};
+
+let isStandReqPending = false;
+let myStands = [];
+let unsubStandReqs = null;
+let unsubStands = null;
+
+window.renderStandCard = function() {
+    const container = document.getElementById('stand-widget-container');
+    if (!container) return;
+    if (unsubStandReqs) unsubStandReqs();
+    if (unsubStands) unsubStands();
+
+    unsubStandReqs = onSnapshot(query(collection(db, "requests"), where("userId", "==", userId), where("type", "==", "stand")), (snap) => {
+        isStandReqPending = !snap.empty;
+        window.updateStandWidgetUI();
+    });
+    unsubStands = onSnapshot(query(collection(db, "stands"), where("userId", "==", userId)), (snap) => {
+        myStands = [];
+        snap.forEach(doc => myStands.push(doc.data()));
+        window.updateStandWidgetUI();
+    });
+};
+
+window.updateStandWidgetUI = function() {
+    const container = document.getElementById('stand-widget-container');
+    if (!container) return;
+
+    const roles = currentUserData?.roles || [];
+    const isApprovedForStand = roles.includes('Служение со стендом') || roles.includes('Владелец') || roles.includes('Админ');
+
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+    const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+
+    let upcomingShifts = [];
+    let monthCount = 0;
+
+    myStands.forEach(data => {
+        if (data.date >= firstDayStr && data.date.startsWith(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`)) monthCount++;
+        if (data.date >= todayStr) upcomingShifts.push(data);
+    });
+
+    upcomingShifts.sort((a, b) => a.date.localeCompare(b.date));
+
+    let shiftsHtml = '';
+    if (upcomingShifts.length > 0) {
+        shiftsHtml = upcomingShifts.slice(0, 3).map(shift => {
+            const d = new Date(shift.date);
+            const dateStr = d.toLocaleDateString(localStorage.getItem('app_lang') === 'cs' ? 'cs-CZ' : 'ru-RU', { day: 'numeric', month: 'short' });
+            
+            return `
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-800 text-sm">${dateStr}</span>
+                        <span class="text-[10px] text-slate-500 uppercase font-black tracking-widest">${shift.time}</span>
+                    </div>
+                    <span class="text-xs font-bold text-theme-modBtnText truncate pl-4 text-right max-w-[50%]">${shift.point || 'Стенд'}</span>
+                </div>
+            `;
+        }).join('');
+    } else {
+        shiftsHtml = '<p class="text-slate-400 text-sm italic py-4 text-center">У вас пока нет записей</p>';
+    }
+
+    let btnHtml = '';
+    if (isApprovedForStand) {
+        btnHtml = `<button onclick="window.location.href='stand.html'" class="w-full bg-theme-modBtnBg hover:bg-theme-modBtnHover text-theme-modBtnText font-black uppercase tracking-widest py-3 rounded-xl text-xs transition-colors shadow-sm outline-none mb-5">Записаться</button>`;
+    } else if (isStandReqPending) {
+        btnHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black uppercase tracking-widest py-3 rounded-xl text-xs shadow-sm outline-none mb-5 cursor-not-allowed">Заявка на рассмотрении</button>`;
+    } else {
+        btnHtml = `<button onclick="requestStand(this)" class="w-full bg-theme-modBtnBg hover:bg-theme-modBtnHover text-theme-modBtnText font-black uppercase tracking-widest py-3 rounded-xl text-xs transition-colors shadow-sm outline-none mb-5">Подать заявку</button>`;
+    }
+
+    container.innerHTML = `
+        <div class="bg-theme-card p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-black text-theme-text flex items-center gap-2 text-xl">
+                    <svg class="w-6 h-6 text-theme-modIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <span data-lang="stand_ministry">Служение со стендом</span>
+                </h3>
+            </div>
+            ${btnHtml}
+            <div class="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400 tracking-widest border-b border-slate-100 pb-2 mb-3">
+                <span>Смен в этом месяце</span>
+                <span class="bg-theme-modBtnBg text-theme-modBtnText px-2 py-0.5 rounded font-black">${monthCount}</span>
+            </div>
+            <div id="stand-shifts-list" class="space-y-2">
+                ${shiftsHtml}
+            </div>
+        </div>
+    `;
+};
+
+window.requestStand = async (btn) => {
+    btn.innerText = "..."; btn.disabled = true;
+    try {
+        await addDoc(collection(db, "requests"), { type: "stand", userId, userName: currentUserData.name, status: "new", createdAt: new Date().toISOString() });
+        btn.classList.replace('bg-theme-modBtnBg', 'bg-emerald-500');
+        btn.classList.replace('text-theme-modBtnText', 'text-white');
+        btn.innerHTML = `✅ ${window.t('success')}`;
+        setTimeout(() => { 
+            btn.classList.replace('bg-emerald-500', 'bg-slate-100'); 
+            btn.classList.replace('text-white', 'text-slate-400'); 
+            btn.innerText = window.t('stand_pending'); 
+        }, 2000);
+    } catch (e) { alert(window.t('error_network')); btn.innerText = window.t('stand_apply'); btn.disabled = false; }
+};
+
+window.buildScheduleCards = function(d, myName, currentWeekStr) {
+    const weekLabel = window.weekToDateString(d.realWeekId || d.weekId);
+    const isCurrentWeek = (d.realWeekId || d.weekId.split('-')[0]+'-'+d.weekId.split('-')[1]) === currentWeekStr;
+    const isPastWeek = (d.realWeekId || d.weekId.split('-')[0]+'-'+d.weekId.split('-')[1]) < currentWeekStr;
+    
+    const weekStatus = isCurrentWeek ? window.t('current_week') : (isPastWeek ? "ПРОШЛАЯ" : window.t('future_week'));
+    const statusColor = isCurrentWeek ? 'text-emerald-600' : (isPastWeek ? 'text-slate-400' : 'text-slate-500');
+    const pastCardClass = isPastWeek ? 'opacity-50 grayscale' : '';
+    
+    let partCounter = 1;
+
+    const row = (title, person) => {
+        if(!person && !title) return '';
+        const isMe = person === myName;
+        const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
+        const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+
+        return `
+            <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+                <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translateDbString(title)}</span>
+                <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${person || '-'}</span>
+            </div>
+        `;
+    };
+
+    const rowUnnumbered = (title, person) => {
+        if(!person && !title) return '';
+        const isMe = person === myName;
+        const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
+        const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+
+        return `
+            <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+                <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${translateDbString(title)}</span>
+                <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${person || '-'}</span>
+            </div>
+        `;
+    };
+
+    const buildHeader = (title, bgColor, safeClass, iconSvg) => `
+        <div class="w-full rounded-md shadow-sm mt-2 mb-1.5 ${safeClass} flex items-center gap-1.5 px-3 py-1.5 min-h-[28px]" style="background-color: ${bgColor};">
+            <div class="flex items-center justify-center text-white/90 w-4 h-4 shrink-0">${iconSvg}</div>
+            <div class="text-white text-[10px] md:text-xs font-black uppercase tracking-widest leading-none ml-1.5 flex items-center h-full pt-[1px]">${title}</div>
+        </div>
+    `;
+
+    const iconTreasure = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`;
+    const iconMinistry = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>`;
+    const iconLiving = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>`;
+    const iconWeekend = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>`;
+
+    const treasure1Me = d.mw_treasure_name === myName;
+    const t1TitleColor = treasure1Me ? 'font-black text-black' : 'font-bold text-slate-800';
+    const t1NameColor = treasure1Me ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+    const t1Title = translateDbString(d.mw_treasure_title || window.t('talk_10_min'));
+    
+    const treasure1 = `
+        <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+            <span class="text-[13px] md:text-sm ${t1TitleColor} leading-tight">${partCounter++}. ${t1Title}</span>
+            <span class="text-[13px] md:text-sm ${t1NameColor} mt-0.5 ml-4">${d.mw_treasure_name || '-'}</span>
+        </div>
+    `;
+
+    const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
+    const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
+
+    const minRowsRaw = (d.ministryParts || []).map((m) => {
+        if(!m.student && !m.assistant && !m.type) return '';
+        const isMe = (m.student === myName || m.assistant === myName);
+        const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
+        const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+        const assistStr = m.assistant ? ` <span class="opacity-70 ml-1">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
+        const translatedType = translateDbString(m.type || window.t('part'));
+        
+        let description = "";
+        if (m.type === "Чтение Библии" || m.type === "Čtení Bible") description = "Это учебное задание назначается учащемуся мужского пола. Учащийся зачитывает назначенный отрывок. Вступление и заключение не требуются. Цель председателя встречи — помочь учащимся читать грамотно, бегло, в естественной манере, с пониманием, правильной интонацией, паузами и правильно делать смысловое ударение. Поскольку библейские отрывки могут быть разной длины, при назначении этого задание руководителю встречи нужно учитывать способности учащегося.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
+        else if (m.type === "Начинайте разговор" || m.type === "Zahájení rozhovoru") description = "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим или членом его семьи. Участники могут сидеть или стоять.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
+        else if (m.type === "Развивайте интерес" || m.type === "Rozvíjení zájmu") description = "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим. Участники могут сидеть или стоять. Учащемуся необходимо продемонстрировать, как продолжить предыдущую беседу.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
+        else if (m.type === "Подготавливайте учеников" || m.type === "Pomáhej lidem stát se učedníky" || m.type === "Činění učedníků") description = "Это учебное задание поручается учащемуся мужского или женского пола. Помощник должен быть одного пола с выступающим. Участники могут сидеть или стоять. Если демонстрируется часть изучения, которое уже проводится, нет необходимости делать вступление или заключение. Необязательно зачитывать весь рассматриваемый материал, хотя это и допускается.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
+        else if (m.type === "Объясняйте свои взгляды" || m.type === "Vysvětlování své víry") description = "Если это задание преподносится в виде речи, оно поручается учащемуся мужского пола. Если в виде демонстрации — мужского или женского пола. Помощник должен быть одного пола с выступающим или членом его семьи. Учащемуся нужно ясно и тактично ответить на вопрос по теме, используя информацию из ссылки к заданию. Учащийся может сам решить, будет ли он ссылаться на указанную публикацию.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
+        else if (m.type === "Речь" || m.type === "Proslov" || m.type === "Речь 10 мин." || m.type === "Proslov 10 min.") description = "Это учебное задание поручается учащемуся мужского пола и преподносится в виде речи, обращённой к собранию. Учащемуся нужно обратить внимание на то, как применить материал в служении. Он может обсудить примеры или использовать любой из дополнительных стихов, приведённых в уроке.<br><br><b>Указания для встречи «Наша христианская жизнь и служение»</b>";
+
+        const descHtml = description ? `<div class="mt-4 pt-3 border-t border-slate-100"><div class="text-[12px] md:text-sm font-medium text-slate-500 leading-relaxed">${description}</div></div>` : "";
+        
+        const extraInfo = m.lesson 
+            ? `<span class="font-black text-slate-800 block mb-3 text-base md:text-lg">${translatedType}</span><span class="text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-100 self-start inline-block">Урок ${m.lesson}</span>${descHtml}` 
+            : `<span class="font-black text-slate-800 text-base md:text-lg">${translatedType}</span>${descHtml}`;
+
+        const safeHtml = extraInfo.replace(/"/g, '&quot;');
+
+        return `
+            <div data-info="${safeHtml}" onclick="openTaskInfoModal(this.getAttribute('data-info'))" style="-webkit-tap-highlight-color: transparent;" class="flex items-center justify-between py-2.5 px-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer group">
+                <div class="flex flex-col min-w-0 pointer-events-none">
+                    <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translatedType}</span>
+                    <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${m.student || '-'}${assistStr}</span>
+                </div>
+                <div class="shrink-0 ml-3 text-slate-300 group-hover:text-indigo-400 transition-colors pointer-events-none">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const minRows = minRowsRaw ? `<div class="flex flex-col bg-white rounded-xl mt-1.5 mb-2 mx-0 overflow-hidden shadow-sm border border-slate-200/80">${minRowsRaw}</div>` : '';
+
+    const livRows = (d.livingParts || []).map((m) => {
+        if(!m.title && !m.name) return '';
+        return row(m.title, m.name);
+    }).join('');
+
+    const cbsNum = partCounter++;
+    const isCbsMe = (d.mw_cbs_conductor === myName || d.mw_cbs_reader === myName);
+    const cbsTitleColor = isCbsMe ? 'font-black text-black' : 'font-bold text-slate-800';
+    const cbsNameColor = isCbsMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+    const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
+
+    const cbsRow = `
+        <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+            <span class="text-[13px] md:text-sm ${cbsTitleColor} leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-xs font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
+            <span class="text-[13px] md:text-sm ${cbsNameColor} mt-0.5 ml-4">${d.mw_cbs_conductor || '-'}${readStr}</span>
+        </div>
+    `;
+
+    const weTalkMe = d.we_talk_speaker === myName;
+    const wtTitleColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-800';
+    const wtNameColor = weTalkMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+    const talkTitle = translateDbString(d.we_talk_title || window.t('public_talk'));
+
+    const we_talk = `
+        <div class="flex flex-col py-1.5 px-3 bg-white/60 hover:bg-white border border-slate-200/50 shadow-sm rounded-xl mt-1.5 mb-1 mx-0">
+            <span class="text-[13px] md:text-sm ${wtTitleColor} uppercase leading-tight">${talkTitle}</span>
+            <span class="text-[13px] md:text-sm ${wtNameColor} mt-0.5 ml-4">${d.we_talk_speaker || '-'}</span>
+        </div>
+    `;
+
+    const isWtMe = (d.we_wt_conductor === myName || d.we_wt_reader === myName);
+    const wtStudyTitleColor = isWtMe ? 'font-black text-black' : 'font-bold text-slate-800';
+    const wtStudyNameColor = isWtMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+    const we_wt_read_str = d.we_wt_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.we_wt_reader})</span>` : '';
+
+    const wtStudyRow = `
+        <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg mt-1.5">
+            <span class="text-[13px] md:text-sm ${wtStudyTitleColor} leading-tight">${window.t('watchtower_study')}</span>
+            <span class="text-[13px] md:text-sm ${wtStudyNameColor} mt-0.5 ml-4">${d.we_wt_conductor || '-'}${we_wt_read_str}</span>
+        </div>
+    `;
+
+    const attendantsArr = [d.duty_attendant_1, d.duty_attendant_2].filter(Boolean);
+    const soundsArr = [d.duty_sound_1, d.duty_sound_2].filter(Boolean);
+    let dutiesBlock = '';
+
+    if (attendantsArr.length > 0 || soundsArr.length > 0) {
+        dutiesBlock = `
+            <div class="mt-3 grid grid-cols-2 gap-2 text-center bg-slate-200/60 rounded-xl p-2.5 mx-0 mb-2">
+                ${attendantsArr.length > 0 ? `
+                <div class="flex flex-col items-center justify-center">
+                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-500">Распорядители</span>
+                    <span class="text-[10px] md:text-xs font-bold text-slate-800 leading-tight mt-0.5">${attendantsArr.join('<br>')}</span>
+                </div>` : '<div></div>'}
+                
+                ${soundsArr.length > 0 ? `
+                <div class="flex flex-col items-center justify-center border-l border-slate-300">
+                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-500">Звук / Видео</span>
+                    <span class="text-[10px] md:text-xs font-bold text-slate-800 leading-tight mt-0.5">${soundsArr.join('<br>')}</span>
+                </div>` : '<div></div>'}
+            </div>
+        `;
+    }
+
+    return `
+        <div class="w-[calc(100vw-32px)] md:w-full shrink-0 snap-center snap-always scroll-mt-40 flex flex-col bg-transparent pb-2 px-0 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
+            
+            <div class="flex flex-col gap-1 pb-2 mb-3 mx-1 border-b border-slate-300">
+                <div class="flex items-center justify-between w-full">
+                    <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
+                    <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
+                </div>
+            </div>
+
+            <div class="inner-week-columns flex flex-col md:flex-row gap-0 md:gap-4 w-full px-1">
+                
+                <div class="flex-1 flex flex-col space-y-0 pb-4 md:pb-0">
+                    ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
+
+                    ${buildHeader(window.t('treasures_title'), '#0d9488', 'h-treasure', iconTreasure)}
+                    ${treasure1}
+                    ${treasure2}
+                    ${treasure3}
+
+                    ${buildHeader(window.t('ministry_skills'), '#d97706', 'h-ministry', iconMinistry)}
+                    ${minRows}
+
+                    ${buildHeader(window.t('christian_living'), '#b91c1c', 'h-living', iconLiving)}
+                    ${livRows}
+                    ${cbsRow}
+
+                    ${rowUnnumbered(window.t('closing_prayer'), d.mw_prayer_name)}
+                </div>
+
+                <div class="md:hidden w-full border-t-2 border-slate-200 border-dashed my-2"></div>
+
+                <div class="flex-1 flex flex-col space-y-0 pt-2 md:pt-0">
+                    ${buildHeader(window.t('weekend_meeting'), '#475569', 'h-weekend', iconWeekend)}
+                    ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
+                    ${we_talk}
+                    ${wtStudyRow}
+                    ${rowUnnumbered(window.t('closing_prayer'), d.we_prayer_name)}
+                </div>
+            </div>
+
+            ${dutiesBlock}
+        </div>
+    `;
+};
+
+window.downloadScheduleAsPNG = async () => {
+    if (typeof window.html2canvas !== 'function') {
+        alert("Подождите пару секунд, инструмент загружается...");
+        return;
+    }
+
+    const originalContainer = document.getElementById('meeting-program-list');
+    
+    if (!originalContainer || originalContainer.children.length === 0 || originalContainer.innerText.includes('Нет опубликованных')) {
+        alert("Нет расписания для сохранения!");
+        return;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300';
+    overlay.innerHTML = `
+        <div class="bg-white px-10 py-8 rounded-3xl shadow-2xl flex flex-col items-center justify-center">
+            <div class="w-24 h-[4px] bg-slate-100 rounded-full overflow-hidden mb-4">
+                <div class="w-full h-full segmented-loader-line"></div>
+            </div>
+            <p class="text-slate-500 text-[10px] font-black uppercase tracking-widest animate-pulse">Создание PNG...</p>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    await new Promise(r => setTimeout(r, 100));
+
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.top = '0';
+    tempDiv.style.width = '850px'; 
+    tempDiv.style.backgroundColor = '#f1f5f9'; 
+    tempDiv.style.padding = '30px';
+    tempDiv.style.display = 'grid';
+    tempDiv.style.gridTemplateColumns = '1fr 1fr'; 
+    tempDiv.style.gap = '20px'; 
+    tempDiv.style.fontFamily = 'sans-serif';
+    tempDiv.style.alignItems = 'start'; 
+
+    try {
+        const titleContainer = document.createElement('div');
+        titleContainer.style.gridColumn = '1 / -1'; 
+        titleContainer.style.textAlign = 'center';
+        titleContainer.style.marginBottom = '10px';
+        titleContainer.innerHTML = `
+            <h2 style="font-weight: 900; font-size: 26px; color: #0f172a; margin: 0; line-height: 1.2; text-transform: uppercase;">Программа встреч</h2>
+            <span style="font-size: 13px; color: #64748b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Сгенерировано в GRO-UP</span>
+        `;
+        tempDiv.appendChild(titleContainer);
+
+        const sectionHeader = (title, bgColor, iconSvg) => {
+            return `<div style="margin-top:6px; margin-bottom:6px; background:${bgColor}; border-radius: 6px; padding: 6px 10px; display: table; width: 100%;">
+                        <div style="display: table-cell; vertical-align: middle; width: 14px;">${iconSvg}</div>
+                        <div style="display: table-cell; vertical-align: middle; color:white; font-weight:900; font-size:11px; text-transform:uppercase; letter-spacing: 0.5px; padding-left: 6px;">${title}</div>
+                    </div>`;
+        };
+
+        const iconTreasure = `<svg style="width:14px;height:14px;color:white;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`;
+        const iconMinistry = `<svg style="width:14px;height:14px;color:white;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>`;
+        const iconLiving = `<svg style="width:14px;height:14px;color:white;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>`;
+        const iconWeekend = `<svg style="width:14px;height:14px;color:white;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>`;
+
+        let cardsAdded = 0;
+        Array.from(originalContainer.children).forEach(card => {
+            if (card.tagName === 'P') return; 
+            if (card.classList.contains('opacity-50') || card.classList.contains('grayscale')) return;
+
+            const clone = card.cloneNode(true);
+            
+            clone.className = clone.className
+                .replace(/w-\[calc\(100vw-32px\)\]/g, '')
+                .replace(/md:w-full/g, '')
+                .replace(/snap-center/g, '')
+                .replace(/snap-always/g, '')
+                .replace(/scroll-mt-40/g, '')
+                .replace(/shrink-0/g, '');
+                
+            clone.style.width = '100%';
+            clone.style.backgroundColor = '#ffffff'; 
+            clone.style.border = '1px solid #cbd5e1';
+            clone.style.borderRadius = '16px';
+            clone.style.padding = '16px';
+            clone.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+            
+            clone.classList.remove('current-week-marker');
+
+            const headersToReplace = [
+                { selector: '.h-treasure', title: window.t('treasures_title'), color: '#0d9488', icon: iconTreasure },
+                { selector: '.h-ministry', title: window.t('ministry_skills'), color: '#d97706', icon: iconMinistry },
+                { selector: '.h-living', title: window.t('christian_living'), color: '#b91c1c', icon: iconLiving },
+                { selector: '.h-weekend', title: window.t('weekend_meeting'), color: '#475569', icon: iconWeekend }
+            ];
+
+            headersToReplace.forEach(hData => {
+                const el = clone.querySelector(hData.selector);
+                if (el) {
+                    el.outerHTML = sectionHeader(hData.title, hData.color, hData.icon);
+                }
+            });
+            
+            const innerGrid = clone.querySelector('.inner-week-columns');
+            if(innerGrid) {
+                innerGrid.className = '';
+                innerGrid.style.display = 'flex';
+                innerGrid.style.flexDirection = 'column'; 
+                innerGrid.style.gap = '16px';
+                innerGrid.style.width = '100%';
+                
+                const mobileDivider = innerGrid.querySelector('.border-dashed');
+                if (mobileDivider) mobileDivider.remove();
+            }
+
+            const infoIcons = clone.querySelectorAll('[title="Информация"]');
+            infoIcons.forEach(icon => icon.remove());
+
+            tempDiv.appendChild(clone);
+            cardsAdded++;
+        });
+
+        if (cardsAdded === 0) {
+            overlay.remove();
+            alert("Нет актуальных или будущих расписаний для сохранения!");
+            return;
+        }
+
+        document.body.appendChild(tempDiv);
+
+        const canvas = await window.html2canvas(tempDiv, {
+            scale: 2, 
+            backgroundColor: '#f1f5f9',
+            useCORS: true, 
+            logging: false
+        });
+        
+        const link = document.createElement('a');
+        link.download = `Расписание_Собрания_${new Date().toLocaleDateString('ru-RU')}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+        window.showToast("Картинка сохранена!", "success");
+
+    } catch (e) {
+        console.error(e);
+        alert("Ошибка при создании картинки.");
+    } finally {
+        overlay.remove();
+        if (document.body.contains(tempDiv)) {
+            document.body.removeChild(tempDiv);
+        }
+    }
+};
+
+// ============================================
+// Чтобы браузер не кэшировал старую ошибку,
+// после вставки этого кода обнови страницу!
+// ============================================
