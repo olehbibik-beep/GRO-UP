@@ -1890,3 +1890,223 @@ const initPullToRefresh = () => {
     }, { passive: true });
 };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPullToRefresh); else initPullToRefresh();
+// =========================================================================
+// 🔥 ГЛОБАЛЬНЫЙ ПАТЧ ИСПРАВЛЕНИЙ (ПРОСТО ВСТАВЬ В САМЫЙ КОНЕЦ ФАЙЛА app.js)
+// =========================================================================
+
+// 1. ПОЧИНИЛИ КАРУСЕЛЬ (чтобы не пролетала, а листала по одной карточке)
+window.scrollProgram = (dir) => { 
+    const container = document.getElementById('meeting-program-list');
+    if(container && container.firstElementChild) {
+        const scrollAmount = container.firstElementChild.offsetWidth + 16;
+        container.scrollBy({ left: scrollAmount * dir, behavior: 'smooth' }); 
+    }
+};
+
+// 2. ПОЧИНИЛИ КРЕСТИК И ЗАКРЫТИЕ КАРТЫ УЧАСТКА
+window.closeTerritoryMap = () => {
+    const modal = document.getElementById('terr-map-modal');
+    if (modal) modal.classList.replace('flex', 'hidden');
+};
+
+window.closeModals = () => {
+    ['profile-modal', 'report-history-modal', 'duties-modal', 'user-msg-modal', 'take-terr-modal', 'info-details-modal', 'task-info-modal', 'terr-map-modal'].forEach(id => {
+        const m = document.getElementById(id); if(m) m.classList.replace('flex', 'hidden');
+    });
+};
+
+// 3. ПОЧИНИЛИ БЕЙДЖИКИ ПРОФИЛЯ И ОТВЕТСТВЕННОГО ЗА ГРУППУ
+window.loadProfileData = async function() {
+    const pName = document.getElementById('profile-name');
+    const pGroup = document.getElementById('profile-group');
+    const pOverseer = document.getElementById('profile-overseer');
+
+    if(pName) pName.innerText = currentUserData.name || "Имя";
+    
+    let roles = currentUserData.roles || ["Возвещатель"];
+    const rolesContainer = document.getElementById('profile-roles-container');
+    if (rolesContainer) {
+        rolesContainer.innerHTML = roles.map(r => {
+            let colorClass = "bg-slate-100 text-slate-500 border border-slate-200"; 
+            if(r === "Старейшина") colorClass = "bg-amber-100 text-amber-700 border border-amber-200";
+            else if(r === "Помощник собрания") colorClass = "bg-sky-100 text-sky-700 border border-sky-200";
+            else if(r === "Пионер") colorClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
+            else if(r === "Админ" || r === "Владелец") colorClass = "bg-rose-100 text-rose-700 border border-rose-200";
+            else if(r === "Ответственный за график") colorClass = "bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200";
+            else if(r === "Надзиратель группы") colorClass = "bg-purple-100 text-purple-700 border border-purple-200";
+            else if(r === "Ответственный за участки") colorClass = "bg-teal-100 text-teal-700 border border-teal-200";
+            else if(r === "Ответственный за школу") colorClass = "bg-indigo-100 text-indigo-700 border border-indigo-200";
+            else if(r === "Ответственный за стенды") colorClass = "bg-blue-100 text-blue-700 border border-blue-200";
+            else if(r === "Служение со стендом") colorClass = "bg-indigo-100 text-indigo-700 border-indigo-200";
+
+            if (r === "Участник школы") return ''; // Прячем лишний бейдж
+            return `<span class="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${colorClass} m-0.5">${r}</span>`;
+        }).join('');
+    }
+    
+    const myGroup = currentUserData.group || window.t('no_group');
+    if(pGroup) pGroup.innerText = `№ ${myGroup}`;
+    
+    try {
+        if (myGroup !== window.t('no_group') && pOverseer) {
+            const q = query(collection(db, "users"), where("group", "==", myGroup), where("roles", "array-contains", "Надзиратель группы"));
+            const snap = await getDocs(q);
+            pOverseer.innerText = snap.empty ? "-" : snap.docs[0].data().name;
+        } else if (pOverseer) { pOverseer.innerText = "-"; }
+    } catch(e) {}
+};
+
+// 4. ВЕРНУЛИ КРАСИВУЮ КАРТОЧКУ СТЕНДА (НОВЫЙ ДИЗАЙН)
+window.updateStandWidgetUI = function() {
+    const container = document.getElementById('stand-widget-container');
+    if (!container) return;
+
+    const roles = currentUserData?.roles || [];
+    const isApprovedForStand = roles.includes('Служение со стендом') || roles.includes('Владелец') || roles.includes('Админ');
+
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+    const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+
+    let upcomingShifts = [];
+    let monthCount = 0;
+
+    myStands.forEach(data => {
+        if (data.date >= firstDayStr && data.date.startsWith(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`)) monthCount++;
+        if (data.date >= todayStr) upcomingShifts.push(data);
+    });
+
+    upcomingShifts.sort((a, b) => a.date.localeCompare(b.date));
+
+    let shiftsHtml = '';
+    if (upcomingShifts.length > 0) {
+        shiftsHtml = upcomingShifts.slice(0, 3).map(shift => {
+            const d = new Date(shift.date);
+            const dateStr = d.toLocaleDateString(localStorage.getItem('app_lang') === 'cs' ? 'cs-CZ' : 'ru-RU', { day: 'numeric', month: 'short' });
+            return `
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-800 text-sm">${dateStr}</span>
+                        <span class="text-[10px] text-slate-500 uppercase font-black tracking-widest">${shift.time}</span>
+                    </div>
+                    <span class="text-xs font-bold text-theme-modBtnText truncate pl-4 text-right max-w-[50%]">${shift.point || 'Стенд'}</span>
+                </div>
+            `;
+        }).join('');
+    } else {
+        shiftsHtml = '<p class="text-slate-400 text-sm italic py-4 text-center">У вас пока нет записей</p>';
+    }
+
+    let btnHtml = '';
+    if (isApprovedForStand) {
+        btnHtml = `<button onclick="window.location.href='stand.html'" class="w-full bg-theme-modBtnBg hover:bg-theme-modBtnHover text-theme-modBtnText font-black uppercase tracking-widest py-3 rounded-xl text-xs transition-colors shadow-sm outline-none mb-5">Записаться на стенд</button>`;
+    } else if (isStandReqPending) {
+        btnHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black uppercase tracking-widest py-3 rounded-xl text-xs shadow-sm outline-none mb-5 cursor-not-allowed">Заявка на рассмотрении</button>`;
+    } else {
+        btnHtml = `<button onclick="window.requestStand(this)" class="w-full bg-theme-modBtnBg hover:bg-theme-modBtnHover text-theme-modBtnText font-black uppercase tracking-widest py-3 rounded-xl text-xs transition-colors shadow-sm outline-none mb-5">Подать заявку</button>`;
+    }
+
+    container.innerHTML = `
+        <div class="bg-theme-card p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm">
+            <h3 class="font-black text-theme-text flex items-center gap-2 text-xl mb-4">
+                <svg class="w-6 h-6 text-theme-modIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <span data-lang="stand_ministry">Служение со стендом</span>
+            </h3>
+            ${btnHtml}
+            <div class="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400 tracking-widest border-b border-slate-100 pb-2 mb-3">
+                <span>Смен в этом месяце</span>
+                <span class="bg-theme-modBtnBg text-theme-modBtnText px-2 py-0.5 rounded font-black">${monthCount}</span>
+            </div>
+            <div id="stand-shifts-list" class="space-y-2">
+                ${shiftsHtml}
+            </div>
+        </div>
+    `;
+};
+
+// 5. ВЕРНУЛИ КЛИКАБЕЛЬНЫЕ КАРТОЧКИ УЧАСТКОВ С ТАЙМЛАЙНОМ И КНОПКОЙ СДАТЬ
+if (userId) {
+    onSnapshot(query(collection(db, "territories"), where("userId", "==", userId)), (snapshot) => {
+        const container = document.getElementById('territories-container');
+        if(!container) return;
+        let html = '';
+        let activeCount = 0;
+
+        snapshot.forEach(docSnap => {
+            const terr = docSnap.data();
+            if (terr.status === 'returned') return;
+            activeCount++;
+            
+            const takenDate = new Date(terr.issuedAt || new Date());
+            const now = new Date();
+            const daysTotal = 90; 
+            const daysPassed = Math.floor((now - takenDate) / (1000 * 60 * 60 * 24));
+            let daysLeft = daysTotal - daysPassed;
+            if (daysLeft < 0) daysLeft = 0;
+            
+            const progressPercent = Math.min(100, Math.max(0, (daysPassed / daysTotal) * 100));
+            const takenStr = takenDate.toLocaleDateString(localeFormat, { day: 'numeric', month: 'short' });
+            
+            let progressColor = 'bg-emerald-400';
+            if (daysLeft <= 30) progressColor = 'bg-amber-400'; 
+            if (daysLeft <= 10) progressColor = 'bg-rose-500';  
+
+            const mapData = window.allMapsCache ? window.allMapsCache[String(terr.number)] : null;
+            const hasPolygon = mapData && mapData.polygon;
+            const hasUrl = mapData && mapData.url;
+            
+            let clickAction = '';
+            if (hasPolygon) clickAction = `onclick="window.openTerritoryMap('${terr.number}')"`;
+            else if (hasUrl) clickAction = `onclick="window.open('${mapData.url}', '_blank')"`;
+            else clickAction = `onclick="alert('Для этого участка нет карты или ссылки')"`;
+
+            const cityStr = mapData && mapData.city && mapData.city !== "Без города" 
+                ? `<p class="text-xs text-slate-600 font-medium truncate mt-1">${mapData.city}</p>` 
+                : `<p class="text-xs text-slate-400 font-medium truncate italic mt-1">Без города</p>`;
+
+            html += `
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col relative group transition-shadow hover:shadow-md mt-4">
+                <div ${clickAction} class="p-4 pb-2 cursor-pointer hover:bg-slate-50 transition-colors flex-grow">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Участок №</span>
+                            <h4 class="font-black text-slate-800 text-xl leading-none">${terr.number}</h4>
+                            ${cityStr}
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-theme-modIcon group-hover:text-white transition-colors">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-4 pb-4 cursor-pointer hover:bg-slate-50 transition-colors" ${clickAction}>
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
+                        <div class="${progressColor} h-1.5 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Взят: ${takenStr}</span>
+                        <span class="text-[9px] font-black ${daysLeft <= 10 ? 'text-rose-500' : 'text-slate-500'} uppercase tracking-widest">Ост: ${daysLeft} дн.</span>
+                    </div>
+                </div>
+                <div class="p-2 bg-slate-50 border-t border-slate-100 mt-auto">
+                    <button onclick="window.markTerritoryReturned('${docSnap.id}')" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-black uppercase tracking-widest py-2.5 rounded-lg text-[10px] transition-colors outline-none border border-rose-100 shadow-sm flex items-center justify-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                        СДАТЬ УЧАСТОК
+                    </button>
+                </div>
+            </div>
+            `;
+        });
+
+        if (activeCount === 0) container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-xl w-full">У вас пока нет участков</p>`;
+        else container.innerHTML = html;
+    });
+}
+
+// 6. ТРИГГЕРЫ ПЕРЕРИСОВКИ ДЛЯ ПАТЧА
+if (window.currentUserData) {
+    window.loadProfileData();
+    window.updateStandWidgetUI();
+}
