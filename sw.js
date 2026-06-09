@@ -41,7 +41,7 @@ self.addEventListener('notificationclick', (event) => {
 // ==========================================
 // 🔥 ГЛАВНЫЙ РУБИЛЬНИК КЭША
 // ==========================================
-const CACHE_NAME = 'gro-up-v61'; 
+const CACHE_NAME = 'gro-up-v62'; 
 
 const INITIAL_CACHED_RESOURCES = [
   './',
