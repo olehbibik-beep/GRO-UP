@@ -784,85 +784,69 @@ function updateStandWidgetUI() {
         if (data.date >= firstDayStr && data.date.startsWith(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`)) monthCount++;
         if (data.date >= todayStr) upcomingShifts.push(data);
     });
-    
-    upcomingShifts.sort((a, b) => {
-        if (a.date !== b.date) return a.date.localeCompare(b.date);
-        return a.time.localeCompare(b.time);
-    });
 
-    const nextShifts = upcomingShifts.slice(0, 3);
-    let buttonHtml = '';
-    let contentHtml = '';
+    // 1. Сортируем смены: ближайшие сверху
+    upcomingShifts.sort((a, b) => a.date.localeCompare(b.date));
 
-    if (isApprovedForStand) {
-        buttonHtml = `<button onclick="window.location.href='stands.html'" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mt-4 shadow-sm">${window.t('stand_signup')}</button>`;
-        
-        let progressColor = 'bg-emerald-500';
-        let txtColor = 'text-emerald-700';
-        if (monthCount >= 20) { progressColor = 'bg-rose-500'; txtColor = 'text-rose-700'; }
-        else if (monthCount >= 10) { progressColor = 'bg-amber-500'; txtColor = 'text-amber-700'; }
-        
-        let progressPercent = (monthCount / 50) * 100;
-        if (progressPercent > 100) progressPercent = 100;
-
-        const statsHtml = `
-            <div class="mt-4 pt-4 border-t border-slate-100">
-                <div class="flex items-center justify-between mb-1.5">
-                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_month_shifts')}</span>
-                    <span class="${txtColor} font-black text-xs bg-slate-50 border border-slate-200 px-2 py-0.5 rounded shadow-sm">${monthCount}</span>
-                </div>
-                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex shadow-inner">
-                    <div class="${progressColor} h-1.5 rounded-full transition-all" style="width: ${progressPercent}%"></div>
-                </div>
-            </div>
-        `;
-
-        if (nextShifts.length > 0) {
-            let shiftsListHtml = '';
-            nextShifts.forEach(shift => {
-                if (!shift || !shift.date) return;
-                const parts = shift.date.split('-');
-                if (parts.length < 3) return;
-
-                const dayNum = parseInt(parts[2], 10);
-                const monthIndex = parseInt(parts[1], 10) - 1;
-                const locName = shift.location && shift.location !== "undefined" ? shift.location : "ML - CupVital";
-                const monthNameArr = window.t('months');
-                const monthName = (Array.isArray(monthNameArr) && monthNameArr[monthIndex]) ? monthNameArr[monthIndex] : parts[1];
-
-                shiftsListHtml += `
-                    <div class="w-full bg-slate-50 border border-slate-200 flex items-center p-2 rounded-md mb-2 last:mb-0 shadow-sm hover:bg-white transition-colors">
-                        <div class="flex flex-col items-center justify-center w-10 h-10 bg-slate-800 text-white rounded border border-slate-700 shrink-0 shadow-inner">
-                            <span class="text-[7px] uppercase font-bold leading-none mb-0.5 tracking-widest">${monthName}</span>
-                            <span class="text-base font-black leading-none">${dayNum}</span>
-                        </div>
-                        <div class="ml-3 flex flex-col truncate w-full">
-                            <p class="font-black text-slate-800 text-xs truncate leading-tight">${locName}</p>
-                            <p class="text-[10px] font-bold text-slate-500 mt-0.5 font-mono">${shift.time}</p>
-                        </div>
+    // 2. Генерируем HTML для списка (выводим до 3 ближайших)
+    let shiftsHtml = '';
+    if (upcomingShifts.length > 0) {
+        shiftsHtml = upcomingShifts.slice(0, 3).map(shift => {
+            // Форматируем дату (например, 14 Июн)
+            const d = new Date(shift.date);
+            const dateStr = d.toLocaleDateString(localStorage.getItem('app_lang') === 'cs' ? 'cs-CZ' : 'ru-RU', { day: 'numeric', month: 'short' });
+            
+            return `
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-800 text-sm">${dateStr}</span>
+                        <span class="text-[10px] text-slate-500 uppercase font-black tracking-widest">${shift.time}</span>
                     </div>
-                `;
-            });
-            contentHtml = `<div class="mt-3"><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">${window.t('stand_upcoming')}</p>${shiftsListHtml}</div>${statsHtml}`;
-        } else {
-            contentHtml = `<div class="w-full p-6 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center rounded-md mt-3 shadow-sm"><svg class="w-8 h-8 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_no_records')}</p></div>${statsHtml}`;
-        }
+                    <span class="text-xs font-bold text-theme-modBtnText truncate pl-4 text-right max-w-[50%]">${shift.point || 'Стенд'}</span>
+                </div>
+            `;
+        }).join('');
     } else {
-        if (isStandReqPending) buttonHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none mt-3 shadow-sm">${window.t('stand_pending')}</button>`;
-        else buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mt-3 shadow-sm">${window.t('stand_apply')}</button>`;
-        contentHtml = `<div class="w-full h-24 bg-slate-50 border border-slate-200 flex items-center justify-center rounded-md mt-3 shadow-sm"><svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 00-2-2H6a2 2 0 00-2-2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>`;
+        shiftsHtml = '<p class="text-slate-400 text-sm italic py-4 text-center">У вас пока нет записей</p>';
     }
 
+    // 3. Умная кнопка (зависит от того, дали ли права на стенд)
+    let btnHtml = '';
+    if (isApprovedForStand) {
+        // Если одобрен — зеленая кнопка "Записаться" (проверь, правильная ли тут ссылка/функция для открытия стенда)
+        btnHtml = `<button onclick="window.location.href='stand.html'" class="w-full bg-theme-modBtnBg hover:bg-theme-modBtnHover text-theme-modBtnText font-black uppercase tracking-widest py-3 rounded-xl text-xs transition-colors shadow-sm outline-none mb-5">Записаться</button>`;
+    } else if (isStandReqPending) {
+        // Если подал заявку, но еще не одобрили
+        btnHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black uppercase tracking-widest py-3 rounded-xl text-xs shadow-sm outline-none mb-5 cursor-not-allowed">Заявка на рассмотрении</button>`;
+    } else {
+        // Если еще не подавал заявку (проверь, правильная ли функция подачи заявки)
+        btnHtml = `<button onclick="requestStandRole()" class="w-full bg-theme-modBtnBg hover:bg-theme-modBtnHover text-theme-modBtnText font-black uppercase tracking-widest py-3 rounded-xl text-xs transition-colors shadow-sm outline-none mb-5">Подать заявку</button>`;
+    }
+
+    // 4. Отрисовка всей карточки стенда
     container.innerHTML = `
-        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden p-4 w-full shadow-sm">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <h3 class="font-black text-slate-800 text-base md:text-lg flex items-center gap-2">
-                    <svg class="w-5 h-5 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                    ${window.t('stand_title')}
+        <div class="bg-theme-card p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm">
+            
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-black text-theme-text flex items-center gap-2 text-xl">
+                    <svg class="w-6 h-6 text-theme-modIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <span data-lang="stand_ministry">Служение со стендом</span>
                 </h3>
             </div>
-            ${contentHtml}
-            ${buttonHtml}
+
+            ${btnHtml}
+
+            <div class="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400 tracking-widest border-b border-slate-100 pb-2 mb-3">
+                <span>Смен в этом месяце</span>
+                <span class="bg-theme-modBtnBg text-theme-modBtnText px-2 py-0.5 rounded font-black">${monthCount}</span>
+            </div>
+
+            <div id="stand-shifts-list" class="space-y-2">
+                ${shiftsHtml}
+            </div>
+
         </div>
     `;
 }
