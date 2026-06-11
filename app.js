@@ -1343,7 +1343,7 @@ function loadPersonalData() {
 
     window.openDutiesModal = () => document.getElementById('duties-modal').classList.replace('hidden', 'flex');
 
-    try {
+   try {
         const dutiesQuery = query(collection(db, "duties"), orderBy("rawDate", "asc"));
         onSnapshot(dutiesQuery, (snapshot) => {
             const container = document.getElementById('dashboard-duties');
@@ -1465,7 +1465,8 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
- try {
+    // 🔥 ИСПРАВЛЕННЫЕ КАРТОЧКИ УЧАСТКОВ
+    try {
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
         onSnapshot(terrQuery, (snapshot) => {
             const container = document.getElementById('territories-container');
@@ -1500,6 +1501,10 @@ function loadPersonalData() {
                 if (hasPolygon) clickAction = `onclick="window.openTerritoryMap('${terr.number}')"`;
                 else if (hasUrl) clickAction = `onclick="window.open('${mapData.url}', '_blank')"`;
                 else clickAction = `onclick="alert('Для этого участка нет карты или ссылки')"`;
+
+                const cityStr = mapData && mapData.city && mapData.city !== "Без города" 
+                    ? `<span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mt-1">${mapData.city}</span>` 
+                    : '';
 
                 html += `
                 <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col mt-4 transition-shadow hover:shadow-md">
@@ -1573,7 +1578,7 @@ function loadPersonalData() {
                     if (catStr === 'ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ') catStr = window.t('cat_beliefs').replace('💡 ','');
                     if (catStr === 'РЕЧЬ') catStr = window.t('cat_talk_db').replace('🎙️ ','');
 
-            const cardHtml = `
+                    const cardHtml = `
                         <div style="border-radius: 0px !important;" class="p-4 border ${opacityClass} mb-3 relative overflow-hidden transition-all flex flex-col justify-between min-h-[90px]">
                             <div class="flex items-center gap-3 w-full">
                                 <div style="border-radius: 0px !important;" class="flex flex-col items-center justify-center w-12 h-12 ${isPast ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-sky-50 border-sky-100 text-sky-500'} border shrink-0">
@@ -1661,7 +1666,7 @@ function loadPersonalData() {
                     calendarBtn.classList.add('text-slate-400', 'hover:bg-slate-800/50');
                 }
 
-      todayEvents.forEach(ev => {
+                todayEvents.forEach(ev => {
                     let evGroup = ev.group || window.t('no_group');
                     if (evGroup === "Все" || evGroup === "Všechny") evGroup = window.t('all_groups');
                     const hasGroup = evGroup !== window.t('no_group');
@@ -1728,7 +1733,7 @@ function loadPersonalData() {
                         const isNew = (now - itemTime) < oneDay;
                         const dateStr = new Date(item.createdAt).toLocaleDateString(localeFormat, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-                        const deleteBtn = isNewsAdmin ? `<button onclick="deleteNews('${docSnap.id}')" class="text-red-400 hover:text-red-600 p-1 bg-red-50 rounded-md transition-colors outline-none flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : '';
+                        const deleteBtn = isNewsAdmin ? `<button onclick="window.deleteNews('${docSnap.id}')" class="text-red-400 hover:text-red-600 p-1 bg-red-50 rounded-md transition-colors outline-none flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : '';
                         
                         let displayText = ''; let shouldShow = false;
                         const hasRu = !!item.text_ru; const hasCs = !!item.text_cs;
@@ -1763,7 +1768,6 @@ function loadPersonalData() {
                                 </div>
                             </div>
                         `;
-                        if (isNew && !sessionStorage.getItem('news_toast_' + docSnap.id)) { window.showToast(window.t('new_announcement_toast'), 'info'); sessionStorage.setItem('news_toast_' + docSnap.id, 'true'); }
                     }
                 }
             });
@@ -1782,11 +1786,11 @@ function loadPersonalData() {
                         ${textAreaHtml}
                         <div id="image-preview-container" class="hidden relative w-full shrink-0 mb-2 mt-2">
                             <img id="image-preview" src="" class="h-16 w-full object-cover rounded-lg border border-slate-200">
-                            <button onclick="removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center outline-none shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                            <button onclick="window.removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center outline-none shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
                         </div>
                         <div class="flex items-center justify-between gap-2 shrink-0 mt-auto pt-2 border-t border-slate-200">
-                            <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-md transition-colors flex items-center justify-center w-10 h-8 shrink-0 shadow-sm"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="previewImage(this)"></label>
-                            <button onclick="publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-4 rounded-md flex-grow transition-colors h-8 outline-none shadow-sm uppercase tracking-widest">${window.t('publish')}</button>
+                            <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-md transition-colors flex items-center justify-center w-10 h-8 shrink-0 shadow-sm"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="window.previewImage(this)"></label>
+                            <button onclick="window.publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-4 rounded-md flex-grow transition-colors h-8 outline-none shadow-sm uppercase tracking-widest">${window.t('publish')}</button>
                         </div>
                     </div>
                 `;
@@ -1796,6 +1800,7 @@ function loadPersonalData() {
             if(contentNews) contentNews.innerHTML = newsHTML || `<div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center mx-4 md:mx-0 shadow-sm"><p class="text-slate-400 italic text-sm text-center">${window.t('no_news')}</p></div>`;
         });
     } catch(e) {}
+}; // КОНЕЦ ФУНКЦИИ loadPersonalData
 }
 
 window.availableTerritoriesData = [];
