@@ -700,8 +700,7 @@ window.loadProfileData = async function() {
         rolesContainer.innerHTML = roles.map(r => {
             // Исключаем лишнее, что не нужно показывать в бейджах
             if(["Ответственный за участки", "Ответственный за школу", "Участник школы", "Надзиратель группы", "Служение со стендом"].includes(r)) return '';
-            
-            // Выводим только жирный серый текст (без фонов и рамочек)
+            // Выводим только жирный серый текст
             return `<span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">${r}</span>`;
         }).filter(Boolean).join('<span class="text-slate-300 mx-2 text-[10px]">•</span>'); // Соединяем точечками
     }
@@ -1466,7 +1465,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-   try {
+ try {
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
         onSnapshot(terrQuery, (snapshot) => {
             const container = document.getElementById('territories-container');
@@ -1493,48 +1492,47 @@ function loadPersonalData() {
                 if (daysLeft <= 30) progressColor = 'bg-amber-400'; 
                 if (daysLeft <= 10) progressColor = 'bg-rose-500';  
 
-                const mapData = window.allMapsCache[String(terr.number)];
+                const mapData = window.allMapsCache ? window.allMapsCache[String(terr.number)] : null;
                 const hasPolygon = mapData && mapData.polygon;
                 const hasUrl = mapData && mapData.url;
                 
                 let clickAction = '';
-                // Открываем общую карту участков и центрируемся на этом участке
-                if (hasPolygon) clickAction = `onclick="window.focusOnTerritoryOnMap('${terr.number}')"`;
+                // ИСПРАВЛЕНИЕ: Теперь открывает личную карту, а не глобальный поиск!
+                if (hasPolygon) clickAction = `onclick="window.openTerritoryMap('${terr.number}')"`;
                 else if (hasUrl) clickAction = `onclick="window.open('${mapData.url}', '_blank')"`;
                 else clickAction = `onclick="alert('Для этого участка нет карты или ссылки')"`;
 
                 const cityStr = mapData && mapData.city && mapData.city !== "Без города" 
-                    ? `<p class="text-xs text-slate-600 font-medium truncate mt-1">${mapData.city}</p>` 
-                    : `<p class="text-xs text-slate-400 font-medium truncate italic mt-1">Без города</p>`;
+                    ? `<span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mt-1">${mapData.city}</span>` 
+                    : '';
 
+                // НОВЫЙ ДИЗАЙН: Кнопка карты справа, Сдать под ней, никаких "дней осталось"
                 html += `
-                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col relative group transition-shadow hover:shadow-md mt-4">
-                    <div ${clickAction} class="p-4 pb-2 cursor-pointer hover:bg-slate-50 transition-colors flex-grow">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Участок №</span>
-                                <h4 class="font-black text-slate-800 text-xl leading-none">${terr.number}</h4>
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col mt-4 transition-shadow hover:shadow-md">
+                    <div class="flex">
+                        <div class="flex-grow p-4 pr-2 flex flex-col justify-center">
+                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Участок №</span>
+                            <h4 class="font-black text-slate-800 text-2xl leading-none">${terr.number}</h4>
+                            ${cityStr}
+                        </div>
+                        <div class="w-20 md:w-24 shrink-0 flex flex-col border-l border-slate-100">
+                            <div ${clickAction} class="flex-1 bg-emerald-50 text-emerald-600 flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-100 transition-colors p-2">
+                                <svg class="w-5 h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                                <span class="text-[8px] font-bold uppercase tracking-widest">Карта</span>
                             </div>
-                            <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-[#10b981] group-hover:text-white transition-colors">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                            <div onclick="window.markTerritoryReturned('${docSnap.id}')" class="flex-1 bg-rose-50 text-rose-500 flex flex-col items-center justify-center cursor-pointer hover:bg-rose-100 transition-colors p-2 border-t border-slate-100">
+                                <svg class="w-4 h-4 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                                <span class="text-[8px] font-bold uppercase tracking-widest">Сдать</span>
                             </div>
                         </div>
-                        ${cityStr}
                     </div>
-                    <div class="px-4 pb-4 cursor-pointer hover:bg-slate-50 transition-colors" ${clickAction}>
-                        <div class="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
+                    <div class="px-4 py-3 bg-slate-50 border-t border-slate-100">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Взят: ${takenStr}</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden shadow-inner">
                             <div class="${progressColor} h-1.5 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
                         </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Взят: ${takenStr}</span>
-                            <span class="text-[9px] font-black ${daysLeft <= 10 ? 'text-rose-500' : 'text-slate-500'} uppercase tracking-widest">Ост: ${daysLeft} дн.</span>
-                        </div>
-                    </div>
-                    <div class="p-2 bg-slate-50 border-t border-slate-100 mt-auto">
-                        <button onclick="window.markTerritoryReturned('${docSnap.id}')" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-black uppercase tracking-widest py-2.5 rounded-lg text-[10px] transition-colors outline-none border border-rose-100 shadow-sm flex items-center justify-center gap-1.5">
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
-                            СДАТЬ УЧАСТОК
-                        </button>
                     </div>
                 </div>
                 `;
@@ -2262,23 +2260,22 @@ window.closeTakeTerrModal = () => {
 };
 
 window.takeTerritory = async (num, btn) => {
-    btn.disabled = true;
-    btn.innerText = '...';
-    try {
-        await addDoc(collection(db, "territories"), {
-            number: Number(num),
-            userId: userId,
-            userName: currentUserData.name,
-            status: "active",
-            issuedAt: new Date().toISOString()
-        });
-        window.showToast(`Участок №${num} успешно закреплен! ✅`, 'success');
-        window.closeTakeTerrModal();
-    } catch (e) {
-        alert('Ошибка сети!');
-        btn.disabled = false;
-        btn.innerText = 'ВЗЯТЬ';
-    }
+    btn.disabled = true; btn.innerText = '...';
+    try { 
+        // ЖЕСТКАЯ ПРОВЕРКА В БАЗЕ: не находится ли участок уже в статусе active?
+        const activeCheck = await getDocs(query(collection(db, "territories"), where("number", "==", Number(num)), where("status", "==", "active")));
+        if (!activeCheck.empty) {
+            alert('Извините, этот участок уже кто-то взял! (или он уже у вас)');
+            btn.disabled = false; btn.innerText = 'ВЗЯТЬ УЧАСТОК';
+            window.closeTakeTerrModal();
+            return;
+        }
+
+        await addDoc(collection(db, "territories"), { number: Number(num), userId: userId, userName: currentUserData.name, status: "active", issuedAt: new Date().toISOString() }); 
+        window.showToast(`Участок №${num} закреплен! ✅`, 'success'); 
+        window.closeTakeTerrModal(); 
+    } 
+    catch (e) { alert('Ошибка сети!'); btn.disabled = false; btn.innerText = 'ВЗЯТЬ УЧАСТОК'; }
 };
 
 window.openProfileModal = () => document.getElementById('profile-modal').classList.replace('hidden', 'flex');
@@ -2448,6 +2445,36 @@ const initPullToRefresh = () => {
         currentY = 0;
         isPulling = false;
     }, { passive: true });
+};
+
+// === ПРАВИЛЬНАЯ ФУНКЦИЯ ДЛЯ КАРТЫ ЛИЧНОГО УЧАСТКА ===
+window.openTerritoryMap = (numStr) => {
+    const mapData = window.allMapsCache[numStr];
+    if (!mapData || !mapData.polygon) return alert("Для этого участка еще не нарисована карта!");
+
+    document.getElementById('terr-map-title').innerText = `Участок № ${numStr}`;
+    document.getElementById('terr-map-modal').classList.replace('hidden', 'flex');
+
+    if (!window.userMapInstance) {
+        window.userMapInstance = L.map('user-view-map').setView([49.974, 12.700], 14);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(window.userMapInstance);
+    }
+
+    setTimeout(() => {
+        window.userMapInstance.invalidateSize();
+        if (window.userPolygonLayer) window.userMapInstance.removeLayer(window.userPolygonLayer);
+
+        const latlngs = mapData.polygon.map(p => [p.lat, p.lng]);
+        window.userPolygonLayer = L.polygon(latlngs, {
+            color: '#10b981', fillColor: '#10b981', fillOpacity: 0.35, weight: 3
+        }).addTo(window.userMapInstance);
+
+        window.userMapInstance.fitBounds(window.userPolygonLayer.getBounds(), { padding: [20, 20] });
+    }, 100);
+};
+
+window.closeTerritoryMap = () => {
+    document.getElementById('terr-map-modal')?.classList.replace('flex', 'hidden');
 };
 
 // Запускаем при загрузке документа
