@@ -1801,7 +1801,6 @@ function loadPersonalData() {
         });
     } catch(e) {}
 }; // КОНЕЦ ФУНКЦИИ loadPersonalData
-}
 
 window.availableTerritoriesData = [];
 window.currentTerrCityFilter = 'all';
