@@ -1497,16 +1497,10 @@ function loadPersonalData() {
                 const hasUrl = mapData && mapData.url;
                 
                 let clickAction = '';
-                // ИСПРАВЛЕНИЕ: Теперь открывает личную карту, а не глобальный поиск!
                 if (hasPolygon) clickAction = `onclick="window.openTerritoryMap('${terr.number}')"`;
                 else if (hasUrl) clickAction = `onclick="window.open('${mapData.url}', '_blank')"`;
                 else clickAction = `onclick="alert('Для этого участка нет карты или ссылки')"`;
 
-                const cityStr = mapData && mapData.city && mapData.city !== "Без города" 
-                    ? `<span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mt-1">${mapData.city}</span>` 
-                    : '';
-
-                // НОВЫЙ ДИЗАЙН: Кнопка карты справа, Сдать под ней, никаких "дней осталось"
                 html += `
                 <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col mt-4 transition-shadow hover:shadow-md">
                     <div class="flex">
@@ -1515,24 +1509,24 @@ function loadPersonalData() {
                             <h4 class="font-black text-slate-800 text-2xl leading-none">${terr.number}</h4>
                             ${cityStr}
                         </div>
-                        <div class="w-20 md:w-24 shrink-0 flex flex-col border-l border-slate-100">
-                            <div ${clickAction} class="flex-1 bg-emerald-50 text-emerald-600 flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-100 transition-colors p-2">
-                                <svg class="w-5 h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
-                                <span class="text-[8px] font-bold uppercase tracking-widest">Карта</span>
-                            </div>
-                            <div onclick="window.markTerritoryReturned('${docSnap.id}')" class="flex-1 bg-rose-50 text-rose-500 flex flex-col items-center justify-center cursor-pointer hover:bg-rose-100 transition-colors p-2 border-t border-slate-100">
-                                <svg class="w-4 h-4 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
-                                <span class="text-[8px] font-bold uppercase tracking-widest">Сдать</span>
-                            </div>
+                        <div ${clickAction} class="w-20 md:w-24 shrink-0 flex flex-col items-center justify-center cursor-pointer bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors border-l border-slate-100 p-2">
+                            <svg class="w-5 h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                            <span class="text-[8px] font-bold uppercase tracking-widest">Карта</span>
                         </div>
                     </div>
-                    <div class="px-4 py-3 bg-slate-50 border-t border-slate-100">
-                        <div class="flex justify-between items-center mb-1.5">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Взят: ${takenStr}</span>
+
+                    <div class="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Взят: ${takenStr}</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden shadow-inner">
+                                <div class="${progressColor} h-1.5 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
+                            </div>
                         </div>
-                        <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden shadow-inner">
-                            <div class="${progressColor} h-1.5 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
-                        </div>
+                        <button onclick="window.markTerritoryReturned('${docSnap.id}')" class="shrink-0 w-1/4 min-w-[70px] bg-white hover:bg-rose-50 text-rose-500 border border-slate-200 hover:border-rose-200 font-black uppercase tracking-widest px-2 py-2 rounded-lg text-[9px] transition-colors outline-none shadow-sm">
+                            Сдать
+                        </button>
                     </div>
                 </div>
                 `;
@@ -2465,12 +2459,30 @@ window.openTerritoryMap = (numStr) => {
         if (window.userPolygonLayer) window.userMapInstance.removeLayer(window.userPolygonLayer);
 
         const latlngs = mapData.polygon.map(p => [p.lat, p.lng]);
-        window.userPolygonLayer = L.polygon(latlngs, {
-            color: '#10b981', fillColor: '#10b981', fillOpacity: 0.35, weight: 3
+        
+        // Координаты, покрывающие весь мир (внешнее кольцо)
+        const outerBounds = [
+            [90, -180],
+            [90, 180],
+            [-90, 180],
+            [-90, -180]
+        ];
+
+        // Создаем полигон с "дыркой" (latlngs вырезается из outerBounds)
+        window.userPolygonLayer = L.polygon([outerBounds, latlngs], {
+            color: '#10b981',      // Изумрудная граница участка
+            weight: 3,
+            fillColor: '#0f172a',  // Темно-синяя заливка ВОКРУГ участка
+            fillOpacity: 0.6       // Насколько тёмным будет всё вокруг
         }).addTo(window.userMapInstance);
 
-        window.userMapInstance.fitBounds(window.userPolygonLayer.getBounds(), { padding: [20, 20] });
+        // Центрируем камеру именно на участке, а не на всём мире
+        window.userMapInstance.fitBounds(L.polygon(latlngs).getBounds(), { padding: [20, 20] });
     }, 100);
+};
+
+window.closeTerritoryMap = () => {
+    document.getElementById('terr-map-modal')?.classList.replace('flex', 'hidden');
 };
 
 window.closeTerritoryMap = () => {
