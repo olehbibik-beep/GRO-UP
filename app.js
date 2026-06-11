@@ -698,28 +698,12 @@ window.loadProfileData = async function() {
     
     if (rolesContainer) {
         rolesContainer.innerHTML = roles.map(r => {
-            let colorClass = "bg-slate-100 text-slate-500 border border-slate-200"; 
-            let iconHtml = ""; 
-
-            if(r === "Старейшина") colorClass = "bg-amber-100 text-amber-700 border border-amber-200";
-            else if(r === "Помощник собрания") colorClass = "bg-sky-100 text-sky-700 border border-sky-200";
-            else if(r === "Пионер") colorClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
-            else if(r === "Админ" || r === "Владелец") colorClass = "bg-rose-100 text-rose-700 border border-rose-200";
-            else if(r === "Ответственный за график") colorClass = "bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200";
-            else if(r === "Надзиратель группы") colorClass = "bg-purple-100 text-purple-700 border border-purple-200";
-            else if(r === "Ответственный за участки") colorClass = "bg-teal-100 text-teal-700 border border-teal-200";
-            else if(r === "Ответственный за школу") colorClass = "bg-indigo-100 text-indigo-700 border border-indigo-200";
-            else if(r === "Ответственный за стенды") colorClass = "bg-blue-100 text-blue-700 border border-blue-200";
-            else if(r === "Служение со стендом") {
-                colorClass = "bg-indigo-100 text-indigo-700 border-indigo-200";
-                iconHtml = `<svg class="w-3 h-3 inline mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 4h10v14H7V4zM10 8h4M10 12h4" /><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 21v-3m4 3v-3" /></svg>`;
-            }
-
-            // Скрываем только "Участник школы", так как это есть у всех и просто засоряет интерфейс
-            if(r === "Участник школы") return '';
+            // Исключаем лишнее, что не нужно показывать в бейджах
+            if(["Ответственный за участки", "Ответственный за школу", "Участник школы", "Надзиратель группы", "Служение со стендом"].includes(r)) return '';
             
-            return `<span class="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${colorClass} m-0.5">${iconHtml}${r}</span>`;
-        }).join('');
+            // Выводим только жирный серый текст (без фонов и рамочек)
+            return `<span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">${r}</span>`;
+        }).filter(Boolean).join('<span class="text-slate-300 mx-2 text-[10px]">•</span>'); // Соединяем точечками
     }
     
     onSnapshot(doc(db, "settings", "congregation"), (docSnap) => {
