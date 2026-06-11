@@ -1967,7 +1967,7 @@ window.focusOnTerritoryOnMap = (numStr) => {
 window.renderGlobalAvailableMap = () => {
     if (!globalAvailableMapInstance) {
         globalAvailableMapInstance = L.map('available-terr-map', { attributionControl: false }).setView([49.974, 12.700], 12);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(globalAvailableMapInstance);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(globalAvailableMapInstance);
         
         // НОВОЕ: Прятать окошко (плашку) при любом сдвиге или зуме карты, чтобы не мешалось
         globalAvailableMapInstance.on('movestart zoomstart', () => {
@@ -2454,8 +2454,8 @@ window.openTerritoryMap = (numStr) => {
     document.getElementById('terr-map-modal').classList.replace('hidden', 'flex');
 
     if (!window.userMapInstance) {
-        window.userMapInstance = L.map('user-view-map').setView([49.974, 12.700], 14);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(window.userMapInstance);
+        window.userMapInstance = L.map('user-view-map', { attributionControl: false }).setView([49.974, 12.700], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(window.userMapInstance);
     }
 
     setTimeout(() => {
