@@ -378,9 +378,9 @@ window.logout = async () => {
 window.scrollNews = (offset) => { document.getElementById('content-news')?.scrollBy({ left: offset, behavior: 'smooth' }); };
 window.scrollProgram = (dir) => { 
     const container = document.getElementById('meeting-program-list');
-    if(container) {
-        const scrollAmount = container.clientWidth * dir;
-        container.scrollBy({ left: scrollAmount, behavior: 'smooth' }); 
+    if(container && container.firstElementChild) {
+        const scrollAmount = container.firstElementChild.offsetWidth + 16;
+        container.scrollBy({ left: scrollAmount * dir, behavior: 'smooth' }); 
     }
 };
 
@@ -1181,9 +1181,9 @@ window.downloadScheduleAsPNG = async () => {
         tempDiv.appendChild(titleContainer);
 
         const sectionHeader = (title, bgColor, iconSvg) => {
-            return `<div style="margin-top:6px; margin-bottom:6px; background:${bgColor}; border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; gap: 6px; min-height: 28px;">
-                        <div style="display: flex; align-items: center; justify-content: center; color: white;">${iconSvg}</div>
-                        <div style="color:white; font-weight:900; font-size:11px; text-transform:uppercase; letter-spacing: 0.5px; line-height: 1; display: flex; align-items: center; margin-top: 1px;">${title}</div>
+            return `<div style="margin-top:6px; margin-bottom:6px; background:${bgColor}; border-radius: 6px; padding: 6px 10px; display: table; width: 100%;">
+                        <div style="display: table-cell; vertical-align: middle; width: 14px;">${iconSvg}</div>
+                        <div style="display: table-cell; vertical-align: middle; color:white; font-weight:900; font-size:11px; text-transform:uppercase; letter-spacing: 0.5px; padding-left: 6px;">${title}</div>
                     </div>`;
         };
 
@@ -1479,7 +1479,7 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-    try {
+   try {
         const terrQuery = query(collection(db, "territories"), where("userId", "==", userId));
         onSnapshot(terrQuery, (snapshot) => {
             const container = document.getElementById('territories-container');
@@ -1491,55 +1491,70 @@ function loadPersonalData() {
                 const terr = docSnap.data();
                 if (terr.status === 'returned') return;
                 activeCount++;
-                let diffDays = 0;
-                if (terr.issuedAt) {
-                    const t = new Date(terr.issuedAt).getTime();
-                    if (!isNaN(t)) diffDays = Math.floor((Date.now() - t) / (1000 * 60 * 60 * 24));
-                }
-                let barColor = "bg-emerald-500";
-                let textColor = "text-emerald-600";
-                let progress = (diffDays / 90) * 100;
-                if (progress > 100) progress = 100;
-                if (progress < 2) progress = 2; 
-                if (diffDays >= 90) { barColor = "bg-red-500"; textColor = "text-red-600"; } 
-                else if (diffDays >= 30) { barColor = "bg-amber-500"; textColor = "text-amber-600"; }
+                
+                const takenDate = new Date(terr.issuedAt || new Date());
+                const now = new Date();
+                const daysTotal = 90; 
+                const daysPassed = Math.floor((now - takenDate) / (1000 * 60 * 60 * 24));
+                let daysLeft = daysTotal - daysPassed;
+                if (daysLeft < 0) daysLeft = 0;
+                
+                const progressPercent = Math.min(100, Math.max(0, (daysPassed / daysTotal) * 100));
+                const takenStr = takenDate.toLocaleDateString(localeFormat, { day: 'numeric', month: 'short' });
+                
+                let progressColor = 'bg-emerald-400';
+                if (daysLeft <= 30) progressColor = 'bg-amber-400'; 
+                if (daysLeft <= 10) progressColor = 'bg-rose-500';  
 
                 const mapData = window.allMapsCache[String(terr.number)];
                 const hasPolygon = mapData && mapData.polygon;
-                const cityStr = mapData && mapData.city && mapData.city !== "Без города" ? `<span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mt-1">${mapData.city}</span>` : '';
+                const hasUrl = mapData && mapData.url;
+                
+                let clickAction = '';
+                // Открываем общую карту участков и центрируемся на этом участке
+                if (hasPolygon) clickAction = `onclick="window.focusOnTerritoryOnMap('${terr.number}')"`;
+                else if (hasUrl) clickAction = `onclick="window.open('${mapData.url}', '_blank')"`;
+                else clickAction = `onclick="alert('Для этого участка нет карты или ссылки')"`;
 
- let mapBtn = '';
-                if (hasPolygon) {
-                    // НОВАЯ КНОПКА: Перебрасывает на общую карту и центрируется на участке
-                    mapBtn = `<button onclick="focusOnTerritoryOnMap('${terr.number}')" class="w-full mt-3 bg-slate-50 hover:bg-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg transition-colors outline-none shadow-sm flex items-center justify-center gap-2 border border-slate-200">Показать на карте <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg></button>`;
-                } else if (mapData && mapData.url) {
-                    // СТАРАЯ КНОПКА: Остается как есть, если это просто ссылка на сторонний сайт
-                    mapBtn = `<button onclick="window.open('${mapData.url}', '_blank')" class="w-full mt-3 bg-slate-50 hover:bg-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg transition-colors outline-none shadow-sm flex items-center justify-center gap-2 border border-slate-200"><svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg> Открыть ссылку</button>`;
-                }
+                const cityStr = mapData && mapData.city && mapData.city !== "Без города" 
+                    ? `<p class="text-xs text-slate-600 font-medium truncate mt-1">${mapData.city}</p>` 
+                    : `<p class="text-xs text-slate-400 font-medium truncate italic mt-1">Без города</p>`;
 
                 html += `
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col relative group transition-shadow hover:shadow-md mt-4">
+                    <div ${clickAction} class="p-4 pb-2 cursor-pointer hover:bg-slate-50 transition-colors flex-grow">
                         <div class="flex justify-between items-start mb-2">
                             <div>
-                                <h3 class="font-black text-slate-800 text-lg md:text-xl">${window.t('territory_num')} ${terr.number}</h3>
-                                ${cityStr}
+                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Участок №</span>
+                                <h4 class="font-black text-slate-800 text-xl leading-none">${terr.number}</h4>
                             </div>
-                            <button onclick="markTerritoryReturned('${docSnap.id}')" class="text-[9px] font-bold text-slate-400 hover:text-red-500 bg-slate-100 hover:bg-red-50 px-3 py-1.5 rounded-md uppercase transition-colors outline-none shadow-sm">${window.t('return_terr_btn')}</button>
-                        </div>
-                        
-                        <div class="mt-2 flex items-center gap-3">
-                            <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex shadow-inner">
-                                <div class="${barColor} h-1.5 rounded-full transition-all" style="width: ${progress}%"></div>
+                            <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-[#10b981] group-hover:text-white transition-colors">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
                             </div>
-                            <span class="${textColor} text-[10px] font-black uppercase tracking-widest shrink-0 leading-none">${diffDays} ${window.t('days_short')}</span>
                         </div>
-                        
-                        ${mapBtn}
+                        ${cityStr}
                     </div>
+                    <div class="px-4 pb-4 cursor-pointer hover:bg-slate-50 transition-colors" ${clickAction}>
+                        <div class="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
+                            <div class="${progressColor} h-1.5 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Взят: ${takenStr}</span>
+                            <span class="text-[9px] font-black ${daysLeft <= 10 ? 'text-rose-500' : 'text-slate-500'} uppercase tracking-widest">Ост: ${daysLeft} дн.</span>
+                        </div>
+                    </div>
+                    <div class="p-2 bg-slate-50 border-t border-slate-100 mt-auto">
+                        <button onclick="window.markTerritoryReturned('${docSnap.id}')" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-black uppercase tracking-widest py-2.5 rounded-lg text-[10px] transition-colors outline-none border border-rose-100 shadow-sm flex items-center justify-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                            СДАТЬ УЧАСТОК
+                        </button>
+                    </div>
+                </div>
                 `;
             });
+
             if (activeCount === 0) container.innerHTML = `<p class="text-slate-400 text-sm italic py-4 text-center border border-slate-200 rounded-xl w-full">${window.t('no_active_territories')}</p>`;
-            else container.innerHTML = html;
+            else container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">${html}</div>`;
         });
     } catch(e) {}
 
@@ -2369,39 +2384,6 @@ window.publishNews = async () => {
 window.deleteNews = async (id) => {
     if (confirm(window.t('confirm_delete_news'))) { try { await deleteDoc(doc(db, "section_content", id)); } catch (e) { alert(window.t('error_network')); } }
 };
-
-let pStart = { x: 0, y: 0 };
-let pCurrent = { x: 0, y: 0 };
-const mainElem = document.getElementById('main-dashboard');
-
-if (mainElem) {
-    mainElem.addEventListener('touchstart', function(e) {
-        pStart.x = e.touches[0].screenX;
-        pStart.y = e.touches[0].screenY;
-    }, {passive: true});
-
-    mainElem.addEventListener('touchmove', function(e) {
-        pCurrent.x = e.touches[0].screenX;
-        pCurrent.y = e.touches[0].screenY;
-    }, {passive: true});
-
-    mainElem.addEventListener('touchend', function(e) {
-        if (mainElem.scrollTop <= 0) {
-            let yDiff = pCurrent.y - pStart.y;
-            let xDiff = Math.abs(pCurrent.x - pStart.x);
-            if (yDiff > 120 && xDiff < 50 && pStart.y > 0 && pCurrent.y > 0) {
-                const loader = document.getElementById('global-loader');
-                if(loader) {
-                    loader.style.display = 'flex';
-                    loader.style.opacity = '1';
-                }
-                setTimeout(() => window.location.reload(true), 300);
-            }
-        }
-        pStart = { x: 0, y: 0 };
-        pCurrent = { x: 0, y: 0 };
-    });
-}
 
 // ============================================
 // ФИРМЕННАЯ ТЯНУЧКА ОБНОВЛЕНИЯ (PULL-TO-REFRESH)
