@@ -687,7 +687,7 @@ if (userId) {
     });
 }
 
-async function loadProfileData() {
+window.loadProfileData = async function() {
     const pName = document.getElementById('profile-name');
     const pGroup = document.getElementById('profile-group');
     const pOverseer = document.getElementById('profile-overseer');
@@ -718,7 +718,7 @@ async function loadProfileData() {
             // Скрываем только "Участник школы", так как это есть у всех и просто засоряет интерфейс
             if(r === "Участник школы") return '';
             
-            return `<span class="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${colorClass}">${iconHtml}${r}</span>`;
+            return `<span class="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${colorClass} m-0.5">${iconHtml}${r}</span>`;
         }).join('');
     }
     
@@ -730,10 +730,12 @@ async function loadProfileData() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             if(congEl) congEl.innerText = data.name || "МАРИАНСКИЕ ЛАЗНЕ";
-            currentZoomData.id = data.zoomId || "";
-            currentZoomData.pass = data.zoomPass || "";
-            if (dashZoomId) dashZoomId.innerText = currentZoomData.id || "-";
-            if (dashZoomPass) dashZoomPass.innerText = currentZoomData.pass || "-";
+            if(typeof currentZoomData !== 'undefined') {
+                currentZoomData.id = data.zoomId || "";
+                currentZoomData.pass = data.zoomPass || "";
+            }
+            if (dashZoomId) dashZoomId.innerText = data.zoomId || "-";
+            if (dashZoomPass) dashZoomPass.innerText = data.zoomPass || "-";
         }
     });
 
@@ -745,8 +747,8 @@ async function loadProfileData() {
             const snap = await getDocs(q);
             pOverseer.innerText = snap.empty ? "-" : snap.docs[0].data().name;
         } else if (pOverseer) { pOverseer.innerText = "-"; }
-    } catch(e) {}
-}
+    } catch(e) { console.error(e); }
+};
 
 function renderStandCard() {
     const container = document.getElementById('stand-widget-container');
