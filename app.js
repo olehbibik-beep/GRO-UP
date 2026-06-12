@@ -2500,5 +2500,104 @@ if (document.readyState === 'loading') {
     initPullToRefresh();
 }
 
+// ============================================
+// ВИДЖЕТ "МОИ ЦЕЛИ"
+// ============================================
+window.renderGoal = function() {
+    const inputContainer = document.getElementById('goal-input-container');
+    const progressContainer = document.getElementById('goal-progress-container');
+    if (!inputContainer || !progressContainer) return;
+
+    const goalDataStr = localStorage.getItem('my_goal_data');
+    if (!goalDataStr) {
+        inputContainer.classList.remove('hidden'); inputContainer.classList.add('flex');
+        progressContainer.classList.add('hidden'); progressContainer.classList.remove('flex');
+        return;
+    }
+
+    const goalData = JSON.parse(goalDataStr);
+    inputContainer.classList.add('hidden'); inputContainer.classList.remove('flex');
+    progressContainer.classList.remove('hidden'); progressContainer.classList.add('flex');
+
+    const now = new Date().getTime();
+    const start = new Date(goalData.startDate).getTime();
+    const end = new Date(goalData.targetDate).getTime();
+    
+    let progress = 0; 
+    let daysLeft = 0;
+
+    if (end <= start) { 
+        progress = 100; 
+    } else {
+        progress = ((now - start) / (end - start)) * 100;
+        daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+    }
+
+    if (progress > 100) progress = 100;
+    if (progress < 0) progress = 0;
+    if (daysLeft < 0) daysLeft = 0;
+
+    document.getElementById('goal-display-text').innerText = goalData.text;
+    
+    const daysLabelEl = document.getElementById('goal-display-days');
+    const giftIcon = document.getElementById('goal-gift-icon');
+    const progressBar = document.getElementById('goal-progress-bar');
+
+    if (progress >= 100) {
+        daysLabelEl.innerText = "ДОСТИГНУТО!";
+        daysLabelEl.className = "text-[10px] font-black text-rose-500 uppercase tracking-widest shrink-0";
+        giftIcon.innerText = '🎊'; // Открытый подарок-хлопушка
+        giftIcon.classList.add('scale-125', 'animate-bounce');
+    } else {
+        daysLabelEl.innerText = `ОСТ: ${daysLeft} дн.`;
+        daysLabelEl.className = "text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0";
+        giftIcon.innerText = '🎁'; // Закрытый подарок
+        giftIcon.classList.remove('scale-125', 'animate-bounce');
+    }
+
+    // Анимация выезда линии при открытии страницы
+    progressBar.style.width = '0%';
+    setTimeout(() => { progressBar.style.width = `${progress}%`; }, 100);
+};
+
+window.startGoal = function() {
+    const text = document.getElementById('goal-text').value.trim();
+    const dateVal = document.getElementById('goal-date').value;
+
+    if (!text) return alert("Введите, чего вы хотите достичь!");
+    if (!dateVal) return alert("Выберите дату!");
+
+    const targetDate = new Date(dateVal);
+    targetDate.setHours(23, 59, 59, 999); // Цель до конца выбранного дня
+    const now = new Date();
+
+    if (targetDate.getTime() <= now.getTime()) {
+        return alert("Дата должна быть в будущем!");
+    }
+
+    const goalData = { 
+        text: text, 
+        targetDate: targetDate.toISOString(), 
+        startDate: now.toISOString() 
+    };
+    
+    localStorage.setItem('my_goal_data', JSON.stringify(goalData));
+    window.renderGoal();
+};
+
+window.resetGoal = function() {
+    if(confirm("Точно сбросить текущую цель?")) {
+        localStorage.removeItem('my_goal_data');
+        document.getElementById('goal-text').value = '';
+        document.getElementById('goal-date').value = '';
+        window.renderGoal();
+    }
+};
+
+// Запускаем проверку цели при загрузке
+setTimeout(() => { if (window.renderGoal) window.renderGoal(); }, 500);
+
+
+
 window.openInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('hidden', 'flex');
 window.closeInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('flex', 'hidden');
