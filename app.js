@@ -2506,12 +2506,14 @@ if (document.readyState === 'loading') {
 window.renderGoal = function() {
     const inputContainer = document.getElementById('goal-input-container');
     const progressContainer = document.getElementById('goal-progress-container');
+    const doneBtn = document.getElementById('goal-done-btn');
     if (!inputContainer || !progressContainer) return;
 
     const goalDataStr = localStorage.getItem('my_goal_data');
     if (!goalDataStr) {
         inputContainer.classList.remove('hidden'); inputContainer.classList.add('flex');
         progressContainer.classList.add('hidden'); progressContainer.classList.remove('flex');
+        if (doneBtn) { doneBtn.classList.remove('flex'); doneBtn.classList.add('hidden'); }
         return;
     }
 
@@ -2542,10 +2544,8 @@ window.renderGoal = function() {
     const daysLabelEl = document.getElementById('goal-display-days');
     const giftIcon = document.getElementById('goal-gift-icon');
     const progressBar = document.getElementById('goal-progress-bar');
-    const doneBtn = document.getElementById('goal-done-btn');
     const pulseEffect = document.getElementById('goal-pulse-effect');
 
-    // КРАСИВЫЕ ОГРОМНЫЕ SVG ПОДАРКИ
     const svgGiftClosed = `
         <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full drop-shadow-md">
             <path d="M12 28h40v26a4 4 0 01-4 4H16a4 4 0 01-4-4V28z" fill="#F43F5E"/>
@@ -2574,24 +2574,26 @@ window.renderGoal = function() {
         daysLabelEl.innerText = "УРА! ДОСТИГНУТО!";
         daysLabelEl.className = "text-[10px] font-black text-emerald-500 uppercase tracking-widest shrink-0";
         giftIcon.innerHTML = svgGiftOpen;
-        giftIcon.classList.add('scale-125', '-translate-y-[60%]'); // Подарок подпрыгивает и увеличивается
-        if (doneBtn) doneBtn.classList.add('hidden'); // прячем кнопку готово
-        if (pulseEffect) pulseEffect.classList.add('hidden'); // выключаем зеленую пульсацию
+        giftIcon.classList.add('scale-125', '-translate-y-[60%]'); 
         
-        // Автоматический сброс цели и возврат к вводу через 6 секунд
+        if (doneBtn) { doneBtn.classList.remove('flex'); doneBtn.classList.add('hidden'); }
+        if (pulseEffect) pulseEffect.classList.add('hidden'); 
+        
         if (!goalData.clearing) {
             goalData.clearing = true;
             localStorage.setItem('my_goal_data', JSON.stringify(goalData));
             setTimeout(() => { window.resetGoalSilent(); }, 6000);
         } else {
-            setTimeout(() => { window.resetGoalSilent(); }, 3000); // Страховка при обновлении страницы
+            setTimeout(() => { window.resetGoalSilent(); }, 3000); 
         }
     } else {
         daysLabelEl.innerText = `ОСТ: ${daysLeft} дн.`;
         daysLabelEl.className = "text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0";
         giftIcon.innerHTML = svgGiftClosed;
         giftIcon.classList.remove('scale-125', '-translate-y-[60%]');
-        if (doneBtn) doneBtn.classList.remove('hidden');
+        
+        // Показываем кнопку Готово напротив заголовка
+        if (doneBtn) { doneBtn.classList.remove('hidden'); doneBtn.classList.add('flex'); }
         if (pulseEffect) pulseEffect.classList.remove('hidden');
     }
 
