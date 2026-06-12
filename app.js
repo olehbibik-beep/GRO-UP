@@ -2507,8 +2507,28 @@ window.renderGoal = function() {
     const inputContainer = document.getElementById('goal-input-container');
     const progressContainer = document.getElementById('goal-progress-container');
     const doneBtn = document.getElementById('goal-done-btn');
+    const completedList = document.getElementById('completed-goals-list');
+    
     if (!inputContainer || !progressContainer) return;
 
+    // 1. Отрисовка Истории (Серые выполненные цели)
+    const historyStr = localStorage.getItem('completed_goals_data');
+    let historyHtml = '';
+    if (historyStr) {
+        const history = JSON.parse(historyStr);
+        // Показываем от новых к старым
+        history.slice().reverse().forEach(g => {
+            historyHtml += `
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex justify-between items-center grayscale opacity-60">
+                    <span class="font-black text-slate-700 text-sm line-through truncate pr-2">${g.text}</span>
+                    <div class="w-1/3 h-2 bg-emerald-400 rounded-full shadow-inner"></div>
+                </div>
+            `;
+        });
+    }
+    if (completedList) completedList.innerHTML = historyHtml;
+
+    // 2. Отрисовка Текущей цели
     const goalDataStr = localStorage.getItem('my_goal_data');
     if (!goalDataStr) {
         inputContainer.classList.remove('hidden'); inputContainer.classList.add('flex');
@@ -2528,74 +2548,35 @@ window.renderGoal = function() {
     let progress = 0; 
     let daysLeft = 0;
 
-    if (goalData.finishedEarly || end <= start) { 
+    if (end <= start) { 
         progress = 100; 
     } else {
         progress = ((now - start) / (end - start)) * 100;
         daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
     }
 
-    if (progress >= 100) progress = 100;
+    if (progress >= 100) {
+        // Если время вышло, сразу переносим в историю
+        window.finishGoalEarly();
+        return;
+    }
+
     if (progress < 0) progress = 0;
     if (daysLeft < 0) daysLeft = 0;
 
     document.getElementById('goal-display-text').innerText = goalData.text;
     
     const daysLabelEl = document.getElementById('goal-display-days');
-    const giftIcon = document.getElementById('goal-gift-icon');
     const progressBar = document.getElementById('goal-progress-bar');
     const pulseEffect = document.getElementById('goal-pulse-effect');
 
-    const svgGiftClosed = `
-        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full drop-shadow-md">
-            <path d="M12 28h40v26a4 4 0 01-4 4H16a4 4 0 01-4-4V28z" fill="#F43F5E"/>
-            <path d="M8 20h48v8H8z" fill="#FB7185" rx="2"/>
-            <path d="M28 20v38h8V20h-8z" fill="#FDE047"/>
-            <path d="M32 20c-6-8-14-4-14 0 0 4 14 0 14 0zm0 0c6-8 14-4 14 0 0 4-14 0-14 0z" fill="#FEF08A" stroke="#FDE047" stroke-width="2"/>
-        </svg>
-    `;
-    const svgGiftOpen = `
-        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full drop-shadow-xl">
-            <path d="M12 36h40v18a4 4 0 01-4 4H16a4 4 0 01-4-4V36z" fill="#F43F5E"/>
-            <path d="M28 36v22h8V36h-8z" fill="#FDE047"/>
-            <g transform="translate(10, -5) rotate(15 32 20)">
-                <path d="M8 12h48v8H8z" fill="#FB7185" rx="2"/>
-                <path d="M32 12c-6-8-14-4-14 0 0 4 14 0 14 0zm0 0c6-8 14-4 14 0 0 4-14 0-14 0z" fill="#FEF08A" stroke="#FDE047" stroke-width="2"/>
-            </g>
-            <circle cx="16" cy="10" r="3" fill="#10B981" class="animate-ping"/>
-            <circle cx="48" cy="14" r="2.5" fill="#3B82F6" class="animate-pulse"/>
-            <circle cx="24" cy="4" r="3.5" fill="#FDE047" class="animate-bounce"/>
-            <circle cx="52" cy="24" r="3" fill="#A855F7" class="animate-ping"/>
-            <path d="M14 20l4-4m30 0l4 4" stroke="#FDE047" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-    `;
-
-    if (progress >= 100) {
-        daysLabelEl.innerText = "УРА! ДОСТИГНУТО!";
-        daysLabelEl.className = "text-[10px] font-black text-emerald-500 uppercase tracking-widest shrink-0";
-        giftIcon.innerHTML = svgGiftOpen;
-        giftIcon.classList.add('scale-125', '-translate-y-[60%]'); 
-        
-        if (doneBtn) { doneBtn.classList.remove('flex'); doneBtn.classList.add('hidden'); }
-        if (pulseEffect) pulseEffect.classList.add('hidden'); 
-        
-        if (!goalData.clearing) {
-            goalData.clearing = true;
-            localStorage.setItem('my_goal_data', JSON.stringify(goalData));
-            setTimeout(() => { window.resetGoalSilent(); }, 6000);
-        } else {
-            setTimeout(() => { window.resetGoalSilent(); }, 3000); 
-        }
-    } else {
-        daysLabelEl.innerText = `ОСТ: ${daysLeft} дн.`;
-        daysLabelEl.className = "text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0";
-        giftIcon.innerHTML = svgGiftClosed;
-        giftIcon.classList.remove('scale-125', '-translate-y-[60%]');
-        
-        // Показываем кнопку Готово напротив заголовка
-        if (doneBtn) { doneBtn.classList.remove('hidden'); doneBtn.classList.add('flex'); }
-        if (pulseEffect) pulseEffect.classList.remove('hidden');
-    }
+    daysLabelEl.innerText = `ОСТ: ${daysLeft} дн.`;
+    
+    if (doneBtn) { doneBtn.classList.remove('hidden'); doneBtn.classList.add('flex'); }
+    if (pulseEffect) pulseEffect.classList.remove('hidden');
+    
+    // Линия красная (розовая) пока идет
+    progressBar.className = "h-full bg-gradient-to-r from-rose-400 to-rose-500 rounded-full transition-all duration-1000 relative overflow-hidden flex justify-end z-10";
 
     progressBar.style.width = '0%';
     setTimeout(() => { progressBar.style.width = `${progress}%`; }, 100);
@@ -2625,17 +2606,30 @@ window.finishGoalEarly = function() {
     const goalDataStr = localStorage.getItem('my_goal_data');
     if (goalDataStr) {
         const goalData = JSON.parse(goalDataStr);
-        goalData.finishedEarly = true; // Отмечаем как выполненную досрочно
-        localStorage.setItem('my_goal_data', JSON.stringify(goalData));
-        window.renderGoal();
+        const progressBar = document.getElementById('goal-progress-bar');
+        const doneBtn = document.getElementById('goal-done-btn');
+        const pulseEffect = document.getElementById('goal-pulse-effect');
+        
+        // 1. Делаем линию зеленой и заполняем до 100%
+        if (progressBar) {
+            progressBar.style.width = '100%';
+            progressBar.className = "h-full bg-emerald-400 rounded-full transition-all duration-700 relative overflow-hidden flex justify-end z-10";
+        }
+        if (doneBtn) { doneBtn.classList.remove('flex'); doneBtn.classList.add('hidden'); }
+        if (pulseEffect) pulseEffect.classList.add('hidden');
+        
+        // 2. Ждем секунду (чтобы юзер насладился зеленой линией) и переносим в историю
+        setTimeout(() => {
+            let history = JSON.parse(localStorage.getItem('completed_goals_data') || '[]');
+            history.push(goalData);
+            localStorage.setItem('completed_goals_data', JSON.stringify(history));
+            
+            localStorage.removeItem('my_goal_data');
+            document.getElementById('goal-text').value = '';
+            document.getElementById('goal-date').value = '';
+            window.renderGoal();
+        }, 1000);
     }
-};
-
-window.resetGoalSilent = function() {
-    localStorage.removeItem('my_goal_data');
-    document.getElementById('goal-text').value = '';
-    document.getElementById('goal-date').value = '';
-    window.renderGoal();
 };
 
 // Запуск при старте
