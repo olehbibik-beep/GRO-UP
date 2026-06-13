@@ -2503,6 +2503,17 @@ if (document.readyState === 'loading') {
 // ============================================
 // ВИДЖЕТ "МОИ ЦЕЛИ"
 // ============================================
+
+// Функция удаления цели из архива
+window.deleteCompletedGoal = function(index) {
+    let history = JSON.parse(localStorage.getItem('completed_goals_data') || '[]');
+    if (confirm("Удалить эту цель из истории?")) {
+        history.splice(index, 1);
+        localStorage.setItem('completed_goals_data', JSON.stringify(history));
+        window.renderGoal();
+    }
+};
+
 window.renderGoal = function() {
     const inputContainer = document.getElementById('goal-input-container');
     const progressContainer = document.getElementById('goal-progress-container');
@@ -2511,22 +2522,30 @@ window.renderGoal = function() {
     
     if (!inputContainer || !progressContainer) return;
 
-    // Отрисовка Истории
+    // 1. Отрисовка Истории (Золотые квадратики)
     const historyStr = localStorage.getItem('completed_goals_data');
     let historyHtml = '';
     if (historyStr) {
         const history = JSON.parse(historyStr);
-        history.slice().reverse().forEach(g => {
+        // Обратный цикл, чтобы новые были сверху. Используем реальный индекс для удаления
+        for (let i = history.length - 1; i >= 0; i--) {
+            const g = history[i];
             historyHtml += `
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex justify-between items-center grayscale opacity-60">
-                    <span class="font-black text-slate-700 text-sm line-through truncate pr-2">${g.text}</span>
-                    <div class="w-1/3 h-2 bg-emerald-400 rounded-full shadow-inner"></div>
+                <div class="bg-amber-50 border border-amber-200/80 rounded-xl p-3 flex justify-between items-start gap-3 shadow-sm relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 w-16 h-16 bg-amber-200/30 rounded-full blur-xl"></div>
+                    <span class="font-black text-amber-800 text-xs md:text-sm whitespace-normal leading-tight z-10 break-words flex-grow">${g.text}</span>
+                    
+                    <!-- Корзинка удаления -->
+                    <button onclick="window.deleteCompletedGoal(${i})" class="w-8 h-8 rounded-lg bg-amber-100/50 hover:bg-rose-100 text-amber-500 hover:text-rose-500 flex items-center justify-center shrink-0 transition-colors z-10 outline-none shadow-sm border border-transparent hover:border-rose-200">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
                 </div>
             `;
-        });
+        }
     }
     if (completedList) completedList.innerHTML = historyHtml;
 
+    // 2. Текущая цель
     const goalDataStr = localStorage.getItem('my_goal_data');
     if (!goalDataStr) {
         inputContainer.classList.remove('hidden'); inputContainer.classList.add('flex');
@@ -2565,15 +2584,17 @@ window.renderGoal = function() {
     
     const daysLabelEl = document.getElementById('goal-display-days');
     const progressBar = document.getElementById('goal-progress-bar');
-    const pulseEffect = document.getElementById('goal-pulse-effect');
+    const giftIcon = document.getElementById('goal-gift-icon');
 
     daysLabelEl.innerText = `ОСТ: ${daysLeft} дн.`;
     
     if (doneBtn) { doneBtn.classList.remove('hidden'); doneBtn.classList.add('flex'); }
-    if (pulseEffect) pulseEffect.classList.remove('hidden');
     
-    // Светло-синяя линия (сплошная)
-    progressBar.className = "h-full bg-sky-400 rounded-full transition-all duration-1000 relative flex justify-end z-20";
+    // Линия бирюзовая, тонкая
+    progressBar.className = "h-2 bg-[#2dd4bf] rounded-full transition-all duration-1000 relative flex justify-end z-20 shadow-sm";
+    
+    // Подарок в нормальном размере
+    if (giftIcon) giftIcon.classList.remove('scale-125');
 
     progressBar.style.width = '0%';
     setTimeout(() => { progressBar.style.width = `${progress}%`; }, 100);
@@ -2605,16 +2626,18 @@ window.finishGoalEarly = function() {
         const goalData = JSON.parse(goalDataStr);
         const progressBar = document.getElementById('goal-progress-bar');
         const doneBtn = document.getElementById('goal-done-btn');
-        const pulseEffect = document.getElementById('goal-pulse-effect');
+        const giftIcon = document.getElementById('goal-gift-icon');
         
-        // Линия зеленая и полная!
+        // Линия зеленая и на 100%
         if (progressBar) {
             progressBar.style.width = '100%';
-            progressBar.className = "h-full bg-emerald-400 rounded-full transition-all duration-700 relative flex justify-end z-20";
+            progressBar.className = "h-2 bg-emerald-400 rounded-full transition-all duration-700 relative flex justify-end z-20";
         }
         if (doneBtn) { doneBtn.classList.remove('flex'); doneBtn.classList.add('hidden'); }
-        if (pulseEffect) pulseEffect.classList.add('hidden');
         
+        // Подарок чуть прыгает
+        if (giftIcon) giftIcon.classList.add('scale-125');
+
         setTimeout(() => {
             let history = JSON.parse(localStorage.getItem('completed_goals_data') || '[]');
             history.push(goalData);
@@ -2624,10 +2647,11 @@ window.finishGoalEarly = function() {
             document.getElementById('goal-text').value = '';
             document.getElementById('goal-date').value = '';
             window.renderGoal();
-        }, 1000);
+        }, 1200);
     }
 };
 
+// Запуск при старте
 setTimeout(() => { if (window.renderGoal) window.renderGoal(); }, 500);
 
 
