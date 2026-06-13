@@ -2511,12 +2511,11 @@ window.renderGoal = function() {
     
     if (!inputContainer || !progressContainer) return;
 
-    // 1. Отрисовка Истории (Серые выполненные цели)
+    // Отрисовка Истории
     const historyStr = localStorage.getItem('completed_goals_data');
     let historyHtml = '';
     if (historyStr) {
         const history = JSON.parse(historyStr);
-        // Показываем от новых к старым
         history.slice().reverse().forEach(g => {
             historyHtml += `
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex justify-between items-center grayscale opacity-60">
@@ -2528,7 +2527,6 @@ window.renderGoal = function() {
     }
     if (completedList) completedList.innerHTML = historyHtml;
 
-    // 2. Отрисовка Текущей цели
     const goalDataStr = localStorage.getItem('my_goal_data');
     if (!goalDataStr) {
         inputContainer.classList.remove('hidden'); inputContainer.classList.add('flex');
@@ -2556,7 +2554,6 @@ window.renderGoal = function() {
     }
 
     if (progress >= 100) {
-        // Если время вышло, сразу переносим в историю
         window.finishGoalEarly();
         return;
     }
@@ -2575,8 +2572,8 @@ window.renderGoal = function() {
     if (doneBtn) { doneBtn.classList.remove('hidden'); doneBtn.classList.add('flex'); }
     if (pulseEffect) pulseEffect.classList.remove('hidden');
     
-    // Линия красная (розовая) пока идет
-    progressBar.className = "h-full bg-gradient-to-r from-rose-400 to-rose-500 rounded-full transition-all duration-1000 relative overflow-hidden flex justify-end z-10";
+    // Светло-синяя линия (сплошная)
+    progressBar.className = "h-full bg-sky-400 rounded-full transition-all duration-1000 relative flex justify-end z-20";
 
     progressBar.style.width = '0%';
     setTimeout(() => { progressBar.style.width = `${progress}%`; }, 100);
@@ -2610,15 +2607,14 @@ window.finishGoalEarly = function() {
         const doneBtn = document.getElementById('goal-done-btn');
         const pulseEffect = document.getElementById('goal-pulse-effect');
         
-        // 1. Делаем линию зеленой и заполняем до 100%
+        // Линия зеленая и полная!
         if (progressBar) {
             progressBar.style.width = '100%';
-            progressBar.className = "h-full bg-emerald-400 rounded-full transition-all duration-700 relative overflow-hidden flex justify-end z-10";
+            progressBar.className = "h-full bg-emerald-400 rounded-full transition-all duration-700 relative flex justify-end z-20";
         }
         if (doneBtn) { doneBtn.classList.remove('flex'); doneBtn.classList.add('hidden'); }
         if (pulseEffect) pulseEffect.classList.add('hidden');
         
-        // 2. Ждем секунду (чтобы юзер насладился зеленой линией) и переносим в историю
         setTimeout(() => {
             let history = JSON.parse(localStorage.getItem('completed_goals_data') || '[]');
             history.push(goalData);
@@ -2632,7 +2628,6 @@ window.finishGoalEarly = function() {
     }
 };
 
-// Запуск при старте
 setTimeout(() => { if (window.renderGoal) window.renderGoal(); }, 500);
 
 
