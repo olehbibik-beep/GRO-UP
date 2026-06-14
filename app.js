@@ -2655,6 +2655,33 @@ window.finishGoalEarly = function() {
 setTimeout(() => { if (window.renderGoal) window.renderGoal(); }, 500);
 
 
+// ============================================
+// КАСТОМНЫЙ ОФЛАЙН РЕЖИМ (ПЕРЕХВАТЧИК ИНТЕРНЕТА)
+// ============================================
+const initOfflineScreen = () => {
+    const offlineScreen = document.getElementById('offline-screen');
+    const updateOnlineStatus = () => {
+        if (!offlineScreen) return;
+        if (navigator.onLine) {
+            offlineScreen.classList.replace('flex', 'hidden');
+        } else {
+            offlineScreen.classList.replace('hidden', 'flex');
+        }
+    };
+    
+    // Слушаем события включения/выключения интернета
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    
+    // Проверяем статус сразу при загрузке
+    updateOnlineStatus();
+};
+
+if (document.readyState === 'loading') { 
+    document.addEventListener('DOMContentLoaded', initOfflineScreen); 
+} else { 
+    initOfflineScreen(); 
+}
 
 window.openInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('hidden', 'flex');
 window.closeInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('flex', 'hidden');
