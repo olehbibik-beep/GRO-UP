@@ -2504,7 +2504,6 @@ if (document.readyState === 'loading') {
 // ВИДЖЕТ "МОИ ЦЕЛИ"
 // ============================================
 
-// Функция удаления цели из архива
 window.deleteCompletedGoal = function(index) {
     let history = JSON.parse(localStorage.getItem('completed_goals_data') || '[]');
     if (confirm("Удалить эту цель из истории?")) {
@@ -2522,20 +2521,17 @@ window.renderGoal = function() {
     
     if (!inputContainer || !progressContainer) return;
 
-    // 1. Отрисовка Истории (Золотые квадратики)
+    // 1. Отрисовка Истории (Золотые квадраты)
     const historyStr = localStorage.getItem('completed_goals_data');
     let historyHtml = '';
     if (historyStr) {
         const history = JSON.parse(historyStr);
-        // Обратный цикл, чтобы новые были сверху. Используем реальный индекс для удаления
         for (let i = history.length - 1; i >= 0; i--) {
             const g = history[i];
             historyHtml += `
                 <div class="bg-amber-50 border border-amber-200/80 rounded-xl p-3 flex justify-between items-start gap-3 shadow-sm relative overflow-hidden">
                     <div class="absolute -right-4 -top-4 w-16 h-16 bg-amber-200/30 rounded-full blur-xl"></div>
                     <span class="font-black text-amber-800 text-xs md:text-sm whitespace-normal leading-tight z-10 break-words flex-grow">${g.text}</span>
-                    
-                    <!-- Корзинка удаления -->
                     <button onclick="window.deleteCompletedGoal(${i})" class="w-8 h-8 rounded-lg bg-amber-100/50 hover:bg-rose-100 text-amber-500 hover:text-rose-500 flex items-center justify-center shrink-0 transition-colors z-10 outline-none shadow-sm border border-transparent hover:border-rose-200">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
@@ -2582,22 +2578,35 @@ window.renderGoal = function() {
 
     document.getElementById('goal-display-text').innerText = goalData.text;
     
-    const daysLabelEl = document.getElementById('goal-display-days');
-    const progressBar = document.getElementById('goal-progress-bar');
+    // Элементы нового кругового бара
+    const daysNum = document.getElementById('goal-display-days-num');
+    const daysText = document.getElementById('goal-display-days-text');
+    const circle = document.getElementById('goal-circle-progress');
+    const knob = document.getElementById('goal-knob-container');
     const giftIcon = document.getElementById('goal-gift-icon');
 
-    daysLabelEl.innerText = `ОСТ: ${daysLeft} дн.`;
-    
     if (doneBtn) { doneBtn.classList.remove('hidden'); doneBtn.classList.add('flex'); }
-    
-    // Линия бирюзовая, тонкая
-    progressBar.className = "h-2 bg-[#2dd4bf] rounded-full transition-all duration-1000 relative flex justify-end z-20 shadow-sm";
-    
-    // Подарок в нормальном размере
     if (giftIcon) giftIcon.classList.remove('scale-125');
-
-    progressBar.style.width = '0%';
-    setTimeout(() => { progressBar.style.width = `${progress}%`; }, 100);
+    
+    // Устанавливаем дни
+    daysNum.innerText = daysLeft;
+    daysNum.className = "text-4xl font-black text-slate-800 leading-none tracking-tighter mt-1";
+    daysText.innerText = "дней";
+    daysText.className = "text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1";
+    
+    // Математика SVG круга (длина окружности 2*PI*38 = 238.76)
+    const circumference = 238.76;
+    const offset = circumference - (progress / 100) * circumference;
+    
+    // Сбрасываем в 0, а потом анимируем до нужного значения
+    circle.style.strokeDashoffset = circumference;
+    knob.style.transform = `rotate(0deg)`;
+    
+    setTimeout(() => {
+        circle.style.stroke = '#2dd4bf'; // Бирюзовый цвет (Teal 400)
+        circle.style.strokeDashoffset = offset;
+        knob.style.transform = `rotate(${(progress / 100) * 360}deg)`;
+    }, 100);
 };
 
 window.startGoal = function() {
@@ -2624,18 +2633,31 @@ window.finishGoalEarly = function() {
     const goalDataStr = localStorage.getItem('my_goal_data');
     if (goalDataStr) {
         const goalData = JSON.parse(goalDataStr);
-        const progressBar = document.getElementById('goal-progress-bar');
+        
+        const daysNum = document.getElementById('goal-display-days-num');
+        const daysText = document.getElementById('goal-display-days-text');
+        const circle = document.getElementById('goal-circle-progress');
+        const knob = document.getElementById('goal-knob-container');
         const doneBtn = document.getElementById('goal-done-btn');
         const giftIcon = document.getElementById('goal-gift-icon');
         
-        // Линия зеленая и на 100%
-        if (progressBar) {
-            progressBar.style.width = '100%';
-            progressBar.className = "h-2 bg-emerald-400 rounded-full transition-all duration-700 relative flex justify-end z-20";
+        // Меняем центр
+        if (daysNum) {
+            daysNum.innerText = "УРА";
+            daysNum.className = "text-2xl font-black text-emerald-500 leading-none tracking-tighter mt-1";
         }
+        if (daysText) {
+            daysText.innerText = "СДЕЛАНО";
+            daysText.className = "text-[9px] font-bold text-emerald-500 uppercase tracking-widest mt-1";
+        }
+
+        // Замыкаем круг в зеленый
+        if (circle) {
+            circle.style.strokeDashoffset = '0';
+            circle.style.stroke = '#10b981'; // Изумрудный цвет
+        }
+        if (knob) knob.style.transform = 'rotate(360deg)';
         if (doneBtn) { doneBtn.classList.remove('flex'); doneBtn.classList.add('hidden'); }
-        
-        // Подарок чуть прыгает
         if (giftIcon) giftIcon.classList.add('scale-125');
 
         setTimeout(() => {
