@@ -527,36 +527,42 @@ window.switchTab = (tabId, btnElement) => {
     const targetTab = document.getElementById(`tab-${tabId}`);
     if(targetTab) targetTab.classList.add('active');
     
-    // 2. Сбрасываем стили ВСЕХ боковых кнопок (убираем полоску, делаем иконки серыми)
+    // 2. Сбрасываем стили ВСЕХ боковых кнопок
     document.querySelectorAll('.nav-btn').forEach(btn => {
         const indicator = btn.querySelector('.active-indicator');
         const icon = btn.querySelector('.nav-icon');
+        
+        // Прячем бирюзовую полоску
         if (indicator) { 
-            indicator.classList.remove('opacity-100', 'scale-x-100', 'md:scale-y-100'); 
-            indicator.classList.add('opacity-0', 'scale-x-50', 'md:scale-y-50'); 
+            indicator.classList.remove('opacity-100'); 
+            indicator.classList.add('opacity-0'); 
         }
+        // Делаем иконку серой
         if (icon) { 
             icon.classList.remove('text-white'); 
             icon.classList.add('text-slate-500'); 
         }
     });
     
-    // 3. Зажигаем выбранную боковую кнопку (если это не центральный Домик)
+    // 3. Зажигаем выбранную боковую кнопку
     if (!btnElement) btnElement = document.querySelector(`nav button[onclick*="'${tabId}'"]`);
     if (btnElement && btnElement.classList.contains('nav-btn')) {
         const indicator = btnElement.querySelector('.active-indicator');
         const icon = btnElement.querySelector('.nav-icon');
+        
+        // Показываем неоновую полоску
         if (indicator) { 
-            indicator.classList.remove('opacity-0', 'scale-x-50', 'md:scale-y-50'); 
-            indicator.classList.add('opacity-100', 'scale-x-100', 'md:scale-y-100'); 
+            indicator.classList.remove('opacity-0'); 
+            indicator.classList.add('opacity-100'); 
         }
+        // Делаем иконку белой
         if (icon) { 
             icon.classList.remove('text-slate-500'); 
             icon.classList.add('text-white'); 
         }
     }
 
-    // 4. Специальный скролл для заданий
+    // 4. Скролл для заданий
     if (tabId === 'tasks') {
         setTimeout(() => {
             if (window.scrollToCurrentWeek) window.scrollToCurrentWeek();
