@@ -83,16 +83,7 @@
                 event.preventDefault();
             }
         }, { passive: false });
-        
-        // Блокировка зума по двойному быстрому тапу
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', function (event) {
-            const now = (new Date()).getTime();
-            if (now - lastTouchEnd <= 300) {
-                event.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, { passive: false });
+        // ... (и остальная часть старого скрипта)
     </script>
 </head>
 <body class="bg-ui-bg h-[100dvh] font-sans text-slate-800 overflow-hidden flex flex-col md:flex-row w-full">
