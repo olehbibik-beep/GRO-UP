@@ -521,20 +521,25 @@ window.scrollToCurrentWeek = () => {
     }
 };
 
-window.switchTab = (tabId, btnElement) => {
-    // 1. Переключаем вкладки
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+window.switchTab = function(tabId, btnElement) {
+    // 1. Скрываем все вкладки, показываем выбранную
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+        tab.style.display = 'none'; // Прячем надежно
+    });
     const targetTab = document.getElementById(`tab-${tabId}`);
-    if (targetTab) targetTab.classList.add('active');
+    if (targetTab) {
+        targetTab.classList.add('active');
+        targetTab.style.display = ''; // Показываем
+    }
     
-    // 2. Сбрасываем все иконки (делаем серыми) и прячем полоски
+    // 2. ГАСИМ ВСЕ КНОПКИ (Делаем иконки серыми, прячем линии)
     document.querySelectorAll('.nav-btn').forEach(btn => {
         const indicator = btn.querySelector('.active-indicator');
         const icon = btn.querySelector('.nav-icon');
         
         if (indicator) {
-            indicator.classList.remove('opacity-100');
-            indicator.classList.add('opacity-0');
+            indicator.style.opacity = '0'; // Жестко прячем линию
         }
         if (icon) {
             icon.classList.remove('text-white');
@@ -542,20 +547,19 @@ window.switchTab = (tabId, btnElement) => {
         }
     });
     
-    // 3. Ищем нужную кнопку, если она не передана
-    if (!btnElement) {
-        btnElement = document.querySelector(`nav button[onclick="switchTab('${tabId}', this)"]`) || 
-                     document.querySelector(`nav button[onclick="window.switchTab('${tabId}', this)"]`);
+    // 3. ИЩЕМ АКТИВНУЮ КНОПКУ (Даже если она вызвана при загрузке страницы)
+    let activeBtn = btnElement;
+    if (!activeBtn) {
+        activeBtn = document.querySelector(`nav button[onclick*="${tabId}"]`);
     }
     
-    // 4. Зажигаем нужную кнопку
-    if (btnElement && btnElement.classList.contains('nav-btn')) {
-        const indicator = btnElement.querySelector('.active-indicator');
-        const icon = btnElement.querySelector('.nav-icon');
+    // 4. ЗАЖИГАЕМ АКТИВНУЮ КНОПКУ (Линия появляется, иконка белеет)
+    if (activeBtn) {
+        const indicator = activeBtn.querySelector('.active-indicator');
+        const icon = activeBtn.querySelector('.nav-icon');
         
         if (indicator) {
-            indicator.classList.remove('opacity-0');
-            indicator.classList.add('opacity-100');
+            indicator.style.opacity = '1'; // Жестко показываем линию
         }
         if (icon) {
             icon.classList.remove('text-slate-500');
@@ -563,6 +567,7 @@ window.switchTab = (tabId, btnElement) => {
         }
     }
 
+    // 5. Скролл для заданий
     if (tabId === 'tasks') {
         setTimeout(() => {
             if (window.scrollToCurrentWeek) window.scrollToCurrentWeek();
