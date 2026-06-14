@@ -527,16 +527,14 @@ window.switchTab = (tabId, btnElement) => {
     const targetTab = document.getElementById(`tab-${tabId}`);
     if(targetTab) targetTab.classList.add('active');
     
-    // 2. Сбрасываем стили ВСЕХ боковых кнопок (убираем полоску, делаем серыми)
+    // 2. Сбрасываем стили ВСЕХ боковых кнопок (убираем полоску, делаем иконки серыми)
     document.querySelectorAll('.nav-btn').forEach(btn => {
         const indicator = btn.querySelector('.active-indicator');
         const icon = btn.querySelector('.nav-icon');
-        // Прячем полоску
         if (indicator) { 
-            indicator.classList.remove('opacity-100', 'scale-100'); 
-            indicator.classList.add('opacity-0', 'scale-50'); 
+            indicator.classList.remove('opacity-100', 'scale-x-100', 'md:scale-y-100'); 
+            indicator.classList.add('opacity-0', 'scale-x-50', 'md:scale-y-50'); 
         }
-        // Делаем иконку серой
         if (icon) { 
             icon.classList.remove('text-white'); 
             icon.classList.add('text-slate-500'); 
@@ -548,12 +546,10 @@ window.switchTab = (tabId, btnElement) => {
     if (btnElement && btnElement.classList.contains('nav-btn')) {
         const indicator = btnElement.querySelector('.active-indicator');
         const icon = btnElement.querySelector('.nav-icon');
-        // Показываем неоновую полоску
         if (indicator) { 
-            indicator.classList.remove('opacity-0', 'scale-50'); 
-            indicator.classList.add('opacity-100', 'scale-100'); 
+            indicator.classList.remove('opacity-0', 'scale-x-50', 'md:scale-y-50'); 
+            indicator.classList.add('opacity-100', 'scale-x-100', 'md:scale-y-100'); 
         }
-        // Делаем иконку ярко-белой
         if (icon) { 
             icon.classList.remove('text-slate-500'); 
             icon.classList.add('text-white'); 
