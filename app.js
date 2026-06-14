@@ -2521,7 +2521,7 @@ window.renderGoal = function() {
     
     if (!inputContainer || !progressContainer) return;
 
-    // 1. Отрисовка Истории (Золотые квадраты)
+    // 1. Отрисовка Истории
     const historyStr = localStorage.getItem('completed_goals_data');
     let historyHtml = '';
     if (historyStr) {
@@ -2546,7 +2546,6 @@ window.renderGoal = function() {
     if (!goalDataStr) {
         inputContainer.classList.remove('hidden'); inputContainer.classList.add('flex');
         progressContainer.classList.add('hidden'); progressContainer.classList.remove('flex');
-        if (doneBtn) { doneBtn.classList.remove('flex'); doneBtn.classList.add('hidden'); }
         return;
     }
 
@@ -2578,32 +2577,30 @@ window.renderGoal = function() {
 
     document.getElementById('goal-display-text').innerText = goalData.text;
     
-    // Элементы нового кругового бара
     const daysNum = document.getElementById('goal-display-days-num');
     const daysText = document.getElementById('goal-display-days-text');
     const circle = document.getElementById('goal-circle-progress');
     const knob = document.getElementById('goal-knob-container');
-    const giftIcon = document.getElementById('goal-gift-icon');
 
-    if (doneBtn) { doneBtn.classList.remove('hidden'); doneBtn.classList.add('flex'); }
-    if (giftIcon) giftIcon.classList.remove('scale-125');
+    // Сброс стилей кнопки Готово при рендере
+    if (doneBtn) { 
+        doneBtn.disabled = false;
+        doneBtn.className = "w-16 shrink-0 bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-xl flex flex-col items-center justify-center transition-colors shadow-sm outline-none group";
+    }
     
-    // Устанавливаем дни
     daysNum.innerText = daysLeft;
-    daysNum.className = "text-4xl font-black text-slate-800 leading-none tracking-tighter mt-1";
+    daysNum.className = "text-3xl font-black text-slate-800 leading-none tracking-tighter mt-1";
     daysText.innerText = "дней";
-    daysText.className = "text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1";
+    daysText.className = "text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5";
     
-    // Математика SVG круга (длина окружности 2*PI*38 = 238.76)
     const circumference = 238.76;
     const offset = circumference - (progress / 100) * circumference;
     
-    // Сбрасываем в 0, а потом анимируем до нужного значения
     circle.style.strokeDashoffset = circumference;
     knob.style.transform = `rotate(0deg)`;
     
     setTimeout(() => {
-        circle.style.stroke = '#2dd4bf'; // Бирюзовый цвет (Teal 400)
+        circle.style.stroke = '#2dd4bf';
         circle.style.strokeDashoffset = offset;
         knob.style.transform = `rotate(${(progress / 100) * 360}deg)`;
     }, 100);
@@ -2639,26 +2636,27 @@ window.finishGoalEarly = function() {
         const circle = document.getElementById('goal-circle-progress');
         const knob = document.getElementById('goal-knob-container');
         const doneBtn = document.getElementById('goal-done-btn');
-        const giftIcon = document.getElementById('goal-gift-icon');
         
-        // Меняем центр
         if (daysNum) {
             daysNum.innerText = "УРА";
-            daysNum.className = "text-2xl font-black text-emerald-500 leading-none tracking-tighter mt-1";
+            daysNum.className = "text-xl font-black text-emerald-500 leading-none tracking-tighter mt-1";
         }
         if (daysText) {
             daysText.innerText = "СДЕЛАНО";
-            daysText.className = "text-[9px] font-bold text-emerald-500 uppercase tracking-widest mt-1";
+            daysText.className = "text-[8px] font-bold text-emerald-500 uppercase tracking-widest mt-1";
         }
 
-        // Замыкаем круг в зеленый
         if (circle) {
             circle.style.strokeDashoffset = '0';
-            circle.style.stroke = '#10b981'; // Изумрудный цвет
+            circle.style.stroke = '#10b981';
         }
         if (knob) knob.style.transform = 'rotate(360deg)';
-        if (doneBtn) { doneBtn.classList.remove('flex'); doneBtn.classList.add('hidden'); }
-        if (giftIcon) giftIcon.classList.add('scale-125');
+        
+        // Красиво закрашиваем кнопку Готово, чтобы она не прыгала
+        if (doneBtn) { 
+            doneBtn.className = "w-16 shrink-0 bg-emerald-500 text-white border border-emerald-500 rounded-xl flex flex-col items-center justify-center transition-colors shadow-sm outline-none group";
+            doneBtn.disabled = true;
+        }
 
         setTimeout(() => {
             let history = JSON.parse(localStorage.getItem('completed_goals_data') || '[]');
@@ -2673,7 +2671,6 @@ window.finishGoalEarly = function() {
     }
 };
 
-// Запуск при старте
 setTimeout(() => { if (window.renderGoal) window.renderGoal(); }, 500);
 
 
