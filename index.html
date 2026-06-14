@@ -299,22 +299,6 @@
         </div>
 
 <div id="tab-info" class="tab-content pt-4 md:pt-0 px-4 md:px-0 h-full">
-            <style>
-                /* Медленно бегущие серые точки в пустой части таймлайна */
-                @keyframes slowDots {
-                    from { background-position-x: 0px; }
-                    to { background-position-x: 24px; }
-                }
-                .empty-track {
-                    background-color: #f1f5f9; /* Светло-серый фон */
-                    background-image: radial-gradient(circle, #94a3b8 2.5px, transparent 3px);
-                    background-size: 24px 10px; /* Размер шага точек */
-                    background-position-y: center;
-                    background-repeat: repeat-x;
-                    animation: slowDots 4s linear infinite; /* Очень медленно плывут */
-                }
-            </style>
-
             <div class="w-full max-w-6xl mx-auto px-0 md:pl-8 md:pr-6 flex flex-col min-h-[calc(100dvh-120px)] md:min-h-[calc(100dvh-40px)]">
 
                 <!-- ВИДЖЕТ: МОИ ЦЕЛИ -->
@@ -325,7 +309,7 @@
                             <svg class="w-5 h-5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                             Мои цели
                         </h3>
-                        <!-- Кнопка Готово (Только галочка, зеленая) -->
+                        <!-- Кнопка Готово (Галочка) -->
                         <button id="goal-done-btn" onclick="window.finishGoalEarly()" class="hidden bg-emerald-500 hover:bg-emerald-600 text-white font-black p-2 rounded-lg transition-colors outline-none shadow-sm items-center justify-center">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                         </button>
@@ -339,28 +323,46 @@
                         </div>
                     </div>
                     
-                    <div id="goal-progress-container" class="hidden flex-col mt-2">
-                        <div class="flex justify-between items-end mb-1">
-                            <span id="goal-display-text" class="font-black text-slate-700 text-sm truncate pr-2">Цель</span>
-                            <span id="goal-display-days" class="text-xs md:text-sm font-black text-slate-400 uppercase tracking-widest shrink-0">Ост: ? дн.</span>
-                        </div>
+                    <div id="goal-progress-container" class="hidden flex-col mt-4 items-center">
                         
-                        <!-- НОВАЯ СТРОКА: ПТИЧКА -> ТАЙМЛАЙН -> ПОДАРОК -->
-                        <div class="flex items-center gap-3 w-full my-2">
-                            
-                            <!-- Птичка (Слева) -->
-                            <img src="SEKR.png" onerror="this.style.display='none';" alt="Секрет" class="w-10 h-10 object-contain drop-shadow-sm shrink-0 transition-transform hover:scale-105">
-                            
-                            <!-- Линия (Контейнер толще, внутри тонкая бирюзовая линия) -->
-                            <div class="flex-grow h-4 border border-slate-200 shadow-inner flex items-center px-[2px] rounded-full empty-track overflow-hidden">
-                                <!-- Сама прогресс линия (тонкая) -->
-                                <div id="goal-progress-bar" class="h-2 bg-[#2dd4bf] rounded-full transition-all duration-1000 relative flex justify-end z-20 shadow-sm" style="width: 0%;">
-                                    <!-- Маленький бегунок в конце бирюзовой линии -->
-                                    <div class="w-1 h-full bg-teal-600 rounded-full opacity-80 -mr-0.5"></div>
-                                </div>
+                        <!-- НОВЫЙ КРУГОВОЙ ИНДИКАТОР В СТИЛЕ НЕОМОРФИЗМ -->
+                        <div class="relative w-44 h-44 flex items-center justify-center bg-slate-100 rounded-full shadow-[inset_6px_6px_12px_#cbd5e1,inset_-6px_-6px_12px_#ffffff]">
+
+                            <!-- Декоративные точки (как на референсе) -->
+                            <svg class="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+                                <circle cx="50" cy="14" r="1" fill="#94a3b8" opacity="0.6" />
+                                <circle cx="86" cy="50" r="1" fill="#94a3b8" opacity="0.6" />
+                                <circle cx="50" cy="86" r="1" fill="#94a3b8" opacity="0.6" />
+                                <circle cx="14" cy="50" r="1" fill="#94a3b8" opacity="0.6" />
+                                <circle cx="24.5" cy="24.5" r="1" fill="#94a3b8" opacity="0.6" />
+                                <circle cx="75.5" cy="24.5" r="1" fill="#94a3b8" opacity="0.6" />
+                                <circle cx="24.5" cy="75.5" r="1" fill="#94a3b8" opacity="0.6" />
+                                <circle cx="75.5" cy="75.5" r="1" fill="#94a3b8" opacity="0.6" />
+                            </svg>
+
+                            <!-- SVG Кольцо прогресса со свечением -->
+                            <svg class="absolute inset-0 w-full h-full transform -rotate-90 drop-shadow-[0_0_8px_rgba(45,212,191,0.6)]" viewBox="0 0 100 100">
+                                <circle id="goal-circle-progress" cx="50" cy="50" r="38" fill="none" stroke="#2dd4bf" stroke-width="12" stroke-linecap="round"
+                                        stroke-dasharray="238.76" stroke-dashoffset="238.76"
+                                        class="transition-all duration-1000 ease-out"></circle>
+                            </svg>
+
+                            <!-- Ползунок (Объемная белая кнопка на конце) -->
+                            <div id="goal-knob-container" class="absolute inset-0 transition-all duration-1000 ease-out" style="transform: rotate(0deg);">
+                                <div class="absolute top-[6px] left-1/2 -translate-x-1/2 w-6 h-6 bg-slate-50 rounded-full shadow-[0_2px_5px_rgba(0,0,0,0.3),inset_1px_1px_2px_#ffffff]"></div>
                             </div>
-                            
-                            <!-- Подарок (Справа) -->
+
+                            <!-- Центральная панель с днями -->
+                            <div class="absolute flex flex-col items-center justify-center bg-slate-100 rounded-full w-[100px] h-[100px] shadow-[5px_5px_10px_#cbd5e1,-5px_-5px_10px_#ffffff] z-10">
+                                <span id="goal-display-days-num" class="text-4xl font-black text-slate-800 leading-none tracking-tighter mt-1">0</span>
+                                <span id="goal-display-days-text" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">дней</span>
+                            </div>
+                        </div>
+
+                        <!-- Информационная панель внизу (Птичка -> Название -> Подарок) -->
+                        <div class="flex items-center justify-between w-full mt-8 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl shadow-sm">
+                            <img src="SEKR.png" onerror="this.style.display='none';" alt="Секрет" class="w-10 h-10 object-contain drop-shadow-sm shrink-0 transition-transform hover:scale-105">
+                            <span id="goal-display-text" class="font-black text-slate-700 text-sm md:text-base truncate px-4 text-center">Цель</span>
                             <div id="goal-gift-icon" class="w-10 h-10 shrink-0 transition-transform duration-700 flex items-center justify-center">
                                 <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full drop-shadow-md">
                                     <path d="M12 28h40v26a4 4 0 01-4 4H16a4 4 0 01-4-4V28z" fill="#F43F5E"/>
@@ -369,8 +371,8 @@
                                     <path d="M32 20c-6-8-14-4-14 0 0 4 14 0 14 0zm0 0c6-8 14-4 14 0 0 4-14 0-14 0z" fill="#FEF08A" stroke="#FDE047" stroke-width="2"/>
                                 </svg>
                             </div>
-
                         </div>
+
                     </div>
 
                     <!-- Контейнер для выполненных (золотых) целей -->
@@ -391,7 +393,7 @@
                 <div class="mt-auto pt-10 pb-2 flex flex-col items-center justify-center opacity-60">
                     <img src="icon-512.png" alt="GRO-UP" class="w-6 h-6 mb-2 grayscale opacity-70">
                     <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest">GRO-UP App</p>
-                    <p class="text-[8px] font-bold text-slate-400 tracking-widest mt-0.5">Версия 1.4.000</p> 
+                    <p class="text-[8px] font-bold text-slate-400 tracking-widest mt-0.5">Версия 2.0.0</p> 
                 </div>
             </div>
         </div>
