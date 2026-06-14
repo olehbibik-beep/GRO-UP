@@ -2521,7 +2521,7 @@ window.renderGoal = function() {
     
     if (!inputContainer || !progressContainer) return;
 
-    // 1. Отрисовка Истории (Без рамок, серый текст, золотой фон)
+    // 1. Отрисовка Истории
     const historyStr = localStorage.getItem('completed_goals_data');
     let historyHtml = '';
     if (historyStr) {
@@ -2568,14 +2568,14 @@ window.renderGoal = function() {
     }
 
     if (progress >= 100) {
-        window.finishGoalEarly();
+        // Вызываем функцию БЕЗ подтверждения, так как время вышло само
+        window.finishGoalEarly(false);
         return;
     }
 
     if (progress < 0) progress = 0;
     if (daysLeft < 0) daysLeft = 0;
 
-    // Устанавливаем текст цели и форматированную дату слева
     document.getElementById('goal-display-text').innerText = goalData.text;
     const dateObj = new Date(goalData.targetDate);
     document.getElementById('goal-display-date').innerText = ("0" + dateObj.getDate()).slice(-2) + "." + ("0" + (dateObj.getMonth() + 1)).slice(-2) + "." + dateObj.getFullYear();
@@ -2587,10 +2587,9 @@ window.renderGoal = function() {
 
     if (doneBtn) { 
         doneBtn.disabled = false;
-        doneBtn.className = "w-12 md:w-16 h-24 md:h-32 shrink-0 bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-xl flex flex-col items-center justify-center transition-colors shadow-sm outline-none group";
+        doneBtn.className = "w-12 md:w-16 h-24 md:h-32 shrink-0 bg-slate-100 text-emerald-500 hover:bg-slate-200 rounded-xl flex flex-col items-center justify-center transition-colors outline-none group";
     }
     
-    // Математика дней (Месяцы / Дни)
     let displayDaysStr = daysLeft.toString();
     if (daysLeft > 30) {
         const m = Math.floor(daysLeft / 30);
@@ -2610,7 +2609,7 @@ window.renderGoal = function() {
     knob.style.transform = `rotate(0deg)`;
     
     setTimeout(() => {
-        circle.style.stroke = '#2dd4bf'; // Бирюзовый
+        circle.style.stroke = '#2dd4bf'; 
         circle.style.strokeDashoffset = offset;
         knob.style.transform = `rotate(${(progress / 100) * 360}deg)`;
     }, 100);
@@ -2636,7 +2635,12 @@ window.startGoal = function() {
     window.renderGoal();
 };
 
-window.finishGoalEarly = function() {
+// Добавили параметр isManual (по умолчанию false)
+window.finishGoalEarly = function(isManual = false) {
+    if (isManual) {
+        if (!confirm("Вы выполнили цель?")) return;
+    }
+
     const goalDataStr = localStorage.getItem('my_goal_data');
     if (goalDataStr) {
         const goalData = JSON.parse(goalDataStr);
@@ -2647,7 +2651,6 @@ window.finishGoalEarly = function() {
         const knob = document.getElementById('goal-knob-container');
         const doneBtn = document.getElementById('goal-done-btn');
         
-        // Вставляем красивую зеленую галочку внутрь круга вместо текста!
         if (daysNum) {
             daysNum.innerHTML = `<svg class="w-8 h-8 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
             daysNum.className = "mt-1";
@@ -2656,12 +2659,13 @@ window.finishGoalEarly = function() {
 
         if (circle) {
             circle.style.strokeDashoffset = '0';
-            circle.style.stroke = '#10b981'; // Изумрудный
+            circle.style.stroke = '#10b981';
         }
         if (knob) knob.style.transform = 'rotate(360deg)';
         
         if (doneBtn) { 
-            doneBtn.className = "w-12 md:w-16 h-24 md:h-32 shrink-0 bg-emerald-500 text-white border border-emerald-500 rounded-xl flex flex-col items-center justify-center transition-colors shadow-sm outline-none group";
+            // При нажатии кнопка становится полупрозрачной
+            doneBtn.className = "w-12 md:w-16 h-24 md:h-32 shrink-0 bg-slate-100 text-emerald-500 rounded-xl flex flex-col items-center justify-center transition-colors outline-none group opacity-50";
             doneBtn.disabled = true;
         }
 
