@@ -531,8 +531,16 @@ window.switchTab = (tabId, btnElement) => {
     document.querySelectorAll('.nav-btn').forEach(btn => {
         const indicator = btn.querySelector('.active-indicator');
         const icon = btn.querySelector('.nav-icon');
-        if (indicator) { indicator.classList.remove('scale-x-100'); indicator.classList.add('scale-x-0'); }
-        if (icon) { icon.classList.remove('text-white'); icon.classList.add('text-slate-500'); }
+        // Прячем полоску
+        if (indicator) { 
+            indicator.classList.remove('opacity-100', 'scale-100'); 
+            indicator.classList.add('opacity-0', 'scale-50'); 
+        }
+        // Делаем иконку серой
+        if (icon) { 
+            icon.classList.remove('text-white'); 
+            icon.classList.add('text-slate-500'); 
+        }
     });
     
     // 3. Зажигаем выбранную боковую кнопку (если это не центральный Домик)
@@ -540,8 +548,16 @@ window.switchTab = (tabId, btnElement) => {
     if (btnElement && btnElement.classList.contains('nav-btn')) {
         const indicator = btnElement.querySelector('.active-indicator');
         const icon = btnElement.querySelector('.nav-icon');
-        if (indicator) { indicator.classList.remove('scale-x-0'); indicator.classList.add('scale-x-100'); }
-        if (icon) { icon.classList.remove('text-slate-500'); icon.classList.add('text-white'); }
+        // Показываем неоновую полоску
+        if (indicator) { 
+            indicator.classList.remove('opacity-0', 'scale-50'); 
+            indicator.classList.add('opacity-100', 'scale-100'); 
+        }
+        // Делаем иконку ярко-белой
+        if (icon) { 
+            icon.classList.remove('text-slate-500'); 
+            icon.classList.add('text-white'); 
+        }
     }
 
     // 4. Специальный скролл для заданий
