@@ -522,47 +522,47 @@ window.scrollToCurrentWeek = () => {
 };
 
 window.switchTab = (tabId, btnElement) => {
-    // 1. Скрываем все вкладки, показываем выбранную
+    // 1. Переключаем вкладки
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tabId}`);
-    if(targetTab) targetTab.classList.add('active');
+    if (targetTab) targetTab.classList.add('active');
     
-    // 2. Сбрасываем стили ВСЕХ боковых кнопок
+    // 2. Сбрасываем все иконки (делаем серыми) и прячем полоски
     document.querySelectorAll('.nav-btn').forEach(btn => {
         const indicator = btn.querySelector('.active-indicator');
         const icon = btn.querySelector('.nav-icon');
         
-        // Прячем бирюзовую полоску
-        if (indicator) { 
-            indicator.classList.remove('opacity-100'); 
-            indicator.classList.add('opacity-0'); 
+        if (indicator) {
+            indicator.classList.remove('opacity-100');
+            indicator.classList.add('opacity-0');
         }
-        // Делаем иконку серой
-        if (icon) { 
-            icon.classList.remove('text-white'); 
-            icon.classList.add('text-slate-500'); 
+        if (icon) {
+            icon.classList.remove('text-white');
+            icon.classList.add('text-slate-500');
         }
     });
     
-    // 3. Зажигаем выбранную боковую кнопку
-    if (!btnElement) btnElement = document.querySelector(`nav button[onclick*="'${tabId}'"]`);
+    // 3. Ищем нужную кнопку, если она не передана
+    if (!btnElement) {
+        btnElement = document.querySelector(`nav button[onclick="switchTab('${tabId}', this)"]`) || 
+                     document.querySelector(`nav button[onclick="window.switchTab('${tabId}', this)"]`);
+    }
+    
+    // 4. Зажигаем нужную кнопку
     if (btnElement && btnElement.classList.contains('nav-btn')) {
         const indicator = btnElement.querySelector('.active-indicator');
         const icon = btnElement.querySelector('.nav-icon');
         
-        // Показываем неоновую полоску
-        if (indicator) { 
-            indicator.classList.remove('opacity-0'); 
-            indicator.classList.add('opacity-100'); 
+        if (indicator) {
+            indicator.classList.remove('opacity-0');
+            indicator.classList.add('opacity-100');
         }
-        // Делаем иконку белой
-        if (icon) { 
-            icon.classList.remove('text-slate-500'); 
-            icon.classList.add('text-white'); 
+        if (icon) {
+            icon.classList.remove('text-slate-500');
+            icon.classList.add('text-white');
         }
     }
 
-    // 4. Скролл для заданий
     if (tabId === 'tasks') {
         setTimeout(() => {
             if (window.scrollToCurrentWeek) window.scrollToCurrentWeek();
