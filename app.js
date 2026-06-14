@@ -522,21 +522,44 @@ window.scrollToCurrentWeek = () => {
 };
 
 window.switchTab = (tabId, btnElement) => {
+    // 1. Переключаем вкладки
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     const targetTab = document.getElementById(`tab-${tabId}`);
-    if(targetTab) targetTab.classList.add('active');
+    if (targetTab) targetTab.classList.add('active');
     
-    document.querySelectorAll('.nav-icon-container').forEach(icon => {
-        icon.classList.remove('bg-slate-700', 'text-white', 'shadow-inner');
-        icon.classList.add('text-slate-500');
+    // 2. Сбрасываем все иконки (делаем серыми) и прячем полоски
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        const indicator = btn.querySelector('.active-indicator');
+        const icon = btn.querySelector('.nav-icon');
+        
+        if (indicator) {
+            indicator.classList.remove('opacity-100');
+            indicator.classList.add('opacity-0');
+        }
+        if (icon) {
+            icon.classList.remove('text-white');
+            icon.classList.add('text-slate-500');
+        }
     });
     
-    if(!btnElement) btnElement = document.querySelector(`nav button[onclick="switchTab('${tabId}', this)"]`);
-    if(btnElement) {
-        const icon = btnElement.querySelector('.nav-icon-container');
-        if(icon) {
-            icon.classList.remove('text-slate-500'); 
-            icon.classList.add('bg-slate-700', 'text-white', 'shadow-inner');
+    // 3. Ищем нужную кнопку, если она не передана
+    if (!btnElement) {
+        btnElement = document.querySelector(`nav button[onclick="switchTab('${tabId}', this)"]`) || 
+                     document.querySelector(`nav button[onclick="window.switchTab('${tabId}', this)"]`);
+    }
+    
+    // 4. Зажигаем нужную кнопку
+    if (btnElement && btnElement.classList.contains('nav-btn')) {
+        const indicator = btnElement.querySelector('.active-indicator');
+        const icon = btnElement.querySelector('.nav-icon');
+        
+        if (indicator) {
+            indicator.classList.remove('opacity-0');
+            indicator.classList.add('opacity-100');
+        }
+        if (icon) {
+            icon.classList.remove('text-slate-500');
+            icon.classList.add('text-white');
         }
     }
 
