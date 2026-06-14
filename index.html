@@ -589,6 +589,30 @@
         </div>
     </div>
 
+    <!-- КАСТОМНЫЙ ОФЛАЙН ЭКРАН -->
+    <div id="offline-screen" class="fixed inset-0 bg-slate-900/95 z-[9999] hidden flex-col items-center justify-center text-center p-6 backdrop-blur-md transition-opacity duration-300">
+        <div class="relative mb-6">
+            <!-- Твой логотип (будет серым и полупрозрачным) -->
+            <img src="icon-512.png" alt="Offline" class="w-24 h-24 grayscale opacity-50 drop-shadow-lg rounded-2xl">
+            <!-- Иконка зачеркнутого Wi-Fi -->
+            <div class="absolute -bottom-2 -right-2 bg-slate-800 rounded-full p-2 border-4 border-slate-900 shadow-lg">
+                <svg class="w-5 h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636a9 9 0 00-12.728 0M15.536 8.464a5 5 0 00-7.072 0M12 12v.01" />
+                </svg>
+            </div>
+        </div>
+        <h2 class="text-xl font-black text-white mb-2 tracking-widest uppercase drop-shadow-md">Нет подключения</h2>
+        <p class="text-[11px] text-slate-400 font-bold max-w-[250px] uppercase tracking-widest leading-relaxed">Проверьте интернет. Приложение заработает автоматически, как только появится сеть.</p>
+        
+        <!-- Красивые анимированные точки ожидания -->
+        <div class="mt-8 flex gap-2 justify-center">
+            <div class="w-2 h-2 bg-slate-600 rounded-full animate-pulse"></div>
+            <div class="w-2 h-2 bg-slate-500 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+            <div class="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+        </div>
+    </div>
+
+    
     <script type="module" src="app.js?v=818"></script>
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[150] flex flex-col gap-2 pointer-events-none"></div>
 
