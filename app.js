@@ -2521,7 +2521,7 @@ window.renderGoal = function() {
     
     if (!inputContainer || !progressContainer) return;
 
-    // 1. Отрисовка Истории
+    // 1. Отрисовка Истории (Без рамок, серый текст, золотой фон)
     const historyStr = localStorage.getItem('completed_goals_data');
     let historyHtml = '';
     if (historyStr) {
@@ -2529,10 +2529,10 @@ window.renderGoal = function() {
         for (let i = history.length - 1; i >= 0; i--) {
             const g = history[i];
             historyHtml += `
-                <div class="bg-amber-50 border border-amber-200/80 rounded-xl p-3 flex justify-between items-start gap-3 shadow-sm relative overflow-hidden">
-                    <div class="absolute -right-4 -top-4 w-16 h-16 bg-amber-200/30 rounded-full blur-xl"></div>
-                    <span class="font-black text-amber-800 text-xs md:text-sm whitespace-normal leading-tight z-10 break-words flex-grow">${g.text}</span>
-                    <button onclick="window.deleteCompletedGoal(${i})" class="w-8 h-8 rounded-lg bg-amber-100/50 hover:bg-rose-100 text-amber-500 hover:text-rose-500 flex items-center justify-center shrink-0 transition-colors z-10 outline-none shadow-sm border border-transparent hover:border-rose-200">
+                <div class="bg-amber-50/70 rounded-xl p-3 flex justify-between items-center gap-3 shadow-sm relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 w-16 h-16 bg-amber-200/40 rounded-full blur-xl"></div>
+                    <span class="font-bold text-slate-500 text-xs md:text-sm whitespace-normal leading-tight z-10 break-words flex-grow">${g.text}</span>
+                    <button onclick="window.deleteCompletedGoal(${i})" class="w-8 h-8 rounded-lg bg-amber-100/50 hover:bg-rose-100 text-amber-400 hover:text-rose-500 flex items-center justify-center shrink-0 transition-colors z-10 outline-none shadow-sm transition-colors border border-transparent hover:border-rose-200">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                 </div>
@@ -2575,23 +2575,33 @@ window.renderGoal = function() {
     if (progress < 0) progress = 0;
     if (daysLeft < 0) daysLeft = 0;
 
+    // Устанавливаем текст цели и форматированную дату слева
     document.getElementById('goal-display-text').innerText = goalData.text;
+    const dateObj = new Date(goalData.targetDate);
+    document.getElementById('goal-display-date').innerText = ("0" + dateObj.getDate()).slice(-2) + "." + ("0" + (dateObj.getMonth() + 1)).slice(-2) + "." + dateObj.getFullYear();
     
     const daysNum = document.getElementById('goal-display-days-num');
     const daysText = document.getElementById('goal-display-days-text');
     const circle = document.getElementById('goal-circle-progress');
     const knob = document.getElementById('goal-knob-container');
 
-    // Сброс стилей кнопки Готово при рендере
     if (doneBtn) { 
         doneBtn.disabled = false;
-        doneBtn.className = "w-16 shrink-0 bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-xl flex flex-col items-center justify-center transition-colors shadow-sm outline-none group";
+        doneBtn.className = "w-12 md:w-16 h-24 md:h-32 shrink-0 bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-xl flex flex-col items-center justify-center transition-colors shadow-sm outline-none group";
     }
     
-    daysNum.innerText = daysLeft;
-    daysNum.className = "text-3xl font-black text-slate-800 leading-none tracking-tighter mt-1";
+    // Математика дней (Месяцы / Дни)
+    let displayDaysStr = daysLeft.toString();
+    if (daysLeft > 30) {
+        const m = Math.floor(daysLeft / 30);
+        const d = daysLeft % 30;
+        displayDaysStr = `${m}/${d}`;
+    }
+    
+    daysNum.innerText = displayDaysStr;
+    daysNum.className = "text-xl md:text-2xl font-black text-slate-800 leading-none tracking-tighter mt-1";
     daysText.innerText = "дней";
-    daysText.className = "text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5";
+    daysText.style.display = "block";
     
     const circumference = 238.76;
     const offset = circumference - (progress / 100) * circumference;
@@ -2600,7 +2610,7 @@ window.renderGoal = function() {
     knob.style.transform = `rotate(0deg)`;
     
     setTimeout(() => {
-        circle.style.stroke = '#2dd4bf';
+        circle.style.stroke = '#2dd4bf'; // Бирюзовый
         circle.style.strokeDashoffset = offset;
         knob.style.transform = `rotate(${(progress / 100) * 360}deg)`;
     }, 100);
@@ -2637,24 +2647,21 @@ window.finishGoalEarly = function() {
         const knob = document.getElementById('goal-knob-container');
         const doneBtn = document.getElementById('goal-done-btn');
         
+        // Вставляем красивую зеленую галочку внутрь круга вместо текста!
         if (daysNum) {
-            daysNum.innerText = "УРА";
-            daysNum.className = "text-xl font-black text-emerald-500 leading-none tracking-tighter mt-1";
+            daysNum.innerHTML = `<svg class="w-8 h-8 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
+            daysNum.className = "mt-1";
         }
-        if (daysText) {
-            daysText.innerText = "СДЕЛАНО";
-            daysText.className = "text-[8px] font-bold text-emerald-500 uppercase tracking-widest mt-1";
-        }
+        if (daysText) daysText.style.display = "none";
 
         if (circle) {
             circle.style.strokeDashoffset = '0';
-            circle.style.stroke = '#10b981';
+            circle.style.stroke = '#10b981'; // Изумрудный
         }
         if (knob) knob.style.transform = 'rotate(360deg)';
         
-        // Красиво закрашиваем кнопку Готово, чтобы она не прыгала
         if (doneBtn) { 
-            doneBtn.className = "w-16 shrink-0 bg-emerald-500 text-white border border-emerald-500 rounded-xl flex flex-col items-center justify-center transition-colors shadow-sm outline-none group";
+            doneBtn.className = "w-12 md:w-16 h-24 md:h-32 shrink-0 bg-emerald-500 text-white border border-emerald-500 rounded-xl flex flex-col items-center justify-center transition-colors shadow-sm outline-none group";
             doneBtn.disabled = true;
         }
 
