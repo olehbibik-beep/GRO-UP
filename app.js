@@ -809,7 +809,7 @@ window.updateStandWidgetUI = function() {
 
     if (isApprovedForStand) {
         // Кнопка теперь с отступом снизу (mb-4)
-        buttonHtml = `<button onclick="window.location.href='stands.html'" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mb-4 shadow-sm">${window.t('stand_signup')}</button>`;
+        buttonHtml = `<button onclick="window.location.href='stands.html'" class="w-full bg-teal-400 hover:bg-teal-600 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mb-4 shadow-sm">${window.t('stand_signup')}</button>`;
         
         let progressColor = 'bg-teal-200';
         let txtColor = 'text-emerald-700';
@@ -862,9 +862,9 @@ window.updateStandWidgetUI = function() {
             contentHtml = `${statsHtml}<div class="w-full p-6 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center rounded-md mt-4 shadow-sm"><svg class="w-8 h-8 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_no_records')}</p></div>`;
         }
     } else {
-        if (isStandReqPending) buttonHtml = `<button disabled class="w-full bg-slate-100 text-slate-400 font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none mb-4 cursor-not-allowed">Заявка на рассмотрении</button>`;
-        else buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mb-4 shadow-sm">${window.t('stand_apply')}</button>`;
-        contentHtml = `<div class="w-full h-24 bg-slate-50 border border-slate-200 flex items-center justify-center rounded-md shadow-sm"><svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 00-2-2H6a2 2 0 00-2-2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>`;
+        if (isStandReqPending) buttonHtml = `<button disabled class="w-full bg-teal-400 text-slate-400 font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none mb-4 cursor-not-allowed">Заявка на рассмотрении</button>`;
+        else buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-teal-400 hover:bg-teal-600 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mb-4 shadow-sm">${window.t('stand_apply')}</button>`;
+        contentHtml = `<div class="w-full h-24 bg-slate-50 border border-teal-200 flex items-center justify-center rounded-md shadow-sm"><svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 00-2-2H6a2 2 0 00-2-2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>`;
     }
 
     container.innerHTML = `
