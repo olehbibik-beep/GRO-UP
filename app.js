@@ -811,7 +811,7 @@ window.updateStandWidgetUI = function() {
         // Кнопка теперь с отступом снизу (mb-4)
         buttonHtml = `<button onclick="window.location.href='stands.html'" class="w-full bg-teal-400 hover:bg-teal-600 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mb-4 shadow-sm">${window.t('stand_signup')}</button>`;
         
-        let progressColor = 'bg-teal-200';
+        let progressColor = 'bg-slate-400';
         let txtColor = 'text-emerald-700';
         if (monthCount >= 20) { progressColor = 'bg-rose-500'; txtColor = 'text-rose-700'; }
         else if (monthCount >= 10) { progressColor = 'bg-amber-500'; txtColor = 'text-amber-700'; }
@@ -823,7 +823,7 @@ window.updateStandWidgetUI = function() {
             <div>
                 <div class="flex items-center justify-between mb-1.5">
                     <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_month_shifts')}</span>
-                    <span class="${txtColor} font-black text-xs bg-teal-400 border border-teal-400 px-2 py-0.5 rounded shadow-sm">${monthCount}</span>
+                    <span class="${txtColor} font-black text-xs bg-slate-400 border border-teal-400 px-2 py-0.5 rounded shadow-sm">${monthCount}</span>
                 </div>
                 <div class="w-full bg-teal-600 rounded-full h-1.5 overflow-hidden flex shadow-inner">
                     <div class="${progressColor} h-1.5 rounded-full transition-all" style="width: ${progressPercent}%"></div>
