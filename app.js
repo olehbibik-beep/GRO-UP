@@ -999,13 +999,25 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         const translatedType = translateDbString(m.type || window.t('part'));
         
         let description = "";
-        if (m.type === "Чтение Библии" || m.type === "Čtení Bible") description = "Это учебное задание назначается учащемуся мужского пола...";
-        else if (m.type === "Начинайте разговор" || m.type === "Zahájení rozhovoru") description = "Это учебное задание поручается учащемуся мужского или женского пола...";
-        else if (m.type === "Развивайте интерес" || m.type === "Rozvíjení zájmu") description = "Это учебное задание поручается учащемуся мужского или женского пола...";
-        else if (m.type === "Подготавливайте учеников" || m.type === "Pomáhej lidem stát se učedníky" || m.type === "Činění učedníků") description = "Это учебное задание поручается учащемуся мужского или женского пола...";
-        else if (m.type === "Объясняйте свои взгляды" || m.type === "Vysvětlování své víry") description = "Если это задание преподносится в виде речи, оно поручается учащемуся мужского пола...";
-        else if (m.type === "Речь" || m.type === "Proslov" || m.type === "Речь 10 мин." || m.type === "Proslov 10 min.") description = "Это учебное задание поручается учащемуся мужского пола...";
-
+        if (m.type === "Чтение Библии" || m.type === "Čtení Bible") {
+            description = "Это учебное задание назначается брату. Цель — зачитать назначенный отрывок из Библии четко, с правильным смысловым ударением, интонацией и естественностью. Вступление и заключение делать не нужно.";
+        }
+        else if (m.type === "Начинайте разговор" || m.type === "Zahájení rozhovoru") {
+            description = "Это учебное задание может назначаться как брату, так и сестре. Цель — показать, как можно начать беседу с человеком в служении, используя предложенную тему для разговора.";
+        }
+        else if (m.type === "Развивайте интерес" || m.type === "Rozvíjení zájmu") {
+            description = "Это учебное задание может назначаться как брату, так и сестре. Учащийся должен показать, как продолжить разговор с человеком, который проявил интерес во время предыдущей беседы.";
+        }
+        else if (m.type === "Подготавливайте учеников" || m.type === "Pomáhej lidem stát se učedníky" || m.type === "Činění učedníků") {
+            description = "Это учебное задание назначается брату или сестре. Учащемуся необходимо показать, как проводить изучение Библии, используя основную публикацию для служения.";
+        }
+        else if (m.type === "Объясняйте свои взгляды" || m.type === "Vysvětlování své víry") {
+            description = "Если это задание преподносится в виде речи, оно поручается брату. Если в виде сценки — брату или сестре. Цель — показать, как тактично и ясно объяснить библейскую истину.";
+        }
+        else if (m.type === "Речь" || m.type === "Proslov" || m.type === "Речь 10 мин." || m.type === "Proslov 10 min.") {
+            description = "Это учебное задание поручается брату. Речь должна быть основана на указанном материале и преподнесена так, чтобы собрание извлекло из нее практическую пользу.";
+        }
+        
         const descHtml = description ? `<div class="mt-4 pt-3 border-t border-slate-200/60"><div class="text-[11px] font-medium text-slate-500 leading-relaxed">${description}</div></div>` : "";
         const extraInfo = m.lesson 
             ? `<span class="font-black text-slate-800 block mb-3 text-base">${translatedType}</span><span class="text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-100 self-start inline-block">${window.t('lesson')} ${m.lesson}</span>${descHtml}` 
