@@ -963,7 +963,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     };
 
-    // ИДЕАЛЬНОЕ ЦЕНТРИРОВАНИЕ ДЛЯ ПРИЛОЖЕНИЯ (УБРАЛ translateY)
     const buildHeader = (title, bgColor, safeClass, iconSvg) => `
         <div class="w-full rounded-md shadow-sm mt-2 mb-1.5 ${safeClass} flex items-center px-3 py-1.5 min-h-[28px]" style="background-color: ${bgColor};">
             <div class="flex items-center justify-center text-white/90 w-4 h-4 shrink-0">${iconSvg}</div>
@@ -1012,10 +1011,12 @@ function buildScheduleCards(d, myName, currentWeekStr) {
             ? `<span class="font-black text-slate-800 block mb-3 text-base">${translatedType}</span><span class="text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-100 self-start inline-block">${window.t('lesson')} ${m.lesson}</span>${descHtml}` 
             : `<span class="font-black text-slate-800 text-base">${translatedType}</span>${descHtml}`;
 
-        const safeHtml = extraInfo.replace(/"/g, '&quot;');
+        // ИСПРАВЛЕНИЕ 1: Двойная защита от кавычек!
+        const safeHtml = extraInfo.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
+        // ИСПРАВЛЕНИЕ 2: Вызов window.openTaskInfoModal
         return `
-            <div data-info="${safeHtml}" onclick="openTaskInfoModal(this.getAttribute('data-info'))" style="-webkit-tap-highlight-color: transparent;" class="flex items-center justify-between py-2.5 px-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer group">
+            <div data-info="${safeHtml}" onclick="window.openTaskInfoModal(this.getAttribute('data-info'))" style="-webkit-tap-highlight-color: transparent;" class="flex items-center justify-between py-2.5 px-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer group">
                 <div class="flex flex-col min-w-0 pointer-events-none">
                     <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translatedType}</span>
                     <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${m.student || '-'}${assistStr}</span>
@@ -1053,8 +1054,8 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const talkTitle = translateDbString(d.we_talk_title || window.t('public_talk'));
 
     const we_talk = `
-        <div class="flex flex-col py-1.5 px-3 bg-white/60 hover:bg-white border border-slate-200/50 shadow-sm rounded-xl mt-1.5 mb-1 mx-0">
-            <span class="text-[13px] md:text-sm ${wtTitleColor} uppercase leading-tight">${talkTitle}</span>
+        <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg mt-1.5">
+            <span class="text-[13px] md:text-sm ${wtTitleColor} leading-tight">${talkTitle}</span>
             <span class="text-[13px] md:text-sm ${wtNameColor} mt-0.5 ml-4">${d.we_talk_speaker || '-'}</span>
         </div>
     `;
@@ -1071,28 +1072,26 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         </div>
     `;
 
-    const attendantsArr = [d.duty_attendant_1, d.duty_attendant_2].filter(Boolean);
-    const soundsArr = [d.duty_sound_1, d.duty_sound_2].filter(Boolean);
-    let dutiesBlock = '';
+    // ИСПРАВЛЕНИЕ 2: Красивый прозрачный блок с пунктиром для дежурств
+    let soundVideoHtml = '';
+    if (d.duty_sound_1) soundVideoHtml += `<div class="flex items-start gap-2 mb-1.5"><span class="text-[11px] md:text-[12px] font-black text-slate-400 uppercase tracking-widest w-12 text-right shrink-0 pt-[2px]">ЗВУК</span> <span class="text-[13px] md:text-sm font-bold text-slate-800">${d.duty_sound_1}</span></div>`;
+    if (d.duty_sound_2) soundVideoHtml += `<div class="flex items-start gap-2"><span class="text-[11px] md:text-[12px] font-black text-slate-400 uppercase tracking-widest w-12 text-right shrink-0 pt-[2px]">ВИДЕО</span> <span class="text-[13px] md:text-sm font-bold text-slate-800">${d.duty_sound_2}</span></div>`;
 
-    if (attendantsArr.length > 0 || soundsArr.length > 0) {
+    let attendantsHtml = '';
+    if (d.duty_attendant_1) attendantsHtml += `<div class="flex items-start gap-2 mb-1.5"><span class="text-[11px] md:text-[12px] font-black text-slate-400 uppercase tracking-widest w-10 text-right shrink-0 pt-[2px]">ЗАЛ</span> <span class="text-[13px] md:text-sm font-bold text-slate-800">${d.duty_attendant_1}</span></div>`;
+    if (d.duty_attendant_2) attendantsHtml += `<div class="flex items-start gap-2"><span class="text-[11px] md:text-[12px] font-black text-slate-400 uppercase tracking-widest w-10 text-right shrink-0 pt-[2px]">ЗАЛ</span> <span class="text-[13px] md:text-sm font-bold text-slate-800">${d.duty_attendant_2}</span></div>`;
+
+    let dutiesBlock = '';
+    if (soundVideoHtml || attendantsHtml) {
         dutiesBlock = `
-            <div class="mt-3 grid grid-cols-2 gap-2 text-center bg-slate-200/60 rounded-xl p-2.5 mx-0 mb-2">
-                ${attendantsArr.length > 0 ? `
-                <div class="flex flex-col items-center justify-center">
-                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-500">Распорядители</span>
-                    <span class="text-[10px] md:text-xs font-bold text-slate-800 leading-tight mt-0.5">${attendantsArr.join('<br>')}</span>
-                </div>` : '<div></div>'}
-                
-                ${soundsArr.length > 0 ? `
-                <div class="flex flex-col items-center justify-center border-l border-slate-300">
-                    <span class="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-500">Звук / Видео</span>
-                    <span class="text-[10px] md:text-xs font-bold text-slate-800 leading-tight mt-0.5">${soundsArr.join('<br>')}</span>
-                </div>` : '<div></div>'}
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 border-2 border-dashed border-slate-300 bg-transparent rounded-xl p-3 mx-1 mb-2">
+                ${attendantsHtml ? `<div class="flex flex-col justify-center border-b border-slate-200/60 pb-3 md:border-b-0 md:pb-0 md:border-r md:border-slate-200/60 md:pr-2">${attendantsHtml}</div>` : '<div></div>'}
+                ${soundVideoHtml ? `<div class="flex flex-col justify-center md:pl-2 pt-1 md:pt-0">${soundVideoHtml}</div>` : '<div></div>'}
             </div>
         `;
     }
 
+    // ИСПРАВЛЕНИЕ 3: Выходные теперь на стильной белой плитке
     return `
         <div class="w-[calc(100vw-32px)] md:w-full shrink-0 snap-center snap-always scroll-mt-40 flex flex-col bg-transparent pb-2 px-0 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
             
@@ -1125,7 +1124,9 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 
                 <div class="md:hidden w-full border-t-2 border-slate-200 border-dashed my-2"></div>
 
-                <div class="flex-1 flex flex-col space-y-0 pt-2 md:pt-0">
+                <div class="flex-1 flex flex-col space-y-0 bg-white rounded-xl shadow-sm p-3 border border-slate-200 mt-2 md:mt-0 relative overflow-hidden">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-slate-400"></div>
+                    
                     ${buildHeader(window.t('weekend_meeting'), '#475569', 'h-weekend', iconWeekend)}
                     ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
                     ${we_talk}
