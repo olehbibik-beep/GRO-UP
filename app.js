@@ -1073,12 +1073,26 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         </div>
     `;
 
-    // ИСПРАВЛЕНИЕ: Дежурства в одну линию (flex-wrap) с правильными названиями
+    // ИСПРАВЛЕНИЕ: Дежурства с крутыми SVG иконками и подсветкой своего дежурства!
+    const iconKey = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" title="Распорядитель"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>`;
+    const iconVideo = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" title="Видео"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>`;
+    const iconSound = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" title="Звук"><path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>`;
+
+    const dutyRow = (person, iconSvg) => {
+        if (!person) return '';
+        const isMe = person === myName;
+        // Если это твоё имя — иконка становится бирюзовой (#2dd4bf), а имя синим. Иначе всё серое/чёрное.
+        const iconColor = isMe ? 'text-[#2dd4bf]' : 'text-slate-400';
+        const nameColor = isMe ? 'text-indigo-600' : 'text-slate-800';
+        
+        return `<div class="flex items-center gap-1.5"><div class="${iconColor} shrink-0 transition-colors">${iconSvg}</div> <span class="text-[13px] md:text-sm font-bold ${nameColor} truncate">${person}</span></div>`;
+    };
+
     let dutiesArr = [];
-    if (d.duty_attendant_1) dutiesArr.push(`<div class="flex items-center gap-1.5"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">ВХОД</span> <span class="text-[13px] md:text-sm font-bold text-slate-800 truncate">${d.duty_attendant_1}</span></div>`);
-    if (d.duty_attendant_2) dutiesArr.push(`<div class="flex items-center gap-1.5"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">ЗАЛ</span> <span class="text-[13px] md:text-sm font-bold text-slate-800 truncate">${d.duty_attendant_2}</span></div>`);
-    if (d.duty_sound_1) dutiesArr.push(`<div class="flex items-center gap-1.5"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">ВИДЕО</span> <span class="text-[13px] md:text-sm font-bold text-slate-800 truncate">${d.duty_sound_1}</span></div>`);
-    if (d.duty_sound_2) dutiesArr.push(`<div class="flex items-center gap-1.5"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">ЗВУК</span> <span class="text-[13px] md:text-sm font-bold text-slate-800 truncate">${d.duty_sound_2}</span></div>`);
+    if (d.duty_attendant_1) dutiesArr.push(dutyRow(d.duty_attendant_1, iconKey));
+    if (d.duty_attendant_2) dutiesArr.push(dutyRow(d.duty_attendant_2, iconKey));
+    if (d.duty_sound_1) dutiesArr.push(dutyRow(d.duty_sound_1, iconVideo));
+    if (d.duty_sound_2) dutiesArr.push(dutyRow(d.duty_sound_2, iconSound));
 
     let dutiesBlock = '';
     if (dutiesArr.length > 0) {
