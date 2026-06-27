@@ -1006,29 +1006,29 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         else if (m.type === "Объясняйте свои взгляды" || m.type === "Vysvětlování své víry") description = "Если это задание преподносится в виде речи, оно поручается учащемуся мужского пола...";
         else if (m.type === "Речь" || m.type === "Proslov" || m.type === "Речь 10 мин." || m.type === "Proslov 10 min.") description = "Это учебное задание поручается учащемуся мужского пола...";
 
-        const descHtml = description ? `<div class="mt-4 pt-3 border-t border-slate-100"><div class="text-[11px] font-medium text-slate-500 leading-relaxed">${description}</div></div>` : "";
+        const descHtml = description ? `<div class="mt-4 pt-3 border-t border-slate-200/60"><div class="text-[11px] font-medium text-slate-500 leading-relaxed">${description}</div></div>` : "";
         const extraInfo = m.lesson 
             ? `<span class="font-black text-slate-800 block mb-3 text-base">${translatedType}</span><span class="text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-100 self-start inline-block">${window.t('lesson')} ${m.lesson}</span>${descHtml}` 
             : `<span class="font-black text-slate-800 text-base">${translatedType}</span>${descHtml}`;
 
-        // ИСПРАВЛЕНИЕ 1: Двойная защита от кавычек!
-        const safeHtml = extraInfo.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        // ИСПРАВЛЕНИЕ: Кодируем HTML, чтобы кавычки больше никогда не ломали кнопку!
+        const safeHtml = encodeURIComponent(extraInfo);
 
-        // ИСПРАВЛЕНИЕ 2: Вызов window.openTaskInfoModal
         return `
-            <div data-info="${safeHtml}" onclick="window.openTaskInfoModal(this.getAttribute('data-info'))" style="-webkit-tap-highlight-color: transparent;" class="flex items-center justify-between py-2.5 px-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer group">
+            <div data-info="${safeHtml}" onclick="window.openTaskInfoModal(decodeURIComponent(this.getAttribute('data-info')))" style="-webkit-tap-highlight-color: transparent;" class="flex items-center justify-between py-2.5 px-2 border-b border-slate-200/50 last:border-0 hover:bg-slate-300/20 transition-colors cursor-pointer group rounded-lg">
                 <div class="flex flex-col min-w-0 pointer-events-none">
                     <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translatedType}</span>
                     <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${m.student || '-'}${assistStr}</span>
                 </div>
-                <div class="shrink-0 ml-3 text-slate-300 group-hover:text-indigo-400 transition-colors pointer-events-none">
+                <div class="shrink-0 ml-3 text-slate-400 group-hover:text-indigo-500 transition-colors pointer-events-none">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
             </div>
         `;
     }).join('');
 
-    const minRows = minRowsRaw ? `<div class="flex flex-col bg-white rounded-xl mt-1.5 mb-2 mx-0 overflow-hidden shadow-sm border border-slate-200/80">${minRowsRaw}</div>` : '';
+    // ИСПРАВЛЕНИЕ: Убрали белую плитку заданий, фон прозрачный
+    const minRows = minRowsRaw ? `<div class="flex flex-col mt-1.5 mb-2 mx-0">${minRowsRaw}</div>` : '';
 
     const livRows = (d.livingParts || []).map((m) => {
         if(!m.title && !m.name) return '';
@@ -1053,10 +1053,11 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const wtNameColor = weTalkMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
     const talkTitle = translateDbString(d.we_talk_title || window.t('public_talk'));
 
+    // ИСПРАВЛЕНИЕ: Выделил речь, сделал название крупнее, добавил воздуха
     const we_talk = `
-        <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg mt-1.5">
-            <span class="text-[13px] md:text-sm ${wtTitleColor} leading-tight">${talkTitle}</span>
-            <span class="text-[13px] md:text-sm ${wtNameColor} mt-0.5 ml-4">${d.we_talk_speaker || '-'}</span>
+        <div class="flex flex-col py-3 px-3 bg-slate-50/80 border border-slate-200/80 shadow-sm rounded-xl mt-2.5 mb-2 mx-0">
+            <span class="text-[15px] md:text-base ${wtTitleColor} uppercase leading-snug mb-1">${talkTitle}</span>
+            <span class="text-[13px] md:text-sm ${wtNameColor} ml-1">${d.we_talk_speaker || '-'}</span>
         </div>
     `;
 
@@ -1072,30 +1073,27 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         </div>
     `;
 
-    // ИСПРАВЛЕНИЕ 2: Красивый прозрачный блок с пунктиром для дежурств
-    let soundVideoHtml = '';
-    if (d.duty_sound_1) soundVideoHtml += `<div class="flex items-start gap-2 mb-1.5"><span class="text-[11px] md:text-[12px] font-black text-slate-400 uppercase tracking-widest w-12 text-right shrink-0 pt-[2px]">ЗВУК</span> <span class="text-[13px] md:text-sm font-bold text-slate-800">${d.duty_sound_1}</span></div>`;
-    if (d.duty_sound_2) soundVideoHtml += `<div class="flex items-start gap-2"><span class="text-[11px] md:text-[12px] font-black text-slate-400 uppercase tracking-widest w-12 text-right shrink-0 pt-[2px]">ВИДЕО</span> <span class="text-[13px] md:text-sm font-bold text-slate-800">${d.duty_sound_2}</span></div>`;
-
-    let attendantsHtml = '';
-    if (d.duty_attendant_1) attendantsHtml += `<div class="flex items-start gap-2 mb-1.5"><span class="text-[11px] md:text-[12px] font-black text-slate-400 uppercase tracking-widest w-10 text-right shrink-0 pt-[2px]">ЗАЛ</span> <span class="text-[13px] md:text-sm font-bold text-slate-800">${d.duty_attendant_1}</span></div>`;
-    if (d.duty_attendant_2) attendantsHtml += `<div class="flex items-start gap-2"><span class="text-[11px] md:text-[12px] font-black text-slate-400 uppercase tracking-widest w-10 text-right shrink-0 pt-[2px]">ЗАЛ</span> <span class="text-[13px] md:text-sm font-bold text-slate-800">${d.duty_attendant_2}</span></div>`;
+    // ИСПРАВЛЕНИЕ: Дежурства в одну линию (flex-wrap) с правильными названиями
+    let dutiesArr = [];
+    if (d.duty_attendant_1) dutiesArr.push(`<div class="flex items-center gap-1.5"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">ВХОД</span> <span class="text-[13px] md:text-sm font-bold text-slate-800 truncate">${d.duty_attendant_1}</span></div>`);
+    if (d.duty_attendant_2) dutiesArr.push(`<div class="flex items-center gap-1.5"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">ЗАЛ</span> <span class="text-[13px] md:text-sm font-bold text-slate-800 truncate">${d.duty_attendant_2}</span></div>`);
+    if (d.duty_sound_1) dutiesArr.push(`<div class="flex items-center gap-1.5"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">ВИДЕО</span> <span class="text-[13px] md:text-sm font-bold text-slate-800 truncate">${d.duty_sound_1}</span></div>`);
+    if (d.duty_sound_2) dutiesArr.push(`<div class="flex items-center gap-1.5"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">ЗВУК</span> <span class="text-[13px] md:text-sm font-bold text-slate-800 truncate">${d.duty_sound_2}</span></div>`);
 
     let dutiesBlock = '';
-    if (soundVideoHtml || attendantsHtml) {
+    if (dutiesArr.length > 0) {
         dutiesBlock = `
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 border-2 border-dashed border-slate-300 bg-transparent rounded-xl p-3 mx-1 mb-2">
-                ${attendantsHtml ? `<div class="flex flex-col justify-center border-b border-slate-200/60 pb-3 md:border-b-0 md:pb-0 md:border-r md:border-slate-200/60 md:pr-2">${attendantsHtml}</div>` : '<div></div>'}
-                ${soundVideoHtml ? `<div class="flex flex-col justify-center md:pl-2 pt-1 md:pt-0">${soundVideoHtml}</div>` : '<div></div>'}
+            <div class="mt-3 flex flex-wrap items-center justify-start gap-x-5 gap-y-2 border-2 border-dashed border-slate-300 bg-transparent rounded-xl p-3 mx-1 mb-2">
+                ${dutiesArr.join('')}
             </div>
         `;
     }
 
-    // ИСПРАВЛЕНИЕ 3: Выходные теперь на стильной белой плитке
+    // ИСПРАВЛЕНИЕ: Убрали линию border-b под датой
     return `
         <div class="w-[calc(100vw-32px)] md:w-full shrink-0 snap-center snap-always scroll-mt-40 flex flex-col bg-transparent pb-2 px-0 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
             
-            <div class="flex flex-col gap-1 pb-2 mb-3 mx-1 border-b border-slate-300">
+            <div class="flex flex-col gap-1 pb-1 mb-2 mx-1">
                 <div class="flex items-center justify-between w-full">
                     <span class="text-base md:text-lg font-black text-black uppercase tracking-widest">${weekLabel}</span>
                     <span class="text-xs md:text-sm font-black ${statusColor} uppercase tracking-widest">${weekStatus}</span>
@@ -1124,9 +1122,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 
                 <div class="md:hidden w-full border-t-2 border-slate-200 border-dashed my-2"></div>
 
-                <div class="flex-1 flex flex-col space-y-0 bg-white rounded-xl shadow-sm p-3 border border-slate-200 mt-2 md:mt-0 relative overflow-hidden">
-                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-slate-400"></div>
-                    
+                <div class="flex-1 flex flex-col space-y-0 bg-white rounded-xl shadow-sm p-3 border border-slate-200 mt-2 md:mt-0 relative">
                     ${buildHeader(window.t('weekend_meeting'), '#475569', 'h-weekend', iconWeekend)}
                     ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
                     ${we_talk}
