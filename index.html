@@ -584,35 +584,60 @@
         </div>
     </div>
 
-    <div id="info-details-modal" class="fixed inset-0 bg-slate-900/60 z-[160] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="window.closeInfoDetailsModal()">
-        <div class="bg-white w-full max-w-md rounded-3xl p-6 relative border border-slate-200 max-h-[85vh] flex flex-col shadow-2xl" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-4">
-                <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center font-serif font-bold italic text-xs">i</div>
-                    О приложении GRO-UP
+    <div id="info-details-modal" class="fixed inset-0 bg-slate-900/60 z-[160] hidden items-center justify-center p-4 backdrop-blur-sm transition-opacity" onclick="window.closeInfoDetailsModal()">
+    <div class="bg-white w-full max-w-md rounded-3xl relative border border-slate-200 flex flex-col shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+        
+        <div class="bg-gradient-to-r from-teal-500 to-teal-600 p-5 flex justify-between items-start">
+            <div>
+                <h2 class="text-xl font-black text-white flex items-center gap-2 mb-1">
+                    GRO-UP
                 </h2>
-                <button onclick="window.closeInfoDetailsModal()" class="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition-colors outline-none font-black text-lg pb-1">×</button>
+                <span class="bg-white/20 text-white text-[10px] uppercase font-bold tracking-widest px-2 py-1 rounded-md backdrop-blur-sm">Версия 76.0</span>
             </div>
-            <div class="flex-grow overflow-y-auto custom-scrollbar space-y-4 pr-1 text-slate-600 text-sm font-medium leading-relaxed">
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p class="font-bold text-slate-700 uppercase text-[10px] tracking-widest mb-1">🔒 Конфиденциальность</p>
-                    <p class="text-xs text-slate-500">Все личные данные, отчеты и координаты участков хранятся в защищенной облачной базе Google Firebase. Информация используется только внутри собрания и защищена от публичного доступа.</p>
-                </div>
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p class="font-bold text-slate-700 uppercase text-[10px] tracking-widest mb-1">👥 Права доступа и Роли</p>
-                    <ul class="text-xs text-slate-500 list-disc list-inside space-y-1">
-                        <li><strong class="text-slate-700">Возвещатель:</strong> сдает отчет, видит свои задания, берет свободные участки и записывается на стенды.</li>
-                        <li><strong class="text-slate-700">Надзиратель группы:</strong> координирует дежурства и видит отчеты только своей группы.</li>
-                        <li><strong class="text-slate-700">Ответственный братья:</strong> управляют базами данных по своим назначениям (стенды, участки, школа).</li>
-                    </ul>
-                </div>
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <p class="font-bold text-slate-700 uppercase text-[10px] tracking-widest mb-1">📅 Правила использования</p>
-                    <p class="text-xs text-slate-500">Участки территории закрепляются за вами на <strong class="text-slate-700">3 месяца</strong>. Личные отчеты о служении необходимо вносить до конца текущего месяца для корректного ведения общей статистики.</p>
-                </div>
+            <button onclick="window.closeInfoDetailsModal()" class="text-white hover:text-slate-100 bg-white/20 hover:bg-white/30 w-8 h-8 rounded-full flex items-center justify-center transition-colors outline-none font-black text-lg pb-1 backdrop-blur-sm">×</button>
+        </div>
+
+        <div class="p-5 overflow-y-auto custom-scrollbar space-y-4 text-slate-600 text-sm font-medium leading-relaxed max-h-[65vh]">
+            
+            <div class="bg-teal-50 p-4 rounded-2xl border border-teal-100 relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 w-16 h-16 bg-teal-100 rounded-full opacity-50"></div>
+                <p class="font-bold text-teal-800 uppercase text-[10px] tracking-widest mb-2 relative z-10 flex items-center gap-1">
+                    <span>✨</span> Что нового в обновлении?
+                </p>
+                <ul class="text-xs text-teal-700 list-disc list-inside space-y-1 relative z-10">
+                    <li>Умные Push-уведомления для Android/iOS</li>
+                    <li>Новый дизайн окон загрузки и иконок</li>
+                    <li>Плавная и точная прокрутка расписания</li>
+                </ul>
+            </div>
+
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <p class="font-bold text-slate-700 uppercase text-[10px] tracking-widest mb-2 flex items-center gap-1">
+                    <span>🔒</span> Конфиденциальность
+                </p>
+                <p class="text-xs text-slate-500">Все личные данные, отчеты и координаты участков хранятся в защищенной облачной базе Google Firebase. Информация используется строго внутри собрания.</p>
+            </div>
+
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <p class="font-bold text-slate-700 uppercase text-[10px] tracking-widest mb-2 flex items-center gap-1">
+                    <span>👥</span> Роли и Доступ
+                </p>
+                <ul class="text-xs text-slate-500 space-y-2">
+                    <li><strong class="text-slate-700 block">Возвещатель:</strong> сдает отчет, видит свои задания, берет свободные участки.</li>
+                    <li><strong class="text-slate-700 block">Надзиратель:</strong> координирует дежурства и видит отчеты своей группы.</li>
+                    <li><strong class="text-slate-700 block">Ответственные братья:</strong> управляют базами данных по своим назначениям.</li>
+                </ul>
+            </div>
+
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <p class="font-bold text-slate-700 uppercase text-[10px] tracking-widest mb-2 flex items-center gap-1">
+                    <span>📅</span> Правила использования
+                </p>
+                <p class="text-xs text-slate-500">Участки территории закрепляются за вами на <strong class="text-slate-700">3 месяца</strong>. Отчеты необходимо сдавать до конца текущего месяца для корректной статистики.</p>
             </div>
         </div>
     </div>
+</div>
 
     <!-- КАСТОМНЫЙ ОФЛАЙН ЭКРАН -->
     <div id="offline-screen" class="fixed inset-0 bg-slate-900/95 z-[9999] hidden flex-col items-center justify-center text-center p-6 backdrop-blur-md transition-opacity duration-300">
