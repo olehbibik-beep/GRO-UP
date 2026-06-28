@@ -18,8 +18,9 @@ messaging.onBackgroundMessage((payload) => {
      const title = payload.data?.title || 'GRO-UP';
      const options = {
         body: payload.data?.body || 'Новое уведомление',
-        icon: './icon-512.png',  // Главная иконка (заменит букву О на аватарку)
-        badge: './icon-512.png', // Маленький значок в статус-баре для Android
+        // 🔥 Жестко указываем абсолютные ссылки на иконки
+        icon: 'https://olehbibik-beep.github.io/GRO-UP/icon-512.png',
+        badge: 'https://olehbibik-beep.github.io/GRO-UP/icon-512.png',
         data: payload.data
      };
      self.registration.showNotification(title, options);
