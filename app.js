@@ -523,7 +523,11 @@ window.scrollToCurrentWeek = () => {
         activeCard = len > 1 ? container.children[len - 2] : container.lastElementChild;
     }
     if (activeCard) {
-        activeCard.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+        // Скроллим ТОЛЬКО горизонтальный контейнер, не трогая вертикальный экран!
+        container.scrollTo({ 
+            left: activeCard.offsetLeft, 
+            behavior: 'smooth' 
+        });
     }
 };
 
