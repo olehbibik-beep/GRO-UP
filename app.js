@@ -216,8 +216,8 @@ window.openReportHistory = async () => {
             return;
         }
 
-        let html = '';
-        reports.forEach(r => {
+        let html = '<div class="flex flex-col bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">';
+        reports.forEach((r, index) => {
             const isParticipated = r.participated ? 'Да' : 'Нет';
             const hours = r.hours || 0;
             const studies = r.studies || 0;
@@ -226,26 +226,32 @@ window.openReportHistory = async () => {
             const [year, monthNum] = r.month.split('-');
             const monthName = window.t('months')[parseInt(monthNum, 10) - 1];
 
+            // Чередуем фон для зебры (белый / светло-серый)
+            const bgClass = index % 2 === 0 ? 'bg-white' : 'bg-slate-50';
+
             html += `
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-3 shadow-sm relative">
-                    <h4 class="font-black text-slate-800 text-sm uppercase tracking-widest mb-3 border-b border-slate-200 pb-2">${monthName} ${year}</h4>
-                    <div class="grid grid-cols-2 gap-y-2 gap-x-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">
-                        <div class="flex justify-between border-b border-slate-100 pb-1">Служил(а): <span class="font-black text-slate-800">${isParticipated}</span></div>
-                        <div class="flex justify-between border-b border-slate-100 pb-1">Часы: <span class="font-black text-slate-800">${hours}</span></div>
-                        <div class="flex justify-between border-b border-slate-100 pb-1">Изучения: <span class="font-black text-slate-800">${studies}</span></div>
-                        <div class="flex justify-between border-b border-slate-100 pb-1">Кредит: <span class="font-black text-slate-800">${credit}</span></div>
+                <div class="${bgClass} border-b border-slate-100 p-3 last:border-0">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-black text-slate-800 text-sm uppercase tracking-widest">${monthName} ${year}</span>
+                        <button id="btn-edit-${r.id}" onclick="toggleEditHours('${r.id}', true)" class="text-[#373F43] hover:text-slate-800 text-[10px] font-black uppercase tracking-widest bg-slate-200/50 hover:bg-slate-200 px-2 py-1 rounded transition-colors outline-none">Изменить</button>
                     </div>
                     
-                    <button id="btn-edit-${r.id}" onclick="toggleEditHours('${r.id}', true)" class="text-[10px] bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 font-black uppercase tracking-widest px-3 py-2 rounded-lg w-full transition-colors mt-2 shadow-sm outline-none">Изменить часы</button>
+                    <div class="flex justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider pr-1">
+                        <span>Служил: <strong class="text-slate-800 font-black">${isParticipated}</strong></span>
+                        <span>Часы: <strong class="text-slate-800 font-black">${hours}</strong></span>
+                        <span>Изуч: <strong class="text-slate-800 font-black">${studies}</strong></span>
+                        <span>Кредит: <strong class="text-slate-800 font-black">${credit}</strong></span>
+                    </div>
 
-                    <div id="form-edit-${r.id}" class="hidden mt-2 flex gap-2">
-                        <input type="number" id="input-hours-${r.id}" value="${hours}" min="0" class="w-16 bg-white border border-slate-300 rounded-lg text-center font-black text-slate-800 text-sm outline-none focus:border-indigo-500 shadow-inner">
-                        <button onclick="saveNewHours('${r.id}')" class="flex-grow bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest rounded-lg transition-colors shadow-sm outline-none">Сохранить</button>
-                        <button onclick="toggleEditHours('${r.id}', false)" class="w-10 bg-slate-200 hover:bg-slate-300 text-slate-500 font-black rounded-lg transition-colors shadow-sm outline-none flex items-center justify-center">✕</button>
+                    <div id="form-edit-${r.id}" class="hidden mt-2 pt-2 border-t border-slate-200/50 flex-row gap-2 items-center">
+                        <input type="number" id="input-hours-${r.id}" value="${hours}" min="0" class="w-16 bg-white border border-slate-300 rounded-md text-center font-black text-slate-800 text-sm outline-none focus:border-[#373F43]">
+                        <button onclick="saveNewHours('${r.id}')" class="bg-[#373F43] hover:bg-slate-800 text-white font-black text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-md transition-colors shadow-sm outline-none flex-grow">Сохранить</button>
+                        <button onclick="toggleEditHours('${r.id}', false)" class="text-slate-400 hover:text-slate-600 font-black px-2 transition-colors outline-none">✕</button>
                     </div>
                 </div>
             `;
         });
+        html += '</div>';
 
         container.innerHTML = html;
 
