@@ -118,21 +118,23 @@
        <style>
             @keyframes shift-progress {
                 from { background-position-x: 0; }
-                to { background-position-x: 96px; }
+                /* Меняем на 80px под новую ширину линии, чтобы петля была бесшовной */
+                to { background-position-x: 80px; } 
             }
-           .segmented-loader-line {
+            .segmented-loader-line {
+                /* Делаем полоски шире (20%), а промежутки между ними аккуратными и полностью прозрачными (5%) */
                 background-image: linear-gradient(90deg, 
-                    #0edce9 0% 12%,   transparent 12% 25%, 
-                    #71b910 25% 37%,  transparent 37% 50%, 
-                    #10b981 50% 62%,  transparent 62% 75%, 
-                    #0ea5e9 75% 87%,  transparent 87% 100%
+                    #0edce9 0% 20%,   transparent 20% 25%, 
+                    #71b910 25% 45%,  transparent 45% 50%, 
+                    #10b981 50% 70%,  transparent 70% 75%, 
+                    #0ea5e9 75% 95%,  transparent 95% 100%
                 );
-                background-size: 96px 100%;
+                background-size: 80px 100%;
                 animation: shift-progress 1.5s linear infinite;
             }
         </style>
         <img src="icon-512.png" alt="GRO-UP" class="w-24 h-24 rounded-2xl object-contain shadow-xl mb-6">
-        <div class="w-24 h-[3px] bg-slate-300/40 rounded-full overflow-hidden">
+        <div class="w-20 h-[3px] bg-slate-300/40 rounded-full overflow-hidden">
             <div class="w-full h-full segmented-loader-line"></div>
         </div>
     </div>
