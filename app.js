@@ -2756,26 +2756,6 @@ const initOfflineScreen = () => {
         }
     };
 
-// ============================================
-// КАСТОМНАЯ КНОПКА "НАВЕРХ"
-// ============================================
-const initScrollToTop = () => {
-    const mainDash = document.getElementById('main-dashboard');
-    const scrollTopBtn = document.getElementById('custom-scroll-top');
-    
-    if (!mainDash || !scrollTopBtn) return;
-
-    mainDash.addEventListener('scroll', () => {
-        // Показываем кнопку, если проскроллили больше 300 пикселей
-        if (mainDash.scrollTop > 300) {
-            scrollTopBtn.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
-            scrollTopBtn.classList.add('opacity-100', 'pointer-events-auto', 'translate-y-0');
-        } else {
-            scrollTopBtn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
-            scrollTopBtn.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
-        }
-    }, { passive: true });
-};
 
 if (document.readyState === 'loading') { 
     document.addEventListener('DOMContentLoaded', initScrollToTop); 
