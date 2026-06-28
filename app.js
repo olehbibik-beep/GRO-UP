@@ -1188,16 +1188,16 @@ window.downloadScheduleAsPNG = async () => {
         return;
     }
 
-    // --- ФИРМЕННАЯ ЗАГРУЗКА (ПОЛОСКА БЕЗ ЛОГОТИПА) ---
+    // --- ПОЛНОЭКРАННАЯ ФИРМЕННАЯ ЗАГРУЗКА С ЛОГОТИПОМ ---
     const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300';
+    // Делаем фон сплошным и мятным (bg-teal-50), перекрывая весь экран
+    overlay.className = 'fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-teal-50 transition-opacity duration-300';
     overlay.innerHTML = `
-        <div class="bg-white px-10 py-8 rounded-3xl shadow-2xl flex flex-col items-center justify-center">
-            <div class="w-24 h-[4px] bg-slate-100 rounded-full overflow-hidden mb-4">
-                <div class="w-full h-full segmented-loader-line"></div>
-            </div>
-            <p class="text-slate-500 text-[10px] font-black uppercase tracking-widest animate-pulse">Создание PNG...</p>
+        <img src="icon-512.png" alt="GRO-UP" class="w-24 h-24 rounded-2xl object-contain shadow-xl mb-6 animate-pulse">
+        <div class="w-24 h-[4px] bg-slate-300/40 rounded-full overflow-hidden mb-4">
+            <div class="w-full h-full segmented-loader-line"></div>
         </div>
+        <p class="text-teal-600 text-[10px] font-black uppercase tracking-widest animate-pulse">Создание PNG...</p>
     `;
     document.body.appendChild(overlay);
 
