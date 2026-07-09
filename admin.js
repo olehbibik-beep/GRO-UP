@@ -11,26 +11,7 @@ const dict = {
         "confirm_block": "Заблокировать пользователя?", "confirm_delete_profile": "ВНИМАНИЕ! Удалить профиль?",
         "error_general": "Ошибка!", "confirm_reject": "Точно отклонить заявку и удалить данные?", "error_delete": "Ошибка удаления",
         "status_pending": "Ожидает", "btn_approve": "Одобрить", "btn_reject": "Отклонить", "btn_unblock": "Разблокировать",
-        "btn_block": "Заблокировать", "btn_delete": "Удалить", "gender_boy": "Брат", "gender_girl": "Сестра",
-        "role_publisher": "Возвещатель", "role_pioneer": "Пионер", "role_ms": "Помощник собр.", "role_elder": "Старейшина",
-        "role_admin": "Админ", "role_group": "Группа", "role_terr": "Участки", "role_school": "Школа",
-        "role_stand": "Стенды", "role_schedule": "График", "no_new_requests": "Нет новых заявок",
-        "no_active_users": "Нет активных пользователей", "no_group": "Без группы", "send_msg": "Отправить сообщение"
-    },
-    cs: {
-        "admin_title": "Panel administrátora", "back_home": "Na hlavní stránku", "users_title": "Uživatelé", "btn_back": "Zpět",
-        "autosave_data": "Automatické ukládání dat", "cong_name_label": "Název sboru", "cong_name_placeholder": "Například: Centrální",
-        "requests_title": "Žádosti", "active_users": "Aktivní uživatelé", "search_placeholder": "Hledat...",
-        "error_save": "Chyba při ukládání!", "alert_pin_length": "PIN kód musí mít přesně 6 číslic!",
-        "error_save_pin": "Chyba při ukládání PIN kódu!", "error_update_role": "Chyba při aktualizaci role!",
-        "confirm_block": "Zablokovat uživatele?", "confirm_delete_profile": "POZOR! Smazat profil?",
-        "error_general": "Chyba!", "confirm_reject": "Opravdu zamítnout žádost a smazat data?", "error_delete": "Chyba při mazání",
-        "status_pending": "Čeká", "btn_approve": "Schválit", "btn_reject": "Zamítnout", "btn_unblock": "Odblokovat",
-        "btn_block": "Zablokovat", "btn_delete": "Smazat", "gender_boy": "Bratr", "gender_girl": "Sestra",
-        "role_publisher": "Zvěstovatel", "role_pioneer": "Průkopník", "role_ms": "Služební pom.", "role_elder": "Starší",
-        "role_admin": "Admin", "role_group": "Skupina", "role_terr": "Obvody", "role_school": "Škola",
-        "role_stand": "Stojany", "role_schedule": "Rozvrh", "no_new_requests": "Žádné nové žádosti",
-        "no_active_users": "Žádní aktivní uživatelé", "no_group": "Bez skupiny", "send_msg": "Poslat zprávu"
+        "btn_block": "Заблокировать", "btn_delete": "Удалить", "no_new_requests": "Нет новых заявок", "send_msg": "Отправить сообщение"
     }
 };
 
@@ -83,7 +64,6 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
     if (!isFullAdmin) window.location.href = 'index.html';
 });
 
-// ЛОГИРОВАНИЕ
 async function logAction(actionStr) {
     try { await addDoc(collection(db, "admin_logs"), { action: actionStr, date: new Date().toISOString(), adminId: userId }); } catch(e) {}
 }
@@ -195,7 +175,6 @@ window.deleteUser = async (id) => { if(confirm(window.t('confirm_delete_profile'
 window.approveUser = async (id) => { try { await updateDoc(doc(db, "users", id), { status: "active", roles: ["Возвещатель"] }); logAction(`Заявка одобрена (ID: ${id})`); } catch (e) { alert(window.t('error_general')); } };
 window.rejectUser = async (id) => { if (confirm(window.t('confirm_reject'))) { try { await deleteDoc(doc(db, "users", id)); logAction(`Заявка отклонена (ID: ${id})`); } catch (e) { alert(window.t('error_delete')); } } };
 
-// СООБЩЕНИЯ
 window.openMsgModal = (id, name) => {
     document.getElementById('msg-user-id').value = id;
     document.getElementById('msg-user-name').innerText = name;
@@ -218,16 +197,15 @@ window.sendMsg = async () => {
     btn.innerText = "Отправить"; btn.disabled = false;
 };
 
-// ИКОНКИ
+// ИКОНКИ (ТЕПЕРЬ ВСЕ СТРОГИЕ СЕРЫЕ)
 const ICONS = {
-    group: `<svg class="w-3 h-3 text-purple-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>`,
-    terr: `<svg class="w-3 h-3 text-teal-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>`,
-    school: `<svg class="w-3 h-3 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" /></svg>`,
-    stand: `<svg class="w-3 h-3 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>`,
-    schedule: `<svg class="w-3 h-3 text-fuchsia-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>`
+    group: `<svg class="w-3 h-3 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>`,
+    terr: `<svg class="w-3 h-3 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>`,
+    school: `<svg class="w-3 h-3 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" /></svg>`,
+    stand: `<svg class="w-3 h-3 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>`,
+    schedule: `<svg class="w-3 h-3 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>`
 };
 
-// === УМНАЯ ЛОГИКА ФИЛЬТРАЦИИ И КАРТОЧЕК ===
 let allUsersData = [];
 let currentSearchTerm = '';
 let currentGroupFilter = 'all';
@@ -247,7 +225,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     let pendingHTML = '';
     let pendingCount = 0;
     
-    // Считаем правильно
     let stats = { total: 0, pub: 0, pio: 0, eld: 0, ms: 0 };
     const groups = new Set();
 
@@ -258,25 +235,35 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         if (u.status === 'pending') {
             pendingCount++;
             const icon = u.gender === 'girl' ? '👩‍💼' : '👨‍💼';
+            
+            // Дата создания заявки
+            let reqDate = "Дата неизвестна";
+            if (u.createdAt || u.registeredAt) {
+                const d = new Date(u.createdAt || u.registeredAt);
+                if (!isNaN(d)) {
+                    reqDate = `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth()+1).toString().padStart(2, '0')}.${d.getFullYear()}`;
+                }
+            }
+
             pendingHTML += `
-                <div class="flex items-center justify-between p-3 bg-white border-b border-slate-100 last:border-0">
+                <div class="flex items-center justify-between p-4 bg-white border-b border-slate-100 last:border-0">
                     <div class="flex items-center gap-3">
-                        <span class="text-2xl">${icon}</span>
+                        <span class="text-3xl">${icon}</span>
                         <div>
                             <p class="font-black text-slate-800 text-sm leading-tight">${u.name}</p>
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">${window.t('status_pending')}</p>
+                            <p class="text-[10px] text-slate-500 mt-1">🕒 Заявка от: <span class="font-bold">${reqDate}</span></p>
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="approveUser('${u.id}')" title="${window.t('btn_approve')}" class="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors shadow-sm outline-none">✔️</button>
-                        <button onclick="rejectUser('${u.id}')" title="${window.t('btn_reject')}" class="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shadow-sm outline-none">✖</button>
+                        <button onclick="approveUser('${u.id}')" title="${window.t('btn_approve')}" class="w-9 h-9 flex items-center justify-center bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors shadow-sm outline-none">✔️</button>
+                        <button onclick="rejectUser('${u.id}')" title="${window.t('btn_reject')}" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:border-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shadow-sm outline-none">✖</button>
                     </div>
                 </div>
             `;
         } else if (u.status === 'active' || u.status === 'blocked') {
             allUsersData.push(u);
             
-            // Собираем группы для фильтра
             if (u.group && String(u.group).trim() !== '' && String(u.group) !== 'Без группы') {
                 groups.add(String(u.group).trim());
             }
@@ -284,7 +271,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
             if (u.status === 'active') {
                 stats.total++;
                 let r = u.roles || [];
-                // Если ролей вообще нет, человек по умолчанию Возвещатель
                 if (r.length === 0) r = ['Возвещатель']; 
                 
                 if (r.includes('Возвещатель')) stats.pub++;
@@ -295,7 +281,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         }
     });
 
-    // Обновляем счетчики на экране
     document.getElementById('pending-count').innerText = pendingCount;
     const pList = document.getElementById('pending-list');
     if (pList) pList.innerHTML = pendingHTML || `<p class="text-slate-400 text-xs text-center py-4 font-bold uppercase tracking-widest">${window.t('no_new_requests')}</p>`;
@@ -306,7 +291,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
     document.getElementById('stat-eld').innerText = stats.eld;
     document.getElementById('stat-ms').innerText = stats.ms;
 
-    // Автоматическое заполнение выпадающего списка групп
     const select = document.getElementById('filter-group');
     if (select) {
         const sortedGroups = Array.from(groups).sort((a,b) => Number(a) - Number(b));
@@ -314,7 +298,6 @@ onSnapshot(collection(db, "users"), (snapshot) => {
         sortedGroups.forEach(g => { html += `<option value="${g}">Группа ${g}</option>`; });
         html += `<option value="none">Без группы</option>`;
         
-        // Оставляем выбор пользователя, если он переключил фильтр
         if (sortedGroups.includes(currentGroupFilter) || currentGroupFilter === 'none' || currentGroupFilter === 'all') {
             select.innerHTML = html;
             select.value = currentGroupFilter;
@@ -332,7 +315,6 @@ function renderUsersList() {
     const container = document.getElementById('users-list-container');
     if (!container) return;
 
-    // Фильтрация: Поиск + Фильтр по группе
     const filteredUsers = allUsersData.filter(u => {
         const term = currentSearchTerm.trim();
         const nameMatch = !term || u.name.toLowerCase().includes(term);
@@ -345,15 +327,8 @@ function renderUsersList() {
         return nameMatch && groupMatch;
     });
 
-    // Сортировка: Сначала по группе, потом по алфавиту
-    filteredUsers.sort((a, b) => {
-        const gA = a.group || 'Без группы';
-        const gB = b.group || 'Без группы';
-        if (gA === 'Без группы' && gB !== 'Без группы') return 1;
-        if (gB === 'Без группы' && gA !== 'Без группы') return -1;
-        if (gA !== gB) return gA.localeCompare(gB, undefined, {numeric: true});
-        return a.name.localeCompare(b.name);
-    });
+    // ИСПРАВЛЕНИЕ СОРТИРОВКИ: Строго по алфавиту (именам). Карточки не будут прыгать!
+    filteredUsers.sort((a, b) => a.name.localeCompare(b.name));
 
     if (filteredUsers.length === 0) {
         container.innerHTML = `<div class="col-span-full py-10 text-center text-slate-400 font-bold uppercase tracking-widest text-xs border border-slate-200 border-dashed rounded-2xl">Никого не найдено</div>`;
@@ -369,26 +344,38 @@ function renderUsersList() {
         const rowClass = isBlocked ? 'bg-red-50/40 opacity-70 grayscale border-red-200' : 'bg-white border-slate-200 hover:shadow-md hover:border-slate-300';
         const nameColor = isBlocked ? 'text-red-700' : 'text-slate-800';
 
+        // ИСПРАВЛЕНИЕ: Форматирование "Был(а) в сети"
         let lastVisitText = "Нет данных";
         if (u.lastActive || u.lastLogin) {
             const dateObj = new Date(u.lastActive || u.lastLogin);
-            lastVisitText = `${dateObj.getDate()}.${dateObj.getMonth()+1}.${dateObj.getFullYear()}`;
+            if (!isNaN(dateObj)) {
+                const day = dateObj.getDate().toString().padStart(2, '0');
+                const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+                const year = dateObj.getFullYear();
+                const hours = dateObj.getHours().toString().padStart(2, '0');
+                const mins = dateObj.getMinutes().toString().padStart(2, '0');
+                lastVisitText = `${day}.${month}.${year} в ${hours}:${mins}`;
+            }
         }
 
         const lockBtn = isBlocked 
-            ? `<button onclick="unblockUser('${id}')" title="${window.t('btn_unblock')}" class="w-9 h-9 flex items-center justify-center text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors border border-emerald-100 outline-none">🔓</button>`
-            : `<button onclick="blockUser('${id}')" title="${window.t('btn_block')}" class="w-9 h-9 flex items-center justify-center text-sm bg-white hover:bg-amber-100 text-amber-600 rounded-lg transition-colors border border-slate-200 hover:border-amber-300 outline-none">🔒</button>`;
+            ? `<button onclick="unblockUser('${id}')" title="${window.t('btn_unblock')}" class="w-9 h-9 flex items-center justify-center text-sm bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors outline-none">🔓</button>`
+            : `<button onclick="blockUser('${id}')" title="${window.t('btn_block')}" class="w-9 h-9 flex items-center justify-center text-sm bg-white hover:bg-slate-100 text-slate-600 rounded-lg transition-colors border border-slate-200 outline-none">🔒</button>`;
         
-        const msgBtn = `<button onclick="openMsgModal('${id}', '${u.name}')" title="${window.t('send_msg')}" class="w-9 h-9 flex items-center justify-center text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg transition-colors border border-indigo-100 outline-none">💬</button>`;
-        const deleteBtn = `<button onclick="deleteUser('${id}')" title="${window.t('btn_delete')}" class="w-9 h-9 flex items-center justify-center text-sm bg-white hover:bg-red-100 text-red-600 rounded-lg transition-colors border border-slate-200 hover:border-red-300 outline-none">🗑️</button>`;
+        const msgBtn = `<button onclick="openMsgModal('${id}', '${u.name}')" title="${window.t('send_msg')}" class="w-9 h-9 flex items-center justify-center text-sm bg-white hover:bg-slate-100 text-slate-600 rounded-lg transition-colors border border-slate-200 outline-none">💬</button>`;
+        const deleteBtn = `<button onclick="deleteUser('${id}')" title="${window.t('btn_delete')}" class="w-9 h-9 flex items-center justify-center text-sm bg-white hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-slate-200 hover:border-red-200 outline-none">🗑️</button>`;
+
+        // ЕДИНЫЙ СТРОГИЙ СТИЛЬ ДЛЯ ВСЕХ КНОПОК
+        const checkboxClass = "flex items-center gap-1.5 cursor-pointer text-[10px] text-slate-700 font-bold hover:bg-slate-100 py-1.5 px-2.5 border border-slate-200 bg-slate-50 rounded-lg transition-colors shadow-sm uppercase";
+        const accentClass = "accent-slate-600 w-3.5 h-3.5";
 
         html += `
             <div class="${rowClass} rounded-2xl shadow-sm p-4 flex flex-col relative transition-all">
                 
                 <div class="flex justify-between items-start mb-4 border-b border-slate-100 pb-3">
                     <div class="flex-grow pr-2">
-                        <input type="text" onchange="updateName('${id}', this.value, this)" value="${u.name}" class="w-full font-black ${nameColor} text-base md:text-lg mb-1 bg-transparent border-b border-dashed border-transparent hover:border-slate-300 focus:border-indigo-500 outline-none transition-all py-0.5 px-1 -ml-1 rounded-sm" ${isBlocked ? 'disabled' : ''}>
-                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest pl-1">Был(а): ${lastVisitText}</p>
+                        <input type="text" onchange="updateName('${id}', this.value, this)" value="${u.name}" class="w-full font-black ${nameColor} text-base md:text-lg mb-1 bg-transparent border-b border-dashed border-transparent hover:border-slate-300 focus:border-slate-500 outline-none transition-all py-0.5 px-1 -ml-1 rounded-sm" ${isBlocked ? 'disabled' : ''}>
+                        <p class="text-[9px] font-bold text-slate-400 tracking-widest pl-1 uppercase">Был(а): ${lastVisitText}</p>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
                         ${msgBtn} ${lockBtn} ${deleteBtn}
@@ -399,8 +386,8 @@ function renderUsersList() {
                     <div class="flex flex-col">
                         <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 text-center">Пол</span>
                         <select onchange="updateField('${id}', 'gender', this.value)" class="text-center-last text-[10px] md:text-xs font-bold py-1.5 px-0.5 rounded-lg border border-slate-200 bg-white outline-none text-slate-700 cursor-pointer" ${isBlocked ? 'disabled' : ''}>
-                            <option value="boy" ${u.gender === 'boy' ? 'selected' : ''}>👨 Брат</option>
-                            <option value="girl" ${u.gender === 'girl' ? 'selected' : ''}>👩 Сестра</option>
+                            <option value="boy" ${u.gender === 'boy' ? 'selected' : ''}>Брат</option>
+                            <option value="girl" ${u.gender === 'girl' ? 'selected' : ''}>Сестра</option>
                         </select>
                     </div>
                     <div class="flex flex-col">
@@ -416,23 +403,23 @@ function renderUsersList() {
                 <div class="mb-3">
                     <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Статус в собрании</span>
                     <div class="flex flex-wrap gap-1.5">
-                        <label class="flex items-center gap-1.5 cursor-pointer text-[9px] text-slate-600 font-bold uppercase hover:bg-slate-100 py-1.5 px-2 border border-slate-200 bg-white rounded-lg transition-colors shadow-sm">
-                            <input type="checkbox" onchange="toggleRole('${id}', 'Возвещатель', this.checked)" class="accent-slate-500 w-3.5 h-3.5" ${r.includes('Возвещатель') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Возвещатель
+                        <label class="${checkboxClass}">
+                            <input type="checkbox" onchange="toggleRole('${id}', 'Возвещатель', this.checked)" class="${accentClass}" ${r.includes('Возвещатель') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Возвещатель
                         </label>
-                        <label class="flex items-center gap-1.5 cursor-pointer text-[9px] text-emerald-700 font-bold uppercase hover:bg-emerald-100 py-1.5 px-2 border border-emerald-200 bg-emerald-50 rounded-lg transition-colors shadow-sm">
-                            <input type="checkbox" onchange="toggleRole('${id}', 'Пионер', this.checked)" class="accent-emerald-500 w-3.5 h-3.5" ${r.includes('Пионер') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Пионер
+                        <label class="${checkboxClass}">
+                            <input type="checkbox" onchange="toggleRole('${id}', 'Пионер', this.checked)" class="${accentClass}" ${r.includes('Пионер') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Пионер
                         </label>
-                        <label class="flex items-center gap-1.5 cursor-pointer text-[9px] text-sky-700 font-bold uppercase hover:bg-sky-100 py-1.5 px-2 border border-sky-200 bg-sky-50 rounded-lg transition-colors shadow-sm">
-                            <input type="checkbox" onchange="toggleRole('${id}', 'Помощник собрания', this.checked)" class="accent-sky-500 w-3.5 h-3.5" ${r.includes('Помощник собрания') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Помощник
+                        <label class="${checkboxClass}">
+                            <input type="checkbox" onchange="toggleRole('${id}', 'Помощник собрания', this.checked)" class="${accentClass}" ${r.includes('Помощник собрания') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Помощник
                         </label>
-                        <label class="flex items-center gap-1.5 cursor-pointer text-[9px] text-amber-700 font-bold uppercase hover:bg-amber-100 py-1.5 px-2 border border-amber-200 bg-amber-50 rounded-lg transition-colors shadow-sm">
-                            <input type="checkbox" onchange="toggleRole('${id}', 'Старейшина', this.checked)" class="accent-amber-500 w-3.5 h-3.5" ${r.includes('Старейшина') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Старейшина
+                        <label class="${checkboxClass}">
+                            <input type="checkbox" onchange="toggleRole('${id}', 'Старейшина', this.checked)" class="${accentClass}" ${r.includes('Старейшина') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Старейшина
                         </label>
-                        <label class="flex items-center gap-1.5 cursor-pointer text-[9px] text-sky-700 font-bold uppercase hover:bg-sky-100 py-1.5 px-2 border border-sky-200 bg-sky-50 rounded-lg transition-colors shadow-sm">
-                            <input type="checkbox" onchange="toggleRole('${id}', 'Участник школы', this.checked)" class="accent-sky-500 w-3.5 h-3.5" ${r.includes('Участник школы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Ученик
+                        <label class="${checkboxClass}">
+                            <input type="checkbox" onchange="toggleRole('${id}', 'Участник школы', this.checked)" class="${accentClass}" ${r.includes('Участник школы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Ученик
                         </label>
-                        <label class="flex items-center gap-1.5 cursor-pointer text-[9px] text-rose-700 font-bold uppercase hover:bg-rose-100 py-1.5 px-2 border border-rose-200 bg-rose-50 rounded-lg transition-colors shadow-sm">
-                            <input type="checkbox" onchange="toggleRole('${id}', 'Админ', this.checked)" class="accent-rose-500 w-3.5 h-3.5" ${r.includes('Админ') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Админ
+                        <label class="${checkboxClass}">
+                            <input type="checkbox" onchange="toggleRole('${id}', 'Админ', this.checked)" class="${accentClass}" ${r.includes('Админ') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> Админ
                         </label>
                     </div>
                 </div>
@@ -440,20 +427,20 @@ function renderUsersList() {
                 <div class="mt-auto">
                     <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 block border-t border-slate-100 pt-3">Ответственный за</span>
                     <div class="flex flex-wrap gap-1.5">
-                        <label class="flex items-center gap-1.5 cursor-pointer text-[9px] text-purple-700 font-bold uppercase hover:bg-purple-200 py-1.5 px-2 border border-purple-200 bg-purple-50 rounded-lg transition-colors shadow-sm">
-                            <input type="checkbox" onchange="toggleRole('${id}', 'Надзиратель группы', this.checked)" class="accent-purple-500 w-3.5 h-3.5" ${r.includes('Надзиратель группы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${ICONS.group} Группа
+                        <label class="${checkboxClass}">
+                            <input type="checkbox" onchange="toggleRole('${id}', 'Надзиратель группы', this.checked)" class="${accentClass}" ${r.includes('Надзиратель группы') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${ICONS.group} Группа
                         </label>
-                        <label class="flex items-center gap-1.5 cursor-pointer text-[9px] text-teal-700 font-bold uppercase hover:bg-teal-200 py-1.5 px-2 border border-teal-200 bg-teal-50 rounded-lg transition-colors shadow-sm">
-                            <input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за участки', this.checked)" class="accent-teal-500 w-3.5 h-3.5" ${r.includes('Ответственный за участки') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${ICONS.terr} Участки
+                        <label class="${checkboxClass}">
+                            <input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за участки', this.checked)" class="${accentClass}" ${r.includes('Ответственный за участки') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${ICONS.terr} Участки
                         </label>
-                        <label class="flex items-center gap-1.5 cursor-pointer text-[9px] text-indigo-700 font-bold uppercase hover:bg-indigo-200 py-1.5 px-2 border border-indigo-200 bg-indigo-50 rounded-lg transition-colors shadow-sm">
-                            <input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за школу', this.checked)" class="accent-indigo-500 w-3.5 h-3.5" ${r.includes('Ответственный за школу') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${ICONS.school} Школа
+                        <label class="${checkboxClass}">
+                            <input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за школу', this.checked)" class="${accentClass}" ${r.includes('Ответственный за школу') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${ICONS.school} Школа
                         </label>
-                        <label class="flex items-center gap-1.5 cursor-pointer text-[9px] text-blue-700 font-bold uppercase hover:bg-blue-200 py-1.5 px-2 border border-blue-200 bg-blue-50 rounded-lg transition-colors shadow-sm">
-                            <input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за стенды', this.checked)" class="accent-blue-600 w-3.5 h-3.5" ${r.includes('Ответственный за стенды') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${ICONS.stand} Стенды
+                        <label class="${checkboxClass}">
+                            <input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за стенды', this.checked)" class="${accentClass}" ${r.includes('Ответственный за стенды') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${ICONS.stand} Стенды
                         </label>
-                        <label class="flex items-center gap-1.5 cursor-pointer text-[9px] text-fuchsia-700 font-bold uppercase hover:bg-fuchsia-200 py-1.5 px-2 border border-fuchsia-200 bg-fuchsia-50 rounded-lg transition-colors shadow-sm">
-                            <input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за график', this.checked)" class="accent-fuchsia-600 w-3.5 h-3.5" ${r.includes('Ответственный за график') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${ICONS.schedule} График
+                        <label class="${checkboxClass}">
+                            <input type="checkbox" onchange="toggleRole('${id}', 'Ответственный за график', this.checked)" class="${accentClass}" ${r.includes('Ответственный за график') ? 'checked' : ''} ${isBlocked ? 'disabled' : ''}> ${ICONS.schedule} График
                         </label>
                     </div>
                 </div>
