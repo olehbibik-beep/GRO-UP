@@ -2747,78 +2747,73 @@ setTimeout(() => { if (window.renderGoal) window.renderGoal(); }, 500);
 // ==========================================
 // 🌤 ДИНАМИЧЕСКИЙ ФОН ДЛЯ СТЕНДА (ВРЕМЯ + ПОГОДА)
 // ==========================================
-async function updateStandWeather() {
-    const bgContainer = document.getElementById('stand-dynamic-bg');
-    const celestial = document.getElementById('stand-celestial');
-    const effect = document.getElementById('stand-weather-effect');
-    if (!bgContainer) return;
-
-    // 1. Определяем время суток (по часам на устройстве пользователя)
-    const hour = new Date().getHours();
-    const isDay = hour >= 6 && hour < 20; // С 6 утра до 8 вечера - день
-
-    try {
-        // 2. Получаем реальную погоду (Координаты: Карловарский край)
-        // Можно поменять latitude и longitude на любые другие
-        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=49.96&longitude=12.70&current_weather=true');
-        const data = await res.json();
-        const weatherCode = data.current_weather.weathercode;
-
-        applyWeatherTheme(bgContainer, celestial, effect, isDay, weatherCode);
-    } catch (e) {
-        console.log("Не удалось загрузить погоду. Используем базовое время суток.");
-        // Если нет интернета, просто ставим день или ночь
-        applyWeatherTheme(bgContainer, celestial, effect, isDay, 0);
-    }
-}
-
 function applyWeatherTheme(bg, celestial, effect, isDay, code) {
-    // Расшифровка кодов WMO: 0-3 (Ясно/Облачно), 51-67 (Дождь), 71-77 (Снег)
+    // Получаем элементы пейзажа для настройки освещения
+    const tree = document.getElementById('stand-tree');
+    const grassB = document.getElementById('stand-grass-back');
+    const grassF = document.getElementById('stand-grass-front');
+    const chars = document.getElementById('stand-characters');
     
-    // Сбрасываем старые классы фона
-    bg.className = 'relative w-full h-40 transition-colors duration-1000 flex items-end justify-center overflow-hidden';
+    const scenery = [tree, grassB, grassF]; // Группа пейзажа
+
+    // Сбрасываем эффекты осадков
+    bg.className = 'relative w-full h-48 transition-colors duration-1000 flex items-end justify-center overflow-hidden';
     effect.style.opacity = '0';
     effect.style.backgroundImage = 'none';
 
     if (isDay) {
+        // ДНЕВНОЕ ОСВЕЩЕНИЕ (По умолчанию яркое)
+        scenery.forEach(el => { if(el) el.style.filter = 'brightness(1) saturate(1) grayscale(0)'; });
+        if(chars) chars.style.filter = 'brightness(1)';
+
         if (code <= 3) {
-            // ДЕНЬ: ЯСНО ИЛИ ПЕРЕМЕННАЯ ОБЛАЧНОСТЬ
+            // ЯСНО
             bg.classList.add('bg-gradient-to-b', 'from-sky-400', 'to-sky-100');
             celestial.className = 'absolute top-4 right-6 w-12 h-12 bg-yellow-300 rounded-full blur-[2px] opacity-90 shadow-[0_0_30px_rgba(253,224,71,0.8)]';
-            
-            // Если небольшая облачность, делаем солнце тусклее
-            if (code > 0) celestial.classList.replace('opacity-90', 'opacity-50');
+            if (code > 0) celestial.classList.replace('opacity-90', 'opacity-50'); // Тусклее, если облака
             
         } else if (code >= 51 && code <= 67) {
-            // ДЕНЬ: ДОЖДЬ
+            // ДОЖДЬ
             bg.classList.add('bg-gradient-to-b', 'from-slate-500', 'to-slate-300');
-            celestial.className = 'hidden'; // Прячем солнце
+            celestial.className = 'hidden';
             effect.style.opacity = '0.4';
             effect.style.backgroundImage = 'url("data:image/svg+xml,%3Csvg width=\'10\' height=\'10\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M5 0L4 10\' stroke=\'%23ffffff\' stroke-width=\'1\' opacity=\'0.5\'/%3E%3C/svg%3E")';
             
+            // Затемняем и обесцвечиваем пейзаж в дождь
+            scenery.forEach(el => { if(el) el.style.filter = 'brightness(0.75) saturate(0.8)'; });
+            if(chars) chars.style.filter = 'brightness(0.9)';
+
         } else if (code >= 71 && code <= 77) {
-            // ДЕНЬ: СНЕГ
+            // СНЕГ
             bg.classList.add('bg-gradient-to-b', 'from-blue-200', 'to-white');
             celestial.className = 'hidden';
             effect.style.opacity = '0.6';
             effect.style.backgroundImage = 'radial-gradient(circle, #ffffff 2px, transparent 2.5px)';
             effect.style.backgroundSize = '15px 15px';
+            
+            // Делаем траву и дерево "морозными" (серыми и светлыми)
+            scenery.forEach(el => { if(el) el.style.filter = 'brightness(1.4) grayscale(0.7)'; });
+
         } else {
-            // ДЕНЬ: ПАСМУРНО / ТУМАН
+            // ПАСМУРНО
             bg.classList.add('bg-gradient-to-b', 'from-gray-400', 'to-gray-200');
             celestial.className = 'hidden';
+            scenery.forEach(el => { if(el) el.style.filter = 'brightness(0.85) saturate(0.9)'; });
         }
     } else {
-        // НОЧНОЕ ВРЕМЯ
+        // === НОЧНОЕ ОСВЕЩЕНИЕ ===
+        // Сильно затемняем пейзаж и чуть-чуть самих братьев
+        scenery.forEach(el => { if(el) el.style.filter = 'brightness(0.3) saturate(0.6)'; });
+        if(chars) chars.style.filter = 'brightness(0.75)';
+
         celestial.className = 'absolute top-4 right-8 w-10 h-10 bg-slate-100 rounded-full blur-[1px] opacity-80 shadow-[0_0_20px_rgba(241,245,249,0.5)]'; // Луна
         
         if (code <= 3) {
             // НОЧЬ: ЯСНО
             bg.classList.add('bg-gradient-to-b', 'from-indigo-950', 'to-indigo-800');
-            // Эффект звездного неба
             effect.style.opacity = '0.4';
             effect.style.backgroundImage = 'radial-gradient(circle, #ffffff 1px, transparent 1.5px)';
-            effect.style.backgroundSize = '20px 20px';
+            effect.style.backgroundSize = '20px 20px'; // Звезды
         } else if (code >= 51 && code <= 67) {
             // НОЧЬ: ДОЖДЬ
             bg.classList.add('bg-gradient-to-b', 'from-slate-900', 'to-slate-800');
@@ -2832,13 +2827,6 @@ function applyWeatherTheme(bg, celestial, effect, isDay, code) {
         }
     }
 }
-
-// Запускаем проверку погоды при загрузке приложения
-document.addEventListener('DOMContentLoaded', () => {
-    updateStandWeather();
-    // Обновляем погоду каждый час, если приложение открыто долго
-    setInterval(updateStandWeather, 3600000); 
-});
 
 // ============================================
 // КАСТОМНЫЙ ОФЛАЙН РЕЖИМ (ПЕРЕХВАТЧИК ИНТЕРНЕТА)
