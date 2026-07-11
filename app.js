@@ -878,28 +878,21 @@ window.updateStandWidgetUI = function() {
     }
 
 container.innerHTML = `
-        <!-- 🔥 1. ИСПРАВИЛИ ЗАКРУГЛЕНИЕ: теперь тут стандартный rounded-xl -->
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden w-full shadow-sm flex flex-col">
-            
-            <!-- 🔥 2. ВЫСОТА КАРТИНКИ: 
-                 Именно здесь (класс h-28) ты можешь менять высоту!
-                 h-24 = еще меньше
-                 h-28 = как сейчас (ровно половина от того, что было)
-                 h-32 = чуть больше
-                 h-[150px] = можно задать точный размер в пикселях
-            -->
             <div class="relative w-full h-28 bg-slate-200 overflow-hidden shrink-0">
-                <!-- Сюда скрипт сам подставит нужный WEBP файл -->
                 <img src="bg-day-clear.webp" id="stand-dynamic-bg-img" alt="Стенд" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500">
             </div>
-            
-            <!-- Кнопки и контент (Заголовок удален!) -->
             <div class="p-4 flex flex-col">
                 ${buttonHtml}
                 ${contentHtml}
             </div>
         </div>
     `;
+
+    // 👇 ДОБАВЬ ВОТ ЭТИ 3 СТРОЧКИ СРАЗУ ПОСЛЕ container.innerHTML:
+    if (typeof updateStandWeather === 'function') {
+        setTimeout(updateStandWeather, 100);
+    }
 };
 
 window.requestStand = async (btn) => {
@@ -2755,9 +2748,6 @@ window.finishGoalEarly = function(isManual = false) {
 
 setTimeout(() => { if (window.renderGoal) window.renderGoal(); }, 500);
 
-// ==========================================
-// 🌤 ДИНАМИЧЕСКИЙ ФОН ДЛЯ СТЕНДА (УМНЫЙ ПЕРЕКЛЮЧАТЕЛЬ WEBP)
-// ==========================================
 // ==========================================
 // 🌤 ДИНАМИЧЕСКИЙ ФОН ДЛЯ СТЕНДА (УМНЫЙ ПЕРЕКЛЮЧАТЕЛЬ WEBP)
 // ==========================================
