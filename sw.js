@@ -18,7 +18,6 @@ messaging.onBackgroundMessage((payload) => {
      const title = payload.data?.title || 'GRO-UP';
      const options = {
         body: payload.data?.body || 'Новое уведомление',
-        // 🔥 Жестко указываем абсолютные ссылки на иконки
         icon: 'https://olehbibik-beep.github.io/GRO-UP/icon-512.png',
         badge: 'https://olehbibik-beep.github.io/GRO-UP/icon-512.png',
         data: payload.data
@@ -41,16 +40,18 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ==========================================
-// 🔥 ГЛАВНЫЙ РУБИЛЬНИК КЭША
+// 🔥 ГЛАВНЫЙ РУБИЛЬНИК КЭША (Версия 78)
 // ==========================================
-const CACHE_NAME = 'gro-up-v76'; 
+const CACHE_NAME = 'gro-up-v78'; 
 
 const INITIAL_CACHED_RESOURCES = [
   './',
   './index.html',
   './app.js',
   './manifest.json',
-  './icon-512.png'
+  './icon-512.png',
+  // 🔥 ДОБАВЛЯЕМ ДИЗАЙН В ПАМЯТЬ ТЕЛЕФОНА
+  'https://cdn.tailwindcss.com'
 ];
 
 self.addEventListener('install', (event) => {
@@ -60,8 +61,6 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME).then(async (cache) => {
       for (let req of INITIAL_CACHED_RESOURCES) {
          try { 
-             // МАГИЯ ЗДЕСЬ: { cache: 'reload' } заставляет браузер игнорировать старую память
-             // и качать свежайшую версию файла напрямую с твоего сервера!
              await cache.add(new Request(req, { cache: 'reload' })); 
          } catch(e) { 
              console.log('Файл пропущен при кэшировании: ' + req); 
@@ -75,7 +74,6 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(keys.map((key) => {
-        // Как только цифра версии меняется, этот код беспощадно удаляет старый кэш
         if (key !== CACHE_NAME) {
             console.log('Удаляем старый кэш: ' + key);
             return caches.delete(key);
@@ -87,9 +85,12 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Не трогаем сторонние запросы (типа базы данных Firebase)
-  if (!event.request.url.startsWith(self.location.origin)) return;
-  // Не кэшируем ничего, кроме стандартных GET-запросов
+  // 🔥 Разрешаем кэшировать файлы НАШЕГО сайта И скрипт дизайна Tailwind
+  const isLocal = event.request.url.startsWith(self.location.origin);
+  const isTailwind = event.request.url.includes('cdn.tailwindcss.com');
+  
+  // Игнорируем базу данных Firebase и прочие посторонние ссылки
+  if (!isLocal && !isTailwind) return;
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
