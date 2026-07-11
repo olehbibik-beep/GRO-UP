@@ -55,6 +55,18 @@
         /* 🔥 ПРЕДОХРАНИТЕЛЬ: Жесткое скрытие элементов без интернета */
         .hidden { display: none !important; }
         
+        /* 🌳 Анимации для виджета со стендом */
+        @keyframes sway {
+            0%, 100% { transform: rotate(-4deg); }
+            50% { transform: rotate(5deg); }
+        }
+        @keyframes grass-move {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .tree-sway { animation: sway 5s ease-in-out infinite; transform-origin: bottom center; }
+        .grass-layer { width: 200%; animation: grass-move linear infinite; }
+
         ::-webkit-scrollbar { display: none; }
         
         html, body {
@@ -149,7 +161,6 @@
         <button onclick="window.logout()" class="text-sky-500 text-sm font-bold hover:underline outline-none" data-lang="logout_btn">Выйти</button>
     </div>
 
-    <!-- НОВОЕ МЕНЮ НАВИГАЦИИ -->
   <nav class="shrink-0 w-full bg-ui-nav flex flex-row items-center justify-between z-50 pb-safe md:h-[100dvh] md:w-20 md:flex-col md:justify-start md:py-6 md:border-t-0 md:border-l border-t-[3px] border-[#2A2E33] order-last fixed bottom-0 left-0 md:relative md:bottom-auto md:left-auto">
         
         <button onclick="switchTab('tasks', this)" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors relative">
@@ -323,12 +334,34 @@
         <div id="tab-territories" class="tab-content pt-4 md:pt-0 px-4 md:px-0">
             <div class="w-full max-w-6xl mx-auto px-0 md:pl-8 md:pr-6">
                 
-                <!-- 🔥 ОБНОВЛЕННЫЙ ВИДЖЕТ СТЕНДОВ С ДИНАМИЧЕСКИМ ФОНОМ -->
+                <!-- 🔥 ОБНОВЛЕННЫЙ ВИДЖЕТ СТЕНДОВ С ДИНАМИЧЕСКИМ ФОНОМ, ДЕРЕВОМ И ТРАВОЙ -->
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden mb-6 flex flex-col">
-                    <div id="stand-dynamic-bg" class="relative w-full h-40 bg-gradient-to-b from-sky-300 to-sky-100 transition-colors duration-1000 flex items-end justify-center overflow-hidden">
-                        <div id="stand-celestial" class="absolute top-4 right-6 w-12 h-12 bg-yellow-300 rounded-full blur-[2px] opacity-80"></div>
-                        <div id="stand-weather-effect" class="absolute inset-0 pointer-events-none opacity-0 transition-opacity duration-1000"></div>
-                        <img src="STENDIK.png" alt="Стенд" class="relative z-10 h-36 object-contain drop-shadow-xl -mb-2">
+                    <div id="stand-dynamic-bg" class="relative w-full h-48 bg-gradient-to-b from-sky-300 to-sky-100 transition-colors duration-1000 flex items-end justify-center overflow-hidden">
+                        
+                        <!-- Солнце/Луна -->
+                        <div id="stand-celestial" class="absolute top-4 right-6 w-12 h-12 bg-yellow-300 rounded-full blur-[2px] opacity-80 transition-all duration-1000"></div>
+                        
+                        <!-- Осадки (Дождь/Снег) -->
+                        <div id="stand-weather-effect" class="absolute inset-0 pointer-events-none opacity-0 transition-opacity duration-1000 z-40"></div>
+
+                        <!-- 🌳 Дерево (качается от ветра) -->
+                        <div id="stand-tree" class="absolute bottom-6 left-2 md:left-6 w-24 h-36 tree-sway transition-all duration-1000 z-10">
+                            <!-- Ствол -->
+                            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-16 bg-[#78350f] rounded-t-sm"></div>
+                            <!-- Крона -->
+                            <div class="absolute top-4 left-0 w-14 h-14 bg-[#16a34a] rounded-full shadow-lg"></div>
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-[#15803d] rounded-full shadow-lg"></div>
+                            <div class="absolute top-6 left-6 w-14 h-14 bg-[#22c55e] rounded-full shadow-lg"></div>
+                        </div>
+
+                        <!-- 🌿 Трава (Задний план - светлая, движется медленно) -->
+                        <div id="stand-grass-back" class="absolute bottom-2 left-0 h-10 flex z-10 transition-all duration-1000 grass-layer" style="animation-duration: 12s; background: url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 40\' width=\'100\' height=\'40\'%3E%3Cpath d=\'M0 40 Q 15 10 25 40 Q 40 20 50 40 Q 65 5 75 40 Q 90 15 100 40 Z\' fill=\'%234ade80\'/%3E%3C/svg%3E') repeat-x bottom left;"></div>
+
+                        <!-- 🧍‍♂️🧍‍♀️ Картинка Стенда (STENDIK_2.png) -->
+                        <img src="STENDIK_2.png" alt="Стенд" class="relative z-20 h-44 object-contain drop-shadow-[0_8px_6px_rgba(0,0,0,0.3)] pb-1 transition-all duration-1000" id="stand-characters">
+
+                        <!-- 🌿 Трава (Передний план - темная, движется быстрее для параллакса) -->
+                        <div id="stand-grass-front" class="absolute -bottom-1 left-0 h-8 flex z-30 transition-all duration-1000 grass-layer" style="animation-duration: 7s; background: url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 40\' width=\'100\' height=\'40\'%3E%3Cpath d=\'M0 40 Q 10 15 20 40 Q 30 25 40 40 Q 55 10 70 40 Q 85 20 100 40 Z\' fill=\'%2316a34a\'/%3E%3C/svg%3E') repeat-x bottom left;"></div>
                     </div>
                     <!-- Сюда твой app.js вставит кнопки и список смен -->
                     <div id="stand-widget-container" class="p-4"></div>
