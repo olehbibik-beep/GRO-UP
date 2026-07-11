@@ -878,29 +878,30 @@ window.updateStandWidgetUI = function() {
     }
 
 container.innerHTML = `
-        <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden w-full shadow-sm flex flex-col">
+        <!-- 🔥 1. ИСПРАВИЛИ ЗАКРУГЛЕНИЕ: теперь тут стандартный rounded-xl -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden w-full shadow-sm flex flex-col">
             
-            <!-- 🖼 КОНТЕЙНЕР АНИМАЦИИ (Живой фон) -->
-            <div class="relative w-full h-56 bg-slate-200 overflow-hidden shrink-0">
+            <!-- 🔥 2. ВЫСОТА КАРТИНКИ: 
+                 Именно здесь (класс h-28) ты можешь менять высоту!
+                 h-24 = еще меньше
+                 h-28 = как сейчас (ровно половина от того, что было)
+                 h-32 = чуть больше
+                 h-[150px] = можно задать точный размер в пикселях
+            -->
+            <div class="relative w-full h-28 bg-slate-200 overflow-hidden shrink-0">
                 <!-- Сюда скрипт сам подставит нужный WEBP файл -->
                 <img src="bg-day-clear.webp" id="stand-dynamic-bg-img" alt="Стенд" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500">
             </div>
             
-            <!-- Кнопки, заголовки и контент (с отступами) -->
+            <!-- Кнопки и контент (Заголовок удален!) -->
             <div class="p-4 flex flex-col">
-                <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
-                    <h3 class="font-black text-slate-800 text-base md:text-lg flex items-center gap-2">
-                        <svg class="w-5 h-5 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                        ${window.t('stand_title')}
-                    </h3>
-                </div>
                 ${buttonHtml}
                 ${contentHtml}
             </div>
         </div>
     `;
 
-    // 🔥 Сразу после отрисовки запускаем проверку погоды, чтобы картинка обновилась
+    // 🔥 Сразу после отрисовки запускаем проверку погоды
     if (typeof updateStandWeather === 'function') {
         setTimeout(updateStandWeather, 100);
     }
