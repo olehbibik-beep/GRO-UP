@@ -2758,6 +2758,29 @@ setTimeout(() => { if (window.renderGoal) window.renderGoal(); }, 500);
 // ==========================================
 // 🌤 ДИНАМИЧЕСКИЙ ФОН ДЛЯ СТЕНДА (УМНЫЙ ПЕРЕКЛЮЧАТЕЛЬ WEBP)
 // ==========================================
+// ==========================================
+// 🌤 ДИНАМИЧЕСКИЙ ФОН ДЛЯ СТЕНДА (УМНЫЙ ПЕРЕКЛЮЧАТЕЛЬ WEBP)
+// ==========================================
+async function updateStandWeather() {
+    const img = document.getElementById('stand-dynamic-bg-img');
+    if (!img) return; // Если картинки нет, ничего не делаем
+
+    // Определяем время суток (с 6:00 до 19:59 - день, остальное - ночь)
+    const hour = new Date().getHours();
+    const isDay = hour >= 6 && hour < 20; 
+
+    try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=49.96&longitude=12.70&current_weather=true');
+        const data = await res.json();
+        const weatherCode = data.current_weather.weathercode;
+
+        applyWeatherTheme(isDay, weatherCode);
+    } catch (e) {
+        console.log("Нет интернета для погоды, ставим базовое время.");
+        applyWeatherTheme(isDay, 0); 
+    }
+}
+
 function applyWeatherTheme(isDay, code) {
     const img = document.getElementById('stand-dynamic-bg-img');
     if (!img) return;
@@ -2789,40 +2812,6 @@ function applyWeatherTheme(isDay, code) {
     }, 300);
 }
 
-function applyWeatherTheme(isDay, code) {
-    const img = document.getElementById('stand-dynamic-bg-img');
-    if (!img) return;
-
-    let timeStr = isDay ? 'day' : 'night';
-    let weatherStr = 'clear';
-
-    // Расшифровываем коды погоды Open-Meteo
-    if (code === 0 || code === 1) {
-        weatherStr = 'clear'; // Ясно
-    } else if (code === 2 || code === 3 || (code >= 45 && code <= 48)) {
-        weatherStr = 'cloudy'; // Пасмурно / Туман
-    } else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
-        weatherStr = 'rain'; // Дождь / Ливень
-    } else if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
-        weatherStr = 'snow'; // Снег
-    } else {
-        weatherStr = 'cloudy'; // Если код неизвестен - ставим пасмурно
-    }
-
-    // Собираем название файла (например: bg-night-rain.webp)
-    const newSrc = `bg-${timeStr}-${weatherStr}.webp`;
-
-    // Если нужный фон уже стоит - ничего не делаем
-    if (img.getAttribute('src') === newSrc) return;
-
-    // Плавно затухаем старую картинку и показываем новую
-    img.style.opacity = '0.4';
-    setTimeout(() => {
-        img.src = newSrc;
-        img.style.opacity = '1';
-    }, 300);
-}
-
 // ============================================
 // КАСТОМНЫЙ ОФЛАЙН РЕЖИМ (ПЕРЕХВАТЧИК ИНТЕРНЕТА)
 // ============================================
@@ -2838,11 +2827,7 @@ const initOfflineScreen = () => {
     };
 
 
-if (document.readyState === 'loading') { 
-    document.addEventListener('DOMContentLoaded', initScrollToTop); 
-} else { 
-    initScrollToTop(); 
-}
+
 
     
     // Слушаем события включения/выключения интернета
