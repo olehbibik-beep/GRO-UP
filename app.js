@@ -900,11 +900,6 @@ container.innerHTML = `
             </div>
         </div>
     `;
-
-    // 🔥 Сразу после отрисовки запускаем проверку погоды
-    if (typeof updateStandWeather === 'function') {
-        setTimeout(updateStandWeather, 100);
-    }
 };
 
 window.requestStand = async (btn) => {
@@ -2761,10 +2756,30 @@ window.finishGoalEarly = function(isManual = false) {
 setTimeout(() => { if (window.renderGoal) window.renderGoal(); }, 500);
 
 // ==========================================
-// 🌤 ДИНАМИЧЕСКИЙ ФОН ДЛЯ СТЕНДА (УМНЫЙ ПЕРЕКЛЮЧАТЕЛЬ КАРТИНОК)
+// 🌤 ДИНАМИЧЕСКИЙ ФОН ДЛЯ СТЕНДА (УМНЫЙ ПЕРЕКЛЮЧАТЕЛЬ WEBP)
 // ==========================================
-function applyWeatherTheme(bg, celestial, effect, isDay, code) {
-    // Ищем нашу главную картинку-фон
+async function updateStandWeather() {
+    const img = document.getElementById('stand-dynamic-bg-img');
+    if (!img) return; // Если картинки нет, ничего не делаем
+
+    // Определяем время суток (с 6:00 до 19:59 - день, остальное - ночь)
+    const hour = new Date().getHours();
+    const isDay = hour >= 6 && hour < 20; 
+
+    try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=49.96&longitude=12.70&current_weather=true');
+        const data = await res.json();
+        const weatherCode = data.current_weather.weathercode;
+
+        // Вызываем функцию ТОЛЬКО с нужными аргументами
+        applyWeatherTheme(isDay, weatherCode);
+    } catch (e) {
+        console.log("Нет интернета для погоды, ставим базовое время.");
+        applyWeatherTheme(isDay, 0); 
+    }
+}
+
+function applyWeatherTheme(isDay, code) {
     const img = document.getElementById('stand-dynamic-bg-img');
     if (!img) return;
 
