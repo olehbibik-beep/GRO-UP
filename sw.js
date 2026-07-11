@@ -40,9 +40,9 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ==========================================
-// 🔥 ГЛАВНЫЙ РУБИЛЬНИК КЭША (Версия 82)
+// 🔥 ГЛАВНЫЙ РУБИЛЬНИК КЭША (Версия 83)
 // ==========================================
-const CACHE_NAME = 'gro-up-v81'; // Увеличили версию!
+const CACHE_NAME = 'gro-up-v83'; // Увеличили версию!
 
 const INITIAL_CACHED_RESOURCES = [
   './',
