@@ -2758,25 +2758,35 @@ setTimeout(() => { if (window.renderGoal) window.renderGoal(); }, 500);
 // ==========================================
 // 🌤 ДИНАМИЧЕСКИЙ ФОН ДЛЯ СТЕНДА (УМНЫЙ ПЕРЕКЛЮЧАТЕЛЬ WEBP)
 // ==========================================
-async function updateStandWeather() {
+function applyWeatherTheme(isDay, code) {
     const img = document.getElementById('stand-dynamic-bg-img');
-    if (!img) return; // Если картинки нет, ничего не делаем
+    if (!img) return;
 
-    // Определяем время суток (с 6:00 до 19:59 - день, остальное - ночь)
-    const hour = new Date().getHours();
-    const isDay = hour >= 6 && hour < 20; 
+    let newSrc = 'bg-day-clear.webp'; // По умолчанию ставим ясный день
 
-    try {
-        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=49.96&longitude=12.70&current_weather=true');
-        const data = await res.json();
-        const weatherCode = data.current_weather.weathercode;
-
-        // Вызываем функцию ТОЛЬКО с нужными аргументами
-        applyWeatherTheme(isDay, weatherCode);
-    } catch (e) {
-        console.log("Нет интернета для погоды, ставим базовое время.");
-        applyWeatherTheme(isDay, 0); 
+    if (!isDay) {
+        // 🌙 НОЧЬ: всегда показываем ночную картинку
+        newSrc = 'bg-night-clear.webp';
+    } else {
+        // ☀️ ДЕНЬ: проверяем, есть ли дождь
+        // Коды дождя по Open-Meteo: 51-67 (морось/дождь), 80-82 (ливень)
+        if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
+            newSrc = 'bg-day-rain.webp';
+        } else {
+            // Для ясной, пасмурной и любой другой погоды днем
+            newSrc = 'bg-day-clear.webp'; 
+        }
     }
+
+    // Если нужный фон уже стоит - ничего не делаем, чтобы не моргало
+    if (img.getAttribute('src') === newSrc) return;
+
+    // Плавно меняем картинку
+    img.style.opacity = '0.4';
+    setTimeout(() => {
+        img.src = newSrc;
+        img.style.opacity = '1';
+    }, 300);
 }
 
 function applyWeatherTheme(isDay, code) {
