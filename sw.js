@@ -42,7 +42,7 @@ self.addEventListener('notificationclick', (event) => {
 // ==========================================
 // 🔥 ГЛАВНЫЙ РУБИЛЬНИК КЭША (Версия 81)
 // ==========================================
-const CACHE_NAME = 'gro-up-v78'; 
+const CACHE_NAME = 'gro-up-v81'; // Увеличили версию!
 
 const INITIAL_CACHED_RESOURCES = [
   './',
@@ -51,7 +51,16 @@ const INITIAL_CACHED_RESOURCES = [
   './manifest.json',
   './icon-512.png',
   // 🔥 ДОБАВЛЯЕМ ДИЗАЙН В ПАМЯТЬ ТЕЛЕФОНА
-  'https://cdn.tailwindcss.com'
+  'https://cdn.tailwindcss.com',
+  // 🔥 ДОБАВЛЯЕМ ФОНЫ СТЕНДА, ЧТОБЫ РАБОТАЛИ БЕЗ ИНТЕРНЕТА
+  './bg-day-clear.webp',
+  './bg-day-cloudy.webp',
+  './bg-day-rain.webp',
+  './bg-day-snow.webp',
+  './bg-night-clear.webp',
+  './bg-night-cloudy.webp',
+  './bg-night-rain.webp',
+  './bg-night-snow.webp'
 ];
 
 self.addEventListener('install', (event) => {
