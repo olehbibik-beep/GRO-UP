@@ -850,7 +850,6 @@ window.updateStandWidgetUI = function() {
                 grouped[shift.date].push(shift);
             });
 
-            let shiftsListHtml = '';
             Object.keys(grouped).forEach(dateStr => {
                 const shifts = grouped[dateStr];
                 const parts = dateStr.split('-');
@@ -870,8 +869,8 @@ window.updateStandWidgetUI = function() {
                             <div class="h-[1px] bg-slate-200 flex-grow"></div>
                         </div>
                         
-                        <!-- Список смен под этой датой (вертикальная линия) -->
-                        <div class="flex flex-col gap-2 pl-2 border-l-2 border-slate-200 ml-3">
+                        <!-- 🔥 ИСПРАВЛЕНО: Убрали вертикальную линию и отступы! -->
+                        <div class="flex flex-col gap-2">
                 `;
 
                 shifts.forEach(shift => {
