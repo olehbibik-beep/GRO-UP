@@ -781,9 +781,14 @@ function renderStandCard() {
         isStandReqPending = !snap.empty;
         updateStandWidgetUI();
     });
-    unsubStands = onSnapshot(query(collection(db, "stands"), where("userId", "==", userId)), (snap) => {
-        myStands = [];
-        snap.forEach(doc => myStands.push(doc.data()));
+
+    // 🔥 ИЗМЕНЕНИЕ ЗАПРОСА: Теперь скачиваем все смены месяца, чтобы видеть напарников!
+    const today = new Date();
+    const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+    
+    unsubStands = onSnapshot(query(collection(db, "stands"), where("date", ">=", firstDayStr)), (snap) => {
+        window.allStandsData = [];
+        snap.forEach(doc => window.allStandsData.push(doc.data()));
         updateStandWidgetUI();
     });
 }
@@ -798,13 +803,17 @@ window.updateStandWidgetUI = function() {
     const today = new Date();
     const tzOffset = today.getTimezoneOffset() * 60000;
     const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
-    const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+
+    // Вытаскиваем из общей кучи только ТВОИ смены
+    const allStands = window.allStandsData || [];
+    const myStandsList = allStands.filter(s => s.userId === userId);
 
     let upcomingShifts = [];
     let monthCount = 0;
+    const currentMonthPrefix = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-    myStands.forEach(data => {
-        if (data.date >= firstDayStr && data.date.startsWith(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`)) monthCount++;
+    myStandsList.forEach(data => {
+        if (data.date.startsWith(currentMonthPrefix)) monthCount++;
         if (data.date >= todayStr) upcomingShifts.push(data);
     });
     
@@ -813,84 +822,105 @@ window.updateStandWidgetUI = function() {
         return a.time.localeCompare(b.time);
     });
 
-    const nextShifts = upcomingShifts.slice(0, 3);
+    const nextShifts = upcomingShifts.slice(0, 4); // Берем ближайшие 4 смены
     let buttonHtml = '';
     let contentHtml = '';
 
     if (isApprovedForStand) {
-        // Кнопка теперь с отступом снизу (mb-4)
         buttonHtml = `<button onclick="window.location.href='stands.html'" class="w-full bg-teal-400 hover:bg-teal-600 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mb-4 shadow-sm">${window.t('stand_signup')}</button>`;
-        
-        let progressColor = 'bg-slate-400';
-        let txtColor = 'text-emerald-700';
-        if (monthCount >= 20) { progressColor = 'bg-rose-500'; txtColor = 'text-rose-700'; }
-        else if (monthCount >= 10) { progressColor = 'bg-amber-500'; txtColor = 'text-amber-700'; }
         
         let progressPercent = (monthCount / 50) * 100;
         if (progressPercent > 100) progressPercent = 100;
 
+        // 🔥 НОВЫЙ ДИЗАЙН ТАЙМЛАЙНА (в один ряд, белый фон, антрацитовая заливка, просто цифра)
         const statsHtml = `
-            <div>
-                <div class="flex items-center justify-between mb-1.5">
-                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_month_shifts')}</span>
-                    <span class="${txtColor} font-black text-xs bg-slate-400 border border-teal-400 px-2 py-0.5 rounded shadow-sm">${monthCount}</span>
+            <div class="flex items-center gap-3 w-full mb-5">
+                <div class="flex-grow bg-white border border-slate-200 rounded-full h-2.5 overflow-hidden flex shadow-inner">
+                    <div class="bg-slate-800 h-2.5 rounded-full transition-all duration-1000" style="width: ${progressPercent}%"></div>
                 </div>
-                <div class="w-full bg-teal-600 rounded-full h-1.5 overflow-hidden flex shadow-inner">
-                    <div class="${progressColor} h-1.5 rounded-full transition-all" style="width: ${progressPercent}%"></div>
-                </div>
+                <span class="font-black text-slate-800 text-xl leading-none w-6 text-center">${monthCount}</span>
             </div>
         `;
 
         if (nextShifts.length > 0) {
-            let shiftsListHtml = '';
+            // 🔥 ГРУППИРУЕМ СМЕНЫ ПО ДНЯМ
+            const grouped = {};
             nextShifts.forEach(shift => {
-                if (!shift || !shift.date) return;
-                const parts = shift.date.split('-');
-                if (parts.length < 3) return;
+                if(!grouped[shift.date]) grouped[shift.date] = [];
+                grouped[shift.date].push(shift);
+            });
 
+            let shiftsListHtml = '';
+            Object.keys(grouped).forEach(dateStr => {
+                const shifts = grouped[dateStr];
+                const parts = dateStr.split('-');
                 const dayNum = parseInt(parts[2], 10);
                 const monthIndex = parseInt(parts[1], 10) - 1;
-                const locName = shift.location && shift.location !== "undefined" ? shift.location : "ML - CupVital";
                 const monthNameArr = window.t('months');
                 const monthName = (Array.isArray(monthNameArr) && monthNameArr[monthIndex]) ? monthNameArr[monthIndex] : parts[1];
 
                 shiftsListHtml += `
-                    <div class="w-full bg-slate-50 border border-slate-200 flex items-center p-2 rounded-md mb-2 last:mb-0 shadow-sm hover:bg-white transition-colors">
-                        <div class="flex flex-col items-center justify-center w-10 h-10 bg-slate-800 text-white rounded border border-slate-700 shrink-0 shadow-inner">
-                            <span class="text-[7px] uppercase font-bold leading-none mb-0.5 tracking-widest">${monthName}</span>
-                            <span class="text-base font-black leading-none">${dayNum}</span>
+                    <div class="mb-4 last:mb-0">
+                        <!-- Шапка с датой -->
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-8 h-8 bg-slate-800 text-white rounded flex flex-col items-center justify-center shrink-0 shadow-sm">
+                                <span class="text-[7px] uppercase font-bold leading-none mb-0.5 tracking-widest">${monthName}</span>
+                                <span class="text-sm font-black leading-none">${dayNum}</span>
+                            </div>
+                            <div class="h-[1px] bg-slate-200 flex-grow"></div>
                         </div>
-                        <div class="ml-3 flex flex-col truncate w-full">
-                            <p class="font-black text-slate-800 text-xs truncate leading-tight">${locName}</p>
-                            <p class="text-[10px] font-bold text-slate-500 mt-0.5 font-mono">${shift.time}</p>
-                        </div>
-                    </div>
+                        
+                        <!-- Список смен под этой датой (вертикальная линия) -->
+                        <div class="flex flex-col gap-2 pl-2 border-l-2 border-slate-200 ml-3">
                 `;
+
+                shifts.forEach(shift => {
+                    // 🕵️‍♂️ Ищем напарника (кто записан на ту же дату, место и время, но другой ID)
+                    const partner = allStands.find(s => s.date === shift.date && s.location === shift.location && s.time === shift.time && s.userId !== userId);
+                    
+                    const partnerHtml = partner 
+                        ? `<span class="text-[11px] font-black text-slate-700 truncate w-full text-right">${partner.userName}</span>` 
+                        : `<span class="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 w-max">Свободно</span>`;
+
+                    const locName = shift.location && shift.location !== "undefined" ? shift.location : "ML - CupVital";
+
+                    // Карточка конкретной смены
+                    shiftsListHtml += `
+                        <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-2 rounded-md shadow-sm transition-colors hover:bg-white">
+                            <div class="flex flex-col min-w-0 flex-grow">
+                                <span class="font-black text-slate-800 text-[11px] md:text-xs truncate w-full">${locName}</span>
+                                <span class="text-[10px] font-bold text-slate-500 font-mono mt-0.5">${shift.time}</span>
+                            </div>
+                            <div class="flex flex-col items-end justify-center min-w-0 shrink-0 ml-2 w-1/2">
+                                <span class="text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Напарник</span>
+                                ${partnerHtml}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                shiftsListHtml += `</div></div>`; // Закрываем день
             });
-            contentHtml = `${statsHtml}<div class="mt-4"><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">${window.t('stand_upcoming')}</p>${shiftsListHtml}</div>`;
+
+            contentHtml = `${statsHtml}<div class="mt-2"><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3">${window.t('stand_upcoming')}</p>${shiftsListHtml}</div>`;
         } else {
-            contentHtml = `${statsHtml}<div class="w-full p-6 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center rounded-md mt-4 shadow-sm"><svg class="w-8 h-8 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_no_records')}</p></div>`;
+            contentHtml = `${statsHtml}<div class="w-full p-6 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center rounded-md mt-2 shadow-sm"><svg class="w-8 h-8 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_no_records')}</p></div>`;
         }
     } else {
-        // 🔥 ЕСЛИ ВОЗВЕЩАТЕЛЬ НЕ ОДОБРЕН (или ждет заявку)
         if (isStandReqPending) {
-            // Если заявка отправлена: показываем просто текст без кнопки
             buttonHtml = `<div class="w-full bg-teal-400 text-white font-black py-3.5 rounded-md text-xs uppercase tracking-widest text-center shadow-sm opacity-80">Заявка на рассмотрении</div>`;
-            contentHtml = ``; // Убираем пустой квадрат!
+            contentHtml = ``;
         } else {
-            // Если заявки еще нет: показываем кнопку
             buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-teal-400 hover:bg-teal-600 text-white font-black py-3.5 rounded-md text-xs uppercase tracking-widest outline-none transition-colors shadow-sm">${window.t('stand_apply')}</button>`;
-            contentHtml = ``; // Убираем пустой квадрат!
+            contentHtml = ``;
         }
     }
 
     container.innerHTML = `
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden w-full shadow-sm flex flex-col">
-            <!-- 🔥 СДЕЛАЛИ КАРТИНКУ БОЛЬШЕ (было h-28, стало h-48) -->
             <div class="relative w-full h-48 bg-slate-200 overflow-hidden shrink-0">
                 <img src="bg-day-clear.webp" id="stand-dynamic-bg-img" alt="Стенд" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500">
             </div>
-            <!-- Контейнер для кнопок -->
             <div class="p-4 flex flex-col empty:hidden">
                 ${buttonHtml}
                 ${contentHtml}
@@ -898,7 +928,6 @@ window.updateStandWidgetUI = function() {
         </div>
     `;
 
-    // Запускаем проверку погоды сразу после отрисовки
     if (typeof updateStandWeather === 'function') {
         setTimeout(updateStandWeather, 100);
     }
