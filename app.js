@@ -771,6 +771,9 @@ window.loadProfileData = async function() {
     } catch(e) { console.error(e); }
 };
 
+// ============================================
+// ВИДЖЕТ СТЕНДОВ (ЧИСТЫЙ И ИСПРАВЛЕННЫЙ КОД)
+// ============================================
 function renderStandCard() {
     const container = document.getElementById('stand-widget-container');
     if (!container) return;
@@ -782,115 +785,14 @@ function renderStandCard() {
         updateStandWidgetUI();
     });
 
-    // 🔥 ИЗМЕНЕНИЕ ЗАПРОСА: Теперь скачиваем все смены месяца, чтобы видеть напарников!
+    // Скачиваем все смены месяца, чтобы скрипт мог сопоставить тебя и напарника
     const today = new Date();
     const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
     
     unsubStands = onSnapshot(query(collection(db, "stands"), where("date", ">=", firstDayStr)), (snap) => {
         window.allStandsData = [];
         snap.forEach(doc => window.allStandsData.push(doc.data()));
-        updateStandWidgetUI();
-    });
-}
-
-window.updateStandWidgetUI = function() {
-    const container = document.getElementById('stand-widget-container');
-    if (!container) return;
-
-    const roles = currentUserData.roles || [];
-    const isApprovedForStand = roles.includes('Служение со стендом') || roles.includes('Владелец') || roles.includes('Админ');
-
-    const today = new Date();
-    const tzOffset = today.getTimezoneOffset() * 60000;
-    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
-
-    // Вытаскиваем из общей кучи только ТВОИ смены
-    const allStands = window.allStandsData || [];
-    const myStandsList = allStands.filter(s => s.userId === userId);
-
-    let upcomingShifts = [];
-    let monthCount = 0;
-    const currentMonthPrefix = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-
-    myStandsList.forEach(data => {
-        if (data.date.startsWith(currentMonthPrefix)) monthCount++;
-        if (data.date >= todayStr) upcomingShifts.push(data);
-    });
-    
-    upcomingShifts.sort((a, b) => {
-        if (a.date !== b.date) return a.date.localeCompare(b.date);
-        return a.time.localeCompare(b.time);
-    });
-
-    const nextShifts = upcomingShifts.slice(0, 4); // Берем ближайшие 4 смены
-    let buttonHtml = '';
-    let contentHtml = '';
-
-    if (isApprovedForStand) {
-        buttonHtml = `<button onclick="window.location.href='stands.html'" class="w-full bg-teal-400 hover:bg-teal-600 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mb-4 shadow-sm">${window.t('stand_signup')}</button>`;
-        
-        let progressPercent = (monthCount / 50) * 100;
-        if (progressPercent > 100) progressPercent = 100;
-
-        // 🔥 НОВЫЙ ДИЗАЙН ТАЙМЛАЙНА (в один ряд, белый фон, антрацитовая заливка, просто цифра)
-        const statsHtml = `
-            <div class="flex items-center gap-3 w-full mb-5">
-                <div class="flex-grow bg-white border border-slate-200 rounded-full h-2.5 overflow-hidden flex shadow-inner">
-                    <div class="bg-slate-800 h-2.5 rounded-full transition-all duration-1000" style="width: ${progressPercent}%"></div>
-                </div>
-                <span class="font-black text-slate-800 text-xl leading-none w-6 text-center">${monthCount}</span>
-            </div>
-        `;
-
-        if (nextShifts.length > 0) {
-            // 🔥 ГРУППИРУЕМ СМЕНЫ ПО ДНЯМ
-            const grouped = {};
-            nextShifts.forEach(shift => {
-                if(!grouped[shift.date]) grouped[shift.date] = [];
-                grouped[shift.date].push(shift);
-            });
-
-           function renderStandCard() {
-    const container = document.getElementById('stand-widget-container');
-    if (!container) return;
-    if (unsubStandReqs) unsubStandReqs();
-    if (unsubStands) unsubStands();
-
-    unsubStandReqs = onSnapshot(query(collection(db, "requests"), where("userId", "==", userId), where("type", "==", "stand")), (snap) => {
-        isStandReqPending = !snap.empty;
-        updateStandWidgetUI();
-    });
-
-    // 🔥 СВЯЗУЮЩЕЕ ЗВЕНО: Скачиваем все смены месяца, чтобы скрипт мог сопоставить тебя и напарника
-    const today = new Date();
-    const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
-    
-    unsubStands = onSnapshot(query(collection(db, "stands"), where("date", ">=", firstDayStr)), (snap) => {
-        window.allStandsData = [];
-        snap.forEach(doc => window.allStandsData.push(doc.data()));
-        updateStandWidgetUI(); // Пингуем обновление интерфейса, когда данные прилетели
-    });
-}
-
-function renderStandCard() {
-    const container = document.getElementById('stand-widget-container');
-    if (!container) return;
-    if (unsubStandReqs) unsubStandReqs();
-    if (unsubStands) unsubStands();
-
-    unsubStandReqs = onSnapshot(query(collection(db, "requests"), where("userId", "==", userId), where("type", "==", "stand")), (snap) => {
-        isStandReqPending = !snap.empty;
-        updateStandWidgetUI();
-    });
-
-    // 🔥 СВЯЗУЮЩЕЕ ЗВЕНО: Скачиваем все смены месяца, чтобы скрипт мог сопоставить тебя и напарника
-    const today = new Date();
-    const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
-    
-    unsubStands = onSnapshot(query(collection(db, "stands"), where("date", ">=", firstDayStr)), (snap) => {
-        window.allStandsData = [];
-        snap.forEach(doc => window.allStandsData.push(doc.data()));
-        updateStandWidgetUI(); // Пингуем обновление интерфейса, когда данные прилетели
+        updateStandWidgetUI(); 
     });
 }
 
@@ -971,7 +873,7 @@ window.updateStandWidgetUI = function() {
                             <div class="h-[1px] bg-slate-200 flex-grow"></div>
                         </div>
                         
-                        <!-- Плиточки смен выровнены по левому краю (без линий и лишних отступов) -->
+                        <!-- Плиточки смен выровнены по левому краю -->
                         <div class="flex flex-col gap-2">
                 `;
 
@@ -1004,7 +906,7 @@ window.updateStandWidgetUI = function() {
 
             contentHtml = `${statsHtml}<div class="mt-2"><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3">${window.t('stand_upcoming')}</p>${shiftsListHtml}</div>`;
         } else {
-            // Если смен действительно нет в базе — вот тут законно покажутся часики
+            // Часики, если смен нет
             contentHtml = `${statsHtml}<div class="w-full p-6 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center rounded-md mt-2 shadow-sm"><svg class="w-8 h-8 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_no_records')}</p></div>`;
         }
     } else {
