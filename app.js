@@ -872,24 +872,33 @@ window.updateStandWidgetUI = function() {
             contentHtml = `${statsHtml}<div class="w-full p-6 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center rounded-md mt-4 shadow-sm"><svg class="w-8 h-8 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">${window.t('stand_no_records')}</p></div>`;
         }
     } else {
-        if (isStandReqPending) buttonHtml = `<button disabled class="w-full bg-teal-400 text-slate-400 font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none mb-4 cursor-not-allowed">Заявка на рассмотрении</button>`;
-        else buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-teal-400 hover:bg-teal-600 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors mb-4 shadow-sm">${window.t('stand_apply')}</button>`;
-        contentHtml = `<div class="w-full h-24 bg-slate-50 border border-teal-200 flex items-center justify-center rounded-md shadow-sm"><svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 00-2-2H6a2 2 0 00-2-2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>`;
+        // 🔥 ЕСЛИ ВОЗВЕЩАТЕЛЬ НЕ ОДОБРЕН (или ждет заявку)
+        if (isStandReqPending) {
+            // Если заявка отправлена: показываем просто текст без кнопки
+            buttonHtml = `<div class="w-full bg-teal-400 text-white font-black py-3.5 rounded-md text-xs uppercase tracking-widest text-center shadow-sm opacity-80">Заявка на рассмотрении</div>`;
+            contentHtml = ``; // Убираем пустой квадрат!
+        } else {
+            // Если заявки еще нет: показываем кнопку
+            buttonHtml = `<button onclick="requestStand(this)" class="w-full bg-teal-400 hover:bg-teal-600 text-white font-black py-3.5 rounded-md text-xs uppercase tracking-widest outline-none transition-colors shadow-sm">${window.t('stand_apply')}</button>`;
+            contentHtml = ``; // Убираем пустой квадрат!
+        }
     }
 
-container.innerHTML = `
+    container.innerHTML = `
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden w-full shadow-sm flex flex-col">
-            <div class="relative w-full h-28 bg-slate-200 overflow-hidden shrink-0">
+            <!-- 🔥 СДЕЛАЛИ КАРТИНКУ БОЛЬШЕ (было h-28, стало h-48) -->
+            <div class="relative w-full h-48 bg-slate-200 overflow-hidden shrink-0">
                 <img src="bg-day-clear.webp" id="stand-dynamic-bg-img" alt="Стенд" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500">
             </div>
-            <div class="p-4 flex flex-col">
+            <!-- Контейнер для кнопок -->
+            <div class="p-4 flex flex-col empty:hidden">
                 ${buttonHtml}
                 ${contentHtml}
             </div>
         </div>
     `;
 
-    // 👇 ДОБАВЬ ВОТ ЭТИ 3 СТРОЧКИ СРАЗУ ПОСЛЕ container.innerHTML:
+    // Запускаем проверку погоды сразу после отрисовки
     if (typeof updateStandWeather === 'function') {
         setTimeout(updateStandWeather, 100);
     }
