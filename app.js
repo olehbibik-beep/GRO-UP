@@ -921,7 +921,7 @@ window.updateStandWidgetUI = function() {
 
     container.innerHTML = `
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden w-full shadow-sm flex flex-col">
-            <div class="relative w-full h-48 bg-slate-200 overflow-hidden shrink-0">
+            <div class="relative w-full h-32 bg-slate-200 overflow-hidden shrink-0">
                 <img src="bg-day-clear.webp" id="stand-dynamic-bg-img" alt="Стенд" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500">
             </div>
             <div class="p-4 flex flex-col empty:hidden">
