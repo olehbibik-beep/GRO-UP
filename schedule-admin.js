@@ -131,6 +131,43 @@ async function loadSchedule() {
     document.getElementById('save-status').innerText = "...";
 
     try {
+        // 🔥 ПРАВИЛО №1: Всегда скачиваем актуальные данные из школы!
+        const q = query(collection(db, "personal_tasks"), where("weekId", "==", weekIdRaw));
+        const tasksSnap = await getDocs(q);
+        
+        let fetchedMinistryParts = [];
+        let fetchedReadingName = '';
+
+        if (!tasksSnap.empty) {
+            let tasksForThisWeek = [];
+            tasksSnap.forEach(doc => tasksForThisWeek.push(doc.data()));
+            tasksForThisWeek.sort((a,b) => parseInt(a.taskNumber) - parseInt(b.taskNumber));
+
+            tasksForThisWeek.forEach(t => {
+                let cat = t.category;
+                if (cat === 'ЧТЕНИЕ БИБЛИИ' || cat === 'Čtení Bible' || cat === 'Чтение Библии') {
+                    fetchedReadingName = t.userName;
+                } else {
+                    if (cat === 'НАЧИНАЙТЕ РАЗГОВОР') cat = 'Начинайте разговор';
+                    if (cat === 'РАЗВИВАЙТЕ ИНТЕРЕС') cat = 'Развивайте интерес';
+                    if (cat === 'ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ') cat = 'Подготавливайте учеников';
+                    if (cat === 'ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ') cat = 'Объясняйте свои взгляды';
+                    if (cat === 'РЕЧЬ') cat = 'Речь';
+
+                    fetchedMinistryParts.push({
+                        type: cat,
+                        student: t.userName,
+                        assistant: t.assistant && t.assistant !== "Без помощника" ? t.assistant : "",
+                        taskNumber: t.taskNumber // 🔥 ЖЕСТКИЙ НОМЕР ИЗ БАЗЫ ШКОЛЫ
+                    });
+                }
+            });
+        }
+
+        // 🔥 ПРАВИЛО №2: "Оттачиваем навыки" 100% времени переписываются из Школы (чтобы не было расхождений)
+        ministryParts = fetchedMinistryParts; 
+
+        // Теперь загружаем остальной график
         const docSnap = await getDoc(doc(db, "meeting_schedules", weekId));
         
         if (docSnap.exists()) {
@@ -151,17 +188,12 @@ async function loadSchedule() {
             document.getElementById('mw-treasure-title').value = d.mw_treasure_title || '';
             document.getElementById('mw-treasure-name').value = d.mw_treasure_name || '';
             document.getElementById('mw-gems-name').value = d.mw_gems_name || '';
-            document.getElementById('mw-reading-name').value = d.mw_reading_name || '';
-
-            ministryParts = d.ministryParts || [];
             
+            // Если в школе задали чтение, оно перекроет старое
+            document.getElementById('mw-reading-name').value = fetchedReadingName || d.mw_reading_name || '';
+
             if (d.livingParts && d.livingParts.length > 0) {
                 livingParts = d.livingParts;
-            } else if (d.mw_local_name || d.mw_local_title) {
-                livingParts = [{
-                    title: d.mw_local_title || 'Местные потребности',
-                    name: d.mw_local_name || ''
-                }];
             } else {
                 livingParts = [];
             }
@@ -190,43 +222,7 @@ async function loadSchedule() {
             document.getElementById('save-status').innerText = window.t('new_schedule');
             document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
             
-            const q = query(collection(db, "personal_tasks"), where("weekId", "==", weekIdRaw));
-            const tasksSnap = await getDocs(q);
-            
-            let fetchedMinistryParts = [];
-            let fetchedReadingName = '';
-
-            if (!tasksSnap.empty) {
-                let tasksForThisWeek = [];
-                tasksSnap.forEach(doc => tasksForThisWeek.push(doc.data()));
-                tasksForThisWeek.sort((a,b) => parseInt(a.taskNumber) - parseInt(b.taskNumber));
-
-                tasksForThisWeek.forEach(t => {
-                    let cat = t.category;
-                    if (cat === 'ЧТЕНИЕ БИБЛИИ' || cat === 'Čtení Bible' || cat === 'Чтение Библии') {
-                        fetchedReadingName = t.userName;
-                    } else {
-                        if (cat === 'НАЧИНАЙТЕ РАЗГОВОР') cat = 'Начинайте разговор';
-                        if (cat === 'РАЗВИВАЙТЕ ИНТЕРЕС') cat = 'Развивайте интерес';
-                        if (cat === 'ПОДГОТАВЛИВАЙТЕ УЧЕНИКОВ') cat = 'Подготавливайте учеников';
-                        if (cat === 'ОБЪЯСНЯЙТЕ СВОИ ВЗГЛЯДЫ') cat = 'Объясняйте свои взгляды';
-                        if (cat === 'РЕЧЬ') cat = 'Речь';
-
-                        fetchedMinistryParts.push({
-                            type: cat,
-                            student: t.userName,
-                            assistant: t.assistant && t.assistant !== "Без помощника" ? t.assistant : "",
-                            taskNumber: t.taskNumber // 🔥 ДОБАВЛЕНО СОХРАНЕНИЕ НОМЕРА
-                        });
-                    }
-                });
-            }
-
-            if (fetchedReadingName) {
-                document.getElementById('mw-reading-name').value = fetchedReadingName;
-            }
-
-            ministryParts = fetchedMinistryParts; 
+            document.getElementById('mw-reading-name').value = fetchedReadingName;
             livingParts = [];
         }
         renderMinistryParts();
@@ -281,11 +277,11 @@ function loadUsersForDatalists() {
     });
 }
 
-// 🔥 ОБНОВЛЕНО: Чтение жестко заданного номера
 function updateNumeration() {
     let currentNumber = 1;
     document.querySelectorAll('.part-number').forEach(el => {
-        if (el.hasAttribute('data-fixed-num')) {
+        // Берет жесткий номер из HTML, если он передан
+        if (el.hasAttribute('data-fixed-num') && el.getAttribute('data-fixed-num')) {
             const fixedNum = parseInt(el.getAttribute('data-fixed-num'), 10);
             if (!isNaN(fixedNum)) currentNumber = fixedNum;
         }
@@ -294,7 +290,6 @@ function updateNumeration() {
     });
 }
 
-// 🔥 ОБНОВЛЕНО: Присвоение жестко заданного номера
 function renderMinistryParts() {
     const container = document.getElementById('ministry-parts-container');
     if(!container) return;
@@ -309,6 +304,7 @@ function renderMinistryParts() {
             html += `
                 <div class="flex flex-col gap-1 bg-slate-50 p-3 rounded-lg border border-slate-100 relative">
                     <div class="flex items-center gap-1.5 pb-1 border-b border-slate-200">
+                        <!-- 🔥 Пробрасываем атрибут data-fixed-num -->
                         <span class="part-number text-[11px] font-black text-jw-ministry" ${part.taskNumber ? `data-fixed-num="${part.taskNumber}"` : ''}></span>
                         <span class="text-[12px] font-bold text-jw-ministry w-full truncate">${part.type || window.t('part')}</span>
                     </div>
@@ -455,9 +451,6 @@ window.deleteSchedule = async () => {
     }
 };
 
-// ==============================
-// ЛОГИКА РАСПЕЧАТКИ ГРАФИКА
-// ==============================
 function formatWeekForPrint(weekStr) {
     if (!weekStr) return "";
     const [year, week] = weekStr.split('-W');
@@ -506,7 +499,6 @@ function buildCompactWeekHtml(data, weekRaw, isLast = false) {
     const iconLiving = `<svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>`;
     const iconWeekend = `<svg style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>`;
 
-    // --- ЛЕВАЯ КОЛОНКА ---
     let leftCol = '';
     leftCol += `<div style="text-align:center; font-weight:900; font-size:12px; margin-bottom:8px; text-transform:uppercase; color:#64748b; letter-spacing:1px;">${window.t('midweek_meeting')}</div>`;
     leftCol += row(window.t('chairman_intro'), data.mw_chairman_name);
@@ -546,7 +538,6 @@ function buildCompactWeekHtml(data, weekRaw, isLast = false) {
         leftCol += living;
     }
 
-    // --- ПРАВАЯ КОЛОНКА ---
     let rightCol = '';
     rightCol += `<div style="text-align:center; font-weight:900; font-size:12px; margin-bottom:8px; text-transform:uppercase; color:#64748b; letter-spacing:1px;">${window.t('weekend_meeting')}</div>`;
     rightCol += row(window.t('opening_song'), data.we_opening_name);
@@ -564,7 +555,6 @@ function buildCompactWeekHtml(data, weekRaw, isLast = false) {
     }
     rightCol += row(window.t('closing_prayer'), data.we_prayer_name);
 
-    // --- БЛОК ОБСЛУЖИВАНИЯ ---
     let attendantsArr = [data.duty_attendant_1, data.duty_attendant_2].filter(Boolean);
     let soundsArr = [data.duty_sound_1, data.duty_sound_2].filter(Boolean);
     let attendantsStr = attendantsArr.length > 0 ? attendantsArr.join(', ') : '';
