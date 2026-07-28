@@ -131,7 +131,7 @@ async function loadSchedule() {
     document.getElementById('save-status').innerText = "...";
 
     try {
-        // 🔥 ПРАВИЛО №1: Всегда скачиваем актуальные данные из школы!
+        // 🔥 ШАГ 1: ВСЕГДА ВЫТАСКИВАЕМ СВЕЖИЕ ЗАДАНИЯ ИЗ ШКОЛЫ
         const q = query(collection(db, "personal_tasks"), where("weekId", "==", weekIdRaw));
         const tasksSnap = await getDocs(q);
         
@@ -158,16 +158,13 @@ async function loadSchedule() {
                         type: cat,
                         student: t.userName,
                         assistant: t.assistant && t.assistant !== "Без помощника" ? t.assistant : "",
-                        taskNumber: t.taskNumber // 🔥 ЖЕСТКИЙ НОМЕР ИЗ БАЗЫ ШКОЛЫ
+                        taskNumber: t.taskNumber // 🔥 ЖЕСТКО ЗАБИРАЕМ НОМЕР
                     });
                 }
             });
         }
 
-        // 🔥 ПРАВИЛО №2: "Оттачиваем навыки" 100% времени переписываются из Школы (чтобы не было расхождений)
-        ministryParts = fetchedMinistryParts; 
-
-        // Теперь загружаем остальной график
+        // ШАГ 2: Читаем сохраненный график
         const docSnap = await getDoc(doc(db, "meeting_schedules", weekId));
         
         if (docSnap.exists()) {
@@ -189,9 +186,16 @@ async function loadSchedule() {
             document.getElementById('mw-treasure-name').value = d.mw_treasure_name || '';
             document.getElementById('mw-gems-name').value = d.mw_gems_name || '';
             
-            // Если в школе задали чтение, оно перекроет старое
+            // Чтение библии перекрывается свежим из школы
             document.getElementById('mw-reading-name').value = fetchedReadingName || d.mw_reading_name || '';
 
+            // 🔥 ГЛАВНЫЙ ФИКС: Если в школе есть задания, они полностью переписывают устаревший график!
+            if (fetchedMinistryParts.length > 0) {
+                ministryParts = fetchedMinistryParts;
+            } else {
+                ministryParts = d.ministryParts || [];
+            }
+            
             if (d.livingParts && d.livingParts.length > 0) {
                 livingParts = d.livingParts;
             } else {
@@ -216,6 +220,7 @@ async function loadSchedule() {
             document.getElementById('duty-sound-2').value = d.duty_sound_2 || '';
 
         } else {
+            // Графика еще нет
             document.getElementById('delete-btn').classList.add('hidden');
             document.getElementById('delete-btn').classList.remove('inline-flex');
 
@@ -223,6 +228,7 @@ async function loadSchedule() {
             document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
             
             document.getElementById('mw-reading-name').value = fetchedReadingName;
+            ministryParts = fetchedMinistryParts; 
             livingParts = [];
         }
         renderMinistryParts();
@@ -280,7 +286,6 @@ function loadUsersForDatalists() {
 function updateNumeration() {
     let currentNumber = 1;
     document.querySelectorAll('.part-number').forEach(el => {
-        // Берет жесткий номер из HTML, если он передан
         if (el.hasAttribute('data-fixed-num') && el.getAttribute('data-fixed-num')) {
             const fixedNum = parseInt(el.getAttribute('data-fixed-num'), 10);
             if (!isNaN(fixedNum)) currentNumber = fixedNum;
@@ -304,7 +309,6 @@ function renderMinistryParts() {
             html += `
                 <div class="flex flex-col gap-1 bg-slate-50 p-3 rounded-lg border border-slate-100 relative">
                     <div class="flex items-center gap-1.5 pb-1 border-b border-slate-200">
-                        <!-- 🔥 Пробрасываем атрибут data-fixed-num -->
                         <span class="part-number text-[11px] font-black text-jw-ministry" ${part.taskNumber ? `data-fixed-num="${part.taskNumber}"` : ''}></span>
                         <span class="text-[12px] font-bold text-jw-ministry w-full truncate">${part.type || window.t('part')}</span>
                     </div>
