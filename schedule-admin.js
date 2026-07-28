@@ -215,7 +215,8 @@ async function loadSchedule() {
                         fetchedMinistryParts.push({
                             type: cat,
                             student: t.userName,
-                            assistant: t.assistant && t.assistant !== "Без помощника" ? t.assistant : ""
+                            assistant: t.assistant && t.assistant !== "Без помощника" ? t.assistant : "",
+                            taskNumber: t.taskNumber // 🔥 ДОБАВЛЕНО СОХРАНЕНИЕ НОМЕРА
                         });
                     }
                 });
@@ -280,14 +281,20 @@ function loadUsersForDatalists() {
     });
 }
 
+// 🔥 ОБНОВЛЕНО: Чтение жестко заданного номера
 function updateNumeration() {
     let currentNumber = 1;
     document.querySelectorAll('.part-number').forEach(el => {
+        if (el.hasAttribute('data-fixed-num')) {
+            const fixedNum = parseInt(el.getAttribute('data-fixed-num'), 10);
+            if (!isNaN(fixedNum)) currentNumber = fixedNum;
+        }
         el.innerText = `${currentNumber}.`;
         currentNumber++;
     });
 }
 
+// 🔥 ОБНОВЛЕНО: Присвоение жестко заданного номера
 function renderMinistryParts() {
     const container = document.getElementById('ministry-parts-container');
     if(!container) return;
@@ -302,7 +309,7 @@ function renderMinistryParts() {
             html += `
                 <div class="flex flex-col gap-1 bg-slate-50 p-3 rounded-lg border border-slate-100 relative">
                     <div class="flex items-center gap-1.5 pb-1 border-b border-slate-200">
-                        <span class="part-number text-[11px] font-black text-jw-ministry"></span>
+                        <span class="part-number text-[11px] font-black text-jw-ministry" ${part.taskNumber ? `data-fixed-num="${part.taskNumber}"` : ''}></span>
                         <span class="text-[12px] font-bold text-jw-ministry w-full truncate">${part.type || window.t('part')}</span>
                     </div>
                     <div class="flex flex-col md:flex-row gap-2 w-full mt-1">
