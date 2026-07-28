@@ -1204,7 +1204,8 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     }
 
     return `
-        <div class="w-[calc(100vw-32px)] md:w-full shrink-0 flex flex-col bg-transparent pb-2 px-0 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
+        <!-- 🔥 ВЕРНУЛИ КЛАССЫ snap-center snap-always scroll-mt-40 -->
+        <div class="w-[calc(100vw-32px)] md:w-full shrink-0 snap-center snap-always scroll-mt-40 flex flex-col bg-transparent pb-2 px-0 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
             
             <div class="flex flex-col gap-1 pb-1 mb-2 mx-1">
                 <div class="flex items-center justify-between w-full">
