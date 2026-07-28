@@ -131,7 +131,6 @@ async function loadSchedule() {
     document.getElementById('save-status').innerText = "...";
 
     try {
-        // 🔥 ШАГ 1: ВСЕГДА ВЫТАСКИВАЕМ СВЕЖИЕ ЗАДАНИЯ ИЗ ШКОЛЫ
         const q = query(collection(db, "personal_tasks"), where("weekId", "==", weekIdRaw));
         const tasksSnap = await getDocs(q);
         
@@ -158,13 +157,12 @@ async function loadSchedule() {
                         type: cat,
                         student: t.userName,
                         assistant: t.assistant && t.assistant !== "Без помощника" ? t.assistant : "",
-                        taskNumber: t.taskNumber // 🔥 ЖЕСТКО ЗАБИРАЕМ НОМЕР
+                        taskNumber: t.taskNumber
                     });
                 }
             });
         }
 
-        // ШАГ 2: Читаем сохраненный график
         const docSnap = await getDoc(doc(db, "meeting_schedules", weekId));
         
         if (docSnap.exists()) {
@@ -186,10 +184,8 @@ async function loadSchedule() {
             document.getElementById('mw-treasure-name').value = d.mw_treasure_name || '';
             document.getElementById('mw-gems-name').value = d.mw_gems_name || '';
             
-            // Чтение библии перекрывается свежим из школы
             document.getElementById('mw-reading-name').value = fetchedReadingName || d.mw_reading_name || '';
 
-            // 🔥 ГЛАВНЫЙ ФИКС: Если в школе есть задания, они полностью переписывают устаревший график!
             if (fetchedMinistryParts.length > 0) {
                 ministryParts = fetchedMinistryParts;
             } else {
@@ -220,7 +216,6 @@ async function loadSchedule() {
             document.getElementById('duty-sound-2').value = d.duty_sound_2 || '';
 
         } else {
-            // Графика еще нет
             document.getElementById('delete-btn').classList.add('hidden');
             document.getElementById('delete-btn').classList.remove('inline-flex');
 
@@ -393,6 +388,8 @@ window.saveSchedule = async (isPublished) => {
         lang: scheduleLang, 
         isPublished: isPublished,
         updatedAt: new Date().toISOString(),
+        // 🔥 ПЕРЕДАЕМ СОСТОЯНИЕ ГАЛОЧКИ НА СЕРВЕР ДЛЯ ОТМЕНЫ ПУШЕЙ
+        silentUpdate: document.getElementById('silent-update')?.checked || false,
 
         mw_chairman_name: document.getElementById('mw-chairman-name').value.trim(),
         mw_treasure_title: document.getElementById('mw-treasure-title').value.trim(),
