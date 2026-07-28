@@ -137,7 +137,7 @@ async function loadSchedule() {
             const d = docSnap.data();
             
             document.getElementById('delete-btn').classList.remove('hidden');
-            document.getElementById('delete-btn').classList.add('inline-block'); 
+            document.getElementById('delete-btn').classList.add('inline-flex'); 
 
             if(d.isPublished) {
                 document.getElementById('save-status').innerText = window.t('published');
@@ -163,7 +163,7 @@ async function loadSchedule() {
                     name: d.mw_local_name || ''
                 }];
             } else {
-                livingParts = [{title: "Местные потребности", name: ""}];
+                livingParts = [];
             }
 
             document.getElementById('mw-cbs-material').value = d.mw_cbs_material || '';
@@ -178,7 +178,6 @@ async function loadSchedule() {
             document.getElementById('we-wt-reader').value = d.we_wt_reader || '';
             document.getElementById('we-prayer-name').value = d.we_prayer_name || '';
 
-            // НОВЫЕ ПОЛЯ 
             document.getElementById('duty-attendant-1').value = d.duty_attendant_1 || '';
             document.getElementById('duty-attendant-2').value = d.duty_attendant_2 || '';
             document.getElementById('duty-sound-1').value = d.duty_sound_1 || '';
@@ -186,7 +185,7 @@ async function loadSchedule() {
 
         } else {
             document.getElementById('delete-btn').classList.add('hidden');
-            document.getElementById('delete-btn').classList.remove('inline-block');
+            document.getElementById('delete-btn').classList.remove('inline-flex');
 
             document.getElementById('save-status').innerText = window.t('new_schedule');
             document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
@@ -227,10 +226,7 @@ async function loadSchedule() {
             }
 
             ministryParts = fetchedMinistryParts; 
-
-            livingParts = [
-                {title: "Местные потребности", name: ""}
-            ];
+            livingParts = [];
         }
         renderMinistryParts();
         renderLivingParts();
@@ -351,13 +347,18 @@ function renderLivingParts() {
     let html = '';
     livingParts.forEach((part, index) => {
         html += `
-            <div class="flex flex-col px-2 relative pr-8 pb-2 border-b border-slate-100 last:border-0 gap-1">
+            <div class="flex flex-col px-2 relative pr-10 pb-2 border-b border-slate-100 last:border-0 gap-1 mt-2">
                 <div class="flex items-center gap-1.5">
                     <span class="part-number text-[10px] font-black text-jw-living"></span>
                     <input type="text" id="part-liv-${index}-title" list="living-types" class="text-xs font-bold text-jw-living bg-transparent outline-none border-b border-transparent focus:border-slate-300 w-full" value="${part.title || ''}" placeholder="Тема пункта...">
                 </div>
                 <input type="text" id="part-liv-${index}-name" list="list-brothers" class="jw-input mt-1" value="${part.name || ''}" placeholder="Имя брата">
-                <button onclick="removeLivingPart(${index})" class="absolute top-2 right-0 text-slate-300 hover:text-red-500 font-black outline-none transition-colors text-lg" title="Удалить">✖</button>
+                
+                <button onclick="removeLivingPart(${index})" class="absolute top-2 right-1 text-slate-300 hover:text-red-500 bg-slate-50 hover:bg-red-50 rounded-md p-1.5 transition-colors outline-none shadow-sm" title="Удалить">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
         `;
     });
@@ -407,7 +408,6 @@ window.saveSchedule = async (isPublished) => {
         we_wt_reader: document.getElementById('we-wt-reader').value.trim(),
         we_prayer_name: document.getElementById('we-prayer-name').value.trim(),
 
-        // НОВЫЕ ПОЛЯ
         duty_attendant_1: document.getElementById('duty-attendant-1').value.trim(),
         duty_attendant_2: document.getElementById('duty-attendant-2').value.trim(),
         duty_sound_1: document.getElementById('duty-sound-1').value.trim(),
@@ -422,7 +422,7 @@ window.saveSchedule = async (isPublished) => {
         else document.getElementById('save-status').classList.replace('text-emerald-500', 'text-slate-400');
         
         document.getElementById('delete-btn').classList.remove('hidden');
-        document.getElementById('delete-btn').classList.add('inline-block');
+        document.getElementById('delete-btn').classList.add('inline-flex');
     } catch (e) { alert(window.t('error_save')); }
     
     btn.innerHTML = originalSvg;
@@ -449,7 +449,7 @@ window.deleteSchedule = async () => {
 };
 
 // ==============================
-// ЛОГИКА РАСПЕЧАТКИ ГРАФИКА (4 НЕДЕЛИ - НА ВЕСЬ ЛИСТ А4)
+// ЛОГИКА РАСПЕЧАТКИ ГРАФИКА
 // ==============================
 function formatWeekForPrint(weekStr) {
     if (!weekStr) return "";
@@ -472,7 +472,6 @@ function formatWeekForPrint(weekStr) {
 }
 
 function buildCompactWeekHtml(data, weekRaw, isLast = false) {
-    // Вместо штриховки теперь сплошная светлая линия (или ничего, если неделя последняя)
     const borderStyle = isLast ? 'none' : '2px solid #e2e8f0'; 
     
     if (!data) return `
@@ -558,7 +557,7 @@ function buildCompactWeekHtml(data, weekRaw, isLast = false) {
     }
     rightCol += row(window.t('closing_prayer'), data.we_prayer_name);
 
-    // --- БЛОК ОБСЛУЖИВАНИЯ (Сплошной серый фон без пунктиров) ---
+    // --- БЛОК ОБСЛУЖИВАНИЯ ---
     let attendantsArr = [data.duty_attendant_1, data.duty_attendant_2].filter(Boolean);
     let soundsArr = [data.duty_sound_1, data.duty_sound_2].filter(Boolean);
     let attendantsStr = attendantsArr.length > 0 ? attendantsArr.join(', ') : '';
@@ -578,9 +577,7 @@ function buildCompactWeekHtml(data, weekRaw, isLast = false) {
     <div style="flex: 1; border-bottom: ${borderStyle}; padding-bottom: 12px; display: flex; flex-direction: column;">
         <div style="text-align:center; font-weight:900; font-size:16px; margin-bottom:8px; text-transform:uppercase; color: #0f172a;">${formatWeekForPrint(weekRaw)}</div>
         <div style="display:flex; gap:15px; flex: 1;">
-            <!-- Рамка вокруг левой колонки (Будние дни) -->
             <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-start; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px;">${leftCol}</div>
-            <!-- Рамка вокруг правой колонки (Выходные) -->
             <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-start; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px;">${rightCol}</div>
         </div>
         ${dutiesHtml}
