@@ -990,8 +990,9 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     
     let partCounter = 1;
 
+    // 🔥 ИЗМЕНЕНИЕ: Функция скрывает строку, если нет имени (person)
     const row = (title, person) => {
-        if(!person && !title) return '';
+        if(!person || person.trim() === '') return ''; 
         const isMe = person === myName;
         const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
         const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
@@ -999,13 +1000,14 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         return `
             <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
                 <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translateDbString(title)}</span>
-                <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${person || '-'}</span>
+                <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${person}</span>
             </div>
         `;
     };
 
+    // 🔥 ИЗМЕНЕНИЕ: Для ненумерованных пунктов тоже скрываем, если пусто
     const rowUnnumbered = (title, person) => {
-        if(!person && !title) return '';
+        if(!person || person.trim() === '') return ''; 
         const isMe = person === myName;
         const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
         const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
@@ -1013,7 +1015,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         return `
             <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
                 <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${translateDbString(title)}</span>
-                <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${person || '-'}</span>
+                <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${person}</span>
             </div>
         `;
     };
@@ -1030,27 +1032,35 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const iconLiving = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>`;
     const iconWeekend = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>`;
 
-    const treasure1Me = d.mw_treasure_name === myName;
-    const t1TitleColor = treasure1Me ? 'font-black text-black' : 'font-bold text-slate-800';
-    const t1NameColor = treasure1Me ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
-    const t1Title = translateDbString(d.mw_treasure_title || window.t('talk_10_min'));
-    
-    const treasure1 = `
-        <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
-            <span class="text-[13px] md:text-sm ${t1TitleColor} leading-tight">${partCounter++}. ${t1Title}</span>
-            <span class="text-[13px] md:text-sm ${t1NameColor} mt-0.5 ml-4">${d.mw_treasure_name || '-'}</span>
-        </div>
-    `;
+    // --- СОКРОВИЩА ИЗ СЛОВА БОГА ---
+    let treasure1 = '';
+    if (d.mw_treasure_name && d.mw_treasure_name.trim() !== '') {
+        const treasure1Me = d.mw_treasure_name === myName;
+        const t1TitleColor = treasure1Me ? 'font-black text-black' : 'font-bold text-slate-800';
+        const t1NameColor = treasure1Me ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+        const t1Title = translateDbString(d.mw_treasure_title || window.t('talk_10_min'));
+        treasure1 = `
+            <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+                <span class="text-[13px] md:text-sm ${t1TitleColor} leading-tight">${partCounter++}. ${t1Title}</span>
+                <span class="text-[13px] md:text-sm ${t1NameColor} mt-0.5 ml-4">${d.mw_treasure_name}</span>
+            </div>
+        `;
+    }
 
     const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
     const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
 
+    // 🔥 ИЗМЕНЕНИЕ: Если ни одного сокровища нет, заголовок тоже исчезнет
+    const treasuresContent = treasure1 + treasure2 + treasure3;
+    const treasuresBlock = treasuresContent ? `${buildHeader(window.t('treasures_title'), '#0d9488', 'h-treasure', iconTreasure)}${treasuresContent}` : '';
+
+    // --- ОТТАЧИВАЕМ НАВЫКИ СЛУЖЕНИЯ ---
     const minRowsRaw = (d.ministryParts || []).map((m) => {
-        if(!m.student && !m.assistant && !m.type) return '';
+        if(!m.student || m.student.trim() === '') return ''; // Скрываем пустые задания
         const isMe = (m.student === myName || m.assistant === myName);
         const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
         const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
-        const assistStr = m.assistant ? ` <span class="opacity-70 ml-1">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
+        const assistStr = m.assistant && m.assistant !== "Без помощника" ? ` <span class="opacity-70 ml-1">(${window.t('assistant_short')} ${m.assistant})</span>` : '';
         const translatedType = translateDbString(m.type || window.t('part'));
         
         let description = "";
@@ -1078,14 +1088,13 @@ function buildScheduleCards(d, myName, currentWeekStr) {
             ? `<span class="font-black text-slate-800 block mb-3 text-base">${translatedType}</span><span class="text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-100 self-start inline-block">${window.t('lesson')} ${m.lesson}</span>${descHtml}` 
             : `<span class="font-black text-slate-800 text-base">${translatedType}</span>${descHtml}`;
 
-        // ИСПРАВЛЕНИЕ: Кодируем HTML, чтобы кавычки больше никогда не ломали кнопку!
         const safeHtml = encodeURIComponent(extraInfo);
 
         return `
             <div data-info="${safeHtml}" onclick="window.openTaskInfoModal(decodeURIComponent(this.getAttribute('data-info')))" style="-webkit-tap-highlight-color: transparent;" class="flex items-center justify-between py-2.5 px-2 border-b border-slate-200/50 last:border-0 hover:bg-slate-300/20 transition-colors cursor-pointer group rounded-lg">
                 <div class="flex flex-col min-w-0 pointer-events-none">
                     <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translatedType}</span>
-                    <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${m.student || '-'}${assistStr}</span>
+                    <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${m.student}${assistStr}</span>
                 </div>
                 <div class="shrink-0 ml-3 text-slate-400 group-hover:text-indigo-500 transition-colors pointer-events-none">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -1094,64 +1103,88 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     }).join('');
 
-    // ИСПРАВЛЕНИЕ: Убрали белую плитку заданий, фон прозрачный
     const minRows = minRowsRaw ? `<div class="flex flex-col mt-1.5 mb-2 mx-0">${minRowsRaw}</div>` : '';
+    const ministryBlock = minRows ? `${buildHeader(window.t('ministry_skills'), '#d97706', 'h-ministry', iconMinistry)}${minRows}` : '';
 
+    // --- ХРИСТИАНСКАЯ ЖИЗНЬ ---
     const livRows = (d.livingParts || []).map((m) => {
-        if(!m.title && !m.name) return '';
-        return row(m.title, m.name);
+        return row(m.title, m.name); // Вернет пустоту, если имя не введено
     }).join('');
 
-    const cbsNum = partCounter++;
-    const isCbsMe = (d.mw_cbs_conductor === myName || d.mw_cbs_reader === myName);
-    const cbsTitleColor = isCbsMe ? 'font-black text-black' : 'font-bold text-slate-800';
-    const cbsNameColor = isCbsMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
-    const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
+    let cbsRow = '';
+    if (d.mw_cbs_conductor && d.mw_cbs_conductor.trim() !== '') {
+        const cbsNum = partCounter++;
+        const isCbsMe = (d.mw_cbs_conductor === myName || d.mw_cbs_reader === myName);
+        const cbsTitleColor = isCbsMe ? 'font-black text-black' : 'font-bold text-slate-800';
+        const cbsNameColor = isCbsMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+        const readStr = d.mw_cbs_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.mw_cbs_reader})</span>` : '';
 
-    const cbsRow = `
-        <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
-            <span class="text-[13px] md:text-sm ${cbsTitleColor} leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-xs font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
-            <span class="text-[13px] md:text-sm ${cbsNameColor} mt-0.5 ml-4">${d.mw_cbs_conductor || '-'}${readStr}</span>
-        </div>
-    `;
+        cbsRow = `
+            <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
+                <span class="text-[13px] md:text-sm ${cbsTitleColor} leading-tight">${cbsNum}. ${window.t('congregation_bible_study')} ${d.mw_cbs_material ? `<span class="text-xs font-normal text-slate-500 ml-1">(${d.mw_cbs_material})</span>` : ''}</span>
+                <span class="text-[13px] md:text-sm ${cbsNameColor} mt-0.5 ml-4">${d.mw_cbs_conductor}${readStr}</span>
+            </div>
+        `;
+    }
 
-    const weTalkMe = d.we_talk_speaker === myName;
-    const wtTitleColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-800';
-    const wtNameColor = weTalkMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
-    const talkTitle = translateDbString(d.we_talk_title || window.t('public_talk'));
+    const livingContent = livRows + cbsRow;
+    const livingBlock = livingContent ? `${buildHeader(window.t('christian_living'), '#b91c1c', 'h-living', iconLiving)}${livingContent}` : '';
 
-    // ИСПРАВЛЕНИЕ: Выделил речь, сделал название крупнее, добавил воздуха
-    const we_talk = `
-        <div class="flex flex-col py-3 px-3 bg-slate-50/80 border border-slate-200/80 shadow-sm rounded-xl mt-2.5 mb-2 mx-0">
-            <span class="text-[15px] md:text-base ${wtTitleColor} uppercase leading-snug mb-1">${talkTitle}</span>
-            <span class="text-[13px] md:text-sm ${wtNameColor} ml-1">${d.we_talk_speaker || '-'}</span>
-        </div>
-    `;
+    // --- ВЫХОДНЫЕ ---
+    let we_talk = '';
+    if (d.we_talk_speaker && d.we_talk_speaker.trim() !== '') {
+        const weTalkMe = d.we_talk_speaker === myName;
+        const wtTitleColor = weTalkMe ? 'font-black text-black' : 'font-bold text-slate-800';
+        const wtNameColor = weTalkMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+        const talkTitle = translateDbString(d.we_talk_title || window.t('public_talk'));
 
-    const isWtMe = (d.we_wt_conductor === myName || d.we_wt_reader === myName);
-    const wtStudyTitleColor = isWtMe ? 'font-black text-black' : 'font-bold text-slate-800';
-    const wtStudyNameColor = isWtMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
-    const we_wt_read_str = d.we_wt_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.we_wt_reader})</span>` : '';
+        we_talk = `
+            <div class="flex flex-col py-3 px-3 bg-slate-50/80 border border-slate-200/80 shadow-sm rounded-xl mt-2.5 mb-2 mx-0">
+                <span class="text-[15px] md:text-base ${wtTitleColor} uppercase leading-snug mb-1">${talkTitle}</span>
+                <span class="text-[13px] md:text-sm ${wtNameColor} ml-1">${d.we_talk_speaker}</span>
+            </div>
+        `;
+    }
 
-    const wtStudyRow = `
-        <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg mt-1.5">
-            <span class="text-[13px] md:text-sm ${wtStudyTitleColor} leading-tight">${window.t('watchtower_study')}</span>
-            <span class="text-[13px] md:text-sm ${wtStudyNameColor} mt-0.5 ml-4">${d.we_wt_conductor || '-'}${we_wt_read_str}</span>
-        </div>
-    `;
+    let wtStudyRow = '';
+    if (d.we_wt_conductor && d.we_wt_conductor.trim() !== '') {
+        const isWtMe = (d.we_wt_conductor === myName || d.we_wt_reader === myName);
+        const wtStudyTitleColor = isWtMe ? 'font-black text-black' : 'font-bold text-slate-800';
+        const wtStudyNameColor = isWtMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
+        const we_wt_read_str = d.we_wt_reader ? ` <span class="opacity-70 ml-1">(${window.t('reader')} ${d.we_wt_reader})</span>` : '';
 
-    // ИСПРАВЛЕНИЕ: Дежурства с крутыми SVG иконками и подсветкой своего дежурства!
+        wtStudyRow = `
+            <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg mt-1.5">
+                <span class="text-[13px] md:text-sm ${wtStudyTitleColor} leading-tight">${window.t('watchtower_study')}</span>
+                <span class="text-[13px] md:text-sm ${wtStudyNameColor} mt-0.5 ml-4">${d.we_wt_conductor}${we_wt_read_str}</span>
+            </div>
+        `;
+    }
+
+    const weekendContent = we_talk + wtStudyRow + rowUnnumbered(window.t('closing_prayer'), d.we_prayer_name);
+    let weekendBlock = '';
+    if (weekendContent || (d.we_opening_name && d.we_opening_name.trim() !== '')) {
+        weekendBlock = `
+            <div class="flex-1 flex flex-col space-y-0 bg-white rounded-xl shadow-sm p-3 border border-slate-200 mt-2 md:mt-0 relative">
+                ${buildHeader(window.t('weekend_meeting'), '#475569', 'h-weekend', iconWeekend)}
+                ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
+                ${we_talk}
+                ${wtStudyRow}
+                ${rowUnnumbered(window.t('closing_prayer'), d.we_prayer_name)}
+            </div>
+        `;
+    }
+
+    // --- ОБСЛУЖИВАНИЕ (Дежурства) ---
     const iconKey = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" title="Распорядитель"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>`;
     const iconVideo = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" title="Видео"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>`;
     const iconSound = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" title="Звук"><path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>`;
 
     const dutyRow = (person, iconSvg) => {
-        if (!person) return '';
+        if (!person || person.trim() === '') return '';
         const isMe = person === myName;
-        // Если это твоё имя — иконка становится бирюзовой (#2dd4bf), а имя синим. Иначе всё серое/чёрное.
         const iconColor = isMe ? 'text-[#2dd4bf]' : 'text-slate-400';
         const nameColor = isMe ? 'text-indigo-600' : 'text-slate-800';
-        
         return `<div class="flex items-center gap-1.5"><div class="${iconColor} shrink-0 transition-colors">${iconSvg}</div> <span class="text-[13px] md:text-sm font-bold ${nameColor} truncate">${person}</span></div>`;
     };
 
@@ -1170,9 +1203,8 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         `;
     }
 
-    // ИСПРАВЛЕНИЕ: Убрали линию border-b под датой
     return `
-        <div class="w-[calc(100vw-32px)] md:w-full shrink-0 snap-center snap-always scroll-mt-40 flex flex-col bg-transparent pb-2 px-0 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
+        <div class="w-[calc(100vw-32px)] md:w-full shrink-0 flex flex-col bg-transparent pb-2 px-0 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
             
             <div class="flex flex-col gap-1 pb-1 mb-2 mx-1">
                 <div class="flex items-center justify-between w-full">
@@ -1182,34 +1214,15 @@ function buildScheduleCards(d, myName, currentWeekStr) {
             </div>
 
             <div class="inner-week-columns flex flex-col md:flex-row gap-0 md:gap-4 w-full px-1">
-                
                 <div class="flex-1 flex flex-col space-y-0 pb-4 md:pb-0">
                     ${rowUnnumbered(window.t('chairman'), d.mw_chairman_name)}
-
-                    ${buildHeader(window.t('treasures_title'), '#0d9488', 'h-treasure', iconTreasure)}
-                    ${treasure1}
-                    ${treasure2}
-                    ${treasure3}
-
-                    ${buildHeader(window.t('ministry_skills'), '#d97706', 'h-ministry', iconMinistry)}
-                    ${minRows}
-
-                    ${buildHeader(window.t('christian_living'), '#b91c1c', 'h-living', iconLiving)}
-                    ${livRows}
-                    ${cbsRow}
-
+                    ${treasuresBlock}
+                    ${ministryBlock}
+                    ${livingBlock}
                     ${rowUnnumbered(window.t('closing_prayer'), d.mw_prayer_name)}
                 </div>
 
-                <div class="md:hidden w-full border-t-2 border-slate-200 border-dashed my-2"></div>
-
-                <div class="flex-1 flex flex-col space-y-0 bg-white rounded-xl shadow-sm p-3 border border-slate-200 mt-2 md:mt-0 relative">
-                    ${buildHeader(window.t('weekend_meeting'), '#475569', 'h-weekend', iconWeekend)}
-                    ${rowUnnumbered(window.t('opening_song'), d.we_opening_name)}
-                    ${we_talk}
-                    ${wtStudyRow}
-                    ${rowUnnumbered(window.t('closing_prayer'), d.we_prayer_name)}
-                </div>
+                ${weekendBlock ? `<div class="md:hidden w-full border-t-2 border-slate-200 border-dashed my-2"></div>${weekendBlock}` : ''}
             </div>
 
             ${dutiesBlock}
