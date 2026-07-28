@@ -988,24 +988,34 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     const statusColor = isCurrentWeek ? 'text-emerald-600' : (isPastWeek ? 'text-slate-400' : 'text-slate-500');
     const pastCardClass = isPastWeek ? 'opacity-50 grayscale' : '';
     
-    let partCounter = 1;
+    // 🔥 НОВАЯ СИСТЕМА НУМЕРАЦИИ
+    let currentNumber = 1;
 
-    // 🔥 ИЗМЕНЕНИЕ: Функция скрывает строку, если нет имени (person)
-    const row = (title, person) => {
-        if(!person || person.trim() === '') return ''; 
+    // Функция, которая крутит счетчик или берет точный номер из базы
+    const getNextNum = (explicitNum) => {
+        if (explicitNum && !isNaN(parseInt(explicitNum, 10))) {
+            currentNumber = parseInt(explicitNum, 10);
+        }
+        return currentNumber++;
+    };
+
+    // 🔥 ИЗМЕНЕНИЕ: Функция скрывает строку, но СЧЕТЧИК ВСЕ РАВНО КРУТИТСЯ
+    const rowNumbered = (title, person, explicitNum = null) => {
+        const num = getNextNum(explicitNum); // Номер прокручивается ВСЕГДА!
+        if(!person || person.trim() === '') return ''; // Но сам пункт скрывается, если он пуст
+        
         const isMe = person === myName;
         const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
         const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
 
         return `
             <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
-                <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translateDbString(title)}</span>
+                <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${num}. ${translateDbString(title)}</span>
                 <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${person}</span>
             </div>
         `;
     };
 
-    // 🔥 ИЗМЕНЕНИЕ: Для ненумерованных пунктов тоже скрываем, если пусто
     const rowUnnumbered = (title, person) => {
         if(!person || person.trim() === '') return ''; 
         const isMe = person === myName;
@@ -1034,6 +1044,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 
     // --- СОКРОВИЩА ИЗ СЛОВА БОГА ---
     let treasure1 = '';
+    const t1Num = getNextNum(); // Обязательно крутим счетчик для первого пункта
     if (d.mw_treasure_name && d.mw_treasure_name.trim() !== '') {
         const treasure1Me = d.mw_treasure_name === myName;
         const t1TitleColor = treasure1Me ? 'font-black text-black' : 'font-bold text-slate-800';
@@ -1041,22 +1052,23 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         const t1Title = translateDbString(d.mw_treasure_title || window.t('talk_10_min'));
         treasure1 = `
             <div class="flex flex-col py-1 px-1 bg-transparent hover:bg-slate-300/20 transition-colors rounded-lg">
-                <span class="text-[13px] md:text-sm ${t1TitleColor} leading-tight">${partCounter++}. ${t1Title}</span>
+                <span class="text-[13px] md:text-sm ${t1TitleColor} leading-tight">${t1Num}. ${t1Title}</span>
                 <span class="text-[13px] md:text-sm ${t1NameColor} mt-0.5 ml-4">${d.mw_treasure_name}</span>
             </div>
         `;
     }
 
-    const treasure2 = row(window.t('spiritual_gems'), d.mw_gems_name);
-    const treasure3 = row(window.t('bible_reading'), d.mw_reading_name);
+    const treasure2 = rowNumbered(window.t('spiritual_gems'), d.mw_gems_name);
+    const treasure3 = rowNumbered(window.t('bible_reading'), d.mw_reading_name);
 
-    // 🔥 ИЗМЕНЕНИЕ: Если ни одного сокровища нет, заголовок тоже исчезнет
     const treasuresContent = treasure1 + treasure2 + treasure3;
     const treasuresBlock = treasuresContent ? `${buildHeader(window.t('treasures_title'), '#0d9488', 'h-treasure', iconTreasure)}${treasuresContent}` : '';
 
     // --- ОТТАЧИВАЕМ НАВЫКИ СЛУЖЕНИЯ ---
     const minRowsRaw = (d.ministryParts || []).map((m) => {
-        if(!m.student || m.student.trim() === '') return ''; // Скрываем пустые задания
+        const num = getNextNum(m.taskNumber); // 🔥 БЕРЕМ ОРИГИНАЛЬНЫЙ НОМЕР ИЗ БАЗЫ!
+        if(!m.student || m.student.trim() === '') return ''; 
+
         const isMe = (m.student === myName || m.assistant === myName);
         const titleColor = isMe ? 'font-black text-black' : 'font-bold text-slate-800';
         const nameColor = isMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
@@ -1064,24 +1076,12 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         const translatedType = translateDbString(m.type || window.t('part'));
         
         let description = "";
-        if (m.type === "Чтение Библии" || m.type === "Čtení Bible") {
-            description = "Это учебное задание назначается брату. Цель — зачитать назначенный отрывок из Библии четко, с правильным смысловым ударением, интонацией и естественностью. Вступление и заключение делать не нужно.";
-        }
-        else if (m.type === "Начинайте разговор" || m.type === "Zahájení rozhovoru") {
-            description = "Это учебное задание может назначаться как брату, так и сестре. Цель — показать, как можно начать беседу с человеком в служении, используя предложенную тему для разговора.";
-        }
-        else if (m.type === "Развивайте интерес" || m.type === "Rozvíjení zájmu") {
-            description = "Это учебное задание может назначаться как брату, так и сестре. Учащийся должен показать, как продолжить разговор с человеком, который проявил интерес во время предыдущей беседы.";
-        }
-        else if (m.type === "Подготавливайте учеников" || m.type === "Pomáhej lidem stát se učedníky" || m.type === "Činění učedníků") {
-            description = "Это учебное задание назначается брату или сестре. Учащемуся необходимо показать, как проводить изучение Библии, используя основную публикацию для служения.";
-        }
-        else if (m.type === "Объясняйте свои взгляды" || m.type === "Vysvětlování své víry") {
-            description = "Если это задание преподносится в виде речи, оно поручается брату. Если в виде сценки — брату или сестре. Цель — показать, как тактично и ясно объяснить библейскую истину.";
-        }
-        else if (m.type === "Речь" || m.type === "Proslov" || m.type === "Речь 10 мин." || m.type === "Proslov 10 min.") {
-            description = "Это учебное задание поручается брату. Речь должна быть основана на указанном материале и преподнесена так, чтобы собрание извлекло из нее практическую пользу.";
-        }
+        if (m.type === "Чтение Библии" || m.type === "Čtení Bible") description = "Это учебное задание назначается брату. Цель — зачитать назначенный отрывок из Библии четко, с правильным смысловым ударением, интонацией и естественностью. Вступление и заключение делать не нужно.";
+        else if (m.type === "Начинайте разговор" || m.type === "Zahájení rozhovoru") description = "Это учебное задание может назначаться как брату, так и сестре. Цель — показать, как можно начать беседу с человеком в служении, используя предложенную тему для разговора.";
+        else if (m.type === "Развивайте интерес" || m.type === "Rozvíjení zájmu") description = "Это учебное задание может назначаться как брату, так и сестре. Учащийся должен показать, как продолжить разговор с человеком, который проявил интерес во время предыдущей беседы.";
+        else if (m.type === "Подготавливайте учеников" || m.type === "Pomáhej lidem stát se učedníky" || m.type === "Činění učedníků") description = "Это учебное задание назначается брату или сестре. Учащемуся необходимо показать, как проводить изучение Библии, используя основную публикацию для служения.";
+        else if (m.type === "Объясняйте свои взгляды" || m.type === "Vysvětlování své víry") description = "Если это задание преподносится в виде речи, оно поручается брату. Если в виде сценки — брату или сестре. Цель — показать, как тактично и ясно объяснить библейскую истину.";
+        else if (m.type === "Речь" || m.type === "Proslov" || m.type === "Речь 10 мин." || m.type === "Proslov 10 min.") description = "Это учебное задание поручается брату. Речь должна быть основана на указанном материале и преподнесена так, чтобы собрание извлекло из нее практическую пользу.";
         
         const descHtml = description ? `<div class="mt-4 pt-3 border-t border-slate-200/60"><div class="text-[11px] font-medium text-slate-500 leading-relaxed">${description}</div></div>` : "";
         const extraInfo = m.lesson 
@@ -1093,7 +1093,7 @@ function buildScheduleCards(d, myName, currentWeekStr) {
         return `
             <div data-info="${safeHtml}" onclick="window.openTaskInfoModal(decodeURIComponent(this.getAttribute('data-info')))" style="-webkit-tap-highlight-color: transparent;" class="flex items-center justify-between py-2.5 px-2 border-b border-slate-200/50 last:border-0 hover:bg-slate-300/20 transition-colors cursor-pointer group rounded-lg">
                 <div class="flex flex-col min-w-0 pointer-events-none">
-                    <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${partCounter++}. ${translatedType}</span>
+                    <span class="text-[13px] md:text-sm ${titleColor} leading-tight">${num}. ${translatedType}</span>
                     <span class="text-[13px] md:text-sm ${nameColor} mt-0.5 ml-4">${m.student}${assistStr}</span>
                 </div>
                 <div class="shrink-0 ml-3 text-slate-400 group-hover:text-indigo-500 transition-colors pointer-events-none">
@@ -1108,12 +1108,12 @@ function buildScheduleCards(d, myName, currentWeekStr) {
 
     // --- ХРИСТИАНСКАЯ ЖИЗНЬ ---
     const livRows = (d.livingParts || []).map((m) => {
-        return row(m.title, m.name); // Вернет пустоту, если имя не введено
+        return rowNumbered(m.title, m.name); // Счетчики продолжают крутиться
     }).join('');
 
     let cbsRow = '';
+    const cbsNum = getNextNum(); // Прокручиваем счетчик для Изучения Библии
     if (d.mw_cbs_conductor && d.mw_cbs_conductor.trim() !== '') {
-        const cbsNum = partCounter++;
         const isCbsMe = (d.mw_cbs_conductor === myName || d.mw_cbs_reader === myName);
         const cbsTitleColor = isCbsMe ? 'font-black text-black' : 'font-bold text-slate-800';
         const cbsNameColor = isCbsMe ? 'font-bold text-indigo-600' : 'font-medium text-slate-600';
@@ -1204,7 +1204,6 @@ function buildScheduleCards(d, myName, currentWeekStr) {
     }
 
     return `
-        <!-- 🔥 ВЕРНУЛИ КЛАССЫ snap-center snap-always scroll-mt-40 -->
         <div class="w-[calc(100vw-32px)] md:w-full shrink-0 snap-center snap-always scroll-mt-40 flex flex-col bg-transparent pb-2 px-0 ${pastCardClass} ${isCurrentWeek ? 'current-week-marker' : ''}">
             
             <div class="flex flex-col gap-1 pb-1 mb-2 mx-1">
