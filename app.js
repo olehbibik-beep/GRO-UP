@@ -1834,25 +1834,59 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
+// Глобальные функции для окна новостей
+    window.openNewsModal = (text, imageUrl, date) => {
+        const imgContainer = document.getElementById('news-modal-image-container');
+        const imgTag = document.getElementById('news-modal-image');
+        const textTag = document.getElementById('news-modal-text');
+        const dateTag = document.getElementById('news-modal-date');
+        
+        if (textTag) textTag.innerText = text || '';
+        if (dateTag) dateTag.innerText = date || '';
+        
+        if (imageUrl && imageUrl.trim() !== '') {
+            imgTag.src = imageUrl;
+            imgContainer.classList.remove('hidden');
+        } else {
+            imgTag.src = '';
+            imgContainer.classList.add('hidden');
+        }
+        
+        document.getElementById('news-details-modal')?.classList.replace('hidden', 'flex');
+    };
+
+    window.closeNewsModal = () => {
+        document.getElementById('news-details-modal')?.classList.replace('flex', 'hidden');
+    };
+
+    // Обновляем общую функцию закрытия модалок, чтобы по кнопке "Назад" на телефоне она тоже закрывалась
+    const originalCloseModals = window.closeModals;
+    window.closeModals = () => {
+        if(originalCloseModals) originalCloseModals();
+        window.closeNewsModal();
+    };
+
+    // Свежая логика рендера новостей (Квадратная сетка)
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
-            let newsHTML = ``; 
+            const contentNews = document.getElementById('content-news');
+            const adminContainer = document.getElementById('admin-news-creator');
+            if (!contentNews) return; 
+
             const now = new Date().getTime();
             const oneWeek = 7 * 24 * 60 * 60 * 1000;
             const oneDay = 24 * 60 * 60 * 1000;
             const isNewsAdmin = currentUserData.roles && (currentUserData.roles.includes('Админ') || currentUserData.roles.includes('Владелец') || currentUserData.roles.includes('Старейшина'));
 
+            let validNews = [];
+
+            // Сначала фильтруем и собираем актуальные новости
             snapshot.forEach(docSnap => {
                 const item = docSnap.data();
                 if(item.section === 'news') {
                     const itemTime = new Date(item.createdAt).getTime();
                     if (now - itemTime < oneWeek) {
-                        const isNew = (now - itemTime) < oneDay;
-                        const dateStr = new Date(item.createdAt).toLocaleDateString(localeFormat, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-
-                        const deleteBtn = isNewsAdmin ? `<button onclick="window.deleteNews('${docSnap.id}')" class="text-red-400 hover:text-red-600 p-1 bg-red-50 rounded-md transition-colors outline-none flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : '';
-                        
                         let displayText = ''; let shouldShow = false;
                         const hasRu = !!item.text_ru; const hasCs = !!item.text_cs;
                         const hasLegacyText = !!item.text && !hasRu && !hasCs; 
@@ -1862,63 +1896,99 @@ function loadPersonalData() {
                         else if (currentLang === 'ru') { if (hasRu) { displayText = item.text_ru; shouldShow = true; } else if (!hasRu && !hasCs && hasImg) { shouldShow = true; } } 
                         else if (currentLang === 'cs') { if (hasCs) { displayText = item.text_cs; shouldShow = true; } else if (!hasRu && !hasCs && hasImg) { shouldShow = true; } }
 
-                        if (!shouldShow) return; 
-
-                        const bgCardClass = isNew ? "bg-white border-slate-200 shadow-sm" : "bg-slate-50 opacity-95 border-slate-200";
-                        const newBadge = isNew ? `<span class="absolute top-2 left-2 bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow-sm z-10">${window.t('new_badge')}</span>` : '';
-
-                        let contentHtml = '';
-                        if (!displayText && !item.imageUrl) {
-                            contentHtml = `<div class="flex flex-col items-center justify-center flex-grow py-6 text-slate-300"><svg class="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span class="text-[10px] font-black uppercase tracking-widest opacity-50">${window.t('no_translation')}</span></div>`;
-                        } else {
-                            const imgHtml = item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-32 object-cover rounded-lg mb-3 shrink-0 cursor-pointer" onclick="window.open('${item.imageUrl}', '_blank')">` : '';
-                            const textHtml = displayText ? `<p class="text-sm font-bold text-slate-800 mb-3 whitespace-pre-wrap flex-grow">${displayText}</p>` : '';
-                            contentHtml = textHtml + imgHtml;
+                        if (shouldShow) {
+                            validNews.push({
+                                id: docSnap.id,
+                                data: item,
+                                text: displayText,
+                                isNew: (now - itemTime) < oneDay
+                            });
                         }
-
-                        newsHTML += `
-                            <div class="w-full rounded-xl border transition-all flex flex-col overflow-hidden relative p-4 ${bgCardClass} min-h-[160px]">
-                                ${newBadge}
-                                ${contentHtml}
-                                <div class="flex justify-between items-center mt-auto pt-2 border-t border-slate-100">
-                                    <span class="text-[9px] text-slate-400 font-bold">${dateStr}</span>
-                                    ${deleteBtn}
-                                </div>
-                            </div>
-                        `;
                     }
                 }
             });
 
-            if (isNewsAdmin) {
-                let textAreaHtml = '';
-                if (currentLang === 'ru') textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-transparent border-0 p-2 text-sm outline-none resize-none font-medium text-slate-700 flex-grow custom-scrollbar mb-1"></textarea>`;
-                else textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-transparent border-0 p-2 text-sm outline-none resize-none font-medium text-slate-700 flex-grow custom-scrollbar mb-1"></textarea>`;
+            // 1. РИСУЕМ КВАДРАТЫ (Сетка новостей)
+            let newsHTML = '';
+            // Вычисляем сколько слотов нужно (минимум 4, если больше - округляем до четного числа)
+            const totalSlots = validNews.length === 0 ? 4 : Math.max(4, Math.ceil(validNews.length / 2) * 2);
 
-                newsHTML += `
-                    <div class="w-full p-4 rounded-xl border border-dashed border-slate-400 bg-slate-100/50 flex flex-col relative min-h-[160px]">
-                        <p class="p-1 text-[9px] font-bold text-slate-500 uppercase tracking-widest text-center flex items-center justify-center gap-1 shrink-0 border-b border-slate-200 pb-2 mb-2">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                            ${window.t('create_announcement')}
-                        </p>
-                        ${textAreaHtml}
-                        <div id="image-preview-container" class="hidden relative w-full shrink-0 mb-2 mt-2">
-                            <img id="image-preview" src="" class="h-16 w-full object-cover rounded-lg border border-slate-200">
-                            <button onclick="window.removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center outline-none shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            for (let i = 0; i < totalSlots; i++) {
+                if (i < validNews.length) {
+                    // РЕАЛЬНАЯ НОВОСТЬ
+                    const n = validNews[i];
+                    const dateStr = new Date(n.data.createdAt).toLocaleDateString(localeFormat, { day: 'numeric', month: 'short' });
+                    
+                    const safeText = (n.text || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n');
+                    const safeImage = (n.data.imageUrl || '');
+
+                    const hasImage = !!safeImage;
+                    const bgStyle = hasImage ? `background-image: url('${safeImage}'); background-size: cover; background-position: center;` : 'background-color: white;';
+                    const overlay = hasImage ? '<div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent z-0"></div>' : '';
+                    const textColor = hasImage ? 'text-white' : 'text-slate-800';
+                    const dateColor = hasImage ? 'bg-white/20 text-white backdrop-blur-md border border-white/20' : 'bg-sky-50 text-sky-500 border border-sky-100';
+
+                    const newBadge = n.isNew ? `<span class="absolute top-2 left-2 bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow-sm z-20">${window.t('new_badge')}</span>` : '';
+                    const deleteBtn = isNewsAdmin ? `<button onclick="event.stopPropagation(); window.deleteNews('${n.id}')" class="absolute top-2 right-2 text-red-400 hover:text-red-600 p-1.5 bg-red-50/90 backdrop-blur-sm rounded-full transition-colors outline-none z-20"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : '';
+
+                    // Текст для превью. Убираем переносы строк для красоты карточки
+                    const previewText = n.text ? n.text.replace(/\n/g, ' ') : 'ФОТО';
+
+                    newsHTML += `
+                        <div onclick="window.openNewsModal('${safeText}', '${safeImage}', '${dateStr}')" 
+                             class="aspect-square rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden cursor-pointer hover:scale-[0.98] transition-transform flex flex-col justify-end p-3" 
+                             style="${bgStyle}">
+                            ${overlay}
+                            ${newBadge}
+                            ${deleteBtn}
+                            <div class="relative z-10 flex flex-col items-start gap-1 w-full mt-auto">
+                                <span class="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${dateColor}">${dateStr}</span>
+                                <p class="text-[11px] md:text-xs font-bold leading-tight ${textColor} line-clamp-3 w-full">${previewText}</p>
+                            </div>
                         </div>
-                        <div class="flex items-center justify-between gap-2 shrink-0 mt-auto pt-2 border-t border-slate-200">
-                            <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-indigo-500 rounded-md transition-colors flex items-center justify-center w-10 h-8 shrink-0 shadow-sm"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="window.previewImage(this)"></label>
-                            <button onclick="window.publishNews()" id="publish-news-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-4 rounded-md flex-grow transition-colors h-8 outline-none shadow-sm uppercase tracking-widest">${window.t('publish')}</button>
+                    `;
+                } else {
+                    // ПУСТОЙ СЛОТ (СКЕЛЕТОН)
+                    newsHTML += `
+                        <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-2xl flex items-center justify-center opacity-50">
+                            <svg class="w-5 h-5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             }
 
-           const contentNews = document.getElementById('content-news');
-            if(contentNews) contentNews.innerHTML = newsHTML || `<div class="w-full h-32 shrink-0 p-6 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center mx-4 md:mx-0 shadow-sm"><p class="text-slate-400 italic text-sm text-center">${window.t('no_news')}</p></div>`;
+            contentNews.innerHTML = newsHTML;
+
+            // 2. РИСУЕМ ФОРМУ СОЗДАНИЯ (ТОЛЬКО ДЛЯ АДМИНА)
+            if (adminContainer) {
+                if (isNewsAdmin) {
+                    let textAreaHtml = '';
+                    if (currentLang === 'ru') textAreaHtml = `<textarea id="news-input-ru" rows="2" placeholder="${window.t('write_text_ru')}" class="w-full bg-white border border-slate-200 rounded-lg p-3 text-sm outline-none resize-none font-medium text-slate-700 custom-scrollbar mb-2 shadow-sm focus:border-sky-400"></textarea>`;
+                    else textAreaHtml = `<textarea id="news-input-cs" rows="2" placeholder="${window.t('write_text_cs')}" class="w-full bg-white border border-slate-200 rounded-lg p-3 text-sm outline-none resize-none font-medium text-slate-700 custom-scrollbar mb-2 shadow-sm focus:border-sky-400"></textarea>`;
+
+                    adminContainer.innerHTML = `
+                        <div class="w-full p-4 rounded-2xl border border-slate-200 bg-slate-50 flex flex-col relative shadow-sm mb-2">
+                            <p class="p-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 shrink-0 mb-2">
+                                <svg class="w-4 h-4 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                                ${window.t('create_announcement')}
+                            </p>
+                            ${textAreaHtml}
+                            <div id="image-preview-container" class="hidden relative w-full shrink-0 mb-3 mt-1">
+                                <img id="image-preview" src="" class="h-24 w-full object-cover rounded-lg border border-slate-200 shadow-sm">
+                                <button onclick="window.removeImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center outline-none shadow-md hover:bg-red-600 transition-colors"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 shrink-0 mt-auto pt-2 border-t border-slate-200/60">
+                                <label class="cursor-pointer bg-white border border-slate-200 text-slate-500 hover:text-sky-500 rounded-lg transition-colors flex items-center justify-center w-12 h-10 shrink-0 shadow-sm"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg><input type="file" id="news-image" accept="image/*" class="hidden" onchange="window.previewImage(this)"></label>
+                                <button onclick="window.publishNews()" id="publish-news-btn" class="bg-sky-500 hover:bg-sky-600 text-white text-xs font-black px-4 rounded-lg flex-grow transition-colors h-10 outline-none shadow-sm uppercase tracking-widest">${window.t('publish')}</button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    adminContainer.innerHTML = '';
+                }
+            }
         });
-    } catch(e) {}
-}; // КОНЕЦ ФУНКЦИИ loadPersonalData
+    } catch(e) { console.error("News error:", e); }
 
 window.availableTerritoriesData = [];
 window.currentTerrCityFilter = 'all';
