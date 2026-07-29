@@ -245,15 +245,19 @@
 <!-- 🔥 БЛОК ДЛЯ АДМИНОВ (Создание новости) -->
                     <div id="admin-news-creator" class="w-full px-4 md:px-0 empty:hidden"></div>
 
-                    <!-- 🔥 ДОСКА ОБЪЯВЛЕНИЙ (КВАДРАТНАЯ СЕТКА) -->
+                    <!-- 🔥 ДОСКА ОБЪЯВЛЕНИЙ (КВАДРАТНАЯ СЕТКА 4x2) -->
                     <div class="w-full mb-6 px-4 md:px-0">
-                        <!-- Сетка 2x2. Aspect-square делает карточки идеальными квадратами -->
-                        <div id="content-news" class="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
-                            <!-- Скелетоны для красоты во время начальной загрузки -->
-                            <div class="aspect-square bg-white border border-slate-200 rounded-2xl animate-pulse"></div>
-                            <div class="aspect-square bg-white border border-slate-200 rounded-2xl animate-pulse" style="animation-delay: 0.1s"></div>
-                            <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-2xl"></div>
-                            <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-2xl"></div>
+                        <!-- Сетка СТРОГО 4 колонки (grid-cols-4) с небольшим зазором (gap-2) -->
+                        <div id="content-news" class="grid grid-cols-4 gap-2 w-full">
+                            <!-- 8 маленьких скелетонов -->
+                            <div class="aspect-square bg-white border border-slate-200 rounded-xl animate-pulse"></div>
+                            <div class="aspect-square bg-white border border-slate-200 rounded-xl animate-pulse" style="animation-delay: 0.1s"></div>
+                            <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-xl"></div>
+                            <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-xl"></div>
+                            <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-xl"></div>
+                            <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-xl"></div>
+                            <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-xl"></div>
+                            <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-xl"></div>
                         </div>
                     </div>
 
