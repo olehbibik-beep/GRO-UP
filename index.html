@@ -242,16 +242,20 @@
                     </div>
 
                     <!-- 🔥 ДОСКА ОБЪЯВЛЕНИЙ (КВАДРАТНАЯ СЕТКА) -->
-<div class="w-full mb-6 px-4 md:px-0">
-    <!-- Сетка 2x2 (4 квадратика). Aspect-square делает их идеальными квадратами -->
-    <div id="content-news" class="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
-        <!-- Скелетоны для красоты во время загрузки -->
-        <div class="aspect-square bg-white border border-slate-200 rounded-2xl animate-pulse"></div>
-        <div class="aspect-square bg-white border border-slate-200 rounded-2xl animate-pulse" style="animation-delay: 0.1s"></div>
-        <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-2xl"></div>
-        <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-2xl"></div>
-    </div>
-</div>
+<!-- 🔥 БЛОК ДЛЯ АДМИНОВ (Создание новости) -->
+                    <div id="admin-news-creator" class="w-full px-4 md:px-0 empty:hidden"></div>
+
+                    <!-- 🔥 ДОСКА ОБЪЯВЛЕНИЙ (КВАДРАТНАЯ СЕТКА) -->
+                    <div class="w-full mb-6 px-4 md:px-0">
+                        <!-- Сетка 2x2. Aspect-square делает карточки идеальными квадратами -->
+                        <div id="content-news" class="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
+                            <!-- Скелетоны для красоты во время начальной загрузки -->
+                            <div class="aspect-square bg-white border border-slate-200 rounded-2xl animate-pulse"></div>
+                            <div class="aspect-square bg-white border border-slate-200 rounded-2xl animate-pulse" style="animation-delay: 0.1s"></div>
+                            <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-2xl"></div>
+                            <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-2xl"></div>
+                        </div>
+                    </div>
 
                     <div class="bg-white p-4 md:p-6 rounded-xl border border-slate-200 flex flex-col mx-4 md:mx-0 shadow-sm mb-4">
                         <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
