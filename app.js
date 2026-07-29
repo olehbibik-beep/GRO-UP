@@ -1990,6 +1990,8 @@ function loadPersonalData() {
         });
     } catch(e) { console.error("News error:", e); }
 
+};
+
 window.availableTerritoriesData = [];
 window.currentTerrCityFilter = 'all';
 window.showRecommendedTerrOnly = false;
