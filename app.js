@@ -1908,50 +1908,51 @@ function loadPersonalData() {
                 }
             });
 
-            // 1. РИСУЕМ КВАДРАТЫ (Сетка новостей)
+// 1. РИСУЕМ КВАДРАТЫ (Сетка новостей 4х2)
             let newsHTML = '';
-            // Вычисляем сколько слотов нужно (минимум 4, если больше - округляем до четного числа)
-            const totalSlots = validNews.length === 0 ? 4 : Math.max(4, Math.ceil(validNews.length / 2) * 2);
+            // Вычисляем сколько слотов нужно (минимум 8, чтобы было 2 ряда по 4. Если новостей больше, добиваем пустые до кратного 4)
+            const totalSlots = validNews.length === 0 ? 8 : Math.max(8, Math.ceil(validNews.length / 4) * 4);
 
             for (let i = 0; i < totalSlots; i++) {
                 if (i < validNews.length) {
                     // РЕАЛЬНАЯ НОВОСТЬ
                     const n = validNews[i];
-                    const dateStr = new Date(n.data.createdAt).toLocaleDateString(localeFormat, { day: 'numeric', month: 'short' });
+                    // Для маленькой плитки сокращаем дату (например, не "27 июл", а "27.07")
+                    const dateStr = new Date(n.data.createdAt).toLocaleDateString(localeFormat, { day: 'numeric', month: '2-digit' });
                     
                     const safeText = (n.text || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n');
                     const safeImage = (n.data.imageUrl || '');
 
                     const hasImage = !!safeImage;
                     const bgStyle = hasImage ? `background-image: url('${safeImage}'); background-size: cover; background-position: center;` : 'background-color: white;';
-                    const overlay = hasImage ? '<div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent z-0"></div>' : '';
+                    const overlay = hasImage ? '<div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent z-0"></div>' : '';
                     const textColor = hasImage ? 'text-white' : 'text-slate-800';
-                    const dateColor = hasImage ? 'bg-white/20 text-white backdrop-blur-md border border-white/20' : 'bg-sky-50 text-sky-500 border border-sky-100';
+                    const dateColor = hasImage ? 'bg-white/30 text-white backdrop-blur-md border border-white/20' : 'bg-sky-50 text-sky-500 border border-sky-100';
 
-                    const newBadge = n.isNew ? `<span class="absolute top-2 left-2 bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow-sm z-20">${window.t('new_badge')}</span>` : '';
-                    const deleteBtn = isNewsAdmin ? `<button onclick="event.stopPropagation(); window.deleteNews('${n.id}')" class="absolute top-2 right-2 text-red-400 hover:text-red-600 p-1.5 bg-red-50/90 backdrop-blur-sm rounded-full transition-colors outline-none z-20"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : '';
+                    // Уменьшили бейдж "Новое" и кнопку удаления
+                    const newBadge = n.isNew ? `<span class="absolute top-1 left-1 bg-rose-500 text-white text-[6px] font-black uppercase tracking-widest px-1 py-0.5 rounded-full shadow-sm z-20">New</span>` : '';
+                    const deleteBtn = isNewsAdmin ? `<button onclick="event.stopPropagation(); window.deleteNews('${n.id}')" class="absolute top-1 right-1 text-red-500 hover:text-red-700 p-1 bg-white/90 backdrop-blur-sm rounded-full transition-colors outline-none z-20 shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : '';
 
-                    // Текст для превью. Убираем переносы строк для красоты карточки
                     const previewText = n.text ? n.text.replace(/\n/g, ' ') : 'ФОТО';
 
                     newsHTML += `
                         <div onclick="window.openNewsModal('${safeText}', '${safeImage}', '${dateStr}')" 
-                             class="aspect-square rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden cursor-pointer hover:scale-[0.98] transition-transform flex flex-col justify-end p-3" 
+                             class="aspect-square rounded-xl border border-slate-200 shadow-sm relative overflow-hidden cursor-pointer hover:scale-[0.95] transition-transform flex flex-col justify-end p-1.5 md:p-2" 
                              style="${bgStyle}">
                             ${overlay}
                             ${newBadge}
                             ${deleteBtn}
-                            <div class="relative z-10 flex flex-col items-start gap-1 w-full mt-auto">
-                                <span class="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${dateColor}">${dateStr}</span>
-                                <p class="text-[11px] md:text-xs font-bold leading-tight ${textColor} line-clamp-3 w-full">${previewText}</p>
+                            <div class="relative z-10 flex flex-col items-start gap-0.5 w-full mt-auto">
+                                <span class="text-[7px] font-black uppercase tracking-widest px-1 py-0.5 rounded leading-none ${dateColor}">${dateStr}</span>
+                                <p class="text-[8px] md:text-[9px] font-bold leading-tight ${textColor} line-clamp-2 w-full">${previewText}</p>
                             </div>
                         </div>
                     `;
                 } else {
                     // ПУСТОЙ СЛОТ (СКЕЛЕТОН)
                     newsHTML += `
-                        <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-2xl flex items-center justify-center opacity-50">
-                            <svg class="w-5 h-5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                        <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-xl flex items-center justify-center opacity-50">
+                            <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                         </div>
                     `;
                 }
