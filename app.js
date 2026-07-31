@@ -2545,13 +2545,16 @@ window.publishNews = async () => {
 
         await addDoc(collection(db, "section_content"), { section: 'news', text_ru: textRu, text_cs: textCs, text: textRu || textCs, imageUrl: imageUrl, createdAt: new Date().toISOString() });
         
-        if(inputRu) inputRu.value = ''; if(inputCs) inputCs.value = '';
+      if(inputRu) inputRu.value = ''; if(inputCs) inputCs.value = '';
         removeImage();
         if(btn) {
             btn.innerHTML = `<svg class="w-4 h-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>${window.t('success')}`;
             setTimeout(() => { btn.innerText = window.t('publish'); btn.disabled = false; }, 2000);
         }
-    } catch (e) { alert(window.t('alert_publish_error')); if(btn) { btn.innerText = window.t('publish'); btn.disabled = false; } }
+    } catch (e) { 
+        alert("ОШИБКА: " + e.message); 
+        if(btn) { btn.innerText = window.t('publish'); btn.disabled = false; } 
+    }
 };
 
 window.deleteNews = async (id) => {
