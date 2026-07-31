@@ -686,23 +686,19 @@
         </div>
     </div>
 
-    <!-- 🔥 ОКНО ПРОСМОТРА НОВОСТИ -->
-<div id="news-details-modal" class="fixed inset-0 bg-slate-900/60 z-[160] hidden items-center justify-center p-4 backdrop-blur-sm transition-opacity" onclick="window.closeNewsModal()">
-    <div class="bg-white w-full max-w-sm rounded-3xl relative border border-slate-200 flex flex-col shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
-        <!-- Блок для картинки (пока скрыт по умолчанию) -->
-        <div id="news-modal-image-container" class="w-full h-40 md:h-48 bg-slate-100 hidden">
-            <img id="news-modal-image" src="" class="w-full h-full object-cover">
-        </div>
-        <div class="p-5 flex flex-col">
-            <div class="flex justify-between items-start mb-3">
-                <span id="news-modal-date" class="text-[10px] font-black text-sky-500 uppercase tracking-widest bg-sky-50 border border-sky-100 px-2 py-1 rounded-md"></span>
-                <button onclick="window.closeNewsModal()" class="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition-colors outline-none font-black text-lg pb-1 shrink-0">×</button>
+  <!-- 🔥 ОКНО ПРОСМОТРА НОВОСТИ (Максимально чистое) -->
+    <div id="news-details-modal" class="fixed inset-0 bg-slate-900/60 z-[160] hidden items-center justify-center p-4 backdrop-blur-sm transition-opacity" onclick="window.closeNewsModal()">
+        <div class="bg-white w-full max-w-sm rounded-3xl relative border border-slate-200 flex flex-col shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+            <!-- Блок для картинки -->
+            <div id="news-modal-image-container" class="w-full bg-slate-100 hidden">
+                <img id="news-modal-image" src="" class="w-full h-auto max-h-[60vh] object-cover">
             </div>
-            <h3 id="news-modal-title" class="text-lg font-black text-slate-800 leading-tight mb-3"></h3>
-            <div id="news-modal-text" class="text-sm font-medium text-slate-600 whitespace-pre-wrap overflow-y-auto custom-scrollbar max-h-[40vh] leading-relaxed"></div>
+            <!-- Блок для текста (скрывается, если текста нет) -->
+            <div id="news-modal-text-container" class="p-6 flex flex-col hidden">
+                <div id="news-modal-text" class="text-sm font-medium text-slate-600 whitespace-pre-wrap overflow-y-auto custom-scrollbar max-h-[40vh] leading-relaxed"></div>
+            </div>
         </div>
     </div>
-</div>
     
     <script type="module" src="app.js?v=882"></script>
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[150] flex flex-col gap-2 pointer-events-none"></div>
