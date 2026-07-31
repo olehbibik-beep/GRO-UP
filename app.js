@@ -1834,16 +1834,23 @@ function loadPersonalData() {
         });
     } catch(e) {}
 
-// Глобальные функции для окна новостей
-    window.openNewsModal = (text, imageUrl, date) => {
+// Глобальные функции для чистого окна новостей
+    window.openNewsModal = (text, imageUrl) => {
         const imgContainer = document.getElementById('news-modal-image-container');
         const imgTag = document.getElementById('news-modal-image');
+        const textContainer = document.getElementById('news-modal-text-container');
         const textTag = document.getElementById('news-modal-text');
-        const dateTag = document.getElementById('news-modal-date');
         
-        if (textTag) textTag.innerText = text || '';
-        if (dateTag) dateTag.innerText = date || '';
+        // Показываем текст только если он есть
+        if (text && text.trim() !== '') {
+            if (textTag) textTag.innerText = text;
+            if (textContainer) textContainer.classList.remove('hidden');
+        } else {
+            if (textTag) textTag.innerText = '';
+            if (textContainer) textContainer.classList.add('hidden');
+        }
         
+        // Показываем картинку только если она есть
         if (imageUrl && imageUrl.trim() !== '') {
             imgTag.src = imageUrl;
             imgContainer.classList.remove('hidden');
@@ -1859,14 +1866,13 @@ function loadPersonalData() {
         document.getElementById('news-details-modal')?.classList.replace('flex', 'hidden');
     };
 
-    // Обновляем общую функцию закрытия модалок, чтобы по кнопке "Назад" на телефоне она тоже закрывалась
     const originalCloseModals = window.closeModals;
     window.closeModals = () => {
         if(originalCloseModals) originalCloseModals();
         window.closeNewsModal();
     };
 
-    // Свежая логика рендера новостей (Квадратная сетка)
+    // Свежая логика рендера новостей (Чистые плитки)
     try {
         const newsQuery = query(collection(db, "section_content"), orderBy("createdAt", "desc"));
         onSnapshot(newsQuery, (snapshot) => {
@@ -1876,12 +1882,10 @@ function loadPersonalData() {
 
             const now = new Date().getTime();
             const oneWeek = 7 * 24 * 60 * 60 * 1000;
-            const oneDay = 24 * 60 * 60 * 1000;
             const isNewsAdmin = currentUserData.roles && (currentUserData.roles.includes('Админ') || currentUserData.roles.includes('Владелец') || currentUserData.roles.includes('Старейшина'));
 
             let validNews = [];
 
-            // Сначала фильтруем и собираем актуальные новости
             snapshot.forEach(docSnap => {
                 const item = docSnap.data();
                 if(item.section === 'news') {
@@ -1897,59 +1901,43 @@ function loadPersonalData() {
                         else if (currentLang === 'cs') { if (hasCs) { displayText = item.text_cs; shouldShow = true; } else if (!hasRu && !hasCs && hasImg) { shouldShow = true; } }
 
                         if (shouldShow) {
-                            validNews.push({
-                                id: docSnap.id,
-                                data: item,
-                                text: displayText,
-                                isNew: (now - itemTime) < oneDay
-                            });
+                            validNews.push({ id: docSnap.id, data: item, text: displayText });
                         }
                     }
                 }
             });
 
-// 1. РИСУЕМ КВАДРАТЫ (Сетка новостей 4х2)
+            // 1. РИСУЕМ КВАДРАТЫ
             let newsHTML = '';
-            // Вычисляем сколько слотов нужно (минимум 8, чтобы было 2 ряда по 4. Если новостей больше, добиваем пустые до кратного 4)
             const totalSlots = validNews.length === 0 ? 8 : Math.max(8, Math.ceil(validNews.length / 4) * 4);
 
             for (let i = 0; i < totalSlots; i++) {
                 if (i < validNews.length) {
-                    // РЕАЛЬНАЯ НОВОСТЬ
                     const n = validNews[i];
-                    // Для маленькой плитки сокращаем дату (например, не "27 июл", а "27.07")
-                    const dateStr = new Date(n.data.createdAt).toLocaleDateString(localeFormat, { day: 'numeric', month: '2-digit' });
-                    
                     const safeText = (n.text || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n');
                     const safeImage = (n.data.imageUrl || '');
-
                     const hasImage = !!safeImage;
-                    const bgStyle = hasImage ? `background-image: url('${safeImage}'); background-size: cover; background-position: center;` : 'background-color: white;';
-                    const overlay = hasImage ? '<div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent z-0"></div>' : '';
-                    const textColor = hasImage ? 'text-white' : 'text-slate-800';
-                    const dateColor = hasImage ? 'bg-white/30 text-white backdrop-blur-md border border-white/20' : 'bg-sky-50 text-sky-500 border border-sky-100';
 
-                    // Уменьшили бейдж "Новое" и кнопку удаления
-                    const newBadge = n.isNew ? `<span class="absolute top-1 left-1 bg-rose-500 text-white text-[6px] font-black uppercase tracking-widest px-1 py-0.5 rounded-full shadow-sm z-20">New</span>` : '';
+                    const bgStyle = hasImage ? `background-image: url('${safeImage}'); background-size: cover; background-position: center; border: none;` : 'background-color: white;';
+                    
                     const deleteBtn = isNewsAdmin ? `<button onclick="event.stopPropagation(); window.deleteNews('${n.id}')" class="absolute top-1 right-1 text-red-500 hover:text-red-700 p-1 bg-white/90 backdrop-blur-sm rounded-full transition-colors outline-none z-20 shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : '';
 
-                    const previewText = n.text ? n.text.replace(/\n/g, ' ') : 'ФОТО';
+                    let innerContent = '';
+                    // Если картинки НЕТ, показываем текст. Если картинка ЕСТЬ - плитка будет абсолютно чистой (как в Инстаграм)
+                    if (!hasImage) {
+                        const previewText = n.text ? n.text.replace(/\n/g, ' ') : '';
+                        innerContent = `<div class="w-full h-full p-2 flex items-start justify-start"><p class="text-[8px] md:text-[9px] font-bold leading-tight text-slate-700 line-clamp-4 break-words">${previewText}</p></div>`;
+                    }
 
                     newsHTML += `
-                        <div onclick="window.openNewsModal('${safeText}', '${safeImage}', '${dateStr}')" 
-                             class="aspect-square rounded-xl border border-slate-200 shadow-sm relative overflow-hidden cursor-pointer hover:scale-[0.95] transition-transform flex flex-col justify-end p-1.5 md:p-2" 
+                        <div onclick="window.openNewsModal('${safeText}', '${safeImage}')" 
+                             class="aspect-square rounded-xl border border-slate-200 shadow-sm relative overflow-hidden cursor-pointer hover:scale-[0.95] transition-transform" 
                              style="${bgStyle}">
-                            ${overlay}
-                            ${newBadge}
                             ${deleteBtn}
-                            <div class="relative z-10 flex flex-col items-start gap-0.5 w-full mt-auto">
-                                <span class="text-[7px] font-black uppercase tracking-widest px-1 py-0.5 rounded leading-none ${dateColor}">${dateStr}</span>
-                                <p class="text-[8px] md:text-[9px] font-bold leading-tight ${textColor} line-clamp-2 w-full">${previewText}</p>
-                            </div>
+                            ${innerContent}
                         </div>
                     `;
                 } else {
-                    // ПУСТОЙ СЛОТ (СКЕЛЕТОН)
                     newsHTML += `
                         <div class="aspect-square bg-slate-50 border border-slate-200 border-dashed rounded-xl flex items-center justify-center opacity-50">
                             <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
