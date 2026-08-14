@@ -15,7 +15,21 @@
     <title data-lang="admin_title">Панель Администратора - GRO-UP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f8fafc', adminNav: '#0f172a' } } } } }
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ui: {
+                            bg: '#E1E1EB',
+                            nav: '#2A2E33',
+                            report: '#0f172a',
+                            news: '#0ea5e9',
+                            success: '#2dd4bf'
+                        }
+                    }
+                }
+            }
+        }
     </script>
     <style>
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -25,20 +39,15 @@
         .text-center-last { text-align-last: center; }
     </style>
 </head>
-<body class="bg-ui-bg text-slate-800 min-h-screen font-sans pb-24 md:pb-0 overflow-x-hidden w-full">
+<body class="bg-ui-bg text-slate-800 min-h-screen font-sans overflow-x-hidden w-full relative">
 
-    <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] border-t border-slate-800 md:border-t-0">
-        <a href="index.html" data-lang-title="back_home" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
-            <div class="nav-icon-container text-slate-400 hover:text-white p-2.5 rounded-full transition-colors flex flex-col items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-                </svg>
-                <span class="text-[8px] font-black uppercase tracking-widest hidden md:block mt-1" data-lang="btn_back">Назад</span>
-            </div>
+    <nav class="fixed top-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-start z-50 pt-safe border-b-[3px] border-[#2A2E33]">
+        <a href="index.html" data-lang-title="back_home" class="flex items-center justify-center p-3 outline-none transition-colors text-slate-500 hover:text-white" title="Назад">
+            <svg class="w-7 h-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
         </a>
     </nav>
 
-    <main class="w-full max-w-7xl mx-auto pt-6 px-4 md:pl-28 md:pr-6">
+    <main class="w-full max-w-7xl mx-auto px-4 pt-16 pb-6">
         
         <div class="mb-6 flex justify-between items-center bg-transparent">
             <div class="flex items-center gap-3">
