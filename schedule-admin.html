@@ -15,7 +15,22 @@
     <title>Планировка графика</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { theme: { extend: { colors: { ui: { bg: '#f3f4f6', nav: '#0f172a' }, jw: { treasure: '#0d9488', ministry: '#d97706', living: '#b91c1c', weekend: '#475569' } } } } }
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ui: {
+                            bg: '#E1E1EB',
+                            nav: '#2A2E33',
+                            report: '#0f172a',
+                            news: '#0ea5e9',
+                            success: '#2dd4bf'
+                        },
+                        jw: { treasure: '#0d9488', ministry: '#d97706', living: '#b91c1c', weekend: '#475569' }
+                    }
+                }
+            }
+        }
     </script>
     <style>
         ::-webkit-scrollbar { display: none; }
@@ -48,15 +63,15 @@
         }
     </style>
 </head>
-<body class="bg-ui-bg text-slate-800 font-sans pb-24 md:pb-6 relative">
+<body class="bg-ui-bg text-slate-800 font-sans relative">
 
-    <nav class="fixed bottom-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-slate-800 md:border-t-0 no-print">
-        <a href="index.html" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-slate-400 hover:text-white">
-            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+    <nav class="fixed top-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-start z-50 pt-safe border-b-[3px] border-[#2A2E33] no-print">
+        <a href="index.html" class="flex items-center justify-center p-3 outline-none transition-colors text-slate-500 hover:text-white" title="Назад">
+            <svg class="w-7 h-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
         </a>
     </nav>
 
-    <main class="w-full max-w-6xl mx-auto px-4 py-6 md:pl-28 md:pr-6 no-print">
+    <main class="w-full max-w-6xl mx-auto px-4 pt-16 pb-6 no-print">
         
         <div class="flex flex-col bg-white border border-slate-200 p-4 rounded-xl mb-6 shadow-sm gap-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">

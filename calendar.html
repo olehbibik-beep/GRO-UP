@@ -15,27 +15,41 @@
     <title data-lang="calendar_title">Календарь встреч</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { theme: { extend: { colors: { ui: { bg: '#cbd5e1', nav: '#0f172a' } } } } }
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ui: {
+                            bg: '#E1E1EB',
+                            nav: '#2A2E33',
+                            report: '#0f172a',
+                            news: '#0ea5e9',
+                            success: '#2dd4bf'
+                        }
+                    }
+                }
+            }
+        }
     </script>
     <style>
         ::-webkit-scrollbar { display: none; }
         body { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-ui-bg text-slate-800 min-h-screen font-sans pb-20 md:pb-0 relative">
+<body class="bg-ui-bg text-slate-800 min-h-screen font-sans relative">
 
     <div id="global-loader" class="fixed inset-0 bg-ui-bg z-[200] flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="animate-spin rounded-full h-10 w-10 border-4 border-slate-300 border-t-slate-800 mb-4"></div>
         <p class="text-[10px] font-bold text-slate-400 tracking-widest uppercase animate-pulse" data-lang="loading">Загрузка...</p>
     </div>
 
-    <nav class="fixed bottom-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-slate-800 md:border-t-0 no-print">
-        <a href="index.html" class="flex flex-col items-center justify-center py-4 w-full md:flex-none md:mb-4 outline-none transition-colors text-slate-400 hover:text-white" title="Назад">
-            <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+    <nav class="fixed top-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-start z-50 pt-safe border-b-[3px] border-[#2A2E33] no-print">
+        <a href="index.html" class="flex items-center justify-center p-3 outline-none transition-colors text-slate-500 hover:text-white" title="Назад">
+            <svg class="w-7 h-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
         </a>
     </nav>
 
-    <main class="w-full max-w-4xl mx-auto px-4 py-6 md:pl-28 md:pr-6">
+    <main class="w-full max-w-4xl mx-auto px-4 pt-16 pb-6">
         
         <div class="mb-6 flex justify-between items-center bg-white p-5 rounded-md shadow-sm border border-slate-200">
             <h1 class="text-xl md:text-2xl font-black text-slate-800 flex items-center gap-2">

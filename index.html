@@ -81,8 +81,9 @@
         body { -ms-overflow-style: none; scrollbar-width: none; overflow: hidden; touch-action: manipulation; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .custom-scrollbar::-webkit-scrollbar { display: none; }
-        .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-scrollbar::-webkit-scrollbar { display: block; width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .leaflet-container { z-index: 10; font-family: inherit; }
 
         #meeting-program-list::after {
@@ -206,7 +207,7 @@
                     <div id="calendar-events" class="flex-grow flex flex-col justify-center bg-transparent py-2">
                         <p class="p-4 text-xs text-slate-400 font-bold uppercase tracking-widest text-center" data-lang="loading_events">Загрузка встреч...</p>
                     </div>
-                    <button onclick="window.location.href='full-calendar.html'" class="w-16 shrink-0 flex flex-col items-center justify-center transition-colors outline-none p-2 hover:bg-slate-800/50">
+                    <button onclick="window.openFullCalendarModal()" class="w-16 shrink-0 flex flex-col items-center justify-center transition-colors outline-none p-2 hover:bg-slate-800/50">
                         <svg class="w-6 h-6 text-slate-400 hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
@@ -701,6 +702,43 @@
     </div>
     
     <script type="module" src="app.js?v=883"></script>
+    <div id="full-calendar-modal" class="fixed inset-0 bg-slate-900/60 z-[160] hidden items-center justify-center p-2 md:p-4 backdrop-blur-sm transition-opacity" onclick="window.closeFullCalendarModal()">
+        <div class="bg-ui-bg w-full max-w-lg rounded-2xl flex flex-col relative overflow-hidden shadow-2xl h-[90vh] md:h-auto md:max-h-[90vh]" onclick="event.stopPropagation()">
+            
+            <main class="flex-1 flex flex-col w-full px-4 pt-4 pb-4 min-h-0 gap-3">
+                
+                <div class="flex items-center justify-between shrink-0 bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+                    <h1 class="text-sm font-black text-slate-800 leading-none uppercase tracking-widest" data-lang="archive_title">Архив</h1>
+                    <div class="flex items-center gap-4">
+                        <button onclick="window.changeCalendarYear(-1)" class="text-slate-400 hover:text-slate-800 text-xl font-black transition-colors outline-none">‹</button>
+                        <div id="display-year" class="text-sm font-black text-slate-800 w-10 text-center">...</div>
+                        <button onclick="window.changeCalendarYear(1)" class="text-slate-400 hover:text-slate-800 text-xl font-black transition-colors outline-none">›</button>
+                    </div>
+                </div>
+
+                <div id="months-grid" class="grid grid-cols-6 gap-1 md:gap-2 shrink-0">
+                </div>
+
+                <div class="flex-1 min-h-0 bg-slate-100 rounded-xl border border-slate-300 flex flex-col overflow-hidden shadow-inner">
+                    <div id="selected-date-title" class="p-2 border-b border-slate-900 bg-slate-800 text-[10px] md:text-xs font-black text-white uppercase tracking-widest text-center shrink-0">
+                        Выберите день
+                    </div>
+                    <div id="events-panel-list" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
+                    </div>
+                </div>
+
+                <div class="shrink-0 bg-white border border-slate-200 rounded-xl flex flex-col h-[35vh] md:h-[280px] shadow-sm">
+                    <div class="grid grid-cols-7 gap-1 text-center text-[9px] font-bold text-slate-400 p-2 border-b border-slate-100 shrink-0">
+                        <span data-lang="dow_1">ПН</span><span data-lang="dow_2">ВТ</span><span data-lang="dow_3">СР</span><span data-lang="dow_4">ЧТ</span><span data-lang="dow_5">ПТ</span><span data-lang="dow_6">СБ</span><span data-lang="dow_7">ВС</span>
+                    </div>
+                    <div id="days-grid" class="grid grid-cols-7 gap-1 p-2 flex-1 auto-rows-fr content-start">
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[150] flex flex-col gap-2 pointer-events-none"></div>
 
 </body>

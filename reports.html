@@ -15,17 +15,20 @@
     <title data-lang="reports_title">Отчеты - GRO-UP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { 
-            theme: { 
-                extend: { 
-                    colors: { 
-                        ui: { 
-                            bg: '#f8fafc', 
-                            adminNav: '#1D7373' 
-                        } 
-                    } 
-                } 
-            } 
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ui: {
+                            bg: '#E1E1EB',
+                            nav: '#2A2E33',
+                            report: '#0f172a',
+                            news: '#0ea5e9',
+                            success: '#2dd4bf'
+                        }
+                    }
+                }
+            }
         }
     </script>
     <style>
@@ -43,16 +46,13 @@
 </head>
 <body class="bg-ui-bg text-slate-800 min-h-screen font-sans">
 
-    <nav class="fixed bottom-0 left-0 w-full bg-ui-adminNav flex flex-row items-center justify-center z-50 md:top-0 md:h-screen md:w-20 md:flex-col md:justify-start md:py-6 pb-safe border-t border-indigo-900 md:border-t-0 no-print">
-        <a href="index.html" data-lang-title="back_home" class="nav-btn group flex flex-col items-center justify-center flex-1 py-3 md:flex-none md:w-full outline-none transition-colors">
-            <div class="nav-icon-container text-indigo-300 hover:text-white p-2.5 rounded-full transition-colors flex flex-col items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 md:w-7 md:h-7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
-                <span class="text-[8px] font-black uppercase tracking-widest hidden md:block" data-lang="btn_back">Назад</span>
-            </div>
+    <nav class="fixed top-0 left-0 w-full bg-ui-nav flex flex-row items-center justify-start z-50 pt-safe border-b-[3px] border-[#2A2E33] no-print">
+        <a href="index.html" data-lang-title="back_home" class="flex items-center justify-center p-3 outline-none transition-colors text-slate-500 hover:text-white" title="Назад">
+            <svg class="w-7 h-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
         </a>
     </nav>
 
-    <main class="w-full max-w-5xl mx-auto pt-4 md:pt-6 px-4 pb-24 md:pl-28 md:pr-6">
+    <main class="w-full max-w-5xl mx-auto px-4 pt-16 pb-6">
         
         <div class="mb-6 flex justify-between items-center bg-white p-4 md:p-5 rounded-xl border border-slate-200 no-print">
             <div class="flex items-center gap-3">

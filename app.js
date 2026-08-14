@@ -74,7 +74,8 @@ const dict = {
         "develop_interest": "Развивайте интерес", "make_disciples": "Подготавливайте учеников", "explain_beliefs": "Объясняйте свои взгляды",
         "local_needs": "Местные потребности", "current_week": "АКТУАЛЬНАЯ", "future_week": "БУДУЩАЯ",
         "public_talk": "Публичная речь", "weekend_meeting": "Выходные (Публичная речь)", "watchtower_study": "Изучение Сторожевой Башни", "opening_song": "Вступительные слова / Песня",
-        "duties_schedule": "График дежурств", "new_message": "Новое сообщение", "msg_understood": "Понятно"
+        "duties_schedule": "График дежурств", "new_message": "Новое сообщение", "msg_understood": "Понятно",
+        "dow_1": "ПН", "dow_2": "ВТ", "dow_3": "СР", "dow_4": "ЧТ", "dow_5": "ПТ", "dow_6": "СБ", "dow_7": "ВС"
     },
     cs: {
         "loading_data": "Načítání dat...", "pending_title": "Žádost se vyřizuje", "pending_desc": "Čekejte na potvrzení administrátorem.",
@@ -126,7 +127,8 @@ const dict = {
         "develop_interest": "Rozvíjení zájmu", "make_disciples": "Činění učedníků", "explain_beliefs": "Vysvětlování své víry",
         "local_needs": "Místní potřeby", "current_week": "AKTUÁLNÍ", "future_week": "BUDOUCÍ",
         "public_talk": "Veřejná přednáška", "weekend_meeting": "Víkend (Veřejná přednáška)", "watchtower_study": "Studium Strážné věže", "opening_song": "Úvodní slova / Píseň",
-        "duties_schedule": "Rozpis služeb", "new_message": "Nová zpráva", "msg_understood": "Rozumím"
+        "duties_schedule": "Rozpis služeb", "new_message": "Nová zpráva", "msg_understood": "Rozumím",
+        "dow_1": "PO", "dow_2": "ÚT", "dow_3": "ST", "dow_4": "ČT", "dow_5": "PÁ", "dow_6": "SO", "dow_7": "NE"
     }
 };
 
@@ -364,6 +366,184 @@ window.openDutiesModal = () => document.getElementById('duties-modal').classList
 window.openInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('hidden', 'flex');
 window.closeInfoDetailsModal = () => document.getElementById('info-details-modal')?.classList.replace('flex', 'hidden');
 
+// --- ЛОГИКА ПОЛНОГО КАЛЕНДАРЯ В МОДАЛЬНОМ ОКНЕ ---
+let calCurrentYear = new Date().getFullYear();
+let calCurrentMonth = new Date().getMonth();
+let calSelectedDay = null;
+let calAllEvents = {};
+let calUnsub = null;
+
+window.openFullCalendarModal = () => {
+    const modal = document.getElementById('full-calendar-modal');
+    if (modal) {
+        modal.classList.replace('hidden', 'flex');
+        initFullCalendar();
+    }
+};
+
+window.closeFullCalendarModal = () => {
+    const modal = document.getElementById('full-calendar-modal');
+    if (modal) modal.classList.replace('flex', 'hidden');
+    if (calUnsub) { calUnsub(); calUnsub = null; }
+};
+
+function initFullCalendar() {
+    calCurrentYear = new Date().getFullYear();
+    calCurrentMonth = new Date().getMonth();
+    const now = new Date();
+    calSelectedDay = now.getDate();
+    
+    const displayYearEl = document.getElementById('display-year');
+    if (displayYearEl) displayYearEl.innerText = calCurrentYear;
+    
+    renderCalMonths();
+    
+    if (!calUnsub) {
+        const q = query(collection(db, "events"), orderBy("date", "asc"));
+        calUnsub = onSnapshot(q, (snapshot) => {
+            calAllEvents = {};
+            snapshot.forEach(docSnap => {
+                const ev = docSnap.data();
+                if (!ev.date) return;
+                const parts = ev.date.split('-');
+                if (parts.length < 3) return;
+                const y = parseInt(parts[0], 10);
+                const m = parseInt(parts[1], 10) - 1;
+                const d = parseInt(parts[2], 10);
+                if (!calAllEvents[y]) calAllEvents[y] = {};
+                if (!calAllEvents[y][m]) calAllEvents[y][m] = {};
+                if (!calAllEvents[y][m][d]) calAllEvents[y][m][d] = [];
+                calAllEvents[y][m][d].push(ev);
+            });
+            renderCalDays();
+            renderCalSelectedEvents();
+        });
+    } else {
+        renderCalDays();
+        renderCalSelectedEvents();
+    }
+}
+
+window.changeCalendarYear = (dir) => {
+    calCurrentYear += dir;
+    const displayYearEl = document.getElementById('display-year');
+    if (displayYearEl) displayYearEl.innerText = calCurrentYear;
+    calSelectedDay = null;
+    renderCalMonths();
+    renderCalDays();
+    renderCalSelectedEvents();
+};
+
+window.selectCalMonth = (mIdx) => {
+    calCurrentMonth = mIdx;
+    const now = new Date();
+    if (calCurrentYear === now.getFullYear() && calCurrentMonth === now.getMonth()) calSelectedDay = now.getDate();
+    else calSelectedDay = 1;
+    renderCalMonths();
+    renderCalDays();
+    renderCalSelectedEvents();
+};
+
+window.selectCalDay = (d) => {
+    calSelectedDay = d;
+    renderCalDays();
+    renderCalSelectedEvents();
+};
+
+function renderCalMonths() {
+    const grid = document.getElementById('months-grid');
+    if (!grid) return;
+    let html = '';
+    const monthsNames = window.t('months');
+    for (let i = 0; i < 12; i++) {
+        const isSelected = (i === calCurrentMonth);
+        const bgClass = isSelected ? 'bg-slate-800 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50';
+        html += `
+            <button onclick="window.selectCalMonth(${i})" class="${bgClass} aspect-square rounded-md flex items-center justify-center font-black text-[9px] md:text-xs uppercase tracking-widest transition-colors outline-none w-full">
+                ${monthsNames[i]}
+            </button>
+        `;
+    }
+    grid.innerHTML = html;
+}
+
+function renderCalDays() {
+    const grid = document.getElementById('days-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    const firstDay = new Date(calCurrentYear, calCurrentMonth, 1).getDay();
+    const shift = firstDay === 0 ? 6 : firstDay - 1;
+    const totalDays = new Date(calCurrentYear, calCurrentMonth + 1, 0).getDate();
+    const now = new Date();
+    for (let i = 0; i < shift; i++) { grid.innerHTML += `<div></div>`; }
+    for (let d = 1; d <= totalDays; d++) {
+        const dateObj = new Date(calCurrentYear, calCurrentMonth, d);
+        const dow = dateObj.getDay();
+        const isWeekend = (dow === 0 || dow === 6);
+        const isToday = (d === now.getDate() && calCurrentMonth === now.getMonth() && calCurrentYear === now.getFullYear());
+        const isSelected = (d === calSelectedDay);
+        const dayEvents = (calAllEvents[calCurrentYear] && calAllEvents[calCurrentYear][calCurrentMonth] && calAllEvents[calCurrentYear][calCurrentMonth][d]) || [];
+        const hasSpecial = dayEvents.some(e => e.isSpecial);
+        const hasNormal = dayEvents.length > 0;
+        let dotHtml = '';
+        if (hasNormal) {
+            const dotColor = hasSpecial ? 'bg-rose-500' : 'bg-sky-500';
+            dotHtml = `<div class="w-1.5 h-1.5 rounded-full ${dotColor} absolute bottom-1 shadow-sm"></div>`;
+        }
+        let bgClass = 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100';
+        if (isSelected) bgClass = 'bg-slate-800 border-slate-800 text-white shadow-inner';
+        else if (isToday) bgClass = 'bg-white border-emerald-500 text-emerald-600';
+        else if (hasSpecial) bgClass = 'bg-emerald-100 border-emerald-300 text-emerald-800 hover:bg-emerald-200';
+        else if (isWeekend) bgClass = 'bg-slate-200 border-slate-300 text-slate-800 hover:bg-slate-300';
+        grid.innerHTML += `
+            <button onclick="window.selectCalDay(${d})" class="rounded-md border flex flex-col items-center justify-center text-xs md:text-sm font-black relative cursor-pointer transition-colors outline-none w-full h-full ${bgClass}">
+                ${d}
+                ${dotHtml}
+            </button>
+        `;
+    }
+}
+
+function renderCalSelectedEvents() {
+    const list = document.getElementById('events-panel-list');
+    const title = document.getElementById('selected-date-title');
+    if (!list || !title) return;
+    if (!calSelectedDay) {
+        title.innerText = window.t('archive_title');
+        list.innerHTML = `<p class="text-[10px] text-slate-400 text-center italic py-4">Выберите день</p>`;
+        return;
+    }
+    const monthsNames = window.t('months');
+    title.innerText = `${calSelectedDay} ${monthsNames[calCurrentMonth]} ${calCurrentYear}`;
+    const dayEvents = (calAllEvents[calCurrentYear] && calAllEvents[calCurrentYear][calCurrentMonth] && calAllEvents[calCurrentYear][calCurrentMonth][calSelectedDay]) || [];
+    if (dayEvents.length === 0) {
+        list.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full opacity-50 py-4">
+                <svg class="w-6 h-6 text-slate-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">${window.t('no_events_this_day') || 'В этот день событий нет'}</p>
+            </div>
+        `;
+        return;
+    }
+    let html = '';
+    dayEvents.forEach(ev => {
+        const groupHtml = ev.group !== "Все" && ev.group !== "Všechny" ? `<span class="text-[8px] font-bold text-slate-300 uppercase tracking-widest border border-slate-600 bg-slate-700 px-1.5 py-0.5 rounded">${window.t('group_short')} ${ev.group}</span>` : '';
+        html += `
+            <div class="flex flex-col p-3 bg-slate-800 border border-slate-700 rounded-md shadow-sm">
+                <div class="flex justify-between items-start mb-1.5 gap-2">
+                    <span class="font-black text-white text-xs md:text-sm leading-tight">${ev.title} ${ev.isSpecial ? '⭐' : ''}</span>
+                    ${groupHtml}
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] md:text-xs font-mono font-bold text-slate-400">${ev.time || ''}</span>
+                    ${ev.leader ? `<span class="text-[9px] uppercase font-bold text-emerald-400 tracking-widest">${window.t('leader_short')} ${ev.leader}</span>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    list.innerHTML = html;
+}
+
 window.closeModals = () => {
     const m1 = document.getElementById('profile-modal'); if(m1) m1.classList.replace('flex', 'hidden');
     const m2 = document.getElementById('report-history-modal'); if(m2) m2.classList.replace('flex', 'hidden');
@@ -372,6 +552,7 @@ window.closeModals = () => {
     const m5 = document.getElementById('take-terr-modal'); if(m5) m5.classList.replace('flex', 'hidden');
     const m6 = document.getElementById('info-details-modal'); if(m6) m6.classList.replace('flex', 'hidden');
     const m7 = document.getElementById('task-info-modal'); if(m7) m7.classList.replace('flex', 'hidden');
+    const m8 = document.getElementById('full-calendar-modal'); if(m8) m8.classList.replace('flex', 'hidden');
 };
 window.closeQrModal = () => document.getElementById('qr-modal').classList.replace('flex', 'hidden');
 
