@@ -3105,39 +3105,41 @@ function applyWeatherTheme(isDay, code) {
 // ==========================================
 // КОЛЕСО ВРЕМЕНИ (ВКЛАДКА ИНФО)
 // ==========================================
-const monthsData = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+const infoMonthsData = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 
-function initWheel(containerId) {
+function initInfoWheel(containerId) {
     const container = document.getElementById(containerId);
     if (!container || container.dataset.initialized) return;
-    container.dataset.initialized = "true";
+    container.dataset.initialized = "true"; // Защита от двойного запуска
     
     const wrapper = container.querySelector('.months-wrapper');
-    const radiusOffset = 25; // Отступ текста
+    if (!wrapper) return;
+    wrapper.innerHTML = ''; // Очищаем контейнер
     
-    // Текущий месяц (например, 2 = Март)
-    let activeIndex = new Date().getMonth(); 
     let currentRotation = 0;
+    let activeIndex = new Date().getMonth(); // Берем текущий месяц (Август)
     
-    // 1. Создаем месяцы
-    monthsData.forEach((month, index) => {
+    // Расставляем месяцы по кругу
+    infoMonthsData.forEach((month, index) => {
         const el = document.createElement('div');
         el.className = 'month-item';
         el.innerText = month;
         
-        // Математика: раскидываем по кругу. -180 сдвигает их на левую часть круга
+        // Сдвигаем на левую сторону (-180) и расставляем с шагом 30 градусов
         const angle = (index * 30) - 180; 
-        el.style.transform = `rotate(${angle}deg) translateX(calc(-50vw - ${radiusOffset}px)) translateY(-50%)`;
+        
+        // 60vw - радиус колеса. 30px - отступ от черного круга
+        el.style.transform = `rotate(${angle}deg) translateX(calc(-60vw - 30px)) translateY(-50%)`;
         
         wrapper.appendChild(el);
     });
     
-    // 2. Устанавливаем начальный поворот (чтобы текущий месяц был по центру)
+    // Ставим текущий месяц ровно по центру
     currentRotation = -(activeIndex * 30);
-    updateRotation(wrapper, currentRotation);
-    updateActiveMonth(container, currentRotation);
+    updateWheelRotation(wrapper, currentRotation);
+    updateWheelActiveMonth(container, currentRotation);
 
-    // 3. Логика свайпов и прокрутки
+    // --- ЛОГИКА ВРАЩЕНИЯ ПАЛЬЦЕМ ---
     let isDragging = false;
     let startY = 0;
     let lastRotation = currentRotation;
@@ -3145,55 +3147,56 @@ function initWheel(containerId) {
     container.addEventListener('pointerdown', (e) => {
         isDragging = true;
         startY = e.clientY;
-        wrapper.style.transition = 'none'; // Убираем плавность для мгновенного отклика
+        wrapper.style.transition = 'none'; // Отключаем плавность при касании
     });
 
     window.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
         const deltaY = e.clientY - startY;
-        currentRotation = lastRotation + (deltaY * 0.25); // Скорость вращения
-        updateRotation(wrapper, currentRotation);
-        updateActiveMonth(container, currentRotation);
+        currentRotation = lastRotation + (deltaY * 0.25); // 0.25 - скорость вращения
+        updateWheelRotation(wrapper, currentRotation);
+        updateWheelActiveMonth(container, currentRotation);
     });
 
     window.addEventListener('pointerup', () => {
         if (!isDragging) return;
         isDragging = false;
         
-        // Эффект "магнита" (докручиваем до ближайшего месяца)
+        // Эффект магнита: докручиваем до ближайшего месяца
         const snapAngle = Math.round(currentRotation / 30) * 30;
         currentRotation = snapAngle;
         lastRotation = currentRotation;
         
         wrapper.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
-        updateRotation(wrapper, currentRotation);
-        updateActiveMonth(container, currentRotation);
+        updateWheelRotation(wrapper, currentRotation);
+        updateWheelActiveMonth(container, currentRotation);
+    });
+    
+    // Если мышка ушла за пределы контейнера, тоже отпускаем
+    container.addEventListener('pointerleave', () => {
+        if (isDragging) window.dispatchEvent(new Event('pointerup'));
     });
 }
 
-function updateRotation(element, angle) {
+function updateWheelRotation(element, angle) {
     element.style.transform = `rotate(${angle}deg)`;
 }
 
-function updateActiveMonth(container, rotation) {
+function updateWheelActiveMonth(container, rotation) {
     const items = container.querySelectorAll('.month-item');
     items.forEach(item => item.classList.remove('active'));
     
-    // Вычисляем, какой месяц сейчас смотрит прямо влево
     let steps = -Math.round(rotation / 30);
-    // Стартовый индекс = 0 (Январь), так как мы собирали круг от Января (-180deg)
     let activeIdx = (0 + steps) % 12; 
     if (activeIdx < 0) activeIdx += 12;
     
-    if(items[activeIdx]) {
-        items[activeIdx].classList.add('active');
-    }
+    if(items[activeIdx]) items[activeIdx].classList.add('active');
 }
 
-// Запускаем колеса с небольшой задержкой, чтобы DOM точно отрендерился
+// Запускаем колеса с небольшой задержкой при старте приложения
 setTimeout(() => {
-    initWheel('wheel-campaign');
-    initWheel('wheel-events');
+    initInfoWheel('wheel-campaign');
+    initInfoWheel('wheel-events');
 }, 1000);
 
 
