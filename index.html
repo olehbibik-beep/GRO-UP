@@ -91,6 +91,97 @@
             flex: 0 0 1px;
             padding-right: 1.5rem;
         }
+        /* --- ГОРИЗОНТАЛЬНЫЙ СЛАЙДЕР (ИНФО) --- */
+.info-slider-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.info-slider-container::-webkit-scrollbar {
+    display: none;
+}
+
+.info-slide {
+    flex: 0 0 100vw;
+    height: 100%;
+    scroll-snap-align: start;
+    position: relative;
+    background: linear-gradient(180deg, #e5e9f0 0%, #35d8b8 100%);
+    overflow: hidden;
+}
+
+.info-title {
+    position: absolute;
+    top: env(safe-area-inset-top, 40px);
+    margin-top: 40px;
+    left: 30px;
+    font-size: 32px;
+    font-weight: 300;
+    color: #2c3035;
+    z-index: 10;
+}
+
+/* --- КРУГЛЫЙ БАРАБАН --- */
+.wheel-container {
+    position: absolute;
+    top: 50%;
+    right: -60vw;
+    transform: translateY(-50%);
+    width: 120vw;
+    height: 120vw;
+    border-radius: 50%;
+    touch-action: pan-y; /* Позволяем браузеру обрабатывать только вертикальный тач */
+}
+
+.wheel-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+}
+
+.bg-dark { background-color: #2b3036; }
+.bg-purple { background-color: #5a3286; }
+
+.wheel-year {
+    font-size: 64px;
+    font-weight: 900;
+    color: white;
+    margin-left: 15%;
+}
+
+/* --- МЕСЯЦА --- */
+.months-wrapper {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.1s ease-out;
+    border-radius: 50%;
+}
+
+.month-item {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    font-size: 18px;
+    font-weight: 400;
+    color: #2c3035;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    transform-origin: left center; 
+}
+
+.month-item.active {
+    font-size: 26px;
+    font-weight: 800;
+}
     </style>
     <script>
         // Блокируем щипок (зум), но НЕ трогаем обычный скролл одним пальцем
