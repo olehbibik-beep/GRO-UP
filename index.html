@@ -187,6 +187,23 @@
     font-size: 26px;
     font-weight: 800;
 }
+
+        /* --- ЗЕРКАЛЬНЫЕ ЭЛЕМЕНТЫ (ВТОРОЙ ЭКРАН) --- */
+.title-right {
+    left: auto;
+    right: 30px;
+    text-align: right;
+}
+
+.wheel-container.wheel-left {
+    right: auto;
+    left: -60vw; /* Сдвигаем влево */
+}
+
+.wheel-year.year-right {
+    margin-left: auto;
+    margin-right: 15%; /* Год прижимаем к правому краю круга */
+}
     </style>
     <script>
         // Блокируем щипок (зум), но НЕ трогаем обычный скролл одним пальцем
@@ -478,10 +495,10 @@
 
         <!-- Экран 2: СОБЫТИЯ -->
         <div class="info-slide">
-            <h1 class="info-title">СОБЫТИЯ</h1>
-            <div class="wheel-container" id="wheel-events">
+            <h1 class="info-title title-right">СОБЫТИЯ</h1>
+            <div class="wheel-container wheel-left" id="wheel-events">
                 <div class="wheel-bg bg-purple">
-                    <span class="wheel-year">2026</span>
+                    <span class="wheel-year year-right">2026</span>
                 </div>
                 <div class="months-wrapper"></div>
             </div>
