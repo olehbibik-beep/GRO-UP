@@ -3107,39 +3107,41 @@ function applyWeatherTheme(isDay, code) {
 // ==========================================
 const infoMonthsData = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 
-function initInfoWheel(containerId) {
+// Добавили параметр wheelPosition ('right' или 'left')
+function initInfoWheel(containerId, wheelPosition = 'right') {
     const container = document.getElementById(containerId);
     if (!container || container.dataset.initialized) return;
-    container.dataset.initialized = "true"; // Защита от двойного запуска
+    container.dataset.initialized = "true";
     
     const wrapper = container.querySelector('.months-wrapper');
     if (!wrapper) return;
-    wrapper.innerHTML = ''; // Очищаем контейнер
+    wrapper.innerHTML = '';
     
     let currentRotation = 0;
-    let activeIndex = new Date().getMonth(); // Берем текущий месяц (Август)
+    let activeIndex = new Date().getMonth();
     
-    // Расставляем месяцы по кругу
     infoMonthsData.forEach((month, index) => {
         const el = document.createElement('div');
         el.className = 'month-item';
         el.innerText = month;
         
-        // Сдвигаем на левую сторону (-180) и расставляем с шагом 30 градусов
-        const angle = (index * 30) - 180; 
-        
-        // 60vw - радиус колеса. 30px - отступ от черного круга
-        el.style.transform = `rotate(${angle}deg) translateX(calc(-60vw - 30px)) translateY(-50%)`;
+        if (wheelPosition === 'left') {
+            // ДЛЯ ЛЕВОГО КОЛЕСА (СОБЫТИЯ): текст рисуется справа
+            const angle = index * 30; 
+            el.style.transform = `rotate(${angle}deg) translateX(calc(60vw + 30px)) translate(-100%, -50%)`;
+        } else {
+            // ДЛЯ ПРАВОГО КОЛЕСА (КАМПАНИЯ): текст рисуется слева
+            const angle = (index * 30) - 180; 
+            el.style.transform = `rotate(${angle}deg) translateX(calc(-60vw - 30px)) translateY(-50%)`;
+        }
         
         wrapper.appendChild(el);
     });
     
-    // Ставим текущий месяц ровно по центру
     currentRotation = -(activeIndex * 30);
     updateWheelRotation(wrapper, currentRotation);
     updateWheelActiveMonth(container, currentRotation);
 
-    // --- ЛОГИКА ВРАЩЕНИЯ ПАЛЬЦЕМ ---
     let isDragging = false;
     let startY = 0;
     let lastRotation = currentRotation;
@@ -3147,13 +3149,13 @@ function initInfoWheel(containerId) {
     container.addEventListener('pointerdown', (e) => {
         isDragging = true;
         startY = e.clientY;
-        wrapper.style.transition = 'none'; // Отключаем плавность при касании
+        wrapper.style.transition = 'none';
     });
 
     window.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
         const deltaY = e.clientY - startY;
-        currentRotation = lastRotation + (deltaY * 0.25); // 0.25 - скорость вращения
+        currentRotation = lastRotation + (deltaY * 0.25);
         updateWheelRotation(wrapper, currentRotation);
         updateWheelActiveMonth(container, currentRotation);
     });
@@ -3161,18 +3163,14 @@ function initInfoWheel(containerId) {
     window.addEventListener('pointerup', () => {
         if (!isDragging) return;
         isDragging = false;
-        
-        // Эффект магнита: докручиваем до ближайшего месяца
         const snapAngle = Math.round(currentRotation / 30) * 30;
         currentRotation = snapAngle;
         lastRotation = currentRotation;
-        
         wrapper.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
         updateWheelRotation(wrapper, currentRotation);
         updateWheelActiveMonth(container, currentRotation);
     });
     
-    // Если мышка ушла за пределы контейнера, тоже отпускаем
     container.addEventListener('pointerleave', () => {
         if (isDragging) window.dispatchEvent(new Event('pointerup'));
     });
@@ -3193,10 +3191,10 @@ function updateWheelActiveMonth(container, rotation) {
     if(items[activeIdx]) items[activeIdx].classList.add('active');
 }
 
-// Запускаем колеса с небольшой задержкой при старте приложения
+// ЗАПУСКАЕМ ОБА КОЛЕСА С РАЗНЫМИ ПАРАМЕТРАМИ
 setTimeout(() => {
-    initInfoWheel('wheel-campaign');
-    initInfoWheel('wheel-events');
+    initInfoWheel('wheel-campaign', 'right');
+    initInfoWheel('wheel-events', 'left');
 }, 1000);
 
 
