@@ -456,29 +456,34 @@
             </div>
         </div>
 
-<div id="tab-info" class="tab-content pt-4 md:pt-0 px-4 md:px-0 h-full">
-            <div class="w-full max-w-6xl mx-auto px-0 md:pl-8 md:pr-6 flex flex-col min-h-[calc(100dvh-120px)] md:min-h-[calc(100dvh-40px)]">
-
-            
-                
-                <div onclick="window.openInfoDetailsModal()" class="w-full bg-white rounded-xl border border-slate-200 flex items-center justify-between p-4 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors h-16">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-serif font-bold italic text-base shrink-0 shadow-inner">i</div>
-                        <span class="text-xs md:text-sm font-black uppercase tracking-widest text-slate-600">Узнай больше</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="font-black text-slate-800 tracking-wider text-sm md:text-base">GRO-UP App</span>
-                        <img src="icon-512.png" alt="Logo" class="w-10 h-10 rounded-xl object-contain border border-slate-100 shadow-sm">
-                    </div>
+<div id="tab-info" class="tab-content w-full h-full p-0 m-0 overflow-hidden relative">
+    <!-- Контейнер для горизонтального свайпа -->
+    <div class="info-slider-container">
+        
+        <!-- Экран 1: КАМПАНИЯ -->
+        <div class="info-slide">
+            <h1 class="info-title">КАМПАНИЯ</h1>
+            <div class="wheel-container" id="wheel-campaign">
+                <div class="wheel-bg bg-dark">
+                    <span class="wheel-year">2026</span>
                 </div>
-
-                <div class="mt-auto pt-10 pb-2 flex flex-col items-center justify-center opacity-60">
-                    <img src="icon-512.png" alt="GRO-UP" class="w-6 h-6 mb-2 grayscale opacity-70">
-                    <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest">GRO-UP App</p>
-                    <p class="text-[8px] font-bold text-slate-400 tracking-widest mt-0.5">Версия 2.3.0</p> 
-                </div>
+                <div class="months-wrapper"></div>
             </div>
         </div>
+
+        <!-- Экран 2: СОБЫТИЯ -->
+        <div class="info-slide">
+            <h1 class="info-title">СОБЫТИЯ</h1>
+            <div class="wheel-container" id="wheel-events">
+                <div class="wheel-bg bg-purple">
+                    <span class="wheel-year">2026</span>
+                </div>
+                <div class="months-wrapper"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
     </main>
 
     <div id="profile-modal" class="fixed inset-0 bg-slate-900/60 z-[70] hidden items-center justify-center p-4 backdrop-blur-sm" onclick="window.closeModals()">
