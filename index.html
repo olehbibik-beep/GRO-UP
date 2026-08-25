@@ -108,14 +108,20 @@
 }
 .info-slider-container::-webkit-scrollbar { display: none; }
 
+/* --- СЕРЫЙ ФОН ВМЕСТО ГРАДИЕНТА --- */
 .info-slide {
     flex: 0 0 100vw;
     height: 100dvh;
     scroll-snap-align: start;
     position: relative;
-    background: linear-gradient(180deg, #e5e9f0 0%, #35d8b8 100%);
+    background: #E1E1EB; /* Наш фирменный светло-серый фон */
     overflow: hidden;
 }
+
+/* --- ЦВЕТА КРУГОВ --- */
+.bg-dark { background-color: #2b3036; }
+/* Новый класс для фирменного зеленого круга */
+.bg-brand-green { background-color: #2dd4bf; }
 
 /* --- КРУГЛЫЙ БАРАБАН --- */
 .wheel-container {
@@ -487,8 +493,12 @@
 
         <!-- Экран 2: СОБЫТИЯ -->
         <div class="info-slide">
+            <!-- Блок куда будут подтягиваться события из базы -->
+            <div id="special-events-list" class="absolute top-10 right-6 z-20 flex flex-col items-end pointer-events-none w-2/3"></div>
+
             <div class="wheel-container wheel-left" id="wheel-events">
-                <div class="wheel-bg bg-purple">
+                <!-- Фирменный зеленый цвет -->
+                <div class="wheel-bg bg-brand-green">
                     <div class="wheel-content">
                         <span class="wheel-title">СОБЫТИЯ</span>
                         <span class="wheel-year">2026</span>
