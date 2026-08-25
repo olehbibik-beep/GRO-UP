@@ -3120,7 +3120,6 @@ function initInfoWheel(containerId, wheelPosition = 'right') {
     let currentRotation = 0;
     let activeIndex = new Date().getMonth();
 
-    // Собираем месяца по кругу
     infoMonthsData.forEach((month, index) => {
         const item = document.createElement('div');
         item.className = 'wheel-item';
@@ -3135,37 +3134,32 @@ function initInfoWheel(containerId, wheelPosition = 'right') {
         item.appendChild(dot);
         item.appendChild(text);
 
-        // Рассчитываем правильный угол, чтобы текста шли сверху вниз
-        const angle = isRight ? 180 - (index * 30) : index * 30;
+        // Идеальная формула для правильного направления обоих кругов
+        const angle = isRight ? -(index * 30) : (index * 30);
         item.style.transform = `rotate(${angle}deg)`;
         rotator.appendChild(item);
     });
 
-    // Устанавливаем текущий месяц по центру при старте
     currentRotation = isRight ? (activeIndex * 30) : -(activeIndex * 30);
     updateWheelRotation(rotator, currentRotation);
     updateWheelActiveMonth(rotator, currentRotation, isRight);
 
-    // --- ФИЗИКА ТЯГИ (DRAG) ---
     let isDragging = false;
     let startY = 0;
     let lastRotation = currentRotation;
 
-    // Пользователь цепляется за барабан с точками
     rotator.addEventListener('pointerdown', (e) => {
         isDragging = true;
         startY = e.clientY;
         rotator.style.transition = 'none';
-        e.preventDefault(); // Защита от выделения текста на ПК
+        e.preventDefault(); 
     });
 
     window.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
         const deltaY = e.clientY - startY;
         
-        // Синхронизируем направление движения пальца и вращения круга
         currentRotation = lastRotation + (isRight ? -deltaY : deltaY) * 0.4;
-        
         updateWheelRotation(rotator, currentRotation);
         updateWheelActiveMonth(rotator, currentRotation, isRight);
     });
@@ -3174,7 +3168,6 @@ function initInfoWheel(containerId, wheelPosition = 'right') {
         if (!isDragging) return;
         isDragging = false;
         
-        // Магнит к ближайшей точке
         const snapAngle = Math.round(currentRotation / 30) * 30;
         currentRotation = snapAngle;
         lastRotation = currentRotation;
@@ -3202,7 +3195,6 @@ function updateWheelActiveMonth(rotator, rotation, isRight) {
     if(items[activeIdx]) items[activeIdx].classList.add('active');
 }
 
-// Запускаем оба колеса
 setTimeout(() => {
     initInfoWheel('wheel-campaign', 'right');
     initInfoWheel('wheel-events', 'left');
