@@ -3246,22 +3246,55 @@ window.renderSpecialEventsForMonth = function(monthIdx) {
     let html = '';
     let count = 0;
 
+    // Массив дней недели
+    const daysOfWeek = ['ВОСКРЕСЕНЬЕ', 'ПОНЕДЕЛЬНИК', 'ВТОРНИК', 'СРЕДА', 'ЧЕТВЕРГ', 'ПЯТНИЦА', 'СУББОТА'];
+    
+    // Красивая SVG звезда антрацитового цвета (#373F43)
+    const starSvg = `
+        <svg class="w-5 h-5 md:w-6 md:h-6 shrink-0 text-[#373F43]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+    `;
+
     window.specialEventsCache.forEach(ev => {
         const dateParts = ev.date.split('-');
+        const evYear = parseInt(dateParts[0], 10);
         const evMonthIdx = parseInt(dateParts[1], 10) - 1;
+        const evDay = parseInt(dateParts[2], 10);
         
         // ФИЛЬТР: Показываем только события ВЫБРАННОГО МЕСЯЦА
         if (evMonthIdx === monthIdx && ev.date >= todayStr) {
             count++;
-            const day = parseInt(dateParts[2], 10);
+            
+            // Вычисляем день недели
+            const evDateObj = new Date(evYear, evMonthIdx, evDay);
+            const dayOfWeekStr = daysOfWeek[evDateObj.getDay()];
+
             const cleanTitle = ev.title ? ev.title.replace('⭐', '').trim() : 'Событие';
 
-            // БЕЗ ПЛИТОК — просто чистый, "дорогой" текст на фоне
             html += `
-                <div class="mb-4 w-full text-right pointer-events-auto transition-transform active:scale-95">
-                    <span class="text-[11px] font-black text-teal-500 uppercase tracking-widest block mb-0.5">⭐ ${day} числа</span>
-                    <span class="text-sm md:text-base font-black text-slate-800 leading-tight block drop-shadow-sm">${cleanTitle}</span>
-                    ${ev.time ? `<span class="text-[11px] font-bold text-slate-500 mt-1 block">${ev.time}</span>` : ''}
+                <div class="mb-6 w-full text-right pointer-events-auto transition-transform active:scale-95 flex flex-col items-end">
+                    
+                    <!-- ДАТА И ЗВЕЗДА (Антрацит, Крупный жирный шрифт) -->
+                    <div class="flex items-center justify-end gap-2 mb-1.5">
+                        ${starSvg}
+                        <span class="text-lg md:text-xl font-black text-[#373F43] uppercase tracking-widest leading-none drop-shadow-sm">
+                            ${evDay} ${dayOfWeekStr}
+                        </span>
+                    </div>
+
+                    <!-- НАЗВАНИЕ (Очень крупный, но ТОНКИЙ шрифт) -->
+                    <span class="text-2xl md:text-3xl font-light text-slate-800 leading-tight block mb-1.5 max-w-[280px]">
+                        ${cleanTitle}
+                    </span>
+
+                    <!-- ВРЕМЯ (Крупный жирный шрифт, как у даты) -->
+                    ${ev.time ? `
+                        <span class="text-lg md:text-xl font-black text-slate-400 block leading-none">
+                            ${ev.time}
+                        </span>
+                    ` : ''}
+
                 </div>
             `;
         }
@@ -3269,7 +3302,7 @@ window.renderSpecialEventsForMonth = function(monthIdx) {
     
     // Если в ВЫБРАННОМ месяце ничего нет
     if (count === 0) {
-        html = `<div class="mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">В этом месяце пусто</div>`;
+        html = `<div class="mt-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">В этом месяце пусто</div>`;
     }
     
     container.innerHTML = html;
