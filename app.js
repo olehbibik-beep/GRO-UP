@@ -3128,11 +3128,11 @@ function initInfoWheel(containerId, wheelPosition = 'right') {
         if (wheelPosition === 'left') {
             // ДЛЯ ЛЕВОГО КОЛЕСА (СОБЫТИЯ): текст рисуется справа
             const angle = index * 30; 
-            el.style.transform = `rotate(${angle}deg) translateX(calc(60vw + 30px)) translate(-100%, -50%)`;
+            el.style.transform = `rotate(${angle}deg) translateX(calc(-60vw - 40px)) translate(-100%, -50%)`;
         } else {
             // ДЛЯ ПРАВОГО КОЛЕСА (КАМПАНИЯ): текст рисуется слева
             const angle = (index * 30) - 180; 
-            el.style.transform = `rotate(${angle}deg) translateX(calc(-60vw - 30px)) translateY(-50%)`;
+            el.style.transform = `rotate(${angle}deg) translateX(calc(-60vw - 40px)) translateY(-50%)`;
         }
         
         wrapper.appendChild(el);
