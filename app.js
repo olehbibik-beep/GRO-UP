@@ -3195,9 +3195,62 @@ function updateWheelActiveMonth(rotator, rotation, isRight) {
     if(items[activeIdx]) items[activeIdx].classList.add('active');
 }
 
+// ==========================================
+// СИНХРОНИЗАЦИЯ ОСОБЫХ СОБЫТИЙ ИЗ КАЛЕНДАРЯ
+// ==========================================
+function loadSpecialEventsToInfo() {
+    const container = document.getElementById('special-events-list');
+    if (!container) return;
+
+    // Вычисляем сегодняшнюю дату в формате YYYY-MM-DD
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+
+    // Берем данные из твоей коллекции events
+    const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
+    
+    onSnapshot(eventsQuery, (snapshot) => {
+        let html = '';
+        let count = 0;
+        
+        snapshot.forEach(docSnap => {
+            const ev = docSnap.data();
+            
+            // Фильтруем: только будущие/сегодняшние и только ОСОБЫЕ (со звездочкой)
+            if (ev.date >= todayStr && ev.isSpecial) {
+                count++;
+                
+                // Форматируем дату для красоты (например "15 МАРТА")
+                const dateParts = ev.date.split('-');
+                const day = parseInt(dateParts[2], 10);
+                const monthIndex = parseInt(dateParts[1], 10) - 1;
+                const monthName = infoMonthsData[monthIndex];
+
+                html += `
+                    <div class="bg-white border border-slate-200 shadow-md rounded-xl p-3 mb-3 w-full max-w-[220px] text-right pointer-events-auto transition-transform active:scale-95">
+                        <span class="text-[10px] font-black text-emerald-500 uppercase tracking-widest block mb-1">⭐ ${day} ${monthName}</span>
+                        <span class="text-sm font-black text-slate-800 leading-tight block">${ev.title}</span>
+                        ${ev.time ? `<span class="text-[10px] font-bold text-slate-400 mt-1 block">${ev.time}</span>` : ''}
+                    </div>
+                `;
+            }
+        });
+        
+        // Если особых событий нет
+        if (count === 0) {
+            html = `<div class="bg-slate-200/50 rounded-lg px-4 py-2 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Нет особых событий</div>`;
+        }
+        
+        container.innerHTML = html;
+    });
+}
+
+// Запускаем оба колеса и синхронизацию
 setTimeout(() => {
     initInfoWheel('wheel-campaign', 'right');
     initInfoWheel('wheel-events', 'left');
+    loadSpecialEventsToInfo(); // <--- Запускаем подгрузку событий
 }, 1000);
 
 
