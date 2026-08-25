@@ -93,11 +93,11 @@
         }
 /* --- ГОРИЗОНТАЛЬНЫЙ СЛАЙДЕР (ИНФО) --- */
 .info-slider-container {
-    position: absolute; /* Отвязываем от отступов */
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    height: 100dvh; /* Высота на весь экран (уйдет под меню) */
+    height: 100dvh;
     display: flex;
     overflow-x: auto;
     overflow-y: hidden;
@@ -106,101 +106,94 @@
     -ms-overflow-style: none;
     z-index: 0;
 }
-.info-slider-container::-webkit-scrollbar {
-    display: none;
-}
+.info-slider-container::-webkit-scrollbar { display: none; }
 
 .info-slide {
     flex: 0 0 100vw;
-    height: 100dvh; /* Высота на весь экран */
+    height: 100dvh;
     scroll-snap-align: start;
     position: relative;
     background: linear-gradient(180deg, #e5e9f0 0%, #35d8b8 100%);
     overflow: hidden;
 }
 
-.info-title {
-    position: absolute;
-    top: env(safe-area-inset-top, 40px);
-    margin-top: 40px;
-    left: 30px;
-    font-size: 32px;
-    font-weight: 300;
-    color: #2c3035;
-    z-index: 10;
-}
-
-/* Заголовок "СОБЫТИЯ" справа */
-.title-right {
-    left: auto;
-    right: 30px;
-    text-align: right;
-}
-
 /* --- КРУГЛЫЙ БАРАБАН --- */
 .wheel-container {
     position: absolute;
     top: 50%;
-    /* Размер адаптируется: на мобилке 130vw, на ПК максимум 800px */
-    width: clamp(300px, 130vw, 800px);
-    height: clamp(300px, 130vw, 800px);
+    /* Шарик стал меньше: 95vw вместо 130vw */
+    width: clamp(280px, 95vw, 600px); 
+    height: clamp(280px, 95vw, 600px);
     border-radius: 50%;
-    touch-action: none; /* Запрещаем дергаться экрану при вращении круга */
+    touch-action: none; 
 }
 
 /* Правое колесо (Кампания) */
 .wheel-container.wheel-right { right: 0; transform: translate(50%, -50%); }
-.wheel-right .wheel-year { margin-right: 40%; font-size: 64px; font-weight: 900; color: white; }
-
 /* Левое колесо (События) */
 .wheel-container.wheel-left { left: 0; transform: translate(-50%, -50%); }
-.wheel-left .wheel-year { margin-left: 40%; font-size: 64px; font-weight: 900; color: white; }
 
 .wheel-bg {
     position: absolute; width: 100%; height: 100%; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
 }
-
 .bg-dark { background-color: #2b3036; }
 .bg-purple { background-color: #5a3286; }
 
-/* Вращающийся диск */
+/* Внутренний контент (Заголовок и Год) */
+.wheel-content {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; align-items: center;
+    pointer-events: none; /* Пропускаем касания сквозь текст */
+}
+.wheel-right .wheel-content { left: 15%; } /* Сдвигаем в видимую зону */
+.wheel-left .wheel-content { right: 15%; }
+
+.wheel-title {
+    font-size: 20px;
+    font-weight: 300; /* Тонкий изящный шрифт */
+    color: rgba(255, 255, 255, 0.7); /* Слегка прозрачный */
+    letter-spacing: 2px;
+    margin-bottom: -5px; /* Прижимаем ближе к году */
+}
+.wheel-year {
+    font-size: 54px; /* Чуть-чуть уменьшили под новый круг */
+    font-weight: 900;
+    color: white;
+    line-height: 1;
+}
+
+/* Вращающийся диск и месяцы */
 .wheel-rotator {
     position: absolute; width: 100%; height: 100%; border-radius: 50%;
     transition: transform 0.1s ease-out; z-index: 10; cursor: grab;
 }
 .wheel-rotator:active { cursor: grabbing; }
 
-/* Невидимая линия-вектор, на которой лежат точка и текст */
-.wheel-item {
-    position: absolute; top: 50%; left: 0; width: 100%; height: 0;
-}
+.wheel-item { position: absolute; top: 50%; left: 0; width: 100%; height: 0; }
 
-/* Белая точка-зацепка внутри круга */
 .wheel-dot {
     position: absolute; top: 50%; width: 8px; height: 8px; background: white;
     border-radius: 50%; transform: translateY(-50%);
     opacity: 0.3; transition: all 0.3s ease;
 }
 
-/* Текст месяца снаружи круга */
 .wheel-text {
     position: absolute; top: 50%; font-size: 16px; font-weight: 400;
     color: #2c3035; text-transform: uppercase; white-space: nowrap;
     transition: all 0.3s ease; pointer-events: none;
 }
 
-/* Стили активного месяца */
+/* Стили активного месяца (Теперь работают на обоих экранах) */
 .wheel-item.active .wheel-dot { opacity: 1; transform: translateY(-50%) scale(2); box-shadow: 0 0 10px white; }
 .wheel-item.active .wheel-text { font-size: 24px; font-weight: 900; }
 
-/* Привязка элементов Правого колеса (край СЛЕВА) */
+/* Привязки к краям */
 .wheel-right .wheel-dot { left: 4%; } 
 .wheel-right .wheel-text { left: -3%; transform: translate(-100%, -50%); text-align: right; }
 
-/* Привязка элементов Левого колеса (край СПРАВА) */
 .wheel-left .wheel-dot { right: 4%; } 
 .wheel-left .wheel-text { right: -3%; transform: translate(100%, -50%); text-align: left; }
+        
     </style>
     <script>
         // Блокируем щипок (зум), но НЕ трогаем обычный скролл одним пальцем
@@ -479,25 +472,29 @@
     <!-- Контейнер для горизонтального свайпа -->
     <div class="info-slider-container">
         
-        <!-- Экран 1: КАМПАНИЯ -->
+       <!-- Экран 1: КАМПАНИЯ -->
         <div class="info-slide">
-            <h1 class="info-title">КАМПАНИЯ</h1>
             <div class="wheel-container wheel-right" id="wheel-campaign">
                 <div class="wheel-bg bg-dark">
-                    <span class="wheel-year">2026</span>
+                    <div class="wheel-content">
+                        <span class="wheel-title">КАМПАНИЯ</span>
+                        <span class="wheel-year">2026</span>
+                    </div>
                 </div>
-                <div class="wheel-rotator"></div> <!-- Единый барабан -->
+                <div class="wheel-rotator"></div>
             </div>
         </div>
 
         <!-- Экран 2: СОБЫТИЯ -->
         <div class="info-slide">
-            <h1 class="info-title title-right">СОБЫТИЯ</h1>
             <div class="wheel-container wheel-left" id="wheel-events">
                 <div class="wheel-bg bg-purple">
-                    <span class="wheel-year">2026</span>
+                    <div class="wheel-content">
+                        <span class="wheel-title">СОБЫТИЯ</span>
+                        <span class="wheel-year">2026</span>
+                    </div>
                 </div>
-                <div class="wheel-rotator"></div> <!-- Единый барабан -->
+                <div class="wheel-rotator"></div>
             </div>
         </div>
 
