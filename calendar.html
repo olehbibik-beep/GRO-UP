@@ -88,12 +88,17 @@
                         </select>
                     </div>
                 </div>
-                <div class="flex items-center gap-4 bg-slate-50 p-3 rounded-md border border-slate-100 mt-2">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" id="event-special" class="w-4 h-4 accent-indigo-500">
-                        <span class="text-xs font-bold text-slate-700 uppercase tracking-widest" data-lang="special_event">Особое событие</span>
-                    </label>
+                <!-- ВЫБОР ТИПА СОБЫТИЯ (Заменили чекбокс на выпадающий список) -->
+                <div class="flex items-center justify-between gap-4 bg-slate-50 p-3 rounded-md border border-slate-100 mt-2">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">Тип</label>
+                    <select id="event-type" class="w-full bg-white border border-slate-200 rounded-md p-2 outline-none focus:border-indigo-400 font-bold text-slate-700 text-xs">
+                        <option value="normal">Обычная встреча</option>
+                        <option value="special">⭐ Особое событие</option>
+                        <option value="campaign">🚩 Кампания</option>
+                    </select>
                 </div>
+
+                <!-- Этот блок с чекбоксом про 12 недель оставляем без изменений! -->
                 <div class="flex items-center gap-4 bg-red-50 p-3 rounded-md border border-red-100 mt-2">
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" id="repeat-weekly" class="w-4 h-4 accent-red-500">
