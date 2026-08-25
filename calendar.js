@@ -1,5 +1,4 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-// ВАЖНО: Добавили writeBatch для массового удаления!
 import { getFirestore, collection, onSnapshot, doc, getDoc, addDoc, deleteDoc, query, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const dict = {
@@ -44,7 +43,7 @@ window.showToast = (message) => {
     toast.innerText = message;
     container.appendChild(toast);
     requestAnimationFrame(() => toast.classList.remove('-translate-y-10', 'opacity-0'));
-    setTimeout(() => { toast.classList.add('-translate-y-10', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
+    setTimeout(() => { toast.classList.add('-translate-y-10', 'opacity-0'); setTimeout(() => toast.remove(), 3000); }, 3000);
 };
 
 const firebaseConfig = {
@@ -160,10 +159,12 @@ window.forceRenderEvents = () => {
             const dayNum = dateObj.getDate();
             const weekday = dateObj.toLocaleDateString(localeFormat, { weekday: 'short' });
             
-            const isSpecial = ev.isSpecial ? `
-                <svg class="w-4 h-4 text-rose-500 inline-block ml-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                </svg>` : '';
+            // МАГИЯ ИКОНОК ТУТ
+            let typeIcon = '';
+            if (ev.isSpecial) typeIcon = '⭐';
+            if (ev.isCampaign) typeIcon = '🚩';
+            
+            const isSpecialBadge = typeIcon ? `<span class="text-base ml-1 drop-shadow-sm">${typeIcon}</span>` : '';
                 
             const groupBadge = (ev.group === "Все" || ev.group === "Všechny") ? window.t('all_groups') : ev.group;
             const leaderHtml = ev.leader ? `<span class="text-[10px] font-bold text-indigo-400 mt-0.5 block truncate">Вед: ${ev.leader}</span>` : '';
@@ -175,14 +176,13 @@ window.forceRenderEvents = () => {
                 </div>
             `;
 
-            // ТЕПЕРЬ МЫ ВЫЗЫВАЕМ openDeleteModal(id) ВМЕСТО deleteEvent
             html += `
                 <div class="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
                     <div class="flex items-start gap-3 w-full">
                         ${dateBlock}
                         <div class="flex flex-col min-w-0 flex-grow pt-0.5">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <span class="font-black text-slate-800 text-sm md:text-base leading-tight flex items-center">${ev.title} ${isSpecial}</span>
+                                <span class="font-black text-slate-800 text-sm md:text-base leading-tight flex items-center">${ev.title} ${isSpecialBadge}</span>
                                 <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest bg-white border border-slate-200 px-1.5 py-0.5 rounded shrink-0">${groupBadge}</span>
                             </div>
                             <div class="flex items-center gap-2 mt-1">
@@ -214,7 +214,6 @@ window.openDeleteModal = (id) => {
     const ev = cachedEvents.find(e => e.id === id);
     if(!ev) return;
 
-    // Ищем будущие события из этой же серии (такое же название, группа и время)
     const series = cachedEvents.filter(e => e.title === ev.title && e.time === ev.time && e.group === ev.group && e.date >= ev.date);
 
     document.getElementById('delete-modal').classList.remove('hidden');
@@ -254,7 +253,7 @@ window.confirmDeleteSeries = async (ids) => {
         ids.forEach(id => {
             batch.delete(doc(db, "events", id));
         });
-        await batch.commit(); // Удаляем всю серию одним махом
+        await batch.commit(); 
         window.showToast(window.t('success'));
     } catch(e) {
         console.error(e);
@@ -263,7 +262,7 @@ window.confirmDeleteSeries = async (ids) => {
 };
 
 // ==========================================
-// ОЧИСТКА АРХИВА (Удаление всех прошедших)
+// ОЧИСТКА АРХИВА
 // ==========================================
 window.clearPastEvents = async () => {
     if(!confirm(window.t('confirm_clear'))) return;
@@ -271,7 +270,6 @@ window.clearPastEvents = async () => {
     const now = new Date();
     const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
-    // Находим все события, которые старше сегодняшнего дня
     const pastEvents = cachedEvents.filter(ev => ev.date < todayStr);
     
     if(pastEvents.length === 0) {
@@ -280,7 +278,6 @@ window.clearPastEvents = async () => {
     }
 
     try {
-        // Firebase Batch может удалять максимум 500 документов за раз, разбиваем на части
         const chunks = [];
         for (let i = 0; i < pastEvents.length; i += 500) {
             chunks.push(pastEvents.slice(i, i + 500));
@@ -305,7 +302,12 @@ document.getElementById('add-event-form').addEventListener('submit', async (e) =
     const title = document.getElementById('event-title').value;
     const leader = document.getElementById('event-leader').value;
     const group = document.getElementById('event-group').value;
-    const isSpecial = document.getElementById('event-special').checked;
+    
+    // МАГИЯ СОХРАНЕНИЯ ТУТ
+    const eventType = document.getElementById('event-type').value;
+    const isSpecial = eventType === 'special';
+    const isCampaign = eventType === 'campaign';
+    
     const repeatWeekly = document.getElementById('repeat-weekly').checked;
     
     const btn = document.querySelector('button[type="submit"]');
@@ -341,7 +343,7 @@ document.getElementById('add-event-form').addEventListener('submit', async (e) =
             }
         }
 
-        const batch = writeBatch(db); // Используем Batch для массового добавления!
+        const batch = writeBatch(db); 
 
         for(let i = 0; i < numEvents; i++) {
             const eventDate = new Date(baseDate);
@@ -358,6 +360,7 @@ document.getElementById('add-event-form').addEventListener('submit', async (e) =
                 leader: leader,
                 group: group,
                 isSpecial: isSpecial,
+                isCampaign: isCampaign, // Сохраняем флаг
                 createdAt: new Date().toISOString()
             });
         }
