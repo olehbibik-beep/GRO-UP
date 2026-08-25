@@ -174,13 +174,14 @@
 .month-item {
     position: absolute;
     top: 50%;
-    left: 50%;
     font-size: 18px;
     font-weight: 400;
     color: #2c3035;
     text-transform: uppercase;
     transition: all 0.3s ease;
-    transform-origin: left center; 
+    white-space: nowrap; /* Важно: запрещаем перенос букв */
+    pointer-events: none; /* Чтобы текст не мешал крутить пальцем */
+    z-index: 10; /* Держим слова поверх круга */
 }
 
 .month-item.active {
