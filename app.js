@@ -3201,9 +3201,9 @@ function updateWheelActiveMonth(rotator, rotation, isRight) {
 }
 
 // ==========================================
-// СИНХРОНИЗАЦИЯ ОСОБЫХ СОБЫТИЙ ИЗ КАЛЕНДАРЯ
+// СИНХРОНИЗАЦИЯ ОСОБЫХ СОБЫТИЙ И КАМПАНИЙ
 // ==========================================
-window.specialEventsCache = []; // Кэш для мгновенной фильтрации
+window.specialEventsCache = []; 
 
 function loadSpecialEventsToInfo() {
     const container = document.getElementById('special-events-list');
@@ -3218,14 +3218,17 @@ function loadSpecialEventsToInfo() {
             const ev = docSnap.data();
             if (!ev.date) return;
             
-            // Ищем галочку или звездочку
+            // Ищем либо Особое событие, либо Кампанию
             const isSpecialEvent = ev.isSpecial === true || (ev.title && ev.title.includes('⭐'));
-            if (isSpecialEvent) {
+            const isCampaign = ev.isCampaign === true || (ev.title && ev.title.includes('🚩'));
+            
+            // Сохраняем флаг внутри объекта для удобства
+            if (isSpecialEvent || isCampaign) {
+                ev._isCampaign = isCampaign; 
                 window.specialEventsCache.push(ev);
             }
         });
         
-        // Отрисовываем для месяца, который сейчас стоит по центру
         const currentMonth = window.currentEventMonthIdx !== undefined ? window.currentEventMonthIdx : new Date().getMonth();
         if (window.renderSpecialEventsForMonth) {
             window.renderSpecialEventsForMonth(currentMonth);
@@ -3233,9 +3236,9 @@ function loadSpecialEventsToInfo() {
     });
 }
 
-// Функция мгновенной отрисовки без запросов к базе
+// Функция мгновенной отрисовки
 window.renderSpecialEventsForMonth = function(monthIdx) {
-    window.currentEventMonthIdx = monthIdx; // Запоминаем текущий месяц
+    window.currentEventMonthIdx = monthIdx;
     const container = document.getElementById('special-events-list');
     if (!container) return;
 
@@ -3246,13 +3249,19 @@ window.renderSpecialEventsForMonth = function(monthIdx) {
     let html = '';
     let count = 0;
 
-    // Массив дней недели
     const daysOfWeek = ['ВОСКРЕСЕНЬЕ', 'ПОНЕДЕЛЬНИК', 'ВТОРНИК', 'СРЕДА', 'ЧЕТВЕРГ', 'ПЯТНИЦА', 'СУББОТА'];
     
-    // Красивая SVG звезда антрацитового цвета (#373F43)
+    // Антрацитовая Звезда
     const starSvg = `
         <svg class="w-5 h-5 md:w-6 md:h-6 shrink-0 text-[#373F43]" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+    `;
+
+    // Антрацитовый Флажок
+    const flagSvg = `
+        <svg class="w-5 h-5 md:w-6 md:h-6 shrink-0 text-[#373F43]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
         </svg>
     `;
 
@@ -3262,33 +3271,35 @@ window.renderSpecialEventsForMonth = function(monthIdx) {
         const evMonthIdx = parseInt(dateParts[1], 10) - 1;
         const evDay = parseInt(dateParts[2], 10);
         
-        // ФИЛЬТР: Показываем только события ВЫБРАННОГО МЕСЯЦА
         if (evMonthIdx === monthIdx && ev.date >= todayStr) {
             count++;
             
-            // Вычисляем день недели
             const evDateObj = new Date(evYear, evMonthIdx, evDay);
             const dayOfWeekStr = daysOfWeek[evDateObj.getDay()];
+            
+            // Выбираем правильную иконку
+            const iconSvg = ev._isCampaign ? flagSvg : starSvg;
 
-            const cleanTitle = ev.title ? ev.title.replace('⭐', '').trim() : 'Событие';
+            // Очищаем название от лишних эмодзи
+            const cleanTitle = ev.title ? ev.title.replace('⭐', '').replace('🚩', '').trim() : 'Событие';
 
             html += `
                 <div class="mb-6 w-full text-right pointer-events-auto transition-transform active:scale-95 flex flex-col items-end">
                     
-                    <!-- ДАТА И ЗВЕЗДА (Антрацит, Крупный жирный шрифт) -->
+                    <!-- ДАТА И ИКОНКА (Антрацит) -->
                     <div class="flex items-center justify-end gap-2 mb-1.5">
-                        ${starSvg}
+                        ${iconSvg}
                         <span class="text-lg md:text-xl font-black text-[#373F43] uppercase tracking-widest leading-none drop-shadow-sm">
                             ${evDay} ${dayOfWeekStr}
                         </span>
                     </div>
 
-                    <!-- НАЗВАНИЕ (Очень крупный, но ТОНКИЙ шрифт) -->
+                    <!-- НАЗВАНИЕ (Тонкий изящный шрифт) -->
                     <span class="text-2xl md:text-3xl font-light text-slate-800 leading-tight block mb-1.5 max-w-[280px]">
                         ${cleanTitle}
                     </span>
 
-                    <!-- ВРЕМЯ (Крупный жирный шрифт, как у даты) -->
+                    <!-- ВРЕМЯ (Крупные цифры) -->
                     ${ev.time ? `
                         <span class="text-lg md:text-xl font-black text-slate-400 block leading-none">
                             ${ev.time}
@@ -3300,7 +3311,6 @@ window.renderSpecialEventsForMonth = function(monthIdx) {
         }
     });
     
-    // Если в ВЫБРАННОМ месяце ничего нет
     if (count === 0) {
         html = `<div class="mt-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">В этом месяце пусто</div>`;
     }
