@@ -3193,68 +3193,87 @@ function updateWheelActiveMonth(rotator, rotation, isRight) {
     if (activeIdx < 0) activeIdx += 12;
 
     if(items[activeIdx]) items[activeIdx].classList.add('active');
+
+    // --- МАГИЯ: Синхронизируем события при прокрутке левого колеса ---
+    if (!isRight && window.renderSpecialEventsForMonth) {
+        window.renderSpecialEventsForMonth(activeIdx);
+    }
 }
 
 // ==========================================
 // СИНХРОНИЗАЦИЯ ОСОБЫХ СОБЫТИЙ ИЗ КАЛЕНДАРЯ
 // ==========================================
+window.specialEventsCache = []; // Кэш для мгновенной фильтрации
+
 function loadSpecialEventsToInfo() {
     const container = document.getElementById('special-events-list');
-    if (!container) {
-        console.warn("Блок special-events-list не найден в HTML!");
-        return; 
-    }
+    if (!container) return;
+
+    const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
+    
+    onSnapshot(eventsQuery, (snapshot) => {
+        window.specialEventsCache = [];
+        
+        snapshot.forEach(docSnap => {
+            const ev = docSnap.data();
+            if (!ev.date) return;
+            
+            // Ищем галочку или звездочку
+            const isSpecialEvent = ev.isSpecial === true || (ev.title && ev.title.includes('⭐'));
+            if (isSpecialEvent) {
+                window.specialEventsCache.push(ev);
+            }
+        });
+        
+        // Отрисовываем для месяца, который сейчас стоит по центру
+        const currentMonth = window.currentEventMonthIdx !== undefined ? window.currentEventMonthIdx : new Date().getMonth();
+        if (window.renderSpecialEventsForMonth) {
+            window.renderSpecialEventsForMonth(currentMonth);
+        }
+    });
+}
+
+// Функция мгновенной отрисовки без запросов к базе
+window.renderSpecialEventsForMonth = function(monthIdx) {
+    window.currentEventMonthIdx = monthIdx; // Запоминаем текущий месяц
+    const container = document.getElementById('special-events-list');
+    if (!container) return;
 
     const today = new Date();
     const tzOffset = today.getTimezoneOffset() * 60000;
     const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
 
-    const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
-    
-    onSnapshot(eventsQuery, (snapshot) => {
-        let html = '';
-        let count = 0;
+    let html = '';
+    let count = 0;
+
+    window.specialEventsCache.forEach(ev => {
+        const dateParts = ev.date.split('-');
+        const evMonthIdx = parseInt(dateParts[1], 10) - 1;
         
-        snapshot.forEach(docSnap => {
-            const ev = docSnap.data();
-            
-            // ЗАЩИТА: Если в базе есть "битое" событие без даты - пропускаем его
-            if (!ev.date) return;
-            
-            // Ищем либо системный флажок isSpecial, либо эмодзи ⭐ в названии
-            const isSpecialEvent = ev.isSpecial === true || (ev.title && ev.title.includes('⭐'));
+        // ФИЛЬТР: Показываем только события ВЫБРАННОГО МЕСЯЦА
+        if (evMonthIdx === monthIdx && ev.date >= todayStr) {
+            count++;
+            const day = parseInt(dateParts[2], 10);
+            const cleanTitle = ev.title ? ev.title.replace('⭐', '').trim() : 'Событие';
 
-            if (ev.date >= todayStr && isSpecialEvent) {
-                count++;
-                
-                const dateParts = ev.date.split('-');
-                const day = parseInt(dateParts[2], 10);
-                const monthIndex = parseInt(dateParts[1], 10) - 1;
-                
-                // Безопасно достаем название месяца (чтобы работало и на Чешском)
-                const monthNames = window.t ? window.t('months') : ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
-                const monthName = monthNames[monthIndex] || '';
-
-                // Очищаем заголовок от звездочки, чтобы не дублировать
-                const cleanTitle = ev.title ? ev.title.replace('⭐', '').trim() : 'Событие';
-
-                html += `
-                    <div class="bg-white/95 backdrop-blur-sm border border-slate-200 shadow-lg rounded-xl p-3 mb-3 w-full text-right pointer-events-auto transition-transform active:scale-95">
-                        <span class="text-[10px] font-black text-emerald-500 uppercase tracking-widest block mb-1">⭐ ${day} ${monthName}</span>
-                        <span class="text-sm md:text-base font-black text-slate-800 leading-tight block">${cleanTitle}</span>
-                        ${ev.time ? `<span class="text-[10px] font-bold text-slate-400 mt-1 block">${ev.time}</span>` : ''}
-                    </div>
-                `;
-            }
-        });
-        
-        if (count === 0) {
-            html = `<div class="bg-white/60 backdrop-blur-sm border border-slate-200/50 rounded-lg px-4 py-2 mt-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest shadow-sm">Нет особых событий</div>`;
+            // БЕЗ ПЛИТОК — просто чистый, "дорогой" текст на фоне
+            html += `
+                <div class="mb-4 w-full text-right pointer-events-auto transition-transform active:scale-95">
+                    <span class="text-[11px] font-black text-teal-500 uppercase tracking-widest block mb-0.5">⭐ ${day} числа</span>
+                    <span class="text-sm md:text-base font-black text-slate-800 leading-tight block drop-shadow-sm">${cleanTitle}</span>
+                    ${ev.time ? `<span class="text-[11px] font-bold text-slate-500 mt-1 block">${ev.time}</span>` : ''}
+                </div>
+            `;
         }
-        
-        container.innerHTML = html;
     });
-}
+    
+    // Если в ВЫБРАННОМ месяце ничего нет
+    if (count === 0) {
+        html = `<div class="mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">В этом месяце пусто</div>`;
+    }
+    
+    container.innerHTML = html;
+};
 
 // Запускаем оба колеса и синхронизацию
 setTimeout(() => {
