@@ -3107,7 +3107,6 @@ function applyWeatherTheme(isDay, code) {
 // ==========================================
 const infoMonthsData = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 
-// Добавили параметр wheelPosition ('right' или 'left')
 function initInfoWheel(containerId, wheelPosition = 'right') {
     const container = document.getElementById(containerId);
     if (!container || container.dataset.initialized) return;
@@ -3115,33 +3114,44 @@ function initInfoWheel(containerId, wheelPosition = 'right') {
     
     const wrapper = container.querySelector('.months-wrapper');
     if (!wrapper) return;
-    wrapper.innerHTML = '';
+    wrapper.innerHTML = ''; 
     
     let currentRotation = 0;
-    let activeIndex = new Date().getMonth();
+    let activeIndex = new Date().getMonth(); // Текущий месяц
     
+    // Рисуем месяца ровно по орбите
     infoMonthsData.forEach((month, index) => {
         const el = document.createElement('div');
         el.className = 'month-item';
         el.innerText = month;
         
-        if (wheelPosition === 'left') {
-            // ДЛЯ ЛЕВОГО КОЛЕСА (СОБЫТИЯ): текст рисуется справа
-            const angle = index * 30; 
-            el.style.transform = `rotate(${angle}deg) translateX(calc(-60vw - 40px)) translate(-100%, -50%)`;
+        const angle = index * 30; // Шаг 30 градусов
+        
+        if (wheelPosition === 'right') {
+            // КОЛЕСО СПРАВА (Кампания) - выравниваем текст от правого края
+            el.style.right = '50%';
+            el.style.transformOrigin = 'right center';
+            el.style.paddingRight = 'calc(60vw + 25px)'; // 25px - это отступ букв от круга
+            el.style.textAlign = 'right';
+            el.style.transform = `translateY(-50%) rotate(${angle}deg)`;
         } else {
-            // ДЛЯ ПРАВОГО КОЛЕСА (КАМПАНИЯ): текст рисуется слева
-            const angle = (index * 30) - 180; 
-            el.style.transform = `rotate(${angle}deg) translateX(calc(-60vw - 40px)) translateY(-50%)`;
+            // КОЛЕСО СЛЕВА (События) - выравниваем текст от левого края
+            el.style.left = '50%';
+            el.style.transformOrigin = 'left center';
+            el.style.paddingLeft = 'calc(60vw + 25px)'; // 25px - это отступ букв от круга
+            el.style.textAlign = 'left';
+            el.style.transform = `translateY(-50%) rotate(${angle}deg)`;
         }
         
         wrapper.appendChild(el);
     });
     
+    // Ставим текущий месяц по центру
     currentRotation = -(activeIndex * 30);
     updateWheelRotation(wrapper, currentRotation);
     updateWheelActiveMonth(container, currentRotation);
 
+    // --- ФИЗИКА ВРАЩЕНИЯ ---
     let isDragging = false;
     let startY = 0;
     let lastRotation = currentRotation;
@@ -3149,13 +3159,13 @@ function initInfoWheel(containerId, wheelPosition = 'right') {
     container.addEventListener('pointerdown', (e) => {
         isDragging = true;
         startY = e.clientY;
-        wrapper.style.transition = 'none';
+        wrapper.style.transition = 'none'; 
     });
 
     window.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
         const deltaY = e.clientY - startY;
-        currentRotation = lastRotation + (deltaY * 0.25);
+        currentRotation = lastRotation + (deltaY * 0.25); // 0.25 - скорость
         updateWheelRotation(wrapper, currentRotation);
         updateWheelActiveMonth(container, currentRotation);
     });
@@ -3163,9 +3173,12 @@ function initInfoWheel(containerId, wheelPosition = 'right') {
     window.addEventListener('pointerup', () => {
         if (!isDragging) return;
         isDragging = false;
+        
+        // Магнит к ближайшему месяцу
         const snapAngle = Math.round(currentRotation / 30) * 30;
         currentRotation = snapAngle;
         lastRotation = currentRotation;
+        
         wrapper.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
         updateWheelRotation(wrapper, currentRotation);
         updateWheelActiveMonth(container, currentRotation);
@@ -3184,14 +3197,14 @@ function updateWheelActiveMonth(container, rotation) {
     const items = container.querySelectorAll('.month-item');
     items.forEach(item => item.classList.remove('active'));
     
-    let steps = -Math.round(rotation / 30);
+    let steps = Math.round(-rotation / 30);
     let activeIdx = (0 + steps) % 12; 
     if (activeIdx < 0) activeIdx += 12;
     
     if(items[activeIdx]) items[activeIdx].classList.add('active');
 }
 
-// ЗАПУСКАЕМ ОБА КОЛЕСА С РАЗНЫМИ ПАРАМЕТРАМИ
+// Запускаем оба колеса
 setTimeout(() => {
     initInfoWheel('wheel-campaign', 'right');
     initInfoWheel('wheel-events', 'left');
