@@ -3194,135 +3194,129 @@ function updateWheelActiveMonth(rotator, rotation, isRight) {
 
     if(items[activeIdx]) items[activeIdx].classList.add('active');
 
-    // --- МАГИЯ: Синхронизируем события при прокрутке левого колеса ---
+    // МАГИЯ СИНХРОНИЗАЦИИ
+    // Если крутим ПРАВОЕ колесо (Кампании)
+    if (isRight && window.renderCampaignEventsForMonth) {
+        window.renderCampaignEventsForMonth(activeIdx);
+    }
+    // Если крутим ЛЕВОЕ колесо (События)
     if (!isRight && window.renderSpecialEventsForMonth) {
         window.renderSpecialEventsForMonth(activeIdx);
     }
 }
 
 // ==========================================
-// СИНХРОНИЗАЦИЯ ОСОБЫХ СОБЫТИЙ И КАМПАНИЙ
+// СИНХРОНИЗАЦИЯ: СОБЫТИЯ И КАМПАНИИ
 // ==========================================
-window.specialEventsCache = []; 
+window.specialEventsCache = [];
+window.campaignEventsCache = [];
 
 function loadSpecialEventsToInfo() {
-    const container = document.getElementById('special-events-list');
-    if (!container) return;
-
     const eventsQuery = query(collection(db, "events"), orderBy("date", "asc"));
     
     onSnapshot(eventsQuery, (snapshot) => {
         window.specialEventsCache = [];
+        window.campaignEventsCache = [];
         
         snapshot.forEach(docSnap => {
             const ev = docSnap.data();
             if (!ev.date) return;
             
-            // Ищем либо Особое событие, либо Кампанию
-            const isSpecialEvent = ev.isSpecial === true || (ev.title && ev.title.includes('⭐'));
             const isCampaign = ev.isCampaign === true || (ev.title && ev.title.includes('🚩'));
+            const isSpecialEvent = ev.isSpecial === true || (ev.title && ev.title.includes('⭐'));
             
-            // Сохраняем флаг внутри объекта для удобства
-            if (isSpecialEvent || isCampaign) {
-                ev._isCampaign = isCampaign; 
+            if (isCampaign) {
+                window.campaignEventsCache.push(ev);
+            } else if (isSpecialEvent) {
                 window.specialEventsCache.push(ev);
             }
         });
         
-        const currentMonth = window.currentEventMonthIdx !== undefined ? window.currentEventMonthIdx : new Date().getMonth();
-        if (window.renderSpecialEventsForMonth) {
-            window.renderSpecialEventsForMonth(currentMonth);
-        }
+        const currentMonth = new Date().getMonth();
+        if (window.renderSpecialEventsForMonth) window.renderSpecialEventsForMonth(currentMonth);
+        if (window.renderCampaignEventsForMonth) window.renderCampaignEventsForMonth(currentMonth);
     });
 }
 
-// Функция мгновенной отрисовки
+// 1. Отрисовка СОБЫТИЙ (Справа на левом колесе)
 window.renderSpecialEventsForMonth = function(monthIdx) {
-    window.currentEventMonthIdx = monthIdx;
     const container = document.getElementById('special-events-list');
     if (!container) return;
 
-    const today = new Date();
-    const tzOffset = today.getTimezoneOffset() * 60000;
-    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
-
-    let html = '';
-    let count = 0;
-
+    const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    let html = ''; let count = 0;
     const daysOfWeek = ['ВОСКРЕСЕНЬЕ', 'ПОНЕДЕЛЬНИК', 'ВТОРНИК', 'СРЕДА', 'ЧЕТВЕРГ', 'ПЯТНИЦА', 'СУББОТА'];
     
-    // Антрацитовая Звезда
-    const starSvg = `
-        <svg class="w-5 h-5 md:w-6 md:h-6 shrink-0 text-[#373F43]" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-        </svg>
-    `;
-
-    // Антрацитовый Флажок
-    const flagSvg = `
-        <svg class="w-5 h-5 md:w-6 md:h-6 shrink-0 text-[#373F43]" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
-        </svg>
-    `;
+    const starSvg = `<svg class="w-5 h-5 md:w-6 md:h-6 shrink-0 text-[#373F43]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
 
     window.specialEventsCache.forEach(ev => {
         const dateParts = ev.date.split('-');
-        const evYear = parseInt(dateParts[0], 10);
         const evMonthIdx = parseInt(dateParts[1], 10) - 1;
-        const evDay = parseInt(dateParts[2], 10);
         
         if (evMonthIdx === monthIdx && ev.date >= todayStr) {
             count++;
-            
-            const evDateObj = new Date(evYear, evMonthIdx, evDay);
-            const dayOfWeekStr = daysOfWeek[evDateObj.getDay()];
-            
-            // Выбираем правильную иконку
-            const iconSvg = ev._isCampaign ? flagSvg : starSvg;
-
-            // Очищаем название от лишних эмодзи
+            const evDay = parseInt(dateParts[2], 10);
+            const dayOfWeekStr = daysOfWeek[new Date(parseInt(dateParts[0], 10), evMonthIdx, evDay).getDay()];
             const cleanTitle = ev.title ? ev.title.replace('⭐', '').replace('🚩', '').trim() : 'Событие';
 
             html += `
                 <div class="mb-6 w-full text-right pointer-events-auto transition-transform active:scale-95 flex flex-col items-end">
-                    
-                    <!-- ДАТА И ИКОНКА (Антрацит) -->
                     <div class="flex items-center justify-end gap-2 mb-1.5">
-                        ${iconSvg}
-                        <span class="text-lg md:text-xl font-black text-[#373F43] uppercase tracking-widest leading-none drop-shadow-sm">
-                            ${evDay} ${dayOfWeekStr}
-                        </span>
+                        ${starSvg}
+                        <span class="text-lg md:text-xl font-black text-[#373F43] uppercase tracking-widest leading-none drop-shadow-sm">${evDay} ${dayOfWeekStr}</span>
                     </div>
-
-                    <!-- НАЗВАНИЕ (Тонкий изящный шрифт) -->
-                    <span class="text-2xl md:text-3xl font-light text-slate-800 leading-tight block mb-1.5 max-w-[280px]">
-                        ${cleanTitle}
-                    </span>
-
-                    <!-- ВРЕМЯ (Крупные цифры) -->
-                    ${ev.time ? `
-                        <span class="text-lg md:text-xl font-black text-slate-400 block leading-none">
-                            ${ev.time}
-                        </span>
-                    ` : ''}
-
+                    <span class="text-2xl md:text-3xl font-light text-slate-800 leading-tight block mb-1.5 max-w-[280px]">${cleanTitle}</span>
+                    ${ev.time ? `<span class="text-lg md:text-xl font-black text-slate-400 block leading-none">${ev.time}</span>` : ''}
                 </div>
             `;
         }
     });
     
-    if (count === 0) {
-        html = `<div class="mt-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">В этом месяце пусто</div>`;
-    }
-    
-    container.innerHTML = html;
+    container.innerHTML = count === 0 ? `<div class="mt-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">В этом месяце пусто</div>` : html;
 };
 
-// Запускаем оба колеса и синхронизацию
+// 2. Отрисовка КАМПАНИЙ (Слева на правом колесе)
+window.renderCampaignEventsForMonth = function(monthIdx) {
+    const container = document.getElementById('campaign-events-list');
+    if (!container) return;
+
+    const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    let html = ''; let count = 0;
+    const daysOfWeek = ['ВОСКРЕСЕНЬЕ', 'ПОНЕДЕЛЬНИК', 'ВТОРНИК', 'СРЕДА', 'ЧЕТВЕРГ', 'ПЯТНИЦА', 'СУББОТА'];
+    
+    const flagSvg = `<svg class="w-5 h-5 md:w-6 md:h-6 shrink-0 text-[#373F43]" viewBox="0 0 24 24" fill="currentColor"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>`;
+
+    window.campaignEventsCache.forEach(ev => {
+        const dateParts = ev.date.split('-');
+        const evMonthIdx = parseInt(dateParts[1], 10) - 1;
+        
+        if (evMonthIdx === monthIdx && ev.date >= todayStr) {
+            count++;
+            const evDay = parseInt(dateParts[2], 10);
+            const dayOfWeekStr = daysOfWeek[new Date(parseInt(dateParts[0], 10), evMonthIdx, evDay).getDay()];
+            const cleanTitle = ev.title ? ev.title.replace('⭐', '').replace('🚩', '').trim() : 'Кампания';
+
+            html += `
+                <div class="mb-6 w-full text-left pointer-events-auto transition-transform active:scale-95 flex flex-col items-start">
+                    <div class="flex items-center justify-start gap-2 mb-1.5">
+                        ${flagSvg}
+                        <span class="text-lg md:text-xl font-black text-[#373F43] uppercase tracking-widest leading-none drop-shadow-sm">${evDay} ${dayOfWeekStr}</span>
+                    </div>
+                    <span class="text-2xl md:text-3xl font-light text-slate-800 leading-tight block mb-1.5 max-w-[280px]">${cleanTitle}</span>
+                    ${ev.time ? `<span class="text-lg md:text-xl font-black text-slate-400 block leading-none">${ev.time}</span>` : ''}
+                </div>
+            `;
+        }
+    });
+    
+    container.innerHTML = count === 0 ? `<div class="mt-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-left">В этом месяце пусто</div>` : html;
+};
+
+// Запускаем всё
 setTimeout(() => {
     initInfoWheel('wheel-campaign', 'right');
     initInfoWheel('wheel-events', 'left');
-    loadSpecialEventsToInfo(); // <--- Запускаем подгрузку событий
+    loadSpecialEventsToInfo();
 }, 1000);
 
 
