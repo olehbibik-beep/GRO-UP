@@ -162,13 +162,13 @@
     margin-left: 15%;
 }
 
-/* --- МЕСЯЦА --- */
 .months-wrapper {
     position: absolute;
     width: 100%;
     height: 100%;
     transition: transform 0.1s ease-out;
     border-radius: 50%;
+    z-index: 10; /* <--- Добавляем эту строчку, чтобы текст был поверх круга */
 }
 
 .month-item {
