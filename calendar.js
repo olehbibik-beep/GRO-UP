@@ -76,8 +76,35 @@ getDoc(doc(db, "users", userId)).then(docSnap => {
         setTimeout(() => document.getElementById('global-loader').style.display = 'none', 500);
         initEventsListener();
         loadBrothers(); 
+        initFormLogic(); // Инициализация логики формы
     }
 });
+
+// ==========================================
+// ЛОГИКА ФОРМЫ (Прячем время для кампаний)
+// ==========================================
+function initFormLogic() {
+    const typeSelect = document.getElementById('event-type');
+    if(typeSelect) {
+        typeSelect.addEventListener('change', (e) => {
+            const timeContainer = document.getElementById('time-container');
+            const timeInput = document.getElementById('event-time');
+            const repeatContainer = document.getElementById('repeat-container');
+            const repeatInput = document.getElementById('repeat-weekly');
+
+            if (e.target.value === 'campaign') {
+                if(timeContainer) timeContainer.style.display = 'none';
+                if(timeInput) { timeInput.removeAttribute('required'); timeInput.value = ''; }
+                if(repeatContainer) repeatContainer.style.display = 'none';
+                if(repeatInput) repeatInput.checked = false;
+            } else {
+                if(timeContainer) timeContainer.style.display = 'block';
+                if(timeInput) timeInput.setAttribute('required', 'true');
+                if(repeatContainer) repeatContainer.style.display = 'flex';
+            }
+        });
+    }
+}
 
 function loadBrothers() {
     onSnapshot(collection(db, "users"), (snapshot) => {
@@ -107,22 +134,63 @@ function initEventsListener() {
     });
 }
 
+// ==========================================
+// ГЛОБАЛЬНЫЕ ФИЛЬТРЫ ДЛЯ АРХИВА
+// ==========================================
+window.currentEventFilter = 'all';
+window.setEventFilter = (filterType) => {
+    window.currentEventFilter = filterType;
+    document.querySelectorAll('.ev-filter').forEach(btn => {
+        btn.classList.remove('bg-slate-800', 'text-white');
+        btn.classList.add('bg-slate-100', 'text-slate-600');
+    });
+    if(event && event.currentTarget) {
+        event.currentTarget.classList.remove('bg-slate-100', 'text-slate-600');
+        event.currentTarget.classList.add('bg-slate-800', 'text-white');
+    }
+    window.forceRenderEvents();
+};
+
 window.forceRenderEvents = () => {
     const list = document.getElementById('events-list');
-    const showAll = document.getElementById('show-all-groups').checked;
+    if (!list) return;
+
+    const showAllInput = document.getElementById('show-all-groups');
+    const showAll = showAllInput ? showAllInput.checked : false;
     const userGroup = currentUserData.group;
-    let html = '';
     
+    // Получаем значение из строки поиска
+    const searchInput = document.getElementById('search-events');
+    const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    let html = '';
     const now = new Date();
     const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
     const filteredEvents = cachedEvents.filter(ev => {
         if (ev.date < todayStr) return false; 
-        return (ev.group === "Все" || ev.group === "Všechny" || ev.group == userGroup || showAll);
+        
+        // Фильтр по группе
+        const matchesGroup = (ev.group === "Все" || ev.group === "Všechny" || ev.group == userGroup || showAll);
+        if (!matchesGroup) return false;
+
+        // Фильтр поиска (Название или Проводит)
+        if (searchQuery) {
+            const titleMatch = ev.title && ev.title.toLowerCase().includes(searchQuery);
+            const leaderMatch = ev.leader && ev.leader.toLowerCase().includes(searchQuery);
+            if (!titleMatch && !leaderMatch) return false;
+        }
+
+        // Кнопки-фильтры
+        if (window.currentEventFilter === 'special' && !ev.isSpecial) return false;
+        if (window.currentEventFilter === 'campaign' && !ev.isCampaign) return false;
+        if (window.currentEventFilter === 'normal' && (ev.isSpecial || ev.isCampaign)) return false;
+
+        return true;
     });
 
     if (filteredEvents.length === 0) {
-        list.innerHTML = `<p class="p-6 text-center text-slate-400 text-sm italic">${window.t('history_empty')}</p>`;
+        list.innerHTML = `<p class="p-6 text-center text-slate-400 text-sm italic">${searchQuery ? 'Ничего не найдено' : window.t('history_empty')}</p>`;
         return;
     }
 
@@ -159,15 +227,14 @@ window.forceRenderEvents = () => {
             const dayNum = dateObj.getDate();
             const weekday = dateObj.toLocaleDateString(localeFormat, { weekday: 'short' });
             
-            // МАГИЯ ИКОНОК ТУТ
             let typeIcon = '';
             if (ev.isSpecial) typeIcon = '⭐';
             if (ev.isCampaign) typeIcon = '🚩';
             
             const isSpecialBadge = typeIcon ? `<span class="text-base ml-1 drop-shadow-sm">${typeIcon}</span>` : '';
-                
             const groupBadge = (ev.group === "Все" || ev.group === "Všechny") ? window.t('all_groups') : ev.group;
             const leaderHtml = ev.leader ? `<span class="text-[10px] font-bold text-indigo-400 mt-0.5 block truncate">Вед: ${ev.leader}</span>` : '';
+            const silentBadge = ev.isSilent ? `<svg class="w-3.5 h-3.5 text-slate-300 ml-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /><path stroke-linecap="round" stroke-linejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>` : '';
             
             const dateBlock = `
                 <div class="flex flex-col items-center justify-center w-12 h-12 bg-slate-100 border border-slate-200 rounded shrink-0">
@@ -186,8 +253,9 @@ window.forceRenderEvents = () => {
                                 <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest bg-white border border-slate-200 px-1.5 py-0.5 rounded shrink-0">${groupBadge}</span>
                             </div>
                             <div class="flex items-center gap-2 mt-1">
-                                <span class="text-xs font-black text-slate-600">${ev.time}</span>
+                                ${ev.time ? `<span class="text-xs font-black text-slate-600">${ev.time}</span>` : `<span class="text-xs font-bold text-slate-400">Весь месяц</span>`}
                                 ${leaderHtml ? `<span class="text-slate-300 mx-1">•</span> ${leaderHtml}` : ''}
+                                ${silentBadge}
                             </div>
                         </div>
                     </div>
@@ -298,17 +366,21 @@ window.clearPastEvents = async () => {
 document.getElementById('add-event-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const date = document.getElementById('event-date').value;
-    const time = document.getElementById('event-time').value;
+    const timeInput = document.getElementById('event-time');
+    const time = timeInput ? timeInput.value : '';
     const title = document.getElementById('event-title').value;
     const leader = document.getElementById('event-leader').value;
     const group = document.getElementById('event-group').value;
     
-    // МАГИЯ СОХРАНЕНИЯ ТУТ
     const eventType = document.getElementById('event-type').value;
     const isSpecial = eventType === 'special';
     const isCampaign = eventType === 'campaign';
     
-    const repeatWeekly = document.getElementById('repeat-weekly').checked;
+    const repeatWeeklyInput = document.getElementById('repeat-weekly');
+    const repeatWeekly = repeatWeeklyInput ? repeatWeeklyInput.checked : false;
+    
+    const silentInput = document.getElementById('event-silent');
+    const isSilent = silentInput ? silentInput.checked : false;
     
     const btn = document.querySelector('button[type="submit"]');
     btn.disabled = true;
@@ -326,12 +398,15 @@ document.getElementById('add-event-form').addEventListener('submit', async (e) =
             const tz = checkDate.getTimezoneOffset() * 60000;
             const dStr = new Date(checkDate.getTime() - tz).toISOString().split('T')[0];
 
-            const exists = cachedEvents.find(ev => ev.date === dStr && ev.time === time && ev.group === group);
-            if (exists) {
-                conflictFound = true;
-                const formattedDate = checkDate.toLocaleDateString(localeFormat, { day: 'numeric', month: 'long' });
-                conflictDateStr = formattedDate;
-                break; 
+            // Пропускаем проверку конфликта для кампаний, так как у них нет точного времени
+            if (!isCampaign) {
+                const exists = cachedEvents.find(ev => ev.date === dStr && ev.time === time && ev.group === group);
+                if (exists) {
+                    conflictFound = true;
+                    const formattedDate = checkDate.toLocaleDateString(localeFormat, { day: 'numeric', month: 'long' });
+                    conflictDateStr = formattedDate;
+                    break; 
+                }
             }
         }
 
@@ -360,7 +435,8 @@ document.getElementById('add-event-form').addEventListener('submit', async (e) =
                 leader: leader,
                 group: group,
                 isSpecial: isSpecial,
-                isCampaign: isCampaign, // Сохраняем флаг
+                isCampaign: isCampaign, 
+                isSilent: isSilent, // Сохраняем флаг тихого планирования
                 createdAt: new Date().toISOString()
             });
         }
@@ -369,6 +445,14 @@ document.getElementById('add-event-form').addEventListener('submit', async (e) =
         
         window.showToast(window.t('success'));
         document.getElementById('add-event-form').reset();
+        
+        // Сбрасываем форму в исходное состояние (возвращаем время)
+        const typeSelect = document.getElementById('event-type');
+        if(typeSelect) {
+            typeSelect.value = 'normal';
+            typeSelect.dispatchEvent(new Event('change'));
+        }
+        
     } catch(err) { alert(window.t('error_general')); }
     
     btn.disabled = false;
