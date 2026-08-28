@@ -34,6 +34,8 @@
     <style>
         ::-webkit-scrollbar { display: none; }
         body { -ms-overflow-style: none; scrollbar-width: none; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-ui-bg text-slate-800 min-h-screen font-sans relative">
@@ -65,7 +67,8 @@
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1" data-lang="date">Дата</label>
                         <input type="date" id="event-date" required class="w-full bg-slate-50 border border-slate-200 rounded-md p-2 outline-none focus:border-indigo-400 font-bold text-slate-700">
                     </div>
-                    <div>
+                    <!-- Добавили id="time-container", чтобы прятать его для Кампаний -->
+                    <div id="time-container">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1" data-lang="time">Время</label>
                         <input type="time" id="event-time" required class="w-full bg-slate-50 border border-slate-200 rounded-md p-2 outline-none focus:border-indigo-400 font-bold text-slate-700">
                     </div>
@@ -88,7 +91,7 @@
                         </select>
                     </div>
                 </div>
-                <!-- ВЫБОР ТИПА СОБЫТИЯ (Заменили чекбокс на выпадающий список) -->
+                
                 <div class="flex items-center justify-between gap-4 bg-slate-50 p-3 rounded-md border border-slate-100 mt-2">
                     <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">Тип</label>
                     <select id="event-type" class="w-full bg-white border border-slate-200 rounded-md p-2 outline-none focus:border-indigo-400 font-bold text-slate-700 text-xs">
@@ -98,13 +101,22 @@
                     </select>
                 </div>
 
-                <!-- Этот блок с чекбоксом про 12 недель оставляем без изменений! -->
-                <div class="flex items-center gap-4 bg-red-50 p-3 rounded-md border border-red-100 mt-2">
+                <!-- Тихое планирование -->
+                <div class="flex items-center gap-4 bg-indigo-50 p-3 rounded-md border border-indigo-100 mt-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="event-silent" class="w-4 h-4 accent-indigo-500">
+                        <span class="text-xs font-bold text-indigo-700 uppercase tracking-widest">Тихое планирование (без Push)</span>
+                    </label>
+                </div>
+
+                <!-- Добавили id="repeat-container" -->
+                <div id="repeat-container" class="flex items-center gap-4 bg-red-50 p-3 rounded-md border border-red-100 mt-2">
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" id="repeat-weekly" class="w-4 h-4 accent-red-500">
                         <span class="text-xs font-bold text-red-700 uppercase tracking-widest" data-lang="repeat_weekly">Повторять еженедельно (12 нед.)</span>
                     </label>
                 </div>
+
                 <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-md text-xs uppercase tracking-widest outline-none transition-colors shadow-sm" data-lang="publish">Опубликовать</button>
             </form>
         </div>
@@ -120,6 +132,18 @@
                     </label>
                 </div>
             </div>
+            
+            <!-- ПАНЕЛЬ ПОИСКА И ФИЛЬТРОВ -->
+            <div class="p-4 bg-white border-b border-slate-100">
+                <input type="text" id="search-events" oninput="window.forceRenderEvents()" placeholder="Поиск по названию или спикеру..." class="w-full bg-slate-50 border border-slate-200 rounded-md p-2 outline-none focus:border-indigo-400 font-bold text-slate-700 mb-3 text-sm placeholder:text-slate-400">
+                <div class="flex items-center gap-2 overflow-x-auto hide-scroll pb-1" id="filter-buttons">
+                    <button onclick="window.setEventFilter('all')" class="ev-filter active px-3 py-1.5 rounded-full bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest shrink-0 transition-colors">Все</button>
+                    <button onclick="window.setEventFilter('normal')" class="ev-filter px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-widest shrink-0 transition-colors">Встречи</button>
+                    <button onclick="window.setEventFilter('special')" class="ev-filter px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-widest shrink-0 transition-colors">⭐ Особые</button>
+                    <button onclick="window.setEventFilter('campaign')" class="ev-filter px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-widest shrink-0 transition-colors">🚩 Кампании</button>
+                </div>
+            </div>
+
             <div id="events-list" class="divide-y divide-slate-100"></div>
         </div>
     </main>
@@ -138,6 +162,6 @@
     </div>
     
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
-    <script type="module" src="calendar.js?v=68"></script>
+    <script type="module" src="calendar.js?v=69"></script>
 </body>
 </html>
