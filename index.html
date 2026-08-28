@@ -147,11 +147,13 @@
 
 /* Внутренний контент (Заголовок и Год) */
 /* Внутренний контент (Заголовок, Год, Стрелки) */
+/* Внутренний контент (Заголовок, Год, Стрелки) */
 .wheel-content {
     position: absolute; top: 50%; transform: translateY(-50%);
     display: flex; flex-direction: column; align-items: center;
     pointer-events: none; 
-    width: 140px; /* Фиксируем ширину, чтобы всё выстроилось ровно по центру */
+    width: 140px;
+    z-index: 20; /* 🔥 Вытаскиваем кнопки поверх невидимого барабана! */
 }
 /* Отодвигаем подальше от края, чтобы год не наезжал на светящуюся точку */
 .wheel-right .wheel-content { left: 12%; } 
