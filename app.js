@@ -3265,26 +3265,30 @@ window.renderSpecialEventsForMonth = function(monthIdx) {
 
     let html = ''; let count = 0;
     const daysOfWeek = ['ВОСКРЕСЕНЬЕ', 'ПОНЕДЕЛЬНИК', 'ВТОРНИК', 'СРЕДА', 'ЧЕТВЕРГ', 'ПЯТНИЦА', 'СУББОТА'];
+    
+    // Иконка стала чуть меньше (w-4 h-4)
+    const starSvg = `<svg class="w-4 h-4 md:w-5 md:h-5 shrink-0 text-[#373F43]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
 
     window.specialEventsCache.forEach(ev => {
         const dateParts = ev.date.split('-');
         const evYear = parseInt(dateParts[0], 10);
         const evMonthIdx = parseInt(dateParts[1], 10) - 1;
         
-        // Проверяем: выбранный МЕСЯЦ и выбранный ГОД!
         if (evMonthIdx === monthIdx && evYear === window.currentInfoYear) {
             count++;
             const evDay = parseInt(dateParts[2], 10);
             const dayOfWeekStr = daysOfWeek[new Date(evYear, evMonthIdx, evDay).getDay()];
             const cleanTitle = ev.title ? ev.title.replace('⭐', '').replace('🚩', '').trim() : 'Событие';
 
+            // Уменьшили отступ между блоками до mb-4 и все размеры текста
             html += `
-                <div class="mb-6 w-full text-right pointer-events-auto transition-transform active:scale-95 flex flex-col items-end">
-                    <div class="flex items-center justify-end gap-2 mb-1.5">
-                        <span class="text-lg md:text-xl font-black text-[#373F43] uppercase tracking-widest leading-none drop-shadow-sm">${evDay} ${dayOfWeekStr}</span>
+                <div class="mb-4 w-full text-right pointer-events-auto transition-transform active:scale-95 flex flex-col items-end">
+                    <div class="flex items-center justify-end gap-1.5 mb-1">
+                        ${starSvg}
+                        <span class="text-sm md:text-base font-black text-[#373F43] uppercase tracking-widest leading-none drop-shadow-sm">${evDay} ${dayOfWeekStr}</span>
                     </div>
-                    <span class="text-2xl md:text-3xl font-light text-slate-800 leading-tight block mb-1.5 max-w-[280px]">${cleanTitle}</span>
-                    ${ev.time ? `<span class="text-lg md:text-xl font-black text-slate-400 block leading-none">${ev.time}</span>` : ''}
+                    <span class="text-lg md:text-xl font-light text-slate-800 leading-tight block mb-1 max-w-[240px]">${cleanTitle}</span>
+                    ${ev.time ? `<span class="text-sm md:text-base font-black text-slate-400 block leading-none">${ev.time}</span>` : ''}
                 </div>
             `;
         }
@@ -3301,26 +3305,30 @@ window.renderCampaignEventsForMonth = function(monthIdx) {
 
     let html = ''; let count = 0;
     const daysOfWeek = ['ВОСКРЕСЕНЬЕ', 'ПОНЕДЕЛЬНИК', 'ВТОРНИК', 'СРЕДА', 'ЧЕТВЕРГ', 'ПЯТНИЦА', 'СУББОТА'];
+    
+    // Иконка стала чуть меньше (w-4 h-4)
+    const flagSvg = `<svg class="w-4 h-4 md:w-5 md:h-5 shrink-0 text-[#373F43]" viewBox="0 0 24 24" fill="currentColor"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>`;
 
     window.campaignEventsCache.forEach(ev => {
         const dateParts = ev.date.split('-');
         const evYear = parseInt(dateParts[0], 10);
         const evMonthIdx = parseInt(dateParts[1], 10) - 1;
         
-        // Проверяем: выбранный МЕСЯЦ и выбранный ГОД!
         if (evMonthIdx === monthIdx && evYear === window.currentInfoYear) {
             count++;
             const evDay = parseInt(dateParts[2], 10);
             const dayOfWeekStr = daysOfWeek[new Date(evYear, evMonthIdx, evDay).getDay()];
             const cleanTitle = ev.title ? ev.title.replace('⭐', '').replace('🚩', '').trim() : 'Кампания';
 
+            // Уменьшили отступ между блоками до mb-4 и все размеры текста
             html += `
-                <div class="mb-6 w-full text-left pointer-events-auto transition-transform active:scale-95 flex flex-col items-start">
-                    <div class="flex items-center justify-start gap-2 mb-1.5">
-                        <span class="text-lg md:text-xl font-black text-[#373F43] uppercase tracking-widest leading-none drop-shadow-sm">${evDay} ${dayOfWeekStr}</span>
+                <div class="mb-4 w-full text-left pointer-events-auto transition-transform active:scale-95 flex flex-col items-start">
+                    <div class="flex items-center justify-start gap-1.5 mb-1">
+                        ${flagSvg}
+                        <span class="text-sm md:text-base font-black text-[#373F43] uppercase tracking-widest leading-none drop-shadow-sm">${evDay} ${dayOfWeekStr}</span>
                     </div>
-                    <span class="text-2xl md:text-3xl font-light text-slate-800 leading-tight block mb-1.5 max-w-[280px]">${cleanTitle}</span>
-                    ${ev.time ? `<span class="text-lg md:text-xl font-black text-slate-400 block leading-none">${ev.time}</span>` : ''}
+                    <span class="text-lg md:text-xl font-light text-slate-800 leading-tight block mb-1 max-w-[240px]">${cleanTitle}</span>
+                    ${ev.time ? `<span class="text-sm md:text-base font-black text-slate-400 block leading-none">${ev.time}</span>` : ''}
                 </div>
             `;
         }
