@@ -43,7 +43,7 @@ self.addEventListener('notificationclick', (event) => {
 // 🔥 ГЛАВНЫЙ РУБИЛЬНИК КЭША 
 // ==========================================
 // Версия повышена, чтобы принудительно обновить кэш у всех пользователей!
-const CACHE_NAME = 'gro-up-v92'; 
+const CACHE_NAME = 'gro-up-v93'; 
 
 const INITIAL_CACHED_RESOURCES = [
   './',
