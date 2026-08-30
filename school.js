@@ -118,7 +118,7 @@ if (taskNumSelect) {
 }
 const taskLessonSelect = document.getElementById('task-lesson');
 if (taskLessonSelect) {
-    for (let i = 1; i <= 12; i++) taskLessonSelect.innerHTML += `<option value="${i}">${i}</option>`;
+    for (let i = 1; i <= 20; i++) taskLessonSelect.innerHTML += `<option value="${i}">${i}</option>`;
 }
 
 let allSchoolStudents = [];
