@@ -42,7 +42,8 @@ self.addEventListener('notificationclick', (event) => {
 // ==========================================
 // 🔥 ГЛАВНЫЙ РУБИЛЬНИК КЭША 
 // ==========================================
-const CACHE_NAME = 'gro-up-v91'; // Увеличили версию!
+// Версия повышена, чтобы принудительно обновить кэш у всех пользователей!
+const CACHE_NAME = 'gro-up-v92'; 
 
 const INITIAL_CACHED_RESOURCES = [
   './',
@@ -109,8 +110,18 @@ self.addEventListener('fetch', (event) => {
       caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
       return response;
     }).catch(() => {
-      // Интернета нет! Достаем из заначки
-      return caches.match(event.request);
+      // Интернета нет (или сбой сети)! Достаем из заначки
+      return caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) {
+            return cachedResponse; // Отдаем файл из кэша, если он там есть
+        }
+        // Защита от падения: если файла нет в кэше, возвращаем системную заглушку
+        return new Response('Вы находитесь в офлайн-режиме, и эта страница еще не сохранена в памяти устройства.', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: new Headers({ 'Content-Type': 'text/plain; charset=utf-8' })
+        });
+      });
     })
   );
 });
