@@ -775,23 +775,6 @@
 
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm z-[150] flex flex-col gap-2 pointer-events-none"></div>
 
-<!-- СКРИПТ-СПАСАТЕЛЬ: Принудительное удаление сломанного кэша у всех пользователей -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                let isUnregistered = false;
-                for (let registration of registrations) {
-                    registration.unregister();
-                    isUnregistered = true;
-                }
-                // Если мы удалили старый кэш, перезагружаем страницу, чтобы сайт скачался заново
-                if (isUnregistered) {
-                    console.log("Старый кэш удален, перезагрузка...");
-                    window.location.reload(true);
-                }
-            });
-        }
-    </script>
     
 </body>
 </html>
