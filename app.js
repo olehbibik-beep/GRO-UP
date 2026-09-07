@@ -2176,12 +2176,16 @@ window.openTakeTerrModal = async () => {
     listContainer.classList.add('hidden');
 
     try {
+        // 1. Получаем активные участки (В РАБОТЕ) вместе с именами
         const activeSnap = await getDocs(query(collection(db, "territories"), where("status", "==", "active")));
-        const activeNumbers = [];
-        activeSnap.forEach(doc => activeNumbers.push(Number(doc.data().number)));
-        
-        window.activeTerritoriesCount = activeNumbers.length;
+        const activeTerrs = {};
+        activeSnap.forEach(doc => {
+            const d = doc.data();
+            activeTerrs[Number(d.number)] = d;
+        });
+        window.activeTerritoriesCount = Object.keys(activeTerrs).length;
 
+        // 2. Получаем отдыхающие участки (СПЯТ)
         const returnedSnap = await getDocs(query(collection(db, "territories"), where("status", "==", "returned")));
         const lastWorkedMap = {};
         returnedSnap.forEach(doc => {
@@ -2200,9 +2204,9 @@ window.openTakeTerrModal = async () => {
 
         const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
         const now = Date.now();
-
         let hasAnyPolygon = false; 
 
+        // 3. Формируем единый массив со статусами
         Object.keys(window.allMapsCache).forEach(numStr => {
             const num = Number(numStr);
             const mapData = window.allMapsCache[numStr];
@@ -2210,33 +2214,30 @@ window.openTakeTerrModal = async () => {
             
             let status = 'available';
             let isFire = false;
+            let userName = '';
 
-            if (activeNumbers.includes(num)) {
-                status = 'active';
+            if (activeTerrs[num]) {
+                status = 'active'; // В работе
+                userName = activeTerrs[num].userName;
             } else if (lastW > 0 && (now - lastW) < ninetyDaysMs) {
-                status = 'cooldown';
+                status = 'cooldown'; // Отдыхает (Спит)
                 window.cooldownTerritoriesCount++;
             } else {
                 isFire = (lastW === 0) || ((now - lastW) > ninetyDaysMs);
-                status = isFire ? 'fire' : 'available';
-                
-                window.availableTerritoriesData.push({ 
-                    num: num, 
-                    url: mapData.url, 
-                    city: mapData.city,
-                    polygon: mapData.polygon,
-                    lastWorked: lastW,
-                    isFire: isFire
-                });
+                status = isFire ? 'fire' : 'available'; // Свободен
             }
+
+            // Добавляем ВСЕ участки в список (чтобы видеть кто взял и когда проснется)
+            window.availableTerritoriesData.push({ 
+                num: num, url: mapData.url, city: mapData.city, polygon: mapData.polygon,
+                lastWorked: lastW, isFire: isFire, status: status, userName: userName
+            });
 
             if (mapData.polygon) {
                 hasAnyPolygon = true;
                 window.allMapPolygons.push({
-                    num: num,
-                    city: mapData.city,
-                    polygon: mapData.polygon,
-                    status: status
+                    num: num, city: mapData.city, polygon: mapData.polygon,
+                    status: status, userName: userName, lastWorked: lastW
                 });
             }
         });
@@ -2279,7 +2280,6 @@ window.toggleAvailableView = () => {
         mapContainer.classList.remove('hidden');
         btn.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg> Списком`;
         btn.className = "bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest py-2 px-3 rounded-xl transition-colors outline-none shadow-sm flex items-center gap-1.5 border border-slate-300";
-        
         window.renderGlobalAvailableMap();
     } else {
         mapContainer.classList.add('hidden');
@@ -2289,12 +2289,8 @@ window.toggleAvailableView = () => {
     }
 };
 
-// Функция переброса на общую карту с выделением участка
 window.focusOnTerritoryOnMap = (numStr) => {
-    // 1. Убеждаемся, что модальное окно открыто
     document.getElementById('take-terr-modal').classList.replace('hidden', 'flex');
-    
-    // 2. ПРИНУДИТЕЛЬНО ПРЯЧЕМ СПИСОК И ПОКАЗЫВАЕМ КАРТУ
     const listEl = document.getElementById('available-terr-list');
     const mapEl = document.getElementById('available-terr-map-container');
     const toggleBtn = document.getElementById('toggle-terr-view-btn');
@@ -2303,36 +2299,24 @@ window.focusOnTerritoryOnMap = (numStr) => {
         listEl.classList.add('hidden');
         mapEl.classList.remove('hidden');
     }
+    if (toggleBtn) toggleBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg> Списком`;
     
-    // Меняем иконку кнопки в шапке обратно на "Списком"
-    if (toggleBtn) {
-        toggleBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg> Списком`;
-    }
-    
-    // 3. Плавно летим к участку и "кликаем" по нему
     setTimeout(() => {
         if(globalAvailableMapInstance) globalAvailableMapInstance.invalidateSize();
-        
         const poly = window.terrMapPolygons[numStr];
         if (poly) {
             globalAvailableMapInstance.flyToBounds(poly.getBounds(), { padding: [30, 30], duration: 0.5 });
-            poly.fire('click'); // Имитируем клик, чтобы открылась плашка "Взять участок"
-        } else {
-            alert("Участок не найден на карте!");
-        }
+            poly.fire('click');
+        } else alert("Участок не найден на карте!");
     }, 100);
 };
 
-// === ФУНКЦИЯ 2: Общая карта свободных участков ===
+// === ОТРИСОВКА КАРТЫ С НОВЫМИ ЦВЕТАМИ ===
 window.renderGlobalAvailableMap = () => {
     if (!globalAvailableMapInstance) {
         globalAvailableMapInstance = L.map('available-terr-map', { attributionControl: false }).setView([49.974, 12.700], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(globalAvailableMapInstance);
-        
-        // НОВОЕ: Прятать окошко (плашку) при любом сдвиге или зуме карты, чтобы не мешалось
-        globalAvailableMapInstance.on('movestart zoomstart', () => {
-            globalAvailableMapInstance.closePopup();
-        });
+        globalAvailableMapInstance.on('movestart zoomstart', () => globalAvailableMapInstance.closePopup());
     }
 
     setTimeout(() => {
@@ -2341,274 +2325,186 @@ window.renderGlobalAvailableMap = () => {
         globalAvailableLayerGroup = L.layerGroup().addTo(globalAvailableMapInstance);
 
         if (!document.getElementById('terr-label-style')) {
-            const styleMarkup = `
-            <style id="terr-label-style">
-                .terr-map-label {
-                    background: #334155 !important; 
-                    border: 2px solid #ffffff !important; 
-                    border-radius: 50% !important; 
-                    color: #ffffff !important;
-                    font-weight: 900;
-                    font-size: 12px;
-                    text-shadow: none !important;
-                    box-shadow: 0px 2px 4px rgba(0,0,0,0.3) !important;
-                    width: 28px !important;
-                    height: 28px !important;
-                    line-height: 24px !important;
-                    text-align: center !important;
-                    padding: 0 !important;
-                    white-space: nowrap !important;
-                }
+            const styleMarkup = `<style id="terr-label-style">
+                .terr-map-label { background: #334155 !important; border: 2px solid #ffffff !important; border-radius: 50% !important; color: #ffffff !important; font-weight: 900; font-size: 12px; text-shadow: none !important; box-shadow: 0px 2px 4px rgba(0,0,0,0.3) !important; width: 28px !important; height: 28px !important; line-height: 24px !important; text-align: center !important; padding: 0 !important; white-space: nowrap !important; }
                 .terr-map-label::before { display: none !important; } 
             </style>`;
             document.head.insertAdjacentHTML('beforeend', styleMarkup);
         }
 
-        // === ГРАНИЦЫ СОБРАНИЯ (Mariánské Lázně) ===
         const cityBoundary = [
-            [49.762638, 12.404806], [49.733720, 12.413257], [49.706275, 12.442696],
-            [49.692883, 12.483003], [49.685730, 12.520048], [49.659490, 12.524038],
-            [49.637595, 12.525053], [49.620210, 12.537888], [49.605940, 12.563586],
-            [49.608063, 12.584177], [49.609018, 12.614063], [49.607108, 12.659840],
-            [49.608868, 12.701759], [49.613171, 12.744105], [49.623351, 12.790354],
-            [49.620677, 12.811054], [49.630270, 12.854405], [49.643882, 12.860074],
-            [49.647625, 12.869134], [49.646347, 12.901715], [49.641114, 12.949541],
-            [49.639451, 12.964528], [49.638745, 13.026727], [49.636160, 13.043097],
-            [49.622405, 13.066341], [49.620638, 13.077260], [49.642093, 13.082883],
-            [49.652862, 13.067399], [49.661167, 13.061963], [49.684710, 13.042125],
-            [49.696519, 13.057605], [49.711157, 13.049344], [49.737032, 13.075511],
-            [49.745860, 13.090464], [49.758391, 13.088168], [49.767682, 13.074769],
-            [49.771180, 13.065581], [49.776888, 13.066254], [49.782047, 13.068638],
-            [49.784766, 13.069866], [49.785789, 13.071170], [49.786017, 13.073924],
-            [49.788125, 13.077771], [49.788716, 13.080709], [49.790221, 13.081899],
-            [49.792451, 13.080407], [49.793940, 13.079845], [49.794734, 13.080809],
-            [49.796182, 13.084925], [49.796243, 13.088396], [49.796493, 13.090975],
-            [49.797423, 13.092379], [49.798288, 13.093284], [49.798938, 13.093896],
-            [49.802714, 13.097843], [49.803922, 13.097765], [49.804300, 13.095917],
-            [49.803761, 13.092835], [49.811132, 13.086538], [49.828153, 13.067798],
-            [49.841433, 13.040319], [49.848450, 12.997812], [49.854120, 12.979033],
-            [49.856936, 12.954019], [49.855896, 12.941722], [49.853831, 12.924183],
-            [49.849221, 12.903905], [49.851137, 12.888613], [49.853205, 12.877172],
-            [49.862712, 12.868898], [49.872234, 12.873504], [49.874074, 12.878526],
-            [49.877967, 12.891579], [49.886986, 12.896973], [49.894926, 12.900252],
-            [49.902971, 12.907937], [49.906174, 12.926354], [49.913779, 12.933967],
-            [49.916793, 12.944688], [49.920883, 12.958058], [49.918926, 12.962926],
-            [49.915415, 12.969016], [49.915449, 12.979913], [49.917970, 12.987808],
-            [49.922365, 12.990560], [49.928565, 12.988663], [49.934970, 12.980036],
-            [49.941487, 12.957473], [49.947034, 12.950448], [49.954511, 12.947171],
-            [49.965853, 12.948901], [49.971373, 12.952215], [49.977745, 12.965412],
-            [49.978775, 12.995759], [49.985707, 13.012018], [49.991920, 13.016657],
-            [49.998658, 13.013203], [50.000668, 13.006235], [50.000446, 12.979959],
-            [50.003458, 12.940115], [50.005655, 12.913972], [50.006518, 12.896448],
-            [50.008018, 12.883788], [50.011389, 12.870988], [50.016578, 12.861334],
-            [50.042324, 12.859146], [50.047436, 12.850052], [50.048259, 12.808401],
-            [50.052522, 12.787885], [50.051300, 12.768339], [50.050447, 12.758568],
-            [50.057922, 12.744062], [50.059510, 12.737128], [50.059853, 12.727839],
-            [50.053037, 12.703228], [50.043466, 12.693114], [50.030028, 12.689805],
-            [50.018791, 12.683851], [50.017013, 12.675724], [50.018933, 12.655038],
-            [50.020765, 12.623165], [50.023575, 12.596141], [50.034415, 12.588492],
-            [50.041073, 12.581870], [50.049509, 12.573893], [50.053277, 12.566160],
-            [50.049356, 12.552020], [50.038839, 12.547940], [50.033051, 12.550032],
-            [50.029773, 12.546458], [50.026140, 12.537401], [50.018102, 12.527514],
-            [50.010528, 12.523957], [50.006796, 12.508941], [49.981593, 12.489888],
-            [49.972102, 12.499310], [49.969792, 12.493562], [49.966777, 12.493795],
-            [49.961852, 12.490864], [49.960622, 12.491437], [49.958438, 12.490433],
-            [49.957892, 12.488292], [49.958453, 12.483193], [49.958025, 12.480578],
-            [49.956466, 12.477640], [49.953216, 12.474882], [49.952305, 12.475075],
-            [49.948291, 12.469947], [49.946787, 12.469745], [49.943096, 12.472102],
-            [49.938454, 12.474968], [49.935506, 12.478642], [49.936539, 12.493798],
-            [49.933198, 12.493167], [49.932545, 12.498164], [49.927585, 12.512151],
-            [49.927584, 12.522963], [49.924634, 12.538534], [49.922711, 12.544699],
-            [49.920400, 12.547813], [49.916179, 12.548351], [49.913048, 12.549166],
-            [49.909827, 12.551128], [49.903146, 12.550917], [49.895473, 12.545024],
-            [49.891335, 12.540008], [49.890924, 12.535302], [49.883408, 12.524112],
-            [49.880116, 12.520458], [49.877058, 12.518639], [49.869078, 12.518578],
-            [49.861422, 12.514108], [49.858686, 12.510673], [49.857488, 12.507820],
-            [49.857009, 12.497694], [49.855010, 12.498489], [49.847481, 12.499572],
-            [49.837469, 12.497958], [49.841975, 12.483019], [49.833212, 12.473006],
-            [49.823528, 12.475038], [49.814792, 12.472150], [49.810171, 12.465074],
-            [49.787588, 12.471540], [49.762638, 12.404806]
+            [49.762638, 12.404806], [49.733720, 12.413257], [49.706275, 12.442696], [49.692883, 12.483003], [49.685730, 12.520048], [49.659490, 12.524038], [49.637595, 12.525053], [49.620210, 12.537888], [49.605940, 12.563586], [49.608063, 12.584177], [49.609018, 12.614063], [49.607108, 12.659840], [49.608868, 12.701759], [49.613171, 12.744105], [49.623351, 12.790354], [49.620677, 12.811054], [49.630270, 12.854405], [49.643882, 12.860074], [49.647625, 12.869134], [49.646347, 12.901715], [49.641114, 12.949541], [49.639451, 12.964528], [49.638745, 13.026727], [49.636160, 13.043097], [49.622405, 13.066341], [49.620638, 13.077260], [49.642093, 13.082883], [49.652862, 13.067399], [49.661167, 13.061963], [49.684710, 13.042125], [49.696519, 13.057605], [49.711157, 13.049344], [49.737032, 13.075511], [49.745860, 13.090464], [49.758391, 13.088168], [49.767682, 13.074769], [49.771180, 13.065581], [49.776888, 13.066254], [49.782047, 13.068638], [49.784766, 13.069866], [49.785789, 13.071170], [49.786017, 13.073924], [49.788125, 13.077771], [49.788716, 13.080709], [49.790221, 13.081899], [49.792451, 13.080407], [49.793940, 13.079845], [49.794734, 13.080809], [49.796182, 13.084925], [49.796243, 13.088396], [49.796493, 13.090975], [49.797423, 13.092379], [49.798288, 13.093284], [49.798938, 13.093896], [49.802714, 13.097843], [49.803922, 13.097765], [49.804300, 13.095917], [49.803761, 13.092835], [49.811132, 13.086538], [49.828153, 13.067798], [49.841433, 13.040319], [49.848450, 12.997812], [49.854120, 12.979033], [49.856936, 12.954019], [49.855896, 12.941722], [49.853831, 12.924183], [49.849221, 12.903905], [49.851137, 12.888613], [49.853205, 12.877172], [49.862712, 12.868898], [49.872234, 12.873504], [49.874074, 12.878526], [49.877967, 12.891579], [49.886986, 12.896973], [49.894926, 12.900252], [49.902971, 12.907937], [49.906174, 12.926354], [49.913779, 12.933967], [49.916793, 12.944688], [49.920883, 12.958058], [49.918926, 12.962926], [49.915415, 12.969016], [49.915449, 12.979913], [49.917970, 12.987808], [49.922365, 12.990560], [49.928565, 12.988663], [49.934970, 12.980036], [49.941487, 12.957473], [49.947034, 12.950448], [49.954511, 12.947171], [49.965853, 12.948901], [49.971373, 12.952215], [49.977745, 12.965412], [49.978775, 12.995759], [49.985707, 13.012018], [49.991920, 13.016657], [49.998658, 13.013203], [50.000668, 13.006235], [50.000446, 12.979959], [50.003458, 12.940115], [50.005655, 12.913972], [50.006518, 12.896448], [50.008018, 12.883788], [50.011389, 12.870988], [50.016578, 12.861334], [50.042324, 12.859146], [50.047436, 12.850052], [50.048259, 12.808401], [50.052522, 12.787885], [50.051300, 12.768339], [50.050447, 12.758568], [50.057922, 12.744062], [50.059510, 12.737128], [50.059853, 12.727839], [50.053037, 12.703228], [50.043466, 12.693114], [50.030028, 12.689805], [50.018791, 12.683851], [50.017013, 12.675724], [50.018933, 12.655038], [50.020765, 12.623165], [50.023575, 12.596141], [50.034415, 12.588492], [50.041073, 12.581870], [50.049509, 12.573893], [50.053277, 12.566160], [50.049356, 12.552020], [50.038839, 12.547940], [50.033051, 12.550032], [50.029773, 12.546458], [50.026140, 12.537401], [50.018102, 12.527514], [50.010528, 12.523957], [50.006796, 12.508941], [49.981593, 12.489888], [49.972102, 12.499310], [49.969792, 12.493562], [49.966777, 12.493795], [49.961852, 12.490864], [49.960622, 12.491437], [49.958438, 12.490433], [49.957892, 12.488292], [49.958453, 12.483193], [49.958025, 12.480578], [49.956466, 12.477640], [49.953216, 12.474882], [49.952305, 12.475075], [49.948291, 12.469947], [49.946787, 12.469745], [49.943096, 12.472102], [49.938454, 12.474968], [49.935506, 12.478642], [49.936539, 12.493798], [49.933198, 12.493167], [49.932545, 12.498164], [49.927585, 12.512151], [49.927584, 12.522963], [49.924634, 12.538534], [49.922711, 12.544699], [49.920400, 12.547813], [49.916179, 12.548351], [49.913048, 12.549166], [49.909827, 12.551128], [49.903146, 12.550917], [49.895473, 12.545024], [49.891335, 12.540008], [49.890924, 12.535302], [49.883408, 12.524112], [49.880116, 12.520458], [49.877058, 12.518639], [49.869078, 12.518578], [49.861422, 12.514108], [49.858686, 12.510673], [49.857488, 12.507820], [49.857009, 12.497694], [49.855010, 12.498489], [49.847481, 12.499572], [49.837469, 12.497958], [49.841975, 12.483019], [49.833212, 12.473006], [49.823528, 12.475038], [49.814792, 12.472150], [49.810171, 12.465074], [49.787588, 12.471540], [49.762638, 12.404806]
         ];
 
-        L.polygon(cityBoundary, {
-            color: '#3b82f6', // Яркий синий цвет (чтобы выделялся на фоне серых участков)
-            weight: 4,        // Делаем линию достаточно жирной
-            fill: false,      // Абсолютно прозрачно внутри!
-            dashArray: '10, 10', // Делаем крупный заметный пунктир
-            interactive: false // ОЧЕНЬ ВАЖНО: чтобы эта граница не перекрывала клики по мелким участкам!
-        }).addTo(globalAvailableLayerGroup);
+        L.polygon(cityBoundary, { color: '#3b82f6', weight: 4, fill: false, dashArray: '10, 10', interactive: false }).addTo(globalAvailableLayerGroup);
         
         let bounds = L.latLngBounds();
         let hasPolys = false;
         let currentlyHighlighted = null; 
-        
         window.terrMapPolygons = {}; 
 
         window.allMapPolygons.forEach(m => {
             hasPolys = true;
             const latlngs = m.polygon.map(p => [p.lat, p.lng]);
             
-            // БАЗОВЫЕ НАСТРОЙКИ (Для свободных участков)
-            let polyColor = '#64748b'; // Серый цвет границы
-            let fillOp = 0.0;          // Свободные участки полностью прозрачные
-            let dashArr = '3, 4';      // ОЧЕНЬ МЕЛКИЙ ПУНКТИР
-            let weight = 2;            
-            
+            let polyColor = '#0ea5e9'; // Голубой
+            let fillOp = 0.15;
+            let dashArr = '4, 4';
+            let weight = 2;
             let statusText = '';
             let btnHtml = '';
 
-            // ЗАДАЕМ СТАТУСЫ, ЦВЕТА И ЭМОДЗИ
+            // 🔥 ЛОГИКА ЦВЕТОВ НА КАРТЕ
             if (m.status === 'active') {
-                statusText = '<span class="text-slate-500 flex items-center justify-center gap-1.5 mt-2 text-[11px] bg-slate-100 py-1 rounded-md">🚧 Копаем... 👷‍♂️</span>';
-                polyColor = '#475569'; // Темно-серый
-                fillOp = 0.25;         // Серая заливка для видности!
-            } else if (m.status === 'cooldown') {
-                statusText = '<span class="text-purple-500 flex items-center justify-center gap-1.5 mt-2 text-[11px] bg-purple-50 py-1 rounded-md">⏳ Спит... 🛌</span>';
-                polyColor = '#94a3b8'; // Светло-серый
-                fillOp = 0.2;          // Легкая серая заливка
-            } else if (m.status === 'fire') {
-                statusText = '<span class="text-rose-500 mt-1 block">Свободен (Рекомендуем)</span>';
-                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
-            } else {
-                statusText = '<span class="text-emerald-500 mt-1 block">Свободен</span>';
-                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
+                statusText = `<span class="text-slate-500 mt-1 block font-bold">В работе: ${m.userName || 'Неизвестно'}</span>`;
+                polyColor = '#94a3b8'; // Серый
+                fillOp = 0.4;
+                dashArr = '';
+                btnHtml = `<button disabled class="w-full bg-slate-200 text-slate-400 font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg mt-2 cursor-not-allowed">ЗАНЯТ</button>`;
+            } 
+            else if (m.status === 'cooldown') {
+                let restDate = new Date(m.lastWorked);
+                restDate.setMonth(restDate.getMonth() + 3);
+                let dateStr = restDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+                statusText = `<span class="text-emerald-600 mt-1 block font-bold">Отдыхает до ${dateStr}</span>`;
+                polyColor = '#10b981'; // Зеленый
+                fillOp = 0.35;
+                dashArr = '';
+                btnHtml = `<button disabled class="w-full bg-emerald-100 text-emerald-400 font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg mt-2 cursor-not-allowed">ОТДЫХАЕТ</button>`;
+            } 
+            else { // fire or available
+                statusText = '<span class="text-teal-500 mt-1 block font-bold">Свободен</span>';
+                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             }
 
-            const defaultStyle = {
-                color: polyColor,       
-                weight: weight,              
-                dashArray: dashArr,          
-                fillColor: polyColor,   
-                fillOpacity: fillOp,    
-                opacity: 0.9            
-            };
-
+            const defaultStyle = { color: polyColor, weight: weight, dashArray: dashArr, fillColor: polyColor, fillOpacity: fillOp, opacity: 0.9 };
             const poly = L.polygon(latlngs, defaultStyle);
-            
             window.terrMapPolygons[m.num] = poly;
 
-            poly.bindTooltip(String(m.num), {
-                permanent: true,
-                direction: 'center',
-                className: 'terr-map-label'
-            });
+            poly.bindTooltip(String(m.num), { permanent: true, direction: 'center', className: 'terr-map-label' });
 
             const popupHtml = `
                 <div class="text-center p-1.5 min-w-[140px] font-sans">
                     <span class="block font-black text-2xl text-slate-800 leading-none mb-1">№ ${m.num}</span>
                     <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">${m.city}</span>
-                    <span class="block text-[9px] font-black uppercase tracking-widest border-t border-slate-100 pt-1">${statusText}</span>
+                    <span class="block text-[10px] font-black uppercase tracking-widest border-t border-slate-100 pt-1">${statusText}</span>
                     ${btnHtml}
                 </div>
             `;
-            
-            // НОВОЕ: autoPan: false отключает бесячий "прыжок" карты при клике на участок
             poly.bindPopup(popupHtml, { autoPan: false });
 
-            // КЛИК: Делаем рамку зеленой и сплошной (если участок свободен)
             poly.on('click', function () {
-                if (currentlyHighlighted) {
-                    currentlyHighlighted.poly.setStyle(currentlyHighlighted.defaultStyle);
-                }
-                
+                if (currentlyHighlighted) currentlyHighlighted.poly.setStyle(currentlyHighlighted.defaultStyle);
                 poly.setStyle({
-                    fillOpacity: Math.max(fillOp, 0.15), // Оставляем базовую заливку или добавляем зеленую
-                    color: '#10b981',    
-                    weight: 3,           
-                    dashArray: ''        
+                    fillOpacity: Math.max(fillOp, 0.4),
+                    color: (m.status === 'available' || m.status === 'fire') ? '#10b981' : polyColor, 
+                    weight: 3, dashArray: '' 
                 });
-                
                 currentlyHighlighted = { poly: poly, defaultStyle: defaultStyle };
             });
 
             poly.on('popupclose', function () {
                 poly.setStyle(defaultStyle);
-                if (currentlyHighlighted && currentlyHighlighted.poly === poly) {
-                    currentlyHighlighted = null;
-                }
+                if (currentlyHighlighted && currentlyHighlighted.poly === poly) currentlyHighlighted = null;
             });
 
             poly.addTo(globalAvailableLayerGroup);
             bounds.extend(poly.getBounds());
         });
 
-        if (hasPolys) {
-            globalAvailableMapInstance.fitBounds(bounds, { padding: [30, 30] });
-        }
+        if (hasPolys) globalAvailableMapInstance.fitBounds(bounds, { padding: [30, 30] });
     }, 100);
 };
 
+// === ОТРИСОВКА СПИСКА КАРТОЧЕК ===
 window.renderAvailableTerritoriesUI = () => {
     const listContainer = document.getElementById('available-terr-list');
-    
     let filtered = window.availableTerritoriesData;
     filtered.sort((a, b) => a.num - b.num);
 
     const totalMaps = Object.keys(window.allMapsCache).length;
-    const availableMaps = window.availableTerritoriesData.length;
+    const availableMaps = filtered.filter(f => f.status === 'available' || f.status === 'fire').length;
     const takenMaps = window.activeTerritoriesCount || 0;
     const completedMaps = window.cooldownTerritoriesCount || 0; 
 
-    // Оставляем красивую статистику сверху
     let statsHtml = `
     <div class="grid grid-cols-4 gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-2.5 mb-4 text-center text-[8px] font-black uppercase tracking-widest text-slate-500 shadow-inner shrink-0">
-        <div>
-            <span class="block text-slate-400 text-[7px] mb-0.5">В базе</span>
-            <span class="text-slate-800 text-xs font-black">${totalMaps}</span>
-        </div>
-        <div class="border-l border-slate-200">
-            <span class="block text-slate-400 text-[7px] mb-0.5">В работе</span>
-            <span class="text-indigo-600 text-xs font-black">${takenMaps}</span>
-        </div>
-        <div class="border-l border-slate-200">
-            <span class="block text-slate-400 text-[7px] mb-0.5">Пройдено</span>
-            <span class="text-purple-600 text-xs font-black">${completedMaps}</span>
-        </div>
-        <div class="border-l border-slate-200">
-            <span class="block text-slate-400 text-[7px] mb-0.5">Свободно</span>
-            <span class="text-emerald-600 text-xs font-black">${availableMaps}</span>
-        </div>
+        <div><span class="block text-slate-400 text-[7px] mb-0.5">В базе</span><span class="text-slate-800 text-xs font-black">${totalMaps}</span></div>
+        <div class="border-l border-slate-200"><span class="block text-slate-400 text-[7px] mb-0.5">В работе</span><span class="text-slate-500 text-xs font-black">${takenMaps}</span></div>
+        <div class="border-l border-slate-200"><span class="block text-slate-400 text-[7px] mb-0.5">Отдыхает</span><span class="text-emerald-600 text-xs font-black">${completedMaps}</span></div>
+        <div class="border-l border-slate-200"><span class="block text-slate-400 text-[7px] mb-0.5">Свободно</span><span class="text-teal-600 text-xs font-black">${availableMaps}</span></div>
     </div>`;
 
     let gridHtml = '';
     if (filtered.length === 0) {
-        gridHtml = `<p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">Все доступные участки разобраны или отдыхают!</p>`;
+        gridHtml = `<p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">Пусто</p>`;
     } else {
         gridHtml = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">';
         filtered.forEach(m => {
             const hasPolygon = !!m.polygon;
             const cityStr = m.city ? m.city : 'Без города';
             
-            // Логика: если есть координаты - летим на общую карту. Если просто ссылка - открываем в браузере.
             let clickAction = '';
-            if (hasPolygon) {
-                clickAction = `onclick="focusOnTerritoryOnMap('${m.num}')"`;
-            } else if (m.url) {
-                clickAction = `onclick="window.open('${m.url}', '_blank')"`;
-            } else {
-                clickAction = `onclick="alert('Для этого участка нет карты или ссылки')"`;
+            if (hasPolygon) clickAction = `onclick="focusOnTerritoryOnMap('${m.num}')"`;
+            else if (m.url) clickAction = `onclick="window.open('${m.url}', '_blank')"`;
+            else clickAction = `onclick="alert('Для этого участка нет карты или ссылки')"`;
+
+            // 🔥 ЛОГИКА ДЛЯ СПИСКА КАРТОЧЕК
+            let statusHtml = '';
+            let cardClass = 'bg-white border-slate-200';
+            let actionBtn = '';
+
+            if (m.status === 'active') {
+                cardClass = 'bg-slate-100 border-slate-300 text-slate-700 opacity-80'; 
+                statusHtml = `
+                    <div class="flex items-center gap-1.5 mb-2">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                        <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Участок в работе</span>
+                    </div>
+                    <div class="text-xs font-bold text-slate-600 mt-1">Взял(а): <span class="text-slate-800 font-black">${m.userName || 'Неизвестно'}</span></div>
+                `;
+                actionBtn = `<button disabled class="mt-3 w-full bg-slate-200 text-slate-400 font-black text-[10px] uppercase tracking-widest py-2 rounded-lg outline-none cursor-not-allowed shadow-inner">Занят</button>`;
+            } 
+            else if (m.status === 'cooldown') {
+                cardClass = 'bg-emerald-50 border-emerald-200 text-emerald-800';
+                let restDate = new Date(m.lastWorked || Date.now());
+                restDate.setMonth(restDate.getMonth() + 3);
+                let dateStr = restDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                statusHtml = `
+                    <div class="flex items-center gap-1.5 mb-2">
+                        <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        <span class="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Участок отдыхает</span>
+                    </div>
+                    <div class="text-xs font-bold text-emerald-700 mt-1">До: <span class="text-emerald-900 font-black">${dateStr}</span></div>
+                `;
+                actionBtn = `<button disabled class="mt-3 w-full bg-emerald-200/50 text-emerald-500 font-black text-[10px] uppercase tracking-widest py-2 rounded-lg outline-none cursor-not-allowed shadow-inner">Спит</button>`;
+            }
+            else {
+                statusHtml = `
+                    <div class="flex items-center gap-1.5 mb-2">
+                        <svg class="w-4 h-4 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" /></svg>
+                        <span class="text-[9px] font-black text-teal-600 uppercase tracking-widest">Свободен</span>
+                    </div>
+                `;
+                actionBtn = `<button onclick="event.stopPropagation(); window.takeTerritory('${m.num}', this)" class="mt-3 w-full bg-teal-400 hover:bg-teal-500 text-white font-black text-[10px] uppercase tracking-widest py-2 rounded-lg transition-colors outline-none shadow-sm">Взять себе</button>`;
             }
 
-            // НОВАЯ КОМПАКТНАЯ КАРТОЧКА (Вся работает как кнопка)
             gridHtml += `
-            <div ${clickAction} class="bg-white border border-slate-200 rounded-xl p-4 flex justify-between items-center shadow-sm cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all active:scale-[0.98] group">
-                
-                <div class="flex flex-col text-left pr-2">
-                    <span class="bg-slate-800 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-md w-max mb-1.5 shadow-sm">№ ${m.num}</span>
-                    <span class="font-black text-slate-700 text-sm md:text-base leading-tight">${cityStr}</span>
+            <div ${clickAction} class="p-4 rounded-xl border ${cardClass} shadow-sm flex flex-col justify-between transition-colors cursor-pointer hover:shadow-md active:scale-[0.98]">
+                <div>
+                    <div class="flex justify-between items-start mb-1">
+                        <h4 class="font-black text-2xl leading-none">№ ${m.num}</h4>
+                        <span class="text-[9px] font-bold opacity-60 uppercase tracking-widest">${cityStr}</span>
+                    </div>
+                    ${statusHtml}
                 </div>
-                
-                <div class="w-10 h-10 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center shrink-0 border border-slate-200 group-hover:bg-emerald-50 group-hover:text-emerald-600 group-hover:border-emerald-200 transition-colors">
-                    <svg class="w-5 h-5 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                </div>
-                
-            </div>`;
+                ${actionBtn}
+            </div>
+            `;
         });
         gridHtml += '</div>';
     }
-
     listContainer.innerHTML = statsHtml + gridHtml;
 };
 
@@ -2620,7 +2516,6 @@ window.closeTakeTerrModal = () => {
 window.takeTerritory = async (num, btn) => {
     btn.disabled = true; btn.innerText = '...';
     try { 
-        // ЖЕСТКАЯ ПРОВЕРКА В БАЗЕ: не находится ли участок уже в статусе active?
         const activeCheck = await getDocs(query(collection(db, "territories"), where("number", "==", Number(num)), where("status", "==", "active")));
         if (!activeCheck.empty) {
             alert('Извините, этот участок уже кто-то взял! (или он уже у вас)');
