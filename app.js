@@ -2311,7 +2311,7 @@ window.focusOnTerritoryOnMap = (numStr) => {
     }, 100);
 };
 
-// === ОТРИСОВКА КАРТЫ С НОВЫМИ ЦВЕТАМИ ===
+// === ОТРИСОВКА КАРТЫ С НОВЫМИ ЦВЕТАМИ И ПУНКТИРОМ ===
 window.renderGlobalAvailableMap = () => {
     if (!globalAvailableMapInstance) {
         globalAvailableMapInstance = L.map('available-terr-map', { attributionControl: false }).setView([49.974, 12.700], 12);
@@ -2347,9 +2347,10 @@ window.renderGlobalAvailableMap = () => {
             hasPolys = true;
             const latlngs = m.polygon.map(p => [p.lat, p.lng]);
             
-            let polyColor = '#0ea5e9'; // Голубой
-            let fillOp = 0.15;
-            let dashArr = '4, 4';
+            // Базовые параметры (для всех участков)
+            let polyColor = '#f43f5e'; // Красноватый (Свободный участок)
+            let fillOp = 0.25;         // Чуть более заметная заливка
+            let dashArr = '5, 5';      // 🔥 ПУНКТИР ДЛЯ ВСЕХ УЧАСТКОВ
             let weight = 2;
             let statusText = '';
             let btnHtml = '';
@@ -2357,9 +2358,8 @@ window.renderGlobalAvailableMap = () => {
             // 🔥 ЛОГИКА ЦВЕТОВ НА КАРТЕ
             if (m.status === 'active') {
                 statusText = `<span class="text-slate-500 mt-1 block font-bold">В работе: ${m.userName || 'Неизвестно'}</span>`;
-                polyColor = '#94a3b8'; // Серый
+                polyColor = '#94a3b8'; // Серый цвет
                 fillOp = 0.4;
-                dashArr = '';
                 btnHtml = `<button disabled class="w-full bg-slate-200 text-slate-400 font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg mt-2 cursor-not-allowed">ЗАНЯТ</button>`;
             } 
             else if (m.status === 'cooldown') {
@@ -2367,16 +2367,16 @@ window.renderGlobalAvailableMap = () => {
                 restDate.setMonth(restDate.getMonth() + 3);
                 let dateStr = restDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
                 statusText = `<span class="text-emerald-600 mt-1 block font-bold">Отдыхает до ${dateStr}</span>`;
-                polyColor = '#10b981'; // Зеленый
+                polyColor = '#4ade80'; // Светло-зеленый (ярче и прозрачнее)
                 fillOp = 0.35;
-                dashArr = '';
-                btnHtml = `<button disabled class="w-full bg-emerald-100 text-emerald-400 font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg mt-2 cursor-not-allowed">ОТДЫХАЕТ</button>`;
+                btnHtml = `<button disabled class="w-full bg-emerald-100 text-emerald-500 font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg mt-2 cursor-not-allowed">ОТДЫХАЕТ</button>`;
             } 
-            else { // fire or available
-                statusText = '<span class="text-teal-500 mt-1 block font-bold">Свободен</span>';
-                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
+            else { // fire or available (СВОБОДНЫЕ)
+                statusText = '<span class="text-rose-500 mt-1 block font-bold">Свободен</span>';
+                btnHtml = `<button onclick="takeTerritory(${m.num}, this)" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-lg shadow-md active:scale-95 transition-all mt-2 outline-none">ВЗЯТЬ УЧАСТОК</button>`;
             }
 
+            // Создаем участок с нашими стилями
             const defaultStyle = { color: polyColor, weight: weight, dashArray: dashArr, fillColor: polyColor, fillOpacity: fillOp, opacity: 0.9 };
             const poly = L.polygon(latlngs, defaultStyle);
             window.terrMapPolygons[m.num] = poly;
@@ -2393,12 +2393,14 @@ window.renderGlobalAvailableMap = () => {
             `;
             poly.bindPopup(popupHtml, { autoPan: false });
 
+            // 🔥 Эффект при нажатии (выделение)
             poly.on('click', function () {
                 if (currentlyHighlighted) currentlyHighlighted.poly.setStyle(currentlyHighlighted.defaultStyle);
                 poly.setStyle({
-                    fillOpacity: Math.max(fillOp, 0.4),
-                    color: (m.status === 'available' || m.status === 'fire') ? '#10b981' : polyColor, 
-                    weight: 3, dashArray: '' 
+                    fillOpacity: Math.max(fillOp, 0.5), // Делаем заливку гуще
+                    color: polyColor,                   // Цвет остается родным
+                    weight: 4,                          // Утолщаем границу
+                    dashArray: ''                       // Убираем пунктир при клике, чтобы граница была сплошной (лучше видно выбор)
                 });
                 currentlyHighlighted = { poly: poly, defaultStyle: defaultStyle };
             });
